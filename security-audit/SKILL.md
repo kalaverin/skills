@@ -164,6 +164,9 @@ Before dispatching any subagent, the root agent must:
 | 18 | `references/18-inventory.md` | [ref: #inventory-detection] | Improper inventory management | `{{ REPORTS_ROOT }}/18_inventory.md` |
 | 19 | `references/19-unsafeapiconsumption.md` | [ref: #unsafeapiconsumption-detection] | Unsafe consumption of APIs | `{{ REPORTS_ROOT }}/19_unsafeapiconsumption.md` |
 | 20 | `references/20-misconfiguration.md` | [ref: #misconfiguration-detection] | Security misconfiguration | `{{ REPORTS_ROOT }}/20_misconfiguration.md` |
+| 21 | `references/21-backdoors.md` | [ref: #backdoors-detection] | Deliberate malicious code / backdoors / implants | `{{ REPORTS_ROOT }}/21_backdoors.md` |
+| 22 | `references/22-obfuscation.md` | [ref: #obfuscation-detection] | Obfuscated code that may hide malicious behavior | `{{ REPORTS_ROOT }}/22_obfuscation.md` |
+| 23 | `references/23-dependencies.md` | [ref: #dependencies-detection] | Supply chain / dependency risks | `{{ REPORTS_ROOT }}/23_dependencies.md` |
 | 90 | `references/90-design-checklist.md` | [ref: #design-checklist] | API Security design checklist assessment | `{{ REPORTS_ROOT }}/90_design_checklist.md` |
 | 99 | `references/99-report.md` | [ref: #final-report] | Consolidated final report | `{{ REPORTS_ROOT }}/report.md` |
 

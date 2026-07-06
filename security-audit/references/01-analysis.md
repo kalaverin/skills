@@ -69,8 +69,12 @@ For each category below, record concrete values: names, versions, file paths, an
 ### Package managers and dependencies
 
 - Lock files and dependency manifests: `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `requirements.txt`, `requirements.lock`, `uv.lock`, `poetry.lock`, `go.mod`, `go.sum`, `Gemfile.lock`, `pom.xml`, `Cargo.lock`, `composer.lock`, etc.
+- Registry configuration and scope pinning: `.npmrc`, `.yarnrc`, `pip.conf`, `maven` settings, `NuGet.config`, private registry URLs.
+- Internal/private package names and whether their scopes are locked to a private registry (dependency-confusion exposure).
 - Direct and transitive dependencies with known security relevance: authentication libraries, HTTP clients, template engines, XML parsers, PDF/image processors, cryptography libraries.
-- Dependency-update cadence and whether automated scanning is configured.
+- Install/lifecycle scripts (`postinstall`, `preinstall`, `setup.py` hooks) declared by dependencies.
+- Dependency-update cadence and whether automated scanning (SCA/SBOM) is configured.
+- Maintainer metadata for critical dependencies: number of maintainers, MFA policy, recent activity, signed releases.
 
 ### Infrastructure hints
 
@@ -223,7 +227,10 @@ The table below links each architecture data item to the detection references th
 | Secret management and hardcoded credentials | `15-hardcodedsecrets.md`, `09-jwt.md`, `00-screener.md` | Exposed secrets enable authentication bypass and data decryption. |
 | Logging and monitoring | `20-misconfiguration.md`, `99-report.md` | Incomplete logging hides attacks and complicates incident response. |
 | Input validation and query building patterns | `02-sqli.md`, `04-xss.md`, `12-pathtraversal.md`, `00-screener.md` | Validation gaps and unsafe query construction enable injection attacks. |
-| CI/CD and deployment practices | `20-misconfiguration.md`, `15-hardcodedsecrets.md` | Pipeline weaknesses introduce supply-chain and configuration risks. |
+| Dependency manifests, registry config, internal scopes, install scripts, update cadence | `23-dependencies.md`, `00-screener.md` | Typosquatting, dependency confusion, known CVEs, abandoned packages, maintainer takeovers, and compromised packages are detected from dependency metadata. |
+| Dynamic loading, reflection, plugin/extension systems, runtime code generation | `21-backdoors.md`, `05-rce.md`, `00-screener.md` | Deliberate malicious code and unauthorized execution surfaces hide behind dynamic invocation. |
+| Obfuscation patterns: encoded strings, control-flow flattening, decryption loops, encrypted payloads | `22-obfuscation.md`, `21-backdoors.md`, `00-screener.md` | Obfuscation can conceal backdoors, C2 addresses, and malicious payloads. |
+| CI/CD and deployment practices | `20-misconfiguration.md`, `15-hardcodedsecrets.md`, `23-dependencies.md` | Pipeline weaknesses introduce supply-chain and configuration risks. |
 
 ## OWASP API Security Top 10 2023 mapping
 
@@ -239,6 +246,8 @@ The architecture data items below are the single source of truth for the screene
 | Sensitive business flow endpoints (purchase, post, book) | API6:2023 Unrestricted Access to Sensitive Business Flows | Automated abuse of flows harms business without being an implementation bug. |
 | Outbound HTTP clients and third-party integrations | API7:2023 Server Side Request Forgery, API10:2023 Unsafe Consumption of APIs | Unvalidated outbound URIs and over-trusted third-party data enable SSRF and supply-chain attacks. |
 | Security configuration (TLS, headers, CORS, debug mode) | API8:2023 Security Misconfiguration | Default/verbose configurations expose the API to multiple attack classes. |
+| Dynamic loading, reflection, plugin systems, install scripts, obfuscated dependency code | API8:2023 Security Misconfiguration, API10:2023 Unsafe Consumption of APIs | Deliberate implants and obfuscated payloads hide in dynamic execution paths and third-party code. |
+| Dependency supply chain (registry scoping, manifests, lockfiles, maintainer trust, known CVEs) | API8:2023 Security Misconfiguration, API10:2023 Unsafe Consumption of APIs | Vulnerable, abandoned, typosquatted, confused, or compromised dependencies introduce supply-chain risk. |
 | API versions, specs, debug endpoints, non-prod hosts | API9:2023 Improper Inventory Management | Undocumented or deprecated endpoints bypass security controls and monitoring. |
 
 ## Output template
@@ -358,6 +367,28 @@ API. Include the authentication/validation/encryption applied at each.]
 
 [Build pipelines, Infrastructure-as-Code, container hardening, dependency-update
 cadence, deployment approvals, secrets injection, and rollback procedures.]
+
+## Dependency Supply Chain
+
+| Aspect | Details |
+|---|---|
+| Package manager(s) | ... |
+| Registry configuration / scope pinning | ... |
+| Internal/private package names and scopes | ... |
+| Dependency-update cadence | ... |
+| SCA/SBOM tooling | ... |
+| Known risky dependencies | ... |
+| Install/lifecycle scripts in dependencies | ... |
+
+## Dynamic Loading / Reflection / Plugin Systems
+
+| Aspect | Details |
+|---|---|
+| Dynamic module loading patterns | ... |
+| Reflection APIs in use | ... |
+| Plugin/extension system and allowlist | ... |
+| Runtime code generation or eval/exec sinks | ... |
+| Obfuscation or encoded payload patterns | ... |
 
 ## Open Questions and Ambiguities
 

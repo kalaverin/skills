@@ -52,6 +52,9 @@ project has zero exposure.
 | Improper Inventory Management | `references/18-inventory.md` | Multiple API versions; undocumented endpoints; debug endpoints; non-production hosts; missing/outdated OpenAPI/GraphQL schemas; microservices/serverless functions; unmonitored third-party integrations; feature flags gating admin/endpoints; production data in non-production deployments |
 | Unsafe Consumption of APIs | `references/19-unsafeapiconsumption.md` | Outbound third-party HTTP/API consumption, webhooks, package-manager/registry calls, disabled TLS validation, blind redirect following, or no timeouts/limits on external calls |
 | Security Misconfiguration | `references/20-misconfiguration.md` | Missing security headers, CORS issues, TLS gaps, verbose errors, insecure defaults, debug mode, unnecessary HTTP verbs, cloud/container/IaC configs, outdated components, logging with placeholder expansion/JNDI, default credentials, or inconsistent HTTP-chain request handling |
+| Backdoors / deliberate malicious code | `references/21-backdoors.md` | Dynamic loading, reflective invocation, runtime string decryption, environment triggers, time bombs, dead-code activation, anti-debug checks, DGA patterns, beaconing/C2 callbacks, or any deliberate-implant indicators |
+| Obfuscated code | `references/22-obfuscation.md` | Base64/hex concatenation, control-flow flattening, opaque predicates, string decryption loops, encrypted payloads, identifier mangling with dynamic access, or other obfuscation hiding behavior |
+| Supply chain / dependencies | `references/23-dependencies.md` | Third-party dependencies; package manifests; lockfiles; registry configuration; dependency-update cadence; typosquatting, dependency confusion, known CVEs, abandoned packages, suspicious maintainer changes, or compromised registry packages |
 | API Security design checklist | `references/90-design-checklist.md` | Any API, web service, or backend with HTTP interfaces; evaluates policy, architecture, and process controls from the Shieldfy API Security Checklist |
 
 ## OWASP API Security Top 10 2023 mapping
@@ -69,9 +72,9 @@ scans. Select the scan if **any** indicator in the row is true.
 | API5:2023 Broken Function Level Authorization | `10-missingauth.md` | Role/permission model exists; admin endpoints exist; endpoints with mixed regular/admin functions under the same path prefix; HTTP method switching possible (`GET` → `DELETE`/`PUT`/`PATCH`); guessed admin URLs or cross-group endpoint guessing (e.g. `/api/users/export_all`); complex user hierarchies, groups, or sub-users; deny-by-default not enforced. |
 | API6:2023 Unrestricted Access to Sensitive Business Flows | `13-businesslogic.md` | Sensitive flows: purchase/shop (scalping/hoarding), post/comment/vote (spam), book/reserve (slot blocking), referral/loyalty (automated farming), limited-stock, auction, transfer, withdrawal, ticket purchasing, reservation cancellation; any flow whose excessive automated use could harm the business; machine-consumed or B2B APIs lacking anti-automation controls. |
 | API7:2023 Server Side Request Forgery | `03-ssrf.md` | API fetches remote resources from user-supplied URLs; webhooks; file fetch from URL; URL preview; custom SSO; image/document processing from remote URLs; cloud/Kubernetes/Docker metadata services reachable; blind or reflected SSRF possible; outbound traffic allowed to internal destinations. |
-| API8:2023 Security Misconfiguration | `20-misconfiguration.md` plus cross-mapped injection scans | Missing hardening across any API stack layer; improperly configured cloud permissions (IAM, S3 ACLs, security groups); missing security patches or outdated components; unnecessary features enabled (HTTP verbs, logging); inconsistent request processing in HTTP server chain; missing TLS; missing/improper CORS; missing security/cache-control headers; verbose errors/stack traces/default credentials; logging with placeholder expansion/JNDI; debug mode enabled. |
+| API8:2023 Security Misconfiguration | `20-misconfiguration.md`, `21-backdoors.md`, `22-obfuscation.md` plus cross-mapped injection scans | Missing hardening across any API stack layer; improperly configured cloud permissions (IAM, S3 ACLs, security groups); missing security patches or outdated components; unnecessary features enabled (HTTP verbs, logging); inconsistent request processing in HTTP server chain; missing TLS; missing/improper CORS; missing security/cache-control headers; verbose errors/stack traces/default credentials; logging with placeholder expansion/JNDI; debug mode enabled; deliberate malicious code or obfuscation hiding backdoors/C2. |
 | API9:2023 Improper Inventory Management | `18-inventory.md` | Multiple API versions without retirement plan; microservices/serverless functions; undocumented endpoints; debug/beta/non-production hosts; missing/outdated OpenAPI/GraphQL schemas; third-party integrations without inventory, business justification, or sensitivity classification; feature flags gating admin/endpoints; production data in non-production deployments; host environment or network access scope undocumented. |
-| API10:2023 Unsafe Consumption of APIs | `19-unsafeapiconsumption.md` plus cross-mapped injection scans | Outbound HTTP clients; third-party webhooks; package-manager/registry calls; disabled TLS certificate validation; blind redirect following; no timeouts/resource limits on external calls; third-party data reaches SQL/template/eval/deserialization sinks without validation; trust placed in data from integrated APIs without validation. |
+| API10:2023 Unsafe Consumption of APIs | `19-unsafeapiconsumption.md`, `23-dependencies.md` plus cross-mapped injection scans | Outbound HTTP clients; third-party webhooks; package-manager/registry calls; disabled TLS certificate validation; blind redirect following; no timeouts/resource limits on external calls; third-party data reaches SQL/template/eval/deserialization sinks without validation; trust placed in data from integrated APIs without validation; typosquatting, dependency confusion, compromised packages, or vulnerable dependencies. |
 
 ## Cross-mapped injection coverage
 
@@ -169,6 +172,8 @@ justify the choice in `00_plan.md`.
 - API gateway: CORS policy missing or improper, security headers missing, method restrictions missing.
 - Application: debug mode, verbose errors/stack traces, unnecessary features, default credentials, inconsistent HTTP-chain request handling.
 - Logging: JNDI/placeholder expansion (e.g., Log4j-style lookups), request-body logging, sensitive data in logs.
+- Deliberate malicious code: dynamic loading, reflective invocation, runtime decryption, environment/time triggers, anti-debug, DGA, beaconing/C2.
+- Obfuscated code: base64/hex concatenation, control-flow flattening, opaque predicates, string decryption loops, encrypted payloads used to hide behavior.
 - Missing hardening process, configuration review, or automated configuration assessment across environments.
 
 **API9 — Improper Inventory Management**
@@ -192,6 +197,8 @@ justify the choice in `00_plan.md`.
 - Third-party data reaches SQL/template/eval/deserialization sinks without validation/sanitization.
 - Trust placed in data from well-known third-party APIs.
 - Package-manager/registry calls whose outputs are used unsafely.
+- Typosquatting, dependency confusion, abandoned packages, suspicious maintainer changes, or compromised registry packages.
+- Known CVEs in runtime dependencies reachable from application code.
 
 ## Procedure
 
@@ -237,7 +244,7 @@ Write the plan to `{{ REPORTS_ROOT }}/00_plan.md` using exactly this format:
 
 ## Execution order
 
-1. Run selected technical scans (02–20) in parallel batches of up to 5.
+1. Run selected technical scans (02–23) in parallel batches of up to 5.
 2. If selected, run `references/90-design-checklist.md` after the technical
    scans complete.
 3. Finally, run `references/99-report.md`.
