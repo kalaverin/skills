@@ -1,44 +1,99 @@
-# Temporal Development Skill
+# temporal-lang
 
-A comprehensive skill for developers to use when building [Temporal](https://temporal.io/) applications.
+Agent skill for building, debugging, and managing Temporal durable-execution applications.
 
-> [!WARNING]
-> This Skill is currently in Public Preview, and will continue to evolve and improve.
-> We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)
+## What this skill does
 
-## Installation
+`temporal-lang` is a documentation library that provides guidance, patterns, and reference material for Temporal applications. It is consumed by coding agents as Markdown references and contains no runtime code. The skill covers:
 
-### As a Plugin
+- Workflow and activity design.
+- Determinism rules and Event History replay semantics.
+- Signals, queries, updates, and child workflows.
+- Versioning strategies: patching, worker build IDs, and `continue-as-new`.
+- Troubleshooting stuck workflows and non-determinism errors.
+- Task-queue priority and fairness.
+- AI patterns for durable execution.
+- Developer management and operational guidance.
+- Per-SDK quick starts and conventions for Python, TypeScript, Go, Java, .NET, and Ruby.
+- Third-party integrations (Spring Boot, Spring AI, OpenAI Agents SDK, LangSmith, LangGraph, Google ADK).
 
-This skill is packaged as a plugin for major coding agents, which provides a simple way to install and receive future updates:
+## When to use it
 
-- **Claude Code**: [temporalio/claude-temporal-plugin](https://github.com/temporalio/claude-temporal-plugin)
-- **Cursor**: [temporalio/cursor-temporal-plugin](https://github.com/temporalio/cursor-temporal-plugin)
-- **OpenAI Codex**: [temporalio/codex-temporal-plugin](https://github.com/temporalio/codex-temporal-plugin)
+Load this skill when the request involves:
 
-See each repo's README for installation instructions.
+- Building workflows, activities, or workers with a Temporal SDK.
+- Debugging non-determinism errors, stuck workflows, or activity retries.
+- Using Temporal CLI, Temporal Server, or Temporal Cloud.
+- Working with durable-execution concepts such as signals, queries, heartbeats, versioning, `continue-as-new`, child workflows, or saga patterns.
 
-### Standalone Installation
+## Repository layout
 
-If you prefer to install the skill directly without the plugin wrapper:
+```text
+temporal-lang/
+├── references/
+│   ├── core/                  # Language-agnostic Temporal concepts
+│   │   ├── ai-patterns.md
+│   │   ├── determinism.md
+│   │   ├── dev-management.md
+│   │   ├── error-reference.md
+│   │   ├── gotchas.md
+│   │   ├── install_cli.md
+│   │   ├── interactive-workflows.md
+│   │   ├── patterns.md
+│   │   ├── priority-fairness.md
+│   │   ├── troubleshooting.md
+│   │   └── versioning.md
+│   ├── dotnet/                # .NET SDK reference
+│   ├── go/                    # Go SDK reference
+│   ├── java/                  # Java SDK reference (with Spring integrations)
+│   ├── python/                # Python SDK reference (with AI/LLM integrations)
+│   ├── ruby/                  # Ruby SDK reference
+│   ├── typescript/            # TypeScript SDK reference
+│   └── integrations.md        # Catalog of third-party integrations
+├── LICENSE
+└ SKILL.md                     # Skill entry point and manifest
+```
 
-#### Via `npx skills` — supports all major coding agents
+## How to use this skill
 
-1. `npx skills add temporalio/skill-temporal-lang`
-2. Follow prompts
+1. Open `SKILL.md` for the manifest, version, and trigger conditions.
+2. Identify whether the question is language-agnostic or SDK-specific.
+3. For language-agnostic topics, start with `references/core/`.
+4. For SDK-specific topics, open the matching `references/{python,typescript,go,java,dotnet,ruby}/` directory.
+5. Extract only the relevant section using the `[ref: #...]` anchors inside the reference files.
+6. Apply the determinism rules strictly; they are the foundation of durable execution.
 
-#### Via manually cloning the skill repo
+## Core reference index
 
-1. `mkdir -p ~/.claude/skills && git clone https://github.com/temporalio/skill-temporal-lang ~/.claude/skills/temporal-lang`
+| File | Topic |
+|------|-------|
+| `references/core/determinism.md` | Command/Event mapping and replay semantics |
+| `references/core/patterns.md` | Signals, queries, updates, child workflows, sagas |
+| `references/core/versioning.md` | Patching, worker build IDs, `continue-as-new` |
+| `references/core/troubleshooting.md` | Stuck workflows and non-determinism errors |
+| `references/core/error-reference.md` | Workflow status vocabulary and error codes TMPRL1100–TMPRL1103 |
+| `references/core/gotchas.md` | Common pitfalls |
+| `references/core/install_cli.md` | Temporal CLI installation |
+| `references/core/interactive-workflows.md` | Interactive workflow patterns |
+| `references/core/priority-fairness.md` | Task-queue priority and fairness |
+| `references/core/dev-management.md` | Developer and team workflows |
+| `references/core/ai-patterns.md` | AI patterns for durable execution |
+| `references/integrations.md` | Third-party integrations |
 
-Appropriately adjust the installation directory based on your coding agent.
+## SDK reference index
 
-## Currently Supported Temporal SDK Langages
+| Directory | SDK |
+|-----------|-----|
+| `references/python/` | Python SDK |
+| `references/typescript/` | TypeScript SDK |
+| `references/go/` | Go SDK |
+| `references/java/` | Java SDK |
+| `references/dotnet/` | .NET SDK |
+| `references/ruby/` | Ruby SDK |
 
-- [x] Python ✅
-- [x] TypeScript ✅
-- [x] Go ✅
-- [x] Java ✅
-- [x] .NET ✅
-- [ ] Ruby 🚧 ([PR](https://github.com/temporalio/skill-temporal-lang/pull/41))
-- [ ] PHP 🚧 ([PR](https://github.com/temporalio/skill-temporal-lang/pull/40))
+## Conventions
+
+- `SKILL.md` is the single entry point and declares the skill version (`0.4.0`).
+- Reference files are grouped by SDK and by core concept.
+- Examples connect to a local Temporal server (`localhost:7233`) by default.
+- The skill is licensed under the MIT License; see `LICENSE`.
