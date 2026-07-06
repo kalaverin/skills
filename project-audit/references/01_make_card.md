@@ -2,11 +2,6 @@
 
 [ref: #pe-make-card]
 
-**Recorded:** 2026-06-17T11:18:53Z
-**Git branch:** master
-**Latest commit:** 2accad8
-**Latest commit datetime:** 2026-06-17T11:10:32Z
-
 ## Goal
 
 [ref: #pe-make-card-goal]

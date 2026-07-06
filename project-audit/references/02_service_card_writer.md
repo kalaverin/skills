@@ -2,11 +2,6 @@
 
 [ref: #pe-writer]
 
-**Recorded:** 2026-06-17T11:18:53Z
-**Git branch:** master
-**Latest commit:** 2accad8
-**Latest commit datetime:** 2026-06-17T11:10:32Z
-
 You are the **root agent**. Your job is to produce a final entity card in Serena memory. You do **not** explore the codebase yourself; you delegate that to a read-only subagent and then write the results.
 
 Skip any information about AGENTS.md or Serena architecture. The card should be a concise, factual, business-focused document describing the entity, its technology, and its exported interface. Do not include any development meta (tests, linters, CI, Makefile), observability-only dependencies (Sentry, Prometheus), or entry points (how to run the entity).
@@ -98,12 +93,6 @@ Section order:
 
 ```markdown
 # <entity-name> entity card
-
-**Recorded:** YYYY-MM-DDTHH:MM:SSZ
-**Git branch:** <branch>
-**Latest commit:** <short-hash>
-**Latest commit datetime:** YYYY-MM-DDTHH:MM:SSZ
-**Location:** `$PWD/<entity-name>`
 
 ## Purpose
 

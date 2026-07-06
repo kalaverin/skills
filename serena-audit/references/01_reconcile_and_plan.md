@@ -2,11 +2,6 @@
 
 [ref: #smr-reconcile]
 
-**Recorded:** 2026-07-02T19:30:00Z
-**Git branch:** master
-**Latest commit:** 61da44f
-**Latest commit datetime:** 2026-07-02T17:01:34Z
-
 ## Goal
 
 Audit every Serena memory file, compare its recorded metadata and content

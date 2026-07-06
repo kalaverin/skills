@@ -37,12 +37,6 @@ Refresh all header fields.
 ```markdown
 # Serena memory reconciliation plan
 
-**Recorded:** YYYY-MM-DDTHH:MM:SSZ
-**Git branch:** <branch>
-**Latest commit:** <short-hash>
-**Latest commit datetime:** YYYY-MM-DDTHH:MM:SSZ
-**Location:** <workspace-root>
-
 ## Scope
 
 - Workspace root: `<workspace-root>`

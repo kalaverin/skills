@@ -2,11 +2,6 @@
 
 [ref: #pe-library]
 
-**Recorded:** 2026-06-17T11:18:53Z
-**Git branch:** master
-**Latest commit:** 2accad8
-**Latest commit datetime:** 2026-06-17T11:10:32Z
-
 Use the common template `references/04_service_card_common.md` first. This file adds only the library-specific sections for shared code libraries (e.g., `modern-grpc`, `classic-grpc`) that do not expose a runtime service or worker.
 
 ## Type-specific additions

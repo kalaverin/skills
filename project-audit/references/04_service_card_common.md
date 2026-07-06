@@ -2,11 +2,6 @@
 
 [ref: #pe-common]
 
-**Recorded:** 2026-06-17T11:18:53Z
-**Git branch:** master
-**Latest commit:** 2accad8
-**Latest commit datetime:** 2026-06-17T11:10:32Z
-
 Use this skeleton for **every** entity card, regardless of type (`grpc-service`, `rest-gateway`, `workflow-worker`, `infrastructure`, `library`). Combine it with the type-specific template that describes the exported interface.
 
 ## Agent rules
@@ -37,12 +32,6 @@ Use this skeleton for **every** entity card, regardless of type (`grpc-service`,
 
 ```markdown
 # <entity-name> entity card
-
-**Recorded:** YYYY-MM-DDTHH:MM:SSZ
-**Git branch:** <branch>
-**Latest commit:** <short-hash>
-**Latest commit datetime:** YYYY-MM-DDTHH:MM:SSZ
-**Location:** `$PWD/<entity-name>`
 
 ## Purpose
 
