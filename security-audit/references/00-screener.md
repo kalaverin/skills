@@ -55,6 +55,7 @@ project has zero exposure.
 | Backdoors / deliberate malicious code | `references/21-backdoors.md` | Dynamic loading, reflective invocation, runtime string decryption, environment triggers, time bombs, dead-code activation, anti-debug checks, DGA patterns, beaconing/C2 callbacks, or any deliberate-implant indicators |
 | Obfuscated code | `references/22-obfuscation.md` | Base64/hex concatenation, control-flow flattening, opaque predicates, string decryption loops, encrypted payloads, identifier mangling with dynamic access, or other obfuscation hiding behavior |
 | Supply chain / dependencies | `references/23-dependencies.md` | Third-party dependencies; package manifests; lockfiles; registry configuration; dependency-update cadence; typosquatting, dependency confusion, known CVEs, abandoned packages, suspicious maintainer changes, or compromised registry packages |
+| JVM anomalies (Kotlin/Java) | `references/24-jvm-anomalies.md` | Java/Kotlin code using `ObjectInputStream.readObject`, Jackson polymorphic typing, JNDI `lookup`, custom `ClassLoader`s, JNI/native loading, Kotlin reflection `callBy`, KSP/compiler plugins, Log4j-style `${...}` lookups, scripting engines, RMI/JMX, `MethodHandle`/`invokedynamic`, or `sun.misc.Unsafe` |
 | API Security design checklist | `references/90-design-checklist.md` | Any API, web service, or backend with HTTP interfaces; evaluates policy, architecture, and process controls from the Shieldfy API Security Checklist |
 
 ## OWASP API Security Top 10 2023 mapping
@@ -69,12 +70,12 @@ scans. Select the scan if **any** indicator in the row is true.
 | API2:2023 Broken Authentication | `09-jwt.md`, `10-missingauth.md` | Authentication endpoints exist (login, register, forgot/reset password, token refresh); JWT/session/API-key/tokens are used; password reset/recovery flows exist; MFA is optional or absent; microservices call each other; brute-force/lockout/CAPTCHA/weak-password protections are missing; sensitive operations lack re-authentication; tokens sent in URLs or stored insecurely; unsigned/weakly signed JWTs accepted; JWT expiration not validated; plain-text or weakly hashed passwords; weak encryption keys. |
 | API3:2023 Broken Object Property Level Authorization | `16-bopla.md` | Generic serializers (`to_json`, `model_to_dict`, `to_string`) returning whole objects; request bodies bound to internal objects or variables (mass assignment); PATCH/partial updates; GraphQL resolvers returning whole objects; schema-based response validation missing; API exposes sensitive properties or allows changing/adding/deleting sensitive properties the user should not access. |
 | API4:2023 Unrestricted Resource Consumption | `17-resourceconsumption.md` | No rate limits; unbounded pagination/array/string/payload params; file uploads without max size; missing execution timeouts, max allocable memory, max file descriptors, max processes; third-party API integrations charged per request (SMS/email/phone/biometrics) without spending limit or billing alert; GraphQL batching or multiple operations in a single client request; serverless/container without resource limits; expensive operations without throttling. |
-| API5:2023 Broken Function Level Authorization | `10-missingauth.md` | Role/permission model exists; admin endpoints exist; endpoints with mixed regular/admin functions under the same path prefix; HTTP method switching possible (`GET` → `DELETE`/`PUT`/`PATCH`); guessed admin URLs or cross-group endpoint guessing (e.g. `/api/users/export_all`); complex user hierarchies, groups, or sub-users; deny-by-default not enforced. |
+| API5:2023 Broken Function Level Authorization | `10-missingauth.md`, `24-jvm-anomalies.md` | Role/permission model exists; admin endpoints exist; endpoints with mixed regular/admin functions under the same path prefix; HTTP method switching possible (`GET` → `DELETE`/`PUT`/`PATCH`); guessed admin URLs or cross-group endpoint guessing (e.g. `/api/users/export_all`); complex user hierarchies, groups, or sub-users; deny-by-default not enforced. Kotlin/Java reflection, scripting engines, or dynamic dispatch that can reach internal/admin functions without authorization checks. |
 | API6:2023 Unrestricted Access to Sensitive Business Flows | `13-businesslogic.md` | Sensitive flows: purchase/shop (scalping/hoarding), post/comment/vote (spam), book/reserve (slot blocking), referral/loyalty (automated farming), limited-stock, auction, transfer, withdrawal, ticket purchasing, reservation cancellation; any flow whose excessive automated use could harm the business; machine-consumed or B2B APIs lacking anti-automation controls. |
 | API7:2023 Server Side Request Forgery | `03-ssrf.md` | API fetches remote resources from user-supplied URLs; webhooks; file fetch from URL; URL preview; custom SSO; image/document processing from remote URLs; cloud/Kubernetes/Docker metadata services reachable; blind or reflected SSRF possible; outbound traffic allowed to internal destinations. |
-| API8:2023 Security Misconfiguration | `20-misconfiguration.md`, `21-backdoors.md`, `22-obfuscation.md` plus cross-mapped injection scans | Missing hardening across any API stack layer; improperly configured cloud permissions (IAM, S3 ACLs, security groups); missing security patches or outdated components; unnecessary features enabled (HTTP verbs, logging); inconsistent request processing in HTTP server chain; missing TLS; missing/improper CORS; missing security/cache-control headers; verbose errors/stack traces/default credentials; logging with placeholder expansion/JNDI; debug mode enabled; deliberate malicious code or obfuscation hiding backdoors/C2. |
+| API8:2023 Security Misconfiguration | `20-misconfiguration.md`, `21-backdoors.md`, `22-obfuscation.md`, `24-jvm-anomalies.md` plus cross-mapped injection scans | Missing hardening across any API stack layer; improperly configured cloud permissions (IAM, S3 ACLs, security groups); missing security patches or outdated components; unnecessary features enabled (HTTP verbs, logging); inconsistent request processing in HTTP server chain; missing TLS; missing/improper CORS; missing security/cache-control headers; verbose errors/stack traces/default credentials; logging with placeholder expansion/JNDI; debug mode enabled; deliberate malicious code or obfuscation hiding backdoors/C2; unsafe JVM deserialization, exposed JNDI/RMI/JMX, enabled Log4j-style lookups, unsigned ClassLoaders, or native library loading. |
 | API9:2023 Improper Inventory Management | `18-inventory.md` | Multiple API versions without retirement plan; microservices/serverless functions; undocumented endpoints; debug/beta/non-production hosts; missing/outdated OpenAPI/GraphQL schemas; third-party integrations without inventory, business justification, or sensitivity classification; feature flags gating admin/endpoints; production data in non-production deployments; host environment or network access scope undocumented. |
-| API10:2023 Unsafe Consumption of APIs | `19-unsafeapiconsumption.md`, `23-dependencies.md` plus cross-mapped injection scans | Outbound HTTP clients; third-party webhooks; package-manager/registry calls; disabled TLS certificate validation; blind redirect following; no timeouts/resource limits on external calls; third-party data reaches SQL/template/eval/deserialization sinks without validation; trust placed in data from integrated APIs without validation; typosquatting, dependency confusion, compromised packages, or vulnerable dependencies. |
+| API10:2023 Unsafe Consumption of APIs | `19-unsafeapiconsumption.md`, `23-dependencies.md`, `24-jvm-anomalies.md` plus cross-mapped injection scans | Outbound HTTP clients; third-party webhooks; package-manager/registry calls; disabled TLS certificate validation; blind redirect following; no timeouts/resource limits on external calls; third-party data reaches SQL/template/eval/deserialization/JNDI/reflection sinks without validation; trust placed in data from integrated APIs without validation; typosquatting, dependency confusion, compromised packages, or vulnerable dependencies; Java/Kotlin deserialization of third-party payloads, or JNDI lookups driven by external data. |
 
 ## Cross-mapped injection coverage
 
@@ -146,6 +147,7 @@ justify the choice in `00_plan.md`.
 - Administrative endpoints mixed with regular endpoints under the same path prefix (e.g., `/api/users` contains admin functions).
 - Complex roles, groups, sub-users, or hierarchies without a consistent authorization module.
 - No deny-by-default enforcement; access granted implicitly rather than explicitly.
+- Kotlin/Java reflection, scripting engines, or dynamic dispatch (`callBy`, `MethodHandle`, `ScriptEngine.eval`) that can invoke internal or admin functions without explicit authorization checks.
 
 **API6 — Unrestricted Access to Sensitive Business Flows**
 
@@ -174,6 +176,7 @@ justify the choice in `00_plan.md`.
 - Logging: JNDI/placeholder expansion (e.g., Log4j-style lookups), request-body logging, sensitive data in logs.
 - Deliberate malicious code: dynamic loading, reflective invocation, runtime decryption, environment/time triggers, anti-debug, DGA, beaconing/C2.
 - Obfuscated code: base64/hex concatenation, control-flow flattening, opaque predicates, string decryption loops, encrypted payloads used to hide behavior.
+- JVM-specific misconfiguration: unsafe `ObjectInputStream` deserialization, Jackson default typing, exposed JNDI/RMI/JMX, enabled Log4j-style `${...}` lookups, custom `ClassLoader`s loading unsigned bytecode, JNI/native library loading from dynamic paths, KSP/compiler plugins generating code from untrusted schemas.
 - Missing hardening process, configuration review, or automated configuration assessment across environments.
 
 **API9 — Improper Inventory Management**
@@ -194,11 +197,12 @@ justify the choice in `00_plan.md`.
 - Blind redirect following.
 - No resource/time limits on third-party responses.
 - No timeouts on third-party calls.
-- Third-party data reaches SQL/template/eval/deserialization sinks without validation/sanitization.
+- Third-party data reaches SQL/template/eval/deserialization/JNDI/reflection sinks without validation/sanitization.
 - Trust placed in data from well-known third-party APIs.
 - Package-manager/registry calls whose outputs are used unsafely.
 - Typosquatting, dependency confusion, abandoned packages, suspicious maintainer changes, or compromised registry packages.
 - Known CVEs in runtime dependencies reachable from application code.
+- Java/Kotlin deserialization of payloads originating from third-party APIs or webhooks, or JNDI lookups driven by external data.
 
 ## Procedure
 
@@ -244,7 +248,7 @@ Write the plan to `{{ REPORTS_ROOT }}/00_plan.md` using exactly this format:
 
 ## Execution order
 
-1. Run selected technical scans (02–23) in parallel batches of up to 5.
+1. Run selected technical scans (02–24) in parallel batches of up to 5.
 2. If selected, run `references/90-design-checklist.md` after the technical
    scans complete.
 3. Finally, run `references/99-report.md`.

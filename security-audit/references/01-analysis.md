@@ -76,6 +76,20 @@ For each category below, record concrete values: names, versions, file paths, an
 - Dependency-update cadence and whether automated scanning (SCA/SBOM) is configured.
 - Maintainer metadata for critical dependencies: number of maintainers, MFA policy, recent activity, signed releases.
 
+### JVM-specific facilities (Kotlin / Java)
+
+- Serialization libraries and configurations: `ObjectInputStream`, Jackson `ObjectMapper` default typing / `@JsonTypeInfo`, XStream, Kryo, SnakeYAML, Fastjson, Gson, JSON-B, JAXB, RMI/JRMP, HTTP invoker.
+- JNDI usage: `InitialContext.lookup`, `DirContext.search`, `NamingManager.getObjectInstance`; logging framework lookup substitution settings.
+- Class loading: custom `ClassLoader` subclasses, `URLClassLoader`, `MethodHandles.Lookup.defineClass`, bytecode generation libraries (`ByteBuddy`, `ASM`, `Javassist`, `cglib`).
+- Native code: JNI declarations, `System.loadLibrary`, `Runtime.load`, `ProcessBuilder` compiling native code.
+- Reflection: Java `java.lang.reflect` and Kotlin `KClass`, `KCallable.callBy`, `memberFunctions`, `declaredMemberProperties`.
+- Compiler plugins and code generation: KSP `SymbolProcessor`, Java `AbstractProcessor`, code generation driven by schemas or external files.
+- Scripting: `ScriptEngine`, `GroovyShell`, `KotlinScriptEngine`, Nashorn.
+- Remote management: RMI registries, `JMXConnectorServer`, exported MBeans.
+- Instrumentation: `java.lang.instrument`, `premain`/`agentmain`, attach API.
+- Dynamic invocation: `MethodHandle`, `invokedynamic`, `LambdaMetafactory`, dynamic proxies.
+- Low-level access: `sun.misc.Unsafe`, `VarHandle`, `MemorySegment`, `Arena`, Panama foreign-function API.
+
 ### Infrastructure hints
 
 - Dockerfiles, docker-compose files, Kubernetes manifests, Helm charts, Terraform, Pulumi, CI/CD configs.
@@ -230,6 +244,7 @@ The table below links each architecture data item to the detection references th
 | Dependency manifests, registry config, internal scopes, install scripts, update cadence | `23-dependencies.md`, `00-screener.md` | Typosquatting, dependency confusion, known CVEs, abandoned packages, maintainer takeovers, and compromised packages are detected from dependency metadata. |
 | Dynamic loading, reflection, plugin/extension systems, runtime code generation | `21-backdoors.md`, `05-rce.md`, `00-screener.md` | Deliberate malicious code and unauthorized execution surfaces hide behind dynamic invocation. |
 | Obfuscation patterns: encoded strings, control-flow flattening, decryption loops, encrypted payloads | `22-obfuscation.md`, `21-backdoors.md`, `00-screener.md` | Obfuscation can conceal backdoors, C2 addresses, and malicious payloads. |
+| JVM-specific facilities (deserialization, JNDI, ClassLoaders, JNI, Kotlin reflection, KSP, scripting, RMI/JMX, instrumentation, MethodHandle, Unsafe) | `24-jvm-anomalies.md`, `05-rce.md`, `00-screener.md` | JVM-specific mechanisms can bypass type safety and execute attacker-controlled code. |
 | CI/CD and deployment practices | `20-misconfiguration.md`, `15-hardcodedsecrets.md`, `23-dependencies.md` | Pipeline weaknesses introduce supply-chain and configuration risks. |
 
 ## OWASP API Security Top 10 2023 mapping
@@ -248,6 +263,7 @@ The architecture data items below are the single source of truth for the screene
 | Security configuration (TLS, headers, CORS, debug mode) | API8:2023 Security Misconfiguration | Default/verbose configurations expose the API to multiple attack classes. |
 | Dynamic loading, reflection, plugin systems, install scripts, obfuscated dependency code | API8:2023 Security Misconfiguration, API10:2023 Unsafe Consumption of APIs | Deliberate implants and obfuscated payloads hide in dynamic execution paths and third-party code. |
 | Dependency supply chain (registry scoping, manifests, lockfiles, maintainer trust, known CVEs) | API8:2023 Security Misconfiguration, API10:2023 Unsafe Consumption of APIs | Vulnerable, abandoned, typosquatted, confused, or compromised dependencies introduce supply-chain risk. |
+| JVM-specific facilities (deserialization, JNDI, reflection, ClassLoaders, JNI, KSP, scripting, RMI/JMX, instrumentation, MethodHandle, Unsafe) | API5:2023 Broken Function Level Authorization, API8:2023 Security Misconfiguration, API10:2023 Unsafe Consumption of APIs | JVM mechanisms can invoke privileged functions, load untrusted classes, or execute third-party payloads without adequate hardening. |
 | API versions, specs, debug endpoints, non-prod hosts | API9:2023 Improper Inventory Management | Undocumented or deprecated endpoints bypass security controls and monitoring. |
 
 ## Output template
@@ -389,6 +405,22 @@ cadence, deployment approvals, secrets injection, and rollback procedures.]
 | Plugin/extension system and allowlist | ... |
 | Runtime code generation or eval/exec sinks | ... |
 | Obfuscation or encoded payload patterns | ... |
+
+## JVM-Specific Facilities
+
+| Aspect | Details |
+|---|---|
+| Java/Kotlin serialization and polymorphic typing | ... |
+| JNDI usage and lookup substitution in logging | ... |
+| Custom ClassLoaders / bytecode generation | ... |
+| JNI / native library loading | ... |
+| Kotlin reflection and dynamic dispatch | ... |
+| KSP / compiler plugins and code generation inputs | ... |
+| Scripting engines (JS, Groovy, Kotlin script) | ... |
+| RMI / JMX exposure and authentication | ... |
+| Instrumentation / agents | ... |
+| MethodHandle / invokedynamic / dynamic proxies | ... |
+| Unsafe / off-heap / foreign-function access | ... |
 
 ## Open Questions and Ambiguities
 

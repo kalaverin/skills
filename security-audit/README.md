@@ -4,7 +4,7 @@ Source-code security assessment (SAST) skill aligned with the OWASP API Security
 
 ## What this skill does
 
-`security-audit` orchestrates a security assessment workflow. It does not perform detection itself; instead, it provides a mandatory screener, architecture reconnaissance instructions, and 23 focused detection playbooks that are consumed by `coder` subagents. The skill defines:
+`security-audit` orchestrates a security assessment workflow. It does not perform detection itself; instead, it provides a mandatory screener, architecture reconnaissance instructions, and 24 focused detection playbooks that are consumed by `coder` subagents. The skill defines:
 
 - Where audit artifacts are written (`.serena/memories/audit/`).
 - How the final consolidated report is produced and persisted.
@@ -48,6 +48,7 @@ security-audit/
 │   ├── 21-backdoors.md             # Deliberate malicious code / backdoors
 │   ├── 22-obfuscation.md           # Obfuscated code
 │   ├── 23-dependencies.md          # Supply chain / dependency risks
+│   ├── 24-jvm-anomalies.md         # Kotlin/Java JVM-specific anomalies
 │   ├── 90-design-checklist.md      # Shieldfy design checklist assessment
 │   └── 99-report.md                # Final consolidated report generation
 └ SKILL.md                          # Skill entry point, triggers, activation table, workflow
@@ -58,7 +59,7 @@ security-audit/
 1. Open `SKILL.md` for the master workflow and activation table.
 2. Run the mandatory screener (`references/00-screener.md`) to decide which detection playbooks apply.
 3. Perform architecture reconnaissance (`references/01-analysis.md`).
-4. Dispatch up to five `coder` subagents in parallel with the selected detection playbooks (`references/02-*.md` through `references/23-*.md`).
+4. Dispatch up to five `coder` subagents in parallel with the selected detection playbooks (`references/02-*.md` through `references/24-*.md`).
 5. Run the design checklist assessment (`references/90-design-checklist.md`).
 6. Consolidate findings into the final report (`references/99-report.md`).
 7. Write the report under `.serena/memories/audit/` and persist with `just agent-memory-commit`.
@@ -91,13 +92,14 @@ security-audit/
 | `references/21-backdoors.md` | Deliberate malicious code / backdoors |
 | `references/22-obfuscation.md` | Obfuscated code |
 | `references/23-dependencies.md` | Supply chain / dependency risks |
+| `references/24-jvm-anomalies.md` | Kotlin/Java JVM-specific anomalies |
 | `references/90-design-checklist.md` | Shieldfy design checklist |
 | `references/99-report.md` | Final consolidated report |
 
 ## Conventions
 
 - `SKILL.md` is the single entry point.
-- The mandatory screener decides which of the 23 detection playbooks apply.
+- The mandatory screener decides which of the 24 detection playbooks apply.
 - Detection subagents are `coder` type and run in parallel batches of up to 5.
 - Final reports are written under `.serena/memories/audit/`.
 - Reports must be persisted with `just agent-memory-commit`.
