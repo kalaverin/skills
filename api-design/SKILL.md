@@ -7,6 +7,9 @@ description: >
   protobuf-lang skill.
 triggers:
   request: "openapi, swagger, graphql, grpc, rest, api design, fastapi, flask"
+requires:
+  - read-for-comments
+  - protobuf-lang
 ---
 
 # SKILL: Strict API Design & Compliance (Google AIP)
@@ -20,7 +23,7 @@ Every directive in this guide MUST be followed unless it explicitly uses **SHOUL
 * **Default Rule:** Unless a section, paragraph, or sentence explicitly uses **SHOULD** or **MAY**, every statement is to be treated as **MUST**. You MUST NOT apply external style preferences or general API-design heuristics in place of the rules documented here.
 * **Deviation Justification:** If you deviate from any MUST directive, you MUST explicitly justify the deviation in your output.
 * **Skill Boundary:** This skill enforces Google AIP resource-design rules (resources, operations, fields, patterns, compatibility, polish, and proto API structure). For Buf lint and proto schema style, consult the `protobuf-lang` skill.
-* **RFC Verbs:** For precise semantics of requirement-level verbs, always refer to `references/rfc_verbs.md`.
+* **RFC Verbs:** For precise semantics of requirement-level verbs, consult the `read-for-comments` skill.
 
 ## 2. Agent Context Management (CRITICAL LAZY-LOAD PROTOCOL)
 

@@ -12,6 +12,10 @@ triggers:
   all:
     files: ".serena/memories/"
     request: "dependency card, create dependency card, dependency map, create dependency map, architecture dependencies, service dependencies, what does it depend on, карточка зависимостей, создай карточку зависимостей, карта зависимостей, изучи зависимости"
+requires:
+  - project-audit
+  - business-audit
+  - serena-protocol
 ---
 
 # dependencies-audit

@@ -7,6 +7,9 @@ description: >
   Enforces Google Python Style Guide and a strict Ruff self-linting protocol.
 triggers:
   files: "fd -e py -e pyi"
+requires:
+  - api-design
+  - read-for-comments
 ---
 
 # SKILL: Strict Python Engineering & Compliance
@@ -21,7 +24,7 @@ Every directive in this guide MUST be followed unless it explicitly uses **SHOUL
 * **Consistency:** BE CONSISTENT. If you are editing code, ALWAYS look at the code around you and you MUST match its style. Local style is VERY IMPORTANT. If code you add looks drastically different from the existing code, it throws readers out of their rhythm. Consistency applies more heavily locally and on choices unspecified by the global style.
 * **Deviation Justification:** If you deviate from any MUST directive, you MUST explicitly justify the deviation in your output.
 * **Skill Boundary:** This skill covers Python language and style rules. For API resource design, HTTP/gRPC routes, and proto structure, consult the `api-design` skill.
-* **RFC Verbs:** For precise semantics of requirement-level verbs, refer to `api-design/references/rfc_verbs.md`.
+* **RFC Verbs:** For precise semantics of requirement-level verbs, consult the `read-for-comments` skill.
 
 ---
 

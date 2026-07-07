@@ -42,8 +42,6 @@ api-design/
 │   ├── 08_compatibility_and_versioning.md
 │   ├── 09_polish.md
 │   ├── 10_protocol_buffers.md
-│   ├── rfc2119.txt
-│   ├── rfc8174.txt
 │   └── rfc_verbs.md
 └── SKILL.md              # Skill entry point with lazy-load routing index
 ```
@@ -70,8 +68,7 @@ api-design/
 | `references/09_polish.md` | Canonical errors, `google.rpc.Status`, help and localized messages |
 | `references/10_protocol_buffers.md` | Proto package, message, service, and method conventions |
 | `references/rfc_verbs.md` | Definitions of `MUST`, `MUST NOT`, `REQUIRED`, `SHOULD`, etc. |
-| `references/rfc2119.txt` | Authoritative RFC 2119 text |
-| `references/rfc8174.txt` | Authoritative RFC 8174 text |
+| `read-for-comments` skill | Authoritative RFC 2119 and RFC 8174 texts |
 
 ## Conventions
 

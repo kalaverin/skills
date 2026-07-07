@@ -27,6 +27,8 @@ triggers:
     resource consumption, rate limiting, inventory management,
     unsafe consumption of APIs, third-party API, security misconfiguration,
     OWASP API 2023, OWASP API Security Top 10
+requires:
+  - project-audit
 ---
 
 # SKILL: SAST Audit

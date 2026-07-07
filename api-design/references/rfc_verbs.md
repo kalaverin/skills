@@ -37,5 +37,4 @@ When a document adopts these keywords, it SHOULD include near its start:
 
 ## References
 
-- `references/rfc2119.txt` — RFC 2119 (original definitions)
-- `references/rfc8174.txt` — RFC 8174 (uppercase-only clarification, adds NOT RECOMMENDED)
+- `read-for-comments` skill — RFC 2119 (original definitions) and RFC 8174 (uppercase-only clarification, adds NOT RECOMMENDED)

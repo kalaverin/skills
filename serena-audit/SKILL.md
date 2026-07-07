@@ -7,6 +7,8 @@ triggers:
   all:
     files: ".serena/memories/"
     request: "reconcile memory, memory audit, audit memory, реконсиляция памяти"
+requires:
+  - serena-protocol
 ---
 
 # SKILL: Serena Memory Reconciler

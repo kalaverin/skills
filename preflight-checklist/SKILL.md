@@ -7,6 +7,10 @@ description: >
 triggers:
   always: true
   reason: "Every session must confirm the two core mandatory skills are active."
+requires:
+  - shell-protocol
+  - serena-protocol
+  - read-for-comments
 ---
 
 # SKILL: Pre-flight Checklist
@@ -20,6 +24,7 @@ Before producing output for any user request, confirm:
   `SKILL.md` is loaded.
 - [ ] `serena-protocol` was discovered during Skill Discovery and its
   `SKILL.md` is loaded.
+- [ ] `read-for-comments` was discovered during Skill Discovery and its `SKILL.md` is loaded.
 
 If either skill is missing from the loaded set, halt, load it, and restart the
 Startup Gate from Section 1, step 5.

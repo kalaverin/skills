@@ -10,6 +10,8 @@ description: >
   finding memories.
 triggers:
   request: "create entity card, create project card, create service card, create repository card, entity card, project card, service card, repository card, explore project, explore service, explore repository, study project, study service, study repository, изучи проект, изучи сервис, изучи репозиторий, создай карточку проекта, создай карточку сервиса, создай карточку репозитория"
+requires:
+  - serena-protocol
 ---
 
 # project-audit

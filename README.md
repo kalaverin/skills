@@ -25,9 +25,10 @@ Skills that govern the agent itself, its tool selection, and its startup behavio
 
 | Skill | Purpose |
 |-------|---------|
-| **preflight-checklist** | A compliance gate loaded in every session. Verifies that `shell-protocol` and `serena-protocol` have been discovered and loaded before any user-facing output. |
+| **preflight-checklist** | A compliance gate loaded in every session. Verifies that all required skills have been discovered and loaded before any user-facing output. |
 | **shell-protocol** | Mandates modern CLI tooling for filesystem, search, and Python operations: `lsd`, `fd`, `rg`, `ruplacer`, `uv`, `ruff`. Replaces legacy `ls`, `find`, `grep`, `sed`, `pip`, `black`, `flake8`, etc. |
 | **serena-protocol** | Defines the Serena MCP contract: memory namespaces, YAML frontmatter schema, entity-card prerequisites, mutation rules, and the `just agent-memory-commit` persistence ritual. |
+| **read-for-comments** | Always-active local reference library for technical standards (RFC, OWASP, STD, etc.). Agents MUST check `references/` here before fetching a standard from the internet. |
 
 ### Languages & API Design
 
@@ -36,8 +37,8 @@ Skills that enforce language-specific and API-specific rules.
 | Skill | Purpose |
 |-------|---------|
 | **api-design** | Enforces Google AIP compliance for resource-oriented APIs: resource naming, standard methods, custom methods, pagination, filtering, planes, compatibility guarantees, and HTTP/gRPC transcoding. |
-| **protobuf-lang** | Buf Protobuf lint and schema style. Governs `buf.yaml`, packages, imports, enums, messages, services, RPCs, and comments against the Buf STANDARD rule set. |
 | **python-lang** | Mandatory Google Python Style Guide enforcement plus a Ruff self-linting protocol. Covers imports, mutability, exceptions, type hints, comprehensions, decorators, docstrings, and formatting. |
+| **protobuf-lang** | Buf Protobuf lint and schema style. Governs `buf.yaml`, packages, imports, enums, messages, services, RPCs, and comments against the Buf STANDARD rule set. |
 | **temporal-lang** | Guidance for Temporal durable execution across Python, TypeScript, Go, Java, .NET, and Ruby: workflow determinism, activities, signals, queries, versioning, continue-as-new, saga patterns, and troubleshooting non-determinism errors. |
 
 ### Knowledge & Architecture
@@ -46,8 +47,9 @@ Skills that extract, structure, and navigate project knowledge.
 
 | Skill | Purpose |
 |-------|---------|
-| **graphify-protocol** | Converts any codebase, document set, or media collection into a persistent knowledge graph. Produces `graph.html`, `graph.json`, `GRAPH_REPORT.md`, and supports query/path/explain operations, incremental updates, and exports to Neo4j, Obsidian, GraphML, and MCP. |
 | **project-audit** | Creates and maintains Serena entity cards (`entities/<entity>`) for services, libraries, repositories, and infrastructure components. Orchestrates a read-only explorer subagent and writes scoped findings to `bugs/`, `notes/`, `decisions/`, `style/`, `todo/`. |
+| **business-audit** | Extracts the business layer from source code for a single entity: domain entities, processes, rules, invariants, actors, integrations, and risks. Requires an existing entity card and project glossary. |
+| **dependencies-audit** | Builds exhaustive per-service dependency cards (`logic/<entity>/dependencies.md`): public interfaces, downstream calls, databases, external integrations, libraries, infrastructure, and mandatory Mermaid diagrams. |
 
 ### Audits & Reviews
 
@@ -55,11 +57,10 @@ Skills that inspect code, dependencies, business logic, and memory state.
 
 | Skill | Purpose |
 |-------|---------|
-| **business-audit** | Extracts the business layer from source code for a single entity: domain entities, processes, rules, invariants, actors, integrations, and risks. Requires an existing entity card and project glossary. |
 | **code-review** | Language-agnostic rigorous code review for features (diff against `main`/`master`) or whole projects. Spawns parallel specialist subagents, classifies findings by severity, and emits both machine-readable and human-readable reports. |
-| **dependencies-audit** | Builds exhaustive per-service dependency cards (`logic/<entity>/dependencies.md`): public interfaces, downstream calls, databases, external integrations, libraries, infrastructure, and mandatory Mermaid diagrams. |
 | **security-audit** | SAST workflow aligned with OWASP API Security Top 10 2023. Uses a mandatory screener to select applicable vulnerability scans and dispatches parallel detector subagents for SQLi, XSS, IDOR, SSRF, JWT, BOLA/BOPLA, misconfiguration, and others. |
 | **serena-audit** | Reconciles Serena memory files against their source repositories. Audits YAML frontmatter, commit/branch freshness, naming conventions, and contradictions; produces and executes a two-phase reconciliation plan. |
+| **graphify-protocol** | Converts any codebase, document set, or media collection into a persistent knowledge graph. Produces `graph.html`, `graph.json`, `GRAPH_REPORT.md`, and supports query/path/explain operations, incremental updates, and exports to Neo4j, Obsidian, GraphML, and MCP. |
 
 ## How Skills Are Discovered
 

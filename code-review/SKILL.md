@@ -9,6 +9,8 @@ description: >
   naming, branch metadata, and severity classification.
 triggers:
   request: "code review, review code, review diff, review feature, review project, pull request review, pr review, ревью, код-ревью, ревью кода, проверь код, проверь diff, проверь изменения, проверь проект"
+requires:
+  - serena-protocol
 ---
 
 # SKILL: Language-Agnostic Code Review

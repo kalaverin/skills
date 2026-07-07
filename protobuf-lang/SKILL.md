@@ -8,6 +8,8 @@ triggers:
   any:
     files: "fd -e proto"
     request: "protobuf, proto, buf, buf.yaml"
+requires:
+  - api-design
 ---
 
 # SKILL: Protobuf Schema Expert

@@ -16,6 +16,9 @@ triggers:
   all:
     files: ".serena/memories/"
     request: "business analysis, business domain analysis, analyze business domain, business logic analysis, business rules analysis, what business does, business purpose, business meaning, domain model analysis, бизнес-анализ, бизнес-логика, бизнес-смысл, доменная модель, бизнес-правила, зачем нужно приложение, бизнес-цель"
+requires:
+  - project-audit
+  - serena-protocol
 ---
 
 # business-audit
