@@ -21,8 +21,11 @@ Before executing any task, you MUST identify and load all relevant skills. Treat
 The following skills MUST be considered active for every task:
 
 - **`shell-protocol`** — ALWAYS active, because every file/code operation uses CLI tools.
-- **`serena-protocol`** — ALWAYS active, because every session uses memory and/or codebase exploration tools.
 - **`bootstrap`** — ALWAYS active, because every session must run skill discovery and loading.
+
+The following skill is loaded automatically when its runtime prerequisite is satisfied:
+
+- **`serena-protocol`** — loaded when the `serena` CLI binary is available in `PATH`, because the session then uses memory and/or codebase exploration tools.
 
 ## 2. Skill Discovery
 
