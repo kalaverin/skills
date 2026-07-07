@@ -75,13 +75,6 @@ Return a single markdown document with these sections:
 ```markdown
 # Exploration report: <entity_name>
 
-## Metadata
-
-- **Git branch:** <branch>
-- **Latest commit hash:** <short-hash>
-- **Latest commit datetime:** <ISO-8601 UTC>
-- **Location:** <entity_path>
-
 ## Type
 
 <gRPC API service | REST API gateway | Temporal workflow worker | Infrastructure / GitOps | library>

@@ -25,6 +25,7 @@ Skills that govern the agent itself, its tool selection, and its startup behavio
 
 | Skill | Purpose |
 |-------|---------|
+| **bootstrap** | Canonical skill discovery and auto-loading protocol. Always active. Discovers skill directories, parses `SKILL.md` frontmatter, evaluates triggers, resolves `requires:` dependencies transitively, and lazy-loads reference sections. |
 | **preflight-checklist** | A compliance gate loaded in every session. Verifies that all required skills have been discovered and loaded before any user-facing output. |
 | **shell-protocol** | Mandates modern CLI tooling for filesystem, search, and Python operations: `lsd`, `fd`, `rg`, `ruplacer`, `uv`, `ruff`. Replaces legacy `ls`, `find`, `grep`, `sed`, `pip`, `black`, `flake8`, etc. |
 | **serena-protocol** | Defines the Serena MCP contract: memory namespaces, YAML frontmatter schema, entity-card prerequisites, mutation rules, and the `just agent-memory-commit` persistence ritual. |
