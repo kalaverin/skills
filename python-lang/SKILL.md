@@ -8,7 +8,6 @@ description: >
 triggers:
   files: "fd -e py -e pyi"
 requires:
-  - api-design
   - read-for-comments
 ---
 
