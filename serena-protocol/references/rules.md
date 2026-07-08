@@ -472,6 +472,9 @@ git log -1 --format=%cd --date=iso-strict
 ```
 Run from the workspace root after every memory write/edit. Replace with the command configured for the project (commonly `just agent-memory-commit`).
 
+### Working directory for Serena operations
+Every Serena operation that touches `.serena/` — including `write_memory`, `edit_memory`, `list_memories`, `delete_memory`, `rename_memory`, and the persistence command — MUST be executed from the workspace root (`cd <workspace-root>`). Before running the command, verify that the target `.serena/` directory is the workspace-root `.serena/` and not a nested instance inside a subdirectory. Never run Serena commands from within an entity directory or any other nested project that may contain its own `.serena/`.
+
 ---
 
 ## 16. Deprecated services and aliases
@@ -519,6 +522,7 @@ If you do any of the following, you fail the protocol:
 - **HARD FAIL:** Writing to an entity-scoped namespace when the target entity has no card at `entities/<entity>`.
 - **HARD FAIL:** Implicitly creating an entity card outside the `project-audit` skill.
 - **HARD FAIL:** Guessing an entity name instead of asking the user.
+- **HARD FAIL:** Executing any Serena memory operation or persistence command from anywhere other than the workspace root when a nested `.serena/` could be affected.
 
 ---
 
