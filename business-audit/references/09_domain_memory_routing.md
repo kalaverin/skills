@@ -203,6 +203,6 @@ Git source: `.serena`. `repo: serena`.
 
 1. After every `write_memory` or `edit_memory`, read the memory back to verify
    it.
-2. Run the configured persistence command (commonly `just agent-memory-commit`)
+2. Run the configured persistence command (commonly `just serena-checkpoint`)
    from the workspace root.
 3. Do not skip persistence after any mutation.

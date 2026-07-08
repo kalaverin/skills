@@ -57,7 +57,7 @@ Before launching any subagent:
   memory with proper YAML frontmatter.
 - User-facing chat remains in the user's language.
 - Every memory mutation refreshes the YAML frontmatter and ends with
-  `just agent-memory-commit`.
+  `just serena-checkpoint`.
 
 ## Subagent strategy
 

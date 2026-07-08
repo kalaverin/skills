@@ -48,7 +48,7 @@ serena-audit/
    ```bash
    python serena-audit/scripts/validate_memory_frontmatter.py --memories-dir .serena/memories
    ```
-9. After every memory mutation, run `just agent-memory-commit` from the project root.
+9. After every memory mutation, run `just serena-checkpoint` from the project root.
 
 ## Reference index
 

@@ -76,7 +76,7 @@ Before launching any subagent:
   memory with proper YAML frontmatter.
 - User-facing chat remains in the user's language.
 - Every memory mutation refreshes the YAML frontmatter and ends with
-  `just agent-memory-commit`.
+  `just serena-checkpoint`.
 - Do not generate a project-level card unless explicitly asked and unless every
   entity in `entities/` has a fresh `logic/<entity>/dependencies` card.
 

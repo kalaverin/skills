@@ -137,7 +137,7 @@ Before dispatching any subagent, the root agent must:
      writes `{{ REPORTS_ROOT }}/report.md`.
 
 7. **Commit to Serena memory**
-   - After the final report is written, run `just agent-memory-commit` from the
+   - After the final report is written, run `just serena-checkpoint` from the
      project root. This persists the entire `{{ REPORTS_ROOT }}` tree in git via
      Serena's memory commit mechanism.
 
@@ -225,5 +225,5 @@ by severity and confidentiality impact.
   detection references tell subagents when to delete them.
 - All metadata timestamps use UTC ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`). The
   compact `sast_YYYY_MMDD_HHMM` suffix is only a directory label.
-- Always run `just agent-memory-commit` after the final report is written so
+- Always run `just serena-checkpoint` after the final report is written so
   the audit artifacts are persisted with the rest of Serena memory.

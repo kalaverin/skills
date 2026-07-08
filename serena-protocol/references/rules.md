@@ -263,7 +263,7 @@ Agents must proactively populate Serena memory without being reminded.
 
 ### Verification and persistence
 1. After any `write_memory` or `edit_memory`, **read the memory back** to verify it was saved correctly.
-2. Run the configured persistence command (e.g., `just agent-memory-commit`) from the workspace root. Do not stop until everything is persisted.
+2. Run the configured persistence command (e.g., `just serena-checkpoint`) from the workspace root. Do not stop until everything is persisted.
 
 ### When reading entity-specific memories
 [ref: #serena-memory-freshness]
@@ -374,7 +374,7 @@ To prevent hallucinations and restricted-shell failures, responsibilities are st
 - Reads existing memories to prepare for contradiction checks.
 - Launches the Subagent.
 - Resolves contradictions, writes the final card to `entities/`, and writes findings to `bugs/`, `notes/`, etc.
-- Runs `just agent-memory-commit`.
+- Runs `just serena-checkpoint`.
 
 **EXPLORATION SUBAGENT (Read-only):**
 - Has a `timeout` of at least `1800` seconds.
@@ -470,7 +470,7 @@ git log -1 --format=%cd --date=iso-strict
 ```bash
 <memory-commit-command>
 ```
-Run from the workspace root after every memory write/edit. Replace with the command configured for the project (commonly `just agent-memory-commit`).
+Run from the workspace root after every memory write/edit. Replace with the command configured for the project (commonly `just serena-checkpoint`).
 
 ### Working directory for Serena operations
 Every Serena operation that touches `.serena/` — including `write_memory`, `edit_memory`, `list_memories`, `delete_memory`, `rename_memory`, and the persistence command — MUST be executed from the workspace root (`cd <workspace-root>`). Before running the command, verify that the target `.serena/` directory is the workspace-root `.serena/` and not a nested instance inside a subdirectory. Never run Serena commands from within an entity directory or any other nested project that may contain its own `.serena/`.
@@ -518,7 +518,7 @@ If you do any of the following, you fail the protocol:
 - **HARD FAIL:** Using the `.serena` git repository to fill out the metadata header for a specific entity like `client-api`.
 - **HARD FAIL:** Including `Sentry`, `Prometheus`, `pytest`, `ruff`, or CI/CD pipelines in the `Technology stack` section of an entity card.
 - **HARD FAIL:** Writing actual environment variable VALUES or SECRETS in memory. Write the PREFIX and description only.
-- **HARD FAIL:** Forgetting to run `just agent-memory-commit` (or equivalent persistence command) after writing/editing memories.
+- **HARD FAIL:** Forgetting to run `just serena-checkpoint` (or equivalent persistence command) after writing/editing memories.
 - **HARD FAIL:** Writing to an entity-scoped namespace when the target entity has no card at `entities/<entity>`.
 - **HARD FAIL:** Implicitly creating an entity card outside the `project-audit` skill.
 - **HARD FAIL:** Guessing an entity name instead of asking the user.

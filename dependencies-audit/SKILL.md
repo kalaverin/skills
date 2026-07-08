@@ -156,7 +156,7 @@ details, lazy-load the anchors above.
 
 11. **Verify and persist.** Read back every saved memory to confirm it was
     written correctly, then run the configured persistence command (commonly
-    `just agent-memory-commit`) from the project root.
+    `just serena-checkpoint`) from the project root.
 
 ## Do Not
 
@@ -173,5 +173,5 @@ details, lazy-load the anchors above.
   entry points unless they are actual runtime dependencies (e.g., a GitOps repo
   deploying Helm charts).
 - Do not write environment variable values, defaults, examples, or secrets.
-- Do not skip YAML frontmatter refresh or `just agent-memory-commit` after any
+- Do not skip YAML frontmatter refresh or `just serena-checkpoint` after any
   memory mutation.

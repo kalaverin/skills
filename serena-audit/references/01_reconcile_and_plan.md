@@ -122,7 +122,7 @@ Keep the plan compact. Reference the full JSON dump in the notes.
 Read the plan back to confirm it was written correctly, then run:
 
 ```bash
-just agent-memory-commit
+just serena-checkpoint
 ```
 
 ## Output

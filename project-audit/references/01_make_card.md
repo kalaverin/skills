@@ -167,7 +167,7 @@ Keep each memory short and focused on one topic. Include traceability: file path
 
 ### Step 11 — Persist and report
 
-1. Run `just agent-memory-commit` from the project root to persist the memory changes. Do not stop until the card and all findings are committed.
+1. Run `just serena-checkpoint` from the project root to persist the memory changes. Do not stop until the card and all findings are committed.
 2. Write a concise summary to the user chat:
    - Entity name and type.
    - Number of sections in the card.

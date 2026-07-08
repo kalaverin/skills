@@ -54,7 +54,7 @@ project-audit/
 7. Launch the read-only exploration subagent using the prompt in `references/03_service_card_explorer.md`.
 8. Generate the directory tree yourself using the command in `references/04_service_card_common.md`.
 9. Write the final card to `entities/<entity_name>` and findings to the appropriate namespaces.
-10. Verify and persist with `just agent-memory-commit`.
+10. Verify and persist with `just serena-checkpoint`.
 
 ## Reference index
 

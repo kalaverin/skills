@@ -310,7 +310,7 @@ Include:
 
 ### Phase 6: Persist
 
-After both reports are written, just run `just agent-memory-commit` without any checks.
+After both reports are written, just run `just serena-checkpoint` without any checks.
 
 ## 6. Language Adaptation
 

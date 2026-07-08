@@ -65,4 +65,4 @@ to extract only the section you need.
 3. **Extract & Read:** Extract the exact section from `references/rules.md`.
 4. **Validate Header:** When reading or editing an existing memory, verify that its frontmatter matches the current standard in `[ref: #serena-metadata]`. If the header is outdated (e.g., plain-text metadata, missing or renamed fields), refresh it to the current YAML frontmatter format without losing information. Prefer direct file editing at `.serena/memories/<path>.md` for header-only updates, preserving all content below the header.
 5. **Execute:** Perform the memory/MCP operation strictly following the extracted guidelines.
-6. **Persist:** After any memory write/edit, read the memory back to verify it and run the configured persistence command (e.g., `just agent-memory-commit`).
+6. **Persist:** After any memory write/edit, read the memory back to verify it and run the configured persistence command (e.g., `just serena-checkpoint`).

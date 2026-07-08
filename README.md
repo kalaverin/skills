@@ -28,7 +28,7 @@ Skills that govern the agent itself, its tool selection, and its startup behavio
 | **bootstrap** | Canonical skill discovery and auto-loading protocol. Always active. Discovers skill directories, parses `SKILL.md` frontmatter, evaluates triggers, resolves `requires:` dependencies transitively, and lazy-loads reference sections. |
 | **preflight-checklist** | A compliance gate loaded in every session. Verifies that all required skills have been discovered and loaded before any user-facing output. |
 | **shell-protocol** | Mandates modern CLI tooling for filesystem, search, and Python operations: `lsd`, `fd`, `rg`, `ruplacer`, `uv`, `ruff`. Replaces legacy `ls`, `find`, `grep`, `sed`, `pip`, `black`, `flake8`, etc. |
-| **serena-protocol** | Defines the Serena MCP contract: memory namespaces, YAML frontmatter schema, entity-card prerequisites, mutation rules, and the `just agent-memory-commit` persistence ritual. |
+| **serena-protocol** | Defines the Serena MCP contract: memory namespaces, YAML frontmatter schema, entity-card prerequisites, mutation rules, and the `just serena-checkpoint` persistence ritual. |
 | **read-for-comments** | Always-active local reference library for technical standards (RFC, OWASP, STD, etc.). Agents MUST check `references/` here before fetching a standard from the internet. |
 
 ### Languages & API Design
@@ -73,6 +73,23 @@ Agent runtimes that consume this registry must:
 4. Load the full `SKILL.md` of every matching skill and lazily pull referenced sections as needed.
 
 A skill declares its activation rules in frontmatter. Triggers may be unconditional (`always: true`), file-based, keyword-based, or compound `any`/`all` conditions.
+
+## Justfile Integration
+
+This registry does not ship a `Justfile`. Skills that reference `just serena-checkpoint` expect the consuming project to declare the recipe in its own `Justfile`. The recipe is only a persistence helper for the `.serena/` memory repository:
+
+```just
+
+DATETIME := `TZ=UTC date '+%Y-%m-%dT%H:%M:%SZ'`
+WORKDIR := env('PWD', '')
+
+[group('agent')]
+serena-checkpoint:
+    @cd "{{ WORKDIR }}/.serena" && \
+        git add . && \
+        git commit -m "Checkpoint at {{ DATETIME }}" 2>/dev/null || \
+        true
+```
 
 ## Conventions
 

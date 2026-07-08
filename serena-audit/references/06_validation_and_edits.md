@@ -73,7 +73,7 @@ When the content is correct but the header is stale/legacy:
 2. Build a fresh YAML frontmatter block.
 3. Preserve the exact H1 title and all content below it.
 4. Replace the old header directly at `.serena/memories/<path>.md`.
-5. Read the file back and run `just agent-memory-commit`.
+5. Read the file back and run `just serena-checkpoint`.
 
 ### Full content rewrite
 
@@ -130,6 +130,6 @@ Every finding MUST include:
 After ANY memory mutation:
 
 1. Read the memory back to verify it.
-2. Run `just agent-memory-commit` from the workspace root.
+2. Run `just serena-checkpoint` from the workspace root.
 
 The agent always persists automatically. Do not wait for manual user approval.

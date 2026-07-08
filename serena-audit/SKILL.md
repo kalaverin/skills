@@ -94,7 +94,7 @@ workflow. For full details, lazy-load the anchors above.
      data, store the full artifact outside Serena memory (e.g.
      `/tmp/serena_audit_full.json`) and keep the memory entry compact.
    - After every mutation, read the memory back and run
-     `just agent-memory-commit` from the project root.
+     `just serena-checkpoint` from the project root.
 
 ## Determining the git source and `repo` value
 
@@ -194,4 +194,4 @@ report. The root agent and subagents may call it via shell.
   store large artifacts outside Serena memory.
 - Do not leave non-compliant memory names in place; rename them immediately.
 - Do not forget to refresh the YAML frontmatter on every content edit.
-- Do not skip `just agent-memory-commit` after any memory mutation.
+- Do not skip `just serena-checkpoint` after any memory mutation.

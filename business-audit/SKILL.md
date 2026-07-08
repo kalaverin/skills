@@ -127,7 +127,7 @@ full details, lazy-load the anchors above.
     `decisions/<entity_name>/...` per `serena-protocol`.
 11. **Verify and persist.** Read back every saved memory to confirm it was
     written correctly, then run the configured persistence command (commonly
-    `just agent-memory-commit`) from the project root.
+    `just serena-checkpoint`) from the project root.
 
 ## Glossary Contract
 
@@ -158,5 +158,5 @@ full details, lazy-load the anchors above.
   entry points in the business-domain report unless they directly encode
   business rules.
 - Do not write environment variable values, defaults, examples, or secrets.
-- Do not skip YAML frontmatter refresh or `just agent-memory-commit` after any
+- Do not skip YAML frontmatter refresh or `just serena-checkpoint` after any
   memory mutation.

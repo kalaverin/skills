@@ -54,7 +54,7 @@ still correct:
    all content below the first H1.
 4. Process in batches of 20–40 files using a Python script or direct edits.
 5. After each batch, run `git diff --stat`, review a sample, and run
-   `just agent-memory-commit`.
+   `just serena-checkpoint`.
 
 ### Step 4 — Launch per-memory update subagents
 
@@ -109,7 +109,7 @@ Before writing any entity-scoped finding, verify `entities/<entity>` exists.
 After every mutation:
 
 1. Read the memory back.
-2. Run `just agent-memory-commit` from the workspace root.
+2. Run `just serena-checkpoint` from the workspace root.
 
 The agent always persists automatically. Manual user review before commit is
 not required.

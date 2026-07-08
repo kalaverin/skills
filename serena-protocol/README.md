@@ -46,7 +46,7 @@ serena-protocol/
 2. Match your task to a trigger in the index.
 3. Extract only the relevant `[ref: #...]` section from `references/rules.md` using `rg`.
 4. Apply the extracted rules strictly.
-5. After any memory mutation, read the memory back to verify it and run the configured persistence command (commonly `just agent-memory-commit`).
+5. After any memory mutation, read the memory back to verify it and run the configured persistence command (commonly `just serena-checkpoint`).
 
 ## Reference index
 

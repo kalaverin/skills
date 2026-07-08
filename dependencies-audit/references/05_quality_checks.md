@@ -81,5 +81,5 @@ Before saving `project/dependencies.md`, verify:
 After writing any memory:
 
 - [ ] Read the memory back to verify it was written correctly.
-- [ ] Run `just agent-memory-commit` from the project root.
+- [ ] Run `just serena-checkpoint` from the project root.
 - [ ] Do not report completion until persistence succeeds.

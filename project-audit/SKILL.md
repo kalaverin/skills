@@ -120,7 +120,7 @@ full details, lazy-load the anchors above.
       defined in `serena-protocol` `[ref: #serena-findings-traceability]`.
 11. **Verify and persist.** Read back every saved memory to confirm it was
     written correctly, then run the configured persistence command (commonly
-    `just agent-memory-commit`) from the project root before reporting completion.
+    `just serena-checkpoint`) from the project root before reporting completion.
 
 ## Do Not
 

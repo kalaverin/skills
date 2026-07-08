@@ -62,7 +62,7 @@ security-audit/
 4. Dispatch up to five `coder` subagents in parallel with the selected detection playbooks (`references/02-*.md` through `references/24-*.md`).
 5. Run the design checklist assessment (`references/90-design-checklist.md`).
 6. Consolidate findings into the final report (`references/99-report.md`).
-7. Write the report under `.serena/memories/audit/` and persist with `just agent-memory-commit`.
+7. Write the report under `.serena/memories/audit/` and persist with `just serena-checkpoint`.
 
 ## Reference index
 
@@ -102,5 +102,5 @@ security-audit/
 - The mandatory screener decides which of the 24 detection playbooks apply.
 - Detection subagents are `coder` type and run in parallel batches of up to 5.
 - Final reports are written under `.serena/memories/audit/`.
-- Reports must be persisted with `just agent-memory-commit`.
+- Reports must be persisted with `just serena-checkpoint`.
 - Risk framework: OWASP API Security Top 10 2023.

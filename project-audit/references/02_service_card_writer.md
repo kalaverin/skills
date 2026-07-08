@@ -141,7 +141,7 @@ After verification, write a short summary to the user chat:
 - Any unresolved contradictions detected.
 - Whether an existing `entities/<entity_name>` card was updated or a new one was created.
 
-Then run `just agent-memory-commit` to persist the memory changes. Do not stop until the card and all findings are committed.
+Then run `just serena-checkpoint` to persist the memory changes. Do not stop until the card and all findings are committed.
 
 ## Example output style
 
