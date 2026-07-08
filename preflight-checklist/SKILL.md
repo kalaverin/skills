@@ -9,9 +9,6 @@ triggers:
   reason: "Every session must confirm the two core mandatory skills are active."
 requires:
   - bootstrap
-  - shell-protocol
-  - serena-protocol
-  - read-for-comments
 ---
 
 # SKILL: Pre-flight Checklist
