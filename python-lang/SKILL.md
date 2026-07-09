@@ -131,8 +131,25 @@ uvx ruff rule <RULE_CODE>
 
 ## 4. Master Execution Workflow
 1. **Analyze Task:** Determine the specific Python operations required.
-2. **Trigger Match:** Locate the relevant rows in Table A and Table B.
-3. **Partial Read:** Run `rg` on the specific `[ref: ...]` tags in `references/01_language_rules.md` and `references/02_style_rules.md`.
-4. **Code Generation:** Write the code strictly adhering to the extracted rules AND local file consistency.
-5. **Self-Linting:** Execute the 4-step Agent Self-Linting Protocol.
-6. **Final Verification:** Confirm no unmodified code was altered before concluding the task.
+2. **Component Reuse Check:** If the project root contains a `.sdk/` directory, run `fd -L -t f EXPORT.md .sdk/`, read every discovered manifest, and prefer reusable components described there over writing new code.
+3. **Trigger Match:** Locate the relevant rows in Table A and Table B.
+4. **Partial Read:** Run `rg` on the specific `[ref: ...]` tags in `references/01_language_rules.md` and `references/02_style_rules.md`.
+5. **Code Generation:** Write the code strictly adhering to the extracted rules, the reuse manifests, AND local file consistency.
+6. **Self-Linting:** Execute the 4-step Agent Self-Linting Protocol.
+7. **Final Verification:** Confirm no unmodified code was altered before concluding the task.
+
+---
+
+## 5. Component Reuse Rule
+
+Before implementing any new Python module, class, or function, the agent MUST check whether the project root contains a `.sdk/` directory.
+
+### 5.1 Discovery
+If `.sdk/` exists, discover all reuse manifests with: `fd -L -t f EXPORT.md .sdk/`
+
+Read every returned file before writing code.
+
+### 5.2 Applying Manifests
+Each `EXPORT.md` describes reusable components and the criteria for copying them whole.
+Apply those criteria strictly.
+After copying a module, replace the source package prefix with the target project's package prefix and run the Agent Self-Linting Protocol only on the changed files.
