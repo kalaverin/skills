@@ -19,6 +19,7 @@ This skill hosts local copies of frequently referenced technical standards. It i
 1. When you need a standard (RFC, OWASP, STD, etc.), first list this skill's `references/` directory.
 2. If the standard is present locally, read that file. Do **not** search the web.
 3. If it is absent, fall back to `kagi_search_fetch` or `kagi_fastgpt`.
+4. Always save the complete standard body using the `serena` tool to the `standard/` scope with the appropriate path structure, e.g.: `standard/rfc/rfc1439` or `standard/pep/pep8`.
 
 ## Listing local standards
 

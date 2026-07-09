@@ -68,6 +68,7 @@ The output prints each file path followed by its YAML frontmatter (the block bet
 - `description` — what the skill governs.
 - `triggers` — the activation rules.
 - `requires` — optional list of skill names that must also be loaded when this skill is loaded.
+- `runtime` — optional boolean. If `true`, the skill's triggers must be re-evaluated after every new user message (see Section 2.5).
 
 Then evaluate the triggers against the user's request and project context using these semantics:
    - `always: true` — load the skill for every task.
@@ -95,6 +96,33 @@ triggers:
 
 2. If the trigger matches, mark the skill for full loading.
 3. For every marked skill, read its `requires` list. Mark every listed skill for full loading as well. Repeat transitively until no new skills are added.
+
+## 2.5 Runtime Trigger Re-Evaluation (Opt-in)
+
+By default, triggers are evaluated once at the start of a task. A skill MAY opt
+into runtime re-evaluation by adding `runtime: true` to its frontmatter.
+
+```yaml
+---
+name: subagents-protocol
+runtime: true
+triggers:
+  request: "subagent, delegate, субагент, делегируй"
+---
+```
+
+When `runtime: true` is set:
+
+1. After every new user message, re-evaluate the skill's triggers against the latest message and the current project context.
+2. If the trigger matches and the skill is not yet loaded, load the skill's
+   `SKILL.md` in full, including its `requires:` dependencies transitively.
+3. Apply the newly loaded skill's rules to all subsequent actions in the
+   session.
+4. Do NOT re-evaluate skills that omit `runtime:` or set `runtime: false`;
+   their triggers are evaluated only at startup.
+
+This keeps startup behavior stable while allowing meta/orchestration skills
+(such as `subagents-protocol`) to activate mid-session.
 
 ## 3. Trigger Override Protocol
 

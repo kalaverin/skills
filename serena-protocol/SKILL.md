@@ -9,6 +9,8 @@ description: >
 triggers:
   files: "command -v serena >/dev/null 2>&1"
   reason: "Load only when the Serena CLI binary is available in PATH."
+requires:
+  - markdown-protocol
 ---
 
 # SKILL: Serena Memory & MCP Protocol
