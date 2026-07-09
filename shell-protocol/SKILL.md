@@ -1,10 +1,6 @@
 ---
 name: shell-protocol
-description: >
-  MANDATORY skill for CLI, shell execution, and filesystem operations. Use when
-  listing files, searching files or text, replacing text, running Python tools,
-  linting, or managing dependencies. Enforces modern tools (lsd, fd, rg,
-  ruplacer, uv, ruff) over legacy UNIX utilities.
+description: Mandatory skill for CLI, shell execution, and filesystem operations. Applies when the user asks to list directory contents, search the disk/directory (fd-find), search inside files or grep (ripgrep), lint or format Python code (ruff), replace text, run Python tools, or manage dependencies. Natural-language triggers include 'поищи на диске', 'поищи в каталоге', 'посмотри содержимое каталога', 'грепни', 'прогрепай', 'проверь стайл', 'причеши код', 'поправь форматирование', and equivalent phrases. Enforces modern tools (lsd, fd, rg, ruplacer, uv, ruff) over legacy UNIX utilities.
 triggers:
   always: true
   reason: "All file/code operations use CLI tools."
@@ -17,6 +13,20 @@ You are an expert DevSecOps and CLI Architect. You MUST use modern, high-perform
 **Skill Boundary:** This skill governs tool selection and CLI usage for filesystem
 and Python operations. For Python language/style rules and the full Ruff
 self-linting protocol, consult the `python-lang` skill.
+
+## User Intent Mapping
+
+Map common user phrases to the correct modern tool:
+
+| User phrase or intent | Target tool | Example phrases |
+|---|---|---|
+| Search for files by name, extension, type, or location. | `fd` (fd-find) | "поищи на диске", "поищи в каталоге", "find files", "search the filesystem" |
+| List directory contents with details. | `lsd` | "посмотри содержимое каталога", "посмотри в директории", "list files", "show directory" |
+| Search text or symbols inside files. | `rg` (ripgrep) | "поищи в файлах", "грепни", "прогрепай", "grep for", "search text in files" |
+| Lint or format Python code. | `ruff` | "проверь стайл", "прочекай стиль", "причеши код", "поправь форматирование", "lint Python", "format Python" |
+
+If a phrase is ambiguous, prefer the tool whose primary domain matches the context.
+For example, "поищи" in a filesystem context means `fd`; in a text-search context means `rg`.
 
 ## ⚠️ STRICT RULE: TOOL REPLACEMENTS
 You MUST NEVER use the legacy tools on the left. You MUST ALWAYS use the modern tools on the right.
