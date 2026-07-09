@@ -55,6 +55,7 @@ You MUST NOT read the tool manuals in `references/` in their entirety. You MUST 
 | Trigger / Situation | Target File | Section Header | Anchor |
 |---|---|---|---|
 | Replacing text in multiple files across the codebase. | `references/ruplacer.md` | Absolute Rule: DRY RUN First, Always | `[ref: #ruplacer-dry-run]` |
+| Renaming symbols or checking collision safety before a rename. | `references/ruplacer.md` | Symbol Renaming and Naming Collision Prevention | `[ref: #ruplacer-rename-collision-check]` |
 | Need syntax examples for ruplacer and capture groups. | `references/ruplacer.md` | Examples | `[ref: #ruplacer-examples]` |
 
 ### Python Ecosystem (MANDATORY FOR PYTHON)
@@ -66,9 +67,11 @@ You MUST NOT read the tool manuals in `references/` in their entirety. You MUST 
 
 ## 3. Execution Mandates
 1. **ruplacer**: You MUST perform a dry run (omit `--go`) first. Review stdout before executing actual writes. No exceptions.
-2. **ruff**: You MUST run `ruff check` and `ruff format` after *any* Python file modification. Only fix code you modified yourself.
-3. **uv**: Default to `references/uv.md` (safe mode) unless explicit package installation or lock mutation is required.
-4. **tree / lsd**: You MUST limit recursion depth (e.g., `--depth 3` or `-L 3`) to avoid output flooding.
+2. **ruplacer rename safety**: Before any rename-like `ruplacer` operation, even a dry run, you MUST run `rg` to confirm the target name does not already exist in the codebase. If it exists, stop or choose a different name. See `[ref: #ruplacer-rename-collision-check]`.
+3. **renaming hierarchy**: For global renames across documentation, configuration, strings, or multiple file types, use `ruplacer`. For renaming code symbols (functions, classes, methods, variables, fields, etc.), first try the Serena `rename_symbol` tool; fall back to `ruplacer` only when Serena cannot handle the target language or symbol. NEVER use `sed`, `awk`, or similar text tools for any rename.
+4. **ruff**: You MUST run `ruff check` and `ruff format` after *any* Python file modification. Only fix code you modified yourself.
+5. **uv**: Default to `references/uv.md` (safe mode) unless explicit package installation or lock mutation is required.
+6. **tree / lsd**: You MUST limit recursion depth (e.g., `--depth 3` or `-L 3`) to avoid output flooding.
 
 ---
 

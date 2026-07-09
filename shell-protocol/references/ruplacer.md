@@ -95,6 +95,31 @@ ruplacer --go '(\w+), (\w+)' '$2 $1' .
 ruplacer --go --quiet --allow-empty 'foo' 'bar' .
 ```
 
+## Symbol Renaming and Naming Collision Prevention
+[ref: #ruplacer-rename-collision-check]
+
+**HARD RULE for any rename-like operation:**
+Before running `ruplacer` with a replacement name — even as a dry run — you MUST verify with `rg` that the replacement name is not already used anywhere in the codebase.
+
+**Execution:**
+1. Run `rg -n '<new_name>'` across the project.
+2. If `rg` returns any matches, the new name is already in use.
+3. Do NOT proceed with `ruplacer`.
+4. Either choose a different name and repeat the check, or stop and inform the user.
+
+**Why this is mandatory:**
+If the replacement name already exists, `ruplacer` will merge two distinct symbols into one, creating naming collisions that break code, tests, and business logic.
+This damage is often silent and extremely hard to undo.
+
+**Tool hierarchy for renaming:**
+
+- **Global renames** (across documentation, configuration, strings, multiple file types, or non-code content): use `ruplacer` directly.
+- **Code symbol renames** (functions, classes, methods, variables, fields, etc.): first try the Serena `rename_symbol` tool. Fall back to `ruplacer` only when Serena cannot handle the target language or symbol.
+- **Never use `sed`, `awk`, or similar text tools for any rename.** They are not symbol-aware and are forbidden for rename operations.
+
+**Exception:**
+You MAY proceed without the collision check only when you are intentionally renaming an entity to a universally accepted, exact same term AND you have received explicit, full approval from the user after explaining the full scope and consequences of the rename.
+
 ## Safety Rules
 
 - Binary files skipped auto.
