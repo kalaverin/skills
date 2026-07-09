@@ -1,6 +1,6 @@
 ---
 name: kagi-search
-description: Mandatory and exclusive protocol for all web search and page enrichment. The agent MUST use Kagi MCP tools for any external information lookup; no other search mechanism is permitted. Governs kagi_search_fetch, kagi_fastgpt, kagi_extract, and kagi_summarizer with examples and efficiency guidance. Always active.
+description: Mandatory and exclusive protocol for all web search and page enrichment. Applies whenever the user mentions internet search, asks to 'google' something (including the Russian verb 'погуглить'), 'find online', 'search the web', or any equivalent. The agent MUST use Kagi MCP tools for any external information lookup; no other search mechanism is permitted. Governs kagi_search_fetch, kagi_fastgpt, kagi_extract, and kagi_summarizer with examples and efficiency guidance. Always active.
 triggers:
   always: true
   reason: "Web search and page enrichment may be needed in any session, and this skill mandates exclusive use of Kagi."
@@ -11,6 +11,8 @@ triggers:
 This skill governs every use of the `kagimcp` MCP tools.
 When this skill is active, you MUST use Kagi tools for any web search, news retrieval, page extraction, or summarization.
 No other search mechanism is permitted.
+
+Any user request phrased as "погугли", "поищи в интернете", "search the web", "google it", "find online", or any similar phrase MUST be handled through this skill and therefore through Kagi tools.
 
 ## 1. Absolute Search Rule (HARD RULE)
 
