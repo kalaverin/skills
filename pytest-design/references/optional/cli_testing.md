@@ -38,7 +38,8 @@ libraries:
 
 # CLI TESTING
 
-## argparse CLIs [ref: #cli-testing-argparse]
+## argparse CLIs
+[ref: #cli-testing-argparse]
 
 Design the entry point to accept an optional argument list so tests can call it directly instead of mutating global state.
 
@@ -104,7 +105,8 @@ def test_main_greets_by_name(
 
 **Variety booster:** parametrize over short and long flag forms, then assert that `SystemExit.code` and captured substrings match for both valid and invalid inputs.
 
-## click CLIs [ref: #cli-testing-click]
+## click CLIs
+[ref: #cli-testing-click]
 
 Drive `click` commands with `click.testing.CliRunner` and assert on structured result fields instead of global capture fixtures.
 
@@ -168,7 +170,8 @@ On Click 8.4+, you can pass `capture="fd"` for file-descriptor-level capture whe
 
 **Variety booster:** combine `input=`, `catch_exceptions=False`, and `mix_stderr=False` to exercise error formatting, prompt cancellation, and stderr-only messages.
 
-## typer CLIs [ref: #cli-testing-typer]
+## typer CLIs
+[ref: #cli-testing-typer]
 
 Use `typer.testing.CliRunner` exactly like `click.testing.CliRunner`, and wrap plain functions in a temporary `typer.Typer()` app when you want to test them as commands.
 
@@ -222,7 +225,8 @@ def test_plain_function_as_typer_command(fake: Faker) -> None:
 
 **Variety booster:** register the same function under multiple command names in the test app to verify that Typer routing and option aliases behave consistently.
 
-## subprocess smoke tests [ref: #cli-testing-subprocess]
+## subprocess smoke tests
+[ref: #cli-testing-subprocess]
 
 Reserve shelling out for installed entry points, packaging smoke tests, or when the CLI cannot be imported, and assert only on exit code and salient output fragments.
 
@@ -260,7 +264,8 @@ Replace `entry_point` with the actual installed command name in your project.
 
 **Variety booster:** run the same scenario through both the in-process runner and a subprocess invocation, and assert that both produce the same exit code.
 
-## Common test cases [ref: #cli-testing-common-cases]
+## Common test cases
+[ref: #cli-testing-common-cases]
 
 Cover the same invariant categories regardless of framework so that CLI behavior stays predictable across refactors.
 
@@ -277,7 +282,8 @@ Use `@pytest.mark.parametrize` to combine flag variants and expected outcomes wi
 
 **Variety booster:** for each error path, assert both the exit code and that the message contains the offending value, so the test guards against generic error placeholders.
 
-## Anti-patterns [ref: #cli-testing-anti-patterns]
+## Anti-patterns
+[ref: #cli-testing-anti-patterns]
 
 Avoid brittle global state, leaked output, and exact-string assertions that break on harmless message changes.
 

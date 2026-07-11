@@ -71,7 +71,8 @@ libraries:
 
 # DATABASE MOCKING
 
-## When to Mock vs Use a Real Database [ref: #database-mocking-when-to-mock]
+## When to Mock vs Use a Real Database
+[ref: #database-mocking-when-to-mock]
 
 Prefer a lightweight mock or in-memory engine when the test target is business logic, mapping code, or repository methods that do not depend on database-specific features.
 
@@ -79,7 +80,8 @@ Reach for a real database when the test must verify PostgreSQL JSONB operators, 
 
 Start with the fastest option that can fail the test you care about, and upgrade to a real database only when a test genuinely requires it.
 
-## SQLite In-Memory with SQLAlchemy 2.0 [ref: #database-mocking-sqlite-in-memory]
+## SQLite In-Memory with SQLAlchemy 2.0
+[ref: #database-mocking-sqlite-in-memory]
 
 Use an in-memory SQLite engine for fast, isolated tests when the production code is driver-agnostic and the SQL is portable.
 
@@ -161,7 +163,8 @@ async def test_repository_creates_user(
     assert user.email == email
 ```
 
-## Transactional Test Isolation for SQLAlchemy [ref: #database-mocking-transactional-isolation]
+## Transactional Test Isolation for SQLAlchemy
+[ref: #database-mocking-transactional-isolation]
 
 Create the schema once per session and wrap each test in a connection-level transaction that is rolled back afterward.
 
@@ -238,7 +241,8 @@ async def async_db_session(async_db_engine: AsyncEngine) -> AsyncGenerator[Async
             await transaction.rollback()
 ```
 
-## Ephemeral PostgreSQL with py-pglite [ref: #database-mocking-pglite]
+## Ephemeral PostgreSQL with py-pglite
+[ref: #database-mocking-pglite]
 
 `py-pglite` runs an in-memory PostgreSQL instance without Docker, giving real PostgreSQL behavior with very fast startup.
 
@@ -303,7 +307,8 @@ def test_user_repository_pglite(
     assert user.id is not None
 ```
 
-## Ephemeral PostgreSQL with pytest-postgresql [ref: #database-mocking-pytest-postgresql]
+## Ephemeral PostgreSQL with pytest-postgresql
+[ref: #database-mocking-pytest-postgresql]
 
 `pytest-postgresql` starts a real PostgreSQL process, creates a template database, and clones it per test for isolation.
 
@@ -375,7 +380,8 @@ def test_unique_email_constraint(
     # Exception raised as expected; assertion handled by pytest.raises context.
 ```
 
-## Ephemeral PostgreSQL with Testcontainers [ref: #database-mocking-testcontainers]
+## Ephemeral PostgreSQL with Testcontainers
+[ref: #database-mocking-testcontainers]
 
 `testcontainers[postgresql]` spins up a real Dockerized PostgreSQL container.
 
@@ -445,7 +451,8 @@ def test_jsonb_query(
     assert event in found
 ```
 
-## Non-Relational Mocks: fakeredis [ref: #database-mocking-fakeredis]
+## Non-Relational Mocks: fakeredis
+[ref: #database-mocking-fakeredis]
 
 `fakeredis` provides an in-memory implementation of the Redis protocol that is drop-in compatible with `redis-py` and `redis.asyncio.Redis`.
 
@@ -513,7 +520,8 @@ async def test_cache_round_trip(
     assert await async_redis_client.get(key) == value
 ```
 
-## Non-Relational Mocks: mongomock [ref: #database-mocking-mongomock]
+## Non-Relational Mocks: mongomock
+[ref: #database-mocking-mongomock]
 
 `mongomock` is a drop-in replacement for `pymongo.MongoClient` that keeps data in memory.
 
@@ -562,7 +570,8 @@ def test_insert_and_find_user(
     assert found == document
 ```
 
-## Async Database Fixtures [ref: #database-mocking-async-database-fixtures]
+## Async Database Fixtures
+[ref: #database-mocking-async-database-fixtures]
 
 Async fixtures must dispose the `AsyncEngine`, close the `AsyncSession`, and run under `@pytest.mark.asyncio(loop_scope="function")`.
 
@@ -632,7 +641,8 @@ async def test_async_repo_returns_created_user(
     assert fetched.id == user.id
 ```
 
-## Anti-Patterns and Common Errors [ref: #database-mocking-anti-patterns]
+## Anti-Patterns and Common Errors
+[ref: #database-mocking-anti-patterns]
 
 Avoid these mistakes that break isolation, leak state, or slow the suite:
 
@@ -641,7 +651,8 @@ Avoid these mistakes that break isolation, leak state, or slow the suite:
 - **Missing cleanup.** Every fixture that opens an engine, session, connection, or client must dispose, close, rollback, flush, or drop owned resources.
 - **Using the production database in tests.** Tests must target dedicated test resources; never point fixtures at a production connection string.
 
-## Variety Booster: Faker-Driven Inputs [ref: #database-mocking-variety-booster]
+## Variety Booster: Faker-Driven Inputs
+[ref: #database-mocking-variety-booster]
 
 Use `faker` to generate realistic data and combine it with `@pytest.mark.parametrize` or property-style inputs to exercise more invariants with fewer tests.
 

@@ -7,8 +7,7 @@ description: >
   tools, resolve contradictions in stored knowledge, or follow memory metadata,
   naming, and routing conventions.
 triggers:
-  files: "command -v serena >/dev/null 2>&1"
-  reason: "Load only when the Serena CLI binary is available in PATH."
+  always: true
 requires:
   - markdown-protocol
 ---
