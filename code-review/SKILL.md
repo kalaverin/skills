@@ -197,12 +197,11 @@ produce a single final report.
    (e.g. `.review-rabbit-feature-20260705T024831Z.log`).
    Record this path as `{{ RABBIT_LOG }}` and use it only for `feature` mode.
 
-5. If the review mode is `feature`, launch the CodeRabbit subagent to
-   pre-populate `{{ RABBIT_LOG }}`. CodeRabbit is **not** invoked for `project`
-   mode reviews.
+5. If the review mode is `feature`, the ROOT agent launches CodeRabbit itself as a background shell task to pre-populate `{{ RABBIT_LOG }}` — and does this first, before any other review work. CodeRabbit is **not** invoked for `project` mode reviews.
 
-   The subagent MUST be granted at least 20 minutes (1200 seconds) to complete.
-   Set the execution timeout accordingly.
+   **Launch from the root agent only — never from a subagent.** Subagents cannot spawn background tasks and their shell is approval-restricted, so a CodeRabbit launch delegated to a subagent is impossible. The root agent starts it once at the very beginning via `Shell` with `run_in_background=true` (with a short `description`), then immediately moves on to its own work — gathering inputs and launching the Phase 1 specialist subagents — while CodeRabbit keeps working in parallel. Do NOT block on it: check its status later with `TaskOutput` (or `TaskList`) at Phase 2, when `{{ RABBIT_LOG }}` is consumed.
+
+   The background task MUST be granted at least 20 minutes (1200 seconds) to complete. Set the execution timeout accordingly.
 
    ```bash
    coderabbit review \
@@ -217,20 +216,13 @@ produce a single final report.
    Use `<main-source-dir>` only when the project has an obvious single source
    directory (e.g. `app/`, `src/`). Otherwise omit `--dir`.
 
-   The subagent MUST write to `{{ RABBIT_LOG }}`. If CodeRabbit reports that it
-   cannot review because there are too many changes (or a similar capacity-style
-   refusal), treat that as ignorable and continue. For any other CodeRabbit
-   failure (auth error, command not found, network error, unknown error message),
-   STOP the review and hand the problem to the user. CodeRabbit is advisory, but
-   operational problems are not silently swallowed.
+   The background task MUST write to `{{ RABBIT_LOG }}`. If CodeRabbit reports that it cannot review because there are too many changes (or a similar capacity-style refusal), treat that as ignorable and continue. For any other CodeRabbit failure (auth error, command not found, network error, unknown error message), STOP the review and hand the problem to the user. CodeRabbit is advisory, but operational problems are not silently swallowed.
 6. Gather inputs:
    - `tree --gitignore --prune -L 3` for project structure (override the depth
      if the project requires a deeper first-pass).
    - `git diff {{ BASE_BRANCH }}...HEAD` for feature mode.
    - Full source contents for project mode.
-   - For `feature` mode, `{{ RABBIT_LOG }}` if present (may be empty or contain
-     parsing errors). `project` mode does not use CodeRabbit, so no log is
-     expected.
+   - For `feature` mode, `{{ RABBIT_LOG }}` if present (may be empty, still being written by the background task, or contain parsing errors). `project` mode does not use CodeRabbit, so no log is expected.
 7. Respect `.gitignore`.
 8. Skip `tests/` directories unless the user explicitly asks to review tests.
 
@@ -266,8 +258,7 @@ target file(s).
 
 ### Phase 2: Optional CodeRabbit Cross-Validation
 
-CodeRabbit is advisory only. A capacity-style refusal (e.g. "too many changes")
-is NOT a reason to stop the review.
+Before consuming the log, check the background CodeRabbit task with `TaskOutput` (or `TaskList`): if it is still running, wait for it to finish (or stop it with `TaskStop` only if it is clearly stuck beyond its timeout). CodeRabbit is advisory only. A capacity-style refusal (e.g. "too many changes") is NOT a reason to stop the review.
 
 If `{{ RABBIT_LOG }}` exists and contains valid review output:
 
