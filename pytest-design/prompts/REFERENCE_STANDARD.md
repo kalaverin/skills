@@ -128,6 +128,7 @@ Authoring rules for each field:
 - `use_when` is a positive criteria list ("Use when …; when …; when …"). Include version gates and concrete scenarios.
 - `avoid_when` is a negative criteria list naming the canonical wrong forms ("Do not use when …; never when …").
 - `expected` states the attainable success state ("numerical assertions pass within the configured tolerance and recurse over collections instead of flaking").
+- **`use_when` MUST NOT restate or paraphrase `problem`.** It is the recipe's **selection criterion** ("pick this recipe when …"), not a rewording of the situation already described in `problem`. If a drafted `use_when` can be read as a paraphrase of `problem`, discard it and rewrite from the reader's decision perspective.
 
 **Firm style for `problem` (binding):**
 
@@ -373,6 +374,7 @@ A card is non-conformant if it:
 - Leaves `subject` vague (it must name the topic **and** enumerate the recipe areas).
 - Writes `subject` without its keyword/API cloud, with a `CORE`/`EXTENDED` tier marker, with the articles `a`/`the`, or outside the 30–50-word band (≥3-letter tokens).
 - Writes `problem` as a capability/goal/imperative ("Assert on…", "Avoid…"), leaks the solution API (→ `what`) or the success state (→ `expected`), uses the articles `a`/`the`, falls outside the 30–50-word band, or puts Python commands / library names in its keyword cloud.
+- Writes `use_when` as a restatement or paraphrase of `problem` instead of independent selection criteria for the recipe.
 
 ---
 
@@ -394,3 +396,4 @@ Run from the skill directory. For each `references/**/*.md`:
 11. `libraries` (if present) uses lowercase names, preserves extras, and keeps significant pins.
 12. `subject` follows the firm style: `<essence>; <keyword/API cloud>`, 30–50 words (≥3-letter tokens), no `a`/`the`, no tier marker, identifiers backticked; library/API names are allowed in this cloud.
 13. Every `problem` follows the firm style: declarative **situation + stake** (not capability/goal/imperative), no solution-API (→ `what`) and no success language (→ `expected`), 30–50 words (≥3-letter tokens), no `a`/`the`, and a concept/synonym-only keyword cloud with no Python commands or library names.
+14. Every `use_when` gives independent selection criteria for the recipe and does not restate or paraphrase the card's `problem`.

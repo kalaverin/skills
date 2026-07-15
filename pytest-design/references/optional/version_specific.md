@@ -1,53 +1,53 @@
 ---
-subject: "Exercise modern Python in tests: PEP 695 `type` aliases/generics, `TypedDict` `Required`/`NotRequired`/`Unpack`, `@override`, manual `ExceptionGroup` asserts or `pytest.RaisesGroup` (pytest ≥8.4), frozen dataclass equality/immutability/round-trips, Pydantic validation errors, `@runtime_checkable` protocols, `typing.assert_never` match exhaustiveness, `StrEnum`/`IntEnum`, and 3.13 additions (`ReadOnly`, `TypeIs`, `warnings.deprecated`, `copy.replace`) gated by `sys.version_info`/`typing_extensions`."
+subject: "Exercise modern Python in tests: PEP 695 `type` aliases/generics, `TypedDict` `Required`/`NotRequired`/`Unpack`, `@override`, manual `ExceptionGroup` asserts or `pytest.RaisesGroup` (pytest >=8.4), frozen dataclass equality/immutability/round-trips, Pydantic validation errors, `@runtime_checkable` protocols, `typing.assert_never` match exhaustiveness, `StrEnum`/`IntEnum`, and 3.13 additions (`ReadOnly`, `TypeIs`, `warnings.deprecated`, `copy.replace`) gated by `sys.version_info`/`typing_extensions`."
 index:
   - anchor: version-type-hints
     what: "Use PEP 695 `type` aliases and generic syntax, per-field `Required`/`NotRequired` on `TypedDict`, `Unpack` for typed `**kwargs`, and `typing.override` for intentional overrides."
-    problem: "Pre-3.12 typing syntax is verbose and cannot express per-field optionality, typed kwargs, or override intent cleanly; first-class alias, generic syntax, required notrequired, unpack kwargs, override intent, modern typing."
-    use_when: "Project uses Python 3.12 typing, modern syntax expresses aliases generics optionality kwargs and overrides cleanly; first class alias, generic syntax, required notrequired, unpack kwargs, override intent, modern typing, pep 695."
-    avoid_when: "Do not mix legacy `TypeAlias`/`Generic[T]` syntax with PEP 695 in new code, and do not apply `@override` to methods that are not actual overrides."
+    problem: "Pre-3.12 typing syntax is verbose and cannot express per-field optionality, typed kwargs, or override intent cleanly, leading to boilerplate and accidental mismatches; first-class alias, type parameter, required notrequired, unpack kwargs, override decorator, modern typing."
+    use_when: "The project runs Python 3.12+; type aliases, generics, optional TypedDict fields, typed kwargs, or override markers are needed."
+    avoid_when: "Legacy `TypeAlias`/`Generic[T]` syntax must be preserved; `@override` is not available; the code targets Python <3.12."
     expected: "Type hints use 3.12 first-class idioms (PEP 695, Required/NotRequired, Unpack, override) consistently."
   - anchor: version-exception-groups
     what: "Assert that bulk operations collect every failure into an `ExceptionGroup`/`BaseExceptionGroup`; on pytest >=8.4 use `pytest.RaisesGroup` (gated with `pytest.importorskip('pytest', minversion='8.4')`) instead of inspecting `exc_info.value.exceptions` by hand."
-    problem: "Bulk operation must surface all failures at once, and manual exception-list inspection is brittle; all failures group, nested exception assert, version gate, manual inspect fallback, complete group, not first only."
-    use_when: "Bulk operation must surface all failures together, manual exception list inspection is brittle, and version gate selects helper; all failures group, nested exception assert, version gate, manual inspect fallback, complete group, not first only."
-    avoid_when: "Do not assert only the first failure of a bulk operation, and do not use `pytest.RaisesGroup` without gating on pytest>=8.4."
+    problem: "Bulk operation must surface all failures at once, and manual exception-list inspection is brittle, letting hidden exceptions slip through; all failures group, nested exception assert, version guard, manual inspect fallback, complete group, not first only."
+    use_when: "A bulk operation may raise multiple exceptions; pytest >=8.4 is available; `RaisesGroup` can replace hand-written inspection."
+    avoid_when: "Only the first failure is asserted; `pytest.RaisesGroup` is used without a version gate; pytest <8.4 has no fallback."
     expected: "Bulk failures are asserted as a complete ExceptionGroup, using RaisesGroup when available with a version gate."
   - anchor: version-data-class-testing
     what: "Test data-class-like objects through public invariants: equality, immutability expectations, round-trips, and validation failures."
-    problem: "Data classes hide correctness in generated methods and validation that must verify via public behavior; equality round-trip, frozen immutability, exact validation, protocol conformance, generated helper, public invariant."
-    use_when: "Data class correctness hides in generated methods and validation, public behavior must prove equality immutability round trip and failures; equality round trip, frozen immutability, exact validation, protocol conformance, generated helper, public invariant."
-    avoid_when: "Do not accept a generic exception for pydantic validation failures — assert the exact validation error."
-    expected: "Data-class invariants (equality, immutability, round-trip, exact validation, protocol conformance) are verified through public behavior."
+    problem: "Data classes hide correctness in generated methods and validation that must be verified via public behavior, so silent regressions pass unnoticed; equality round-trip, frozen immutability, exact validation, protocol conformance, generated helper, public invariant."
+    use_when: "A dataclass, Pydantic model, or attrs class needs public invariants verified; equality, round-trip, immutability, or validation errors matter."
+    avoid_when: "Generic exceptions are accepted for validation failures; private generated methods are tested directly; the model has no public invariants."
+    expected: "Data-class invariants (equality, immutability, round-trip, precise validation errors, protocol adherence) are verified through public behavior."
   - anchor: version-protocols
     what: "Use `@runtime_checkable` only as a quick structural screen because `isinstance` checks method existence, not signatures or semantics; always invoke the protocol method to verify real compliance."
-    problem: "isinstance against runtime-checkable protocol passes for objects with same-named method but wrong signature or behavior; structural screen, signature not checked, invoke method, prove compliance, existence only, semantics gap."
-    use_when: "Runtime checkable protocol only screens method existence, signature or behavior may still be wrong, and method invocation proves compliance; structural screen, signature not checked, invoke method, prove compliance, existence only, semantics gap."
-    avoid_when: "Do not treat `@runtime_checkable` `isinstance` as proof of correctness — it checks method existence only, not signatures or semantics."
+    problem: "isinstance against runtime-checkable protocol passes for objects with same-named method but wrong signature or behavior, giving false confidence in polymorphic code; shape screen, signature not checked, invoke method, prove compliance, existence only, semantics gap."
+    use_when: "A protocol is runtime-checkable and used as a structural screen; real compliance must be proven by calling the method; signature and semantics matter."
+    avoid_when: "`isinstance` against the protocol is treated as full correctness proof; the method is never invoked; signatures are assumed to match."
     expected: "Protocol conformance is proven by both an `isinstance` screen and an actual method invocation."
   - anchor: version-match-case
     what: "Route the fallback branch of a `match` through `typing.assert_never` to guarantee every variant is handled."
-    problem: "Non-exhaustive match silently falls through and lets new variants go unhandled; exhaustiveness, assert never fallback, every variant, new variant fails, unreachable case, parametrized subclass."
-    use_when: "Pattern match statement must stay exhaustive, fallback branch should assert never, and new variant must fail loudly during collection; exhaustiveness, assert never fallback, every variant, new variant fails, unreachable case, parametrized subclass, match safety."
-    avoid_when: "Do not leave a `match` without an `assert_never` fallback, and do not add a new variant without a matching case."
+    problem: "Non-exhaustive match silently falls through and lets new variants go unhandled, causing runtime errors instead of early collection failures; exhaustiveness, assert never fallback, each variant, new variant fails, unreachable case, parametrized subclass."
+    use_when: "A `match` statement must be exhaustive; adding a new variant should fail early; `typing.assert_never` is available."
+    avoid_when: "The match has a catch-all that swallows variants; exhaustiveness is not required; variants are added without updating cases."
     expected: "Every variant is handled; adding a variant without a case fails via `assert_never`."
   - anchor: version-enums
     what: "Replace raw string comparisons with `enum.StrEnum` and verify every member round-trips through construction, rejects invalid raw values, and has a corresponding handler/mapping."
-    problem: "Raw string comparisons bypass enum safety and let missing handlers or members slip through; member round-trip, reject invalid, handler per member, no raw compare, full coverage, mapping complete."
-    use_when: "Raw string comparison bypasses enum safety, every member must round trip and map to handler, and invalid raw values reject; member round trip, reject invalid, handler per member, no raw compare, full coverage, mapping complete."
-    avoid_when: "Do not compare against raw strings instead of `StrEnum` members, and do not let a member exist without a corresponding handler."
+    problem: "Raw string comparisons bypass enum safety and let missing handlers or members slip through, causing silent default paths and incomplete mappings; roundtrip per member, invalid value rejected, handler per member, no raw compare, full coverage, mapping complete."
+    use_when: "Enums are used for domain values; every member must construct from its raw value, reject invalid values, and map to a handler; raw string comparisons remain."
+    avoid_when: "Raw strings are compared instead of enum members; members exist without handlers; invalid values are silently accepted."
     expected: "Every `StrEnum` member round-trips, rejects invalid values, and maps to a non-None handler."
   - anchor: version-python-313-additions
     what: "Adopt `typing.ReadOnly`, `typing.TypeIs`, protocol introspection (`get_protocol_members`, `is_protocol`), PEP 696 type-parameter defaults, `warnings.deprecated`, and `copy.replace` — gating imports on `sys.version_info >= (3, 13)` with `typing_extensions` fallbacks (and `skipif` for `copy.replace`)."
-    problem: "3.13-only features must not break older interpreters, so imports and tests need version gates and backports; version gate import, backport fallback, skipif older, narrowing, deprecated decorator, copy replace."
-    use_when: "Python 3.13 features must not break older interpreters, imports and tests need version gates, and backports cover gaps; version gate import, backport fallback, skipif older, narrowing, deprecated decorator, copy replace, typing extensions."
-    avoid_when: "Do not import 3.13-only symbols unconditionally, and do not run `copy.replace` tests on Python <3.13 without a skip gate."
+    problem: "3.13-only features must not break older interpreters, so imports and tests need version gates and backports to keep CI green across versions; version gate import, backport fallback, skipif older, narrowing, deprecated decorator, copy replace."
+    use_when: "The project supports Python 3.13 while keeping older interpreters green; new 3.13 typing or `copy.replace` features are used; `typing_extensions` backports are available."
+    avoid_when: "3.13-only symbols are imported unconditionally; `copy.replace` tests run on older Python without a skip; no fallback is provided."
     expected: "3.13 features are exercised with version-gated imports/backports, staying green on both 3.13 and older interpreters."
   - anchor: version-variety-booster
     what: "Pair `@pytest.mark.parametrize` with variant factories and structural assertions to cover more invariants with less code (enum round-trips/handlers, event-subclass exhaustiveness, frozen/mutable data-class matrices)."
-    problem: "Hand-written per-variant tests duplicate bodies and miss members or variants; variant factory, enum matrix, event exhaustiveness, frozen mutable matrix, structural assert, compact parametrize."
-    use_when: "Per variant hand written tests duplicate bodies, variant factories and matrices cover enum event and data class invariants compactly; variant factory, enum matrix, event exhaustiveness, frozen mutable matrix, structural assert, compact parametrize."
-    avoid_when: "Do not write one test per enum member/event subclass/model variant — collapse them into parametrized matrices."
+    problem: "Hand-written per-variant tests duplicate bodies and miss members or variants, bloating suite, hiding gaps in coverage, and slowing development; variant factory, enum matrix, event exhaustiveness, frozen mutable matrix, shape assert, compact parametrize."
+    use_when: "Many enum members, event subclasses, or dataclass variants need coverage; parametrized matrices can replace repetitive tests; structural assertions are available."
+    avoid_when: "Variants are few and distinct enough for separate tests; parametrization would obscure the scenario; no structural matcher is available."
     expected: "All enum members, event variants, and data-class flavors are covered by compact parametrized matrices."
 libraries:
   - attrs
@@ -55,6 +55,7 @@ libraries:
   - pytest>=8.4
   - typing-extensions
 ---
+
 
 # Python 3.12+ Specifics
 

@@ -1,24 +1,36 @@
 ---
-subject: "Capture and assert on program output without `-s`: Python streams via `capsys`/`capsysbinary`, OS file-descriptor output via `capfd`/`capfdbinary`, and logs via `caplog` with `at_level`/`set_level`; inspect `records`, `text`, `record_tuples`, `get_records`, bypass capture with `capsys.disabled()`, build an `assert_log_contains` helper."
+subject: "Capture and assert on program output without `-s`: Python streams via `capsys`/`capsysbinary`, OS file-descriptor output via `capfd`/`capfdbinary`, logs via `caplog` with `at_level`/`set_level`; inspect `records`, `text`, `record_tuples`, `get_records`, bypass capture with `capsys.disabled()`, build an `assert_log_contains` helper, fix wrong-layer and level-hidden capture symptoms."
 index:
   - anchor: capture-fixtures-capsys
     what: "Pytest fixtures that capture text written to `sys.stdout`/`sys.stderr` (`capsys`) and the same streams as bytes (`capsysbinary`), both exposing `readouterr()` for incremental snapshots."
-    problem: "Code under test writes to `sys.stdout`/`sys.stderr`, and assertion must read that text without `-s` or external log inspection; captured output, printed text, stream inspection, stdout content, stderr content, buffered writes, console output, line-buffered output."
-    use_when: "Code writes text to Python stdout or stderr, assertion needs that content, and capture must stay enabled without external logs; captured output, printed text, stream inspection, stdout content, stderr content, buffered writes, console output, readouterr snapshot."
-    avoid_when: "Do not assert exact terminal formatting as the primary invariant unless the component is a CLI renderer."
-    expected: "Python-level stdout and stderr are captured incrementally via `readouterr()` as text or bytes, with assertions on content rather than exact terminal formatting."
+    problem: "Code under test writes to `sys.stdout`/`sys.stderr`, and assertion must read that text without `-s` or external log inspection; captured output, printed text, stream inspection, stdout content, stderr content, buffered writes, delta snapshot, console echo."
+    use_when: "Code under test writes text to Python-level stdout or stderr; assertion needs that content with capture left enabled; each write needs its own snapshot."
+    avoid_when: "Exact terminal formatting asserted as the primary invariant — legitimate only for CLI renderers."
+    expected: "Python-level stdout and stderr are captured incrementally via `readouterr()` as text or bytes, with assertions targeting content, not presentation layout."
   - anchor: capture-fixtures-capfd
     what: "Pytest fixtures that capture writes to OS file descriptors 1 and 2 as text (`capfd`) or bytes (`capfdbinary`) when output bypasses `sys.stdout`."
-    problem: "Output originates from native code, `os.write`, or subprocess that bypasses `sys.stdout`, so Python-level capture sees nothing and assertion needs file-descriptor layer; fd-level capture, native output, subprocess writes, bypass sys streams, bytes vs text, low-level capture."
-    use_when: "Output bypasses Python streams through native code, subprocess, or descriptor write, while assertion still needs captured text or bytes; fd capture, native output, subprocess write, descriptor write, bytes versus text, low level stream, bypass sys stdout."
+    problem: "Output originates from native code, `os.write`, or subprocess that bypasses `sys.stdout`, so Python-level capture sees nothing and assertion needs file-descriptor layer; fd-level capture, native output, subprocess writes, bytes vs text, descriptor write, binary payload."
+    use_when: "Output bypasses Python streams via native code, subprocess, or raw `os.write` calls; assertion needs fd-level text or bytes; `capsys` returns empty output despite writes happening."
     avoid_when: "Prefer `capsys` for pure Python code because it is slightly faster and avoids fd-level noise."
-    expected: "Fd-level output from native code or subprocesses is captured and asserted as text or bytes, while pure Python output stays on the faster `capsys` layer."
+    expected: "Fd-level output from native code or subprocesses is captured and asserted as text or bytes, while pure Python writes stay on the lighter sys-layer fixtures."
   - anchor: capture-fixtures-caplog
     what: "The `caplog` fixture attaches a handler to the root logger and captures `LogRecord` objects, exposing level filtering, formatted text, record tuples, and per-stage retrieval."
-    problem: "Code under test logs via stdlib logging, and test must prove expected records, levels, and logger name without reading external log files; log record capture, level filtering, logger identity, message assertion, record tuples, phase slicing, handler-free verify."
-    use_when: "Code emits stdlib logging records, test must prove level, logger, and message without external files, and handler installation must stay intact; log record capture, level filtering, logger identity, message assertion, record tuples, phase slicing, handler free verify."
-    avoid_when: "Do not assert exact formatting if the production handler customizes the layout, and do not reconfigure the root logger inside the test without restoring it."
-    expected: "Log records are captured at the configured level with content, level, and logger name asserted via `records`/`record_tuples`/`text`, while exact handler formatting and root-logger reconfiguration are left out of the assertions."
+    problem: "Code under test logs via stdlib logging, and test must prove expected records, levels, and logger name without reading external log files; log record capture, logger identity, message assertion, phase slicing, handler-free verify."
+    use_when: "Code under test emits stdlib logging records; level, logger name, and message must be proven without external files; production handler configuration must stay untouched."
+    avoid_when: "Exact formatting asserted while the production handler customizes layout; root logger reconfigured inside the test without restoring it."
+    expected: "Records are captured at the configured level; message, severity, and origin logger are asserted via `records`/`record_tuples`/`text`, independent of any handler layout."
+  - anchor: capture-fixtures-anti-patterns
+    what: "A checklist of capture-fixture misuses: output asserted as the primary contract, reliance on `pytest -s`, and root-logger reconfiguration that blinds `caplog`."
+    problem: "Test asserts printed output as main contract while return value stays unchecked, or suite relies on `-s` flag for debugging, so capture layer misused and CI logs stay blind; output as contract, print-driven test, missing return assertion, flag-dependent debug, logger reconfigured, lost records."
+    use_when: "Reviewing tests that assert on printed output; suite only shows output under `pytest -s`; log assertions fail after logger reconfiguration; deciding whether output checks should be demoted below return-value checks."
+    avoid_when: "Not a ban on output assertions — CLI renderers legitimately assert their rendered text."
+    expected: "Output checks are demoted behind return-value and state assertions, `-s`-dependent debugging is gone, and the root logger survives tests untouched."
+  - anchor: capture-fixtures-common-errors
+    what: "A symptom-to-cause-to-fix lookup table for capture-fixture failures across the sys-layer, fd-layer, and logging capture."
+    problem: "Capture-related failure shows empty or mismatched text and first fix attempt guesses blindly because symptom does not reveal whether capture layer, data type, or logger level caused it; empty capture, wrong layer, bytes text mismatch, hidden records, noisy libraries, quick triage, failure mapping."
+    use_when: "`readouterr()` returns empty despite output being written; `caplog.text` stays empty or captures too much; binary output fails to match an expected string."
+    avoid_when: "Table is no substitute for reading the actual failure — match the observed symptom to a row first, then confirm the cause in the code."
+    expected: "Each empty or mismatched capture is mapped to its layer, type, or level cause and fixed at the right capture layer."
 ---
 
 # CAPTURE FIXTURES

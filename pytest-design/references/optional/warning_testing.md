@@ -1,57 +1,58 @@
 ---
-subject: "Prove warning behavior: assert a specific warning with `pytest.warns(Category, match=...)` and inspect the record, assert clean paths emit none via `warnings.catch_warnings(record=True)`/`recwarn`, inspect multiple ordered warnings with `recwarn` (`clear`/`pop`/indexing), scope policy per-test with `@pytest.mark.filterwarnings` or project-wide in `pyproject.toml`, custom warning classes, Python 3.13 `@warnings.deprecated`, and `stacklevel` verification."
+subject: "Prove warning behavior: assert specific warning with `pytest.warns(Category, match=...)` and inspect record, assert clean paths emit none via `warnings.catch_warnings(record=True)`/`recwarn`, inspect multiple ordered warnings with `recwarn` (`clear`/`pop`/indexing), scope policy per-test with `@pytest.mark.filterwarnings` or project-wide in `pyproject.toml`, custom warning classes, Python 3.13 `@warnings.deprecated`, and `stacklevel` verification."
 index:
   - anchor: warnings-basic-assertions
     what: "`pytest.warns(WarningCategory, match='regex')` asserts a block emits at least one warning of the category whose message matches the regex; the context manager returns a record collection exposing `category`, `message`, `filename`, `lineno`."
-    problem: "Test must prove right warning category and message emit, with inspectable record metadata; category match, message regex, record filename, record lineno, escape literal, tuple of categories."
-    use_when: "Warning category and message must prove emit, record metadata stays inspectable, and literal regex needs escaping; category match, message regex, record filename, record lineno, escape literal, tuple of categories, warns context."
-    avoid_when: "Do not pass an unescaped literal containing regex metacharacters to `match=` (use `re.escape()`), and do not pin a single category when any of several subclasses is acceptable."
+    problem: "Test must prove right warning category and message emit, with inspectable record metadata, otherwise regressions can swap warnings silently; category match, message regex, record filename, record lineno, escape literal, tuple of categories."
+    use_when: "A test must assert that a code block emits a warning of a specific category; the message must match a regex; record metadata needs inspection."
+    avoid_when: "The message contains unescaped regex metacharacters; a single category is pinned when any subclass is acceptable; only presence is checked."
     expected: "The expected warning category and message are asserted, record metadata is inspectable, and literal matches are escaped."
   - anchor: warnings-no-warnings
     what: "Prove a code path is clean by capturing warnings (`warnings.catch_warnings(record=True)` or the `recwarn` fixture) and asserting the list is empty, or by running pytest with `-W error`."
-    problem: "Path assumed warning-free may silently emit warnings without explicit capture or escalation; capture empty list, escalate to error, prove clean, simplefilter always, warning-free assert, no silent warn."
-    use_when: "Path assumed warning free may silently emit, capture or escalation must prove clean list, and global policy can turn warnings into failures; capture empty list, escalate to error, prove clean, simplefilter always, warning free assert, no silent warn."
-    avoid_when: "Do not assume a path is warning-free without capturing and asserting an empty list (or running `-W error`)."
+    problem: "Path assumed warning-free may silently emit warnings without explicit capture or escalation, hiding regressions in dependency upgrades and cluttering CI logs; capture empty list, escalate to error, prove clean, simplefilter always, warning-free assert, no silent warn."
+    use_when: "A code path must be proven warning-free; warnings can be captured to an empty list or escalated to errors; CI policy requires clean output."
+    avoid_when: "Warning output is ignored; the path is known to emit warnings; global `-W error` is not feasible."
     expected: "Clean paths are proven warning-free via an empty captured list or `-W error` escalation."
   - anchor: warnings-multiple-warnings
     what: "The `recwarn` fixture records every warning in a test and supports `clear()`, `pop()`, indexing, and iteration for per-record category/message inspection."
-    problem: "Several call sites each emit warning, requiring ordered or categorized per-record checks; ordered records, category count, clear between phases, pop index, per-record inspect, order not guaranteed."
-    use_when: "Several call sites emit warnings, ordered or categorized record checks are needed, and phases must clear between assertions; ordered records, category count, clear between phases, pop index, per record inspect, order not guaranteed, recwarn."
-    avoid_when: "Do not rely on warning order when it is not guaranteed — sort or count by category instead."
+    problem: "Several call sites each emit warning, requiring ordered or categorized per-record checks, and uncaptured warnings hide which site produced which message; ordered records, category count, clear between phases, pop index, per-record inspect, order not guaranteed."
+    use_when: "Multiple warnings are emitted in one test; per-record category/message checks are needed; order may or may not be guaranteed."
+    avoid_when: "Warning order is assumed stable when not guaranteed; only total count matters; warnings are not separated by phase."
     expected: "Each emitted warning is checked by category/message with order-dependent or category-counted assertions as appropriate."
   - anchor: warnings-filterwarnings
     what: "`@pytest.mark.filterwarnings('error')`, `'ignore::DeprecationWarning'`, or `'default::UserWarning'` suppresses or escalates warnings for a single test without changing project defaults."
-    problem: "Single test may need warning-free or intentionally noisy without altering global policy; per-test marker, error action, ignore action, default action, project default unchanged, document policy."
-    use_when: "Single test needs warning free or intentionally noisy policy, global defaults must stay unchanged, and marker documents that choice; per test marker, error action, ignore action, default action, project default unchanged, document policy, filterwarnings."
-    avoid_when: "Do not change project-wide defaults to handle a single noisy or warning-free test — use the per-test marker."
+    problem: "Single test may need warning-free or intentionally noisy behavior without altering global policy, and scattered inline filters are hard to discover; per-test marker, error action, ignore action, default action, project default unchanged, document policy."
+    use_when: "One test must deviate from project warning defaults; the test should be warning-free or intentionally noisy; global policy must stay unchanged."
+    avoid_when: "Project-wide defaults are changed for one test; the deviation is not documented; every test duplicates the same filter."
     expected: "Per-test warning behavior is explicit via markers; project defaults stay unchanged."
   - anchor: warnings-project-config
     what: "Set `filterwarnings` under `[tool.pytest.ini_options]` in `pyproject.toml` to promote warnings to errors in CI or ignore third-party noise; still overridable per test."
-    problem: "Global policy must escalate warnings project-wide while silencing known third-party noise; escalate to error, targeted ignore, ci policy, per-test override, third-party noise, one file policy."
-    use_when: "Project policy must escalate warnings broadly, known third party noise needs targeted ignores, and per test override remains possible; escalate to error, targeted ignore, ci policy, per test override, third party noise, one file policy."
-    avoid_when: "Do not hardcode warning policy in every test when it should be global, and do not let third-party noise fail CI without an explicit ignore rule."
+    problem: "Global policy must escalate warnings project-wide while silencing known third-party noise, otherwise CI either misses regressions or drowns in irrelevant warnings; escalate to error, targeted ignore, ci policy, local override, external noise, one file policy."
+    use_when: "Project-wide warning policy must be defined in one place; known third-party noise should be ignored; CI should treat warnings as errors."
+    avoid_when: "Warning rules are copied into every test; third-party noise fails CI without an explicit ignore; per-test overrides are impossible."
     expected: "CI escalates warnings to errors project-wide with explicit third-party ignores, and per-test overrides remain possible."
   - anchor: warnings-custom-classes
     what: "Define domain-specific warnings inheriting from `UserWarning` or `DeprecationWarning` and assert by category so tests survive message rewording."
-    problem: "Asserting only on message text breaks tests when wording changes; stable category, survive reword, subclass warning, category assert, optional regex, reword robust."
-    use_when: "Message text changes across refactors, warning category stays stable, and subclass plus category assertion survives rewording; stable category, survive reword, subclass warning, category assert, optional regex, reword robust, domain warning."
-    avoid_when: "Do not tie assertions only to exact message text — assert the custom category so rewording does not break the test."
+    problem: "Asserting only on message text breaks tests when wording changes, forcing noisy refactors, masking real warning regressions, and slowing code review; stable category, survive reword, subclass warning, category assert, optional regex, reword robust."
+    use_when: "Warning message text is expected to change; a fixed category is available; assertions should survive message rewording."
+    avoid_when: "Assertions rely solely on exact message text; no custom warning category exists; rewording should break tests."
     expected: "Tests key on stable warning categories, staying robust across message rewording while remaining precise."
   - anchor: warnings-deprecated-decorator
-    what: "Python 3.13 `warnings.deprecated()` emits `DeprecationWarning` when the decorated callable is called; use the `typing_extensions` backport on older versions and test with `pytest.warns(DeprecationWarning, match=...)`."
-    problem: "Deprecation decorator must test like manual warn, with version-correct imports; deprecation warning, backport import, match notice, version gate, decorated callable, older interpreter."
-    use_when: "Deprecation decorator must test like manual warning, import source depends on Python version, and match notice pins message; deprecation warning, backport import, match notice, version gate, decorated callable, older interpreter, warnings deprecated."
-    avoid_when: "Do not import `warnings.deprecated` unconditionally on Python <3.13 — use the `typing_extensions` backport."
+    what: "Python 3.13 `warnings.deprecated()` emits `DeprecationWarning` when the decorated function is called; use the `typing_extensions` backport on older versions and test with `pytest.warns(DeprecationWarning, match=...)."
+    problem: "Deprecation decorator must test like manual warn, with version-correct imports, otherwise tests fail on older interpreters or miss deprecation signal; deprecation warning, backport import, match notice, version gate, decorated callable, older interpreter."
+    use_when: "A callable is decorated with `warnings.deprecated` or its backport; the test must verify emitted `DeprecationWarning`; Python version varies."
+    avoid_when: "`warnings.deprecated` is imported unconditionally on Python <3.13; no `typing_extensions` backport is used; the message is not asserted."
     expected: "Deprecated callables emit `DeprecationWarning` verified by `pytest.warns`, with version-appropriate imports."
   - anchor: warnings-variety-booster
     what: "Vary the data flowing through warning-producing code and assert on warning record metadata; parametrize the input condition with the expected category and message."
-    problem: "Single-input message-only checks miss category, metadata regressions, and edge inputs; vary input, category metadata, stacklevel filename, rotate domains, custom subclass, clear between phases."
-    use_when: "Message only checks miss category metadata and edge inputs, varied inputs plus record metadata catch more regressions; vary input, category metadata, stacklevel filename, rotate domains, custom subclass, clear between phases, warning matrix."
-    avoid_when: "Do not assert only message text on a single input — vary inputs and assert category/metadata (filename/stacklevel) too."
+    problem: "Single-input message-only checks miss category, metadata regressions, and edge inputs, leaving warning behavior under-tested across domains and slowing debugging; vary input, category metadata, stacklevel filename, rotate domains, custom subclass, clear between phases."
+    use_when: "Warning-producing code has multiple input conditions; category and metadata must be asserted alongside message; parametrization can cover the matrix."
+    avoid_when: "Only one input is tested; message text is the only assertion; metadata and category are ignored."
     expected: "Warnings are verified across varied inputs with category and metadata (filename/stacklevel) assertions, not just message text."
 libraries:
   - typing-extensions
 ---
+
 
 # Warning Testing
 

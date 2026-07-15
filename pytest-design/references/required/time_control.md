@@ -1,71 +1,72 @@
 ---
-subject: "Make time-dependent tests deterministic instead of relying on real time: pin with `@time_machine.travel(destination, tick=True)`, use the `time_machine` fixture/`Traveller` (`move_to`/`shift`), class/module `pytestmark = pytest.mark.time_machine(...)`, choose `tick=True`/`False`, set `naive_mode = NaiveMode.ERROR` in `conftest.py`, timezone-aware datetimes, `freezegun` legacy fallback, `pytest-timeout` safety net, injectable `Clock` Protocol."
+subject: "Make time-dependent tests deterministic instead of relying on real time: pin with `@time_machine.travel(destination, tick=True)`, use `time_machine` fixture/`Traveller` (`move_to`/`shift`), class/module `pytestmark = pytest.mark.time_machine(...)`, choose `tick=True`/`False`, set `naive_mode = NaiveMode.ERROR` in `conftest.py`, timezone-aware datetimes, `freezegun` legacy fallback, `pytest-timeout` safety net, injectable `Clock` Protocol."
 index:
   - anchor: time-control-decorator
     what: "`@time_machine.travel(destination, tick=True)` pins an entire test to a single fixed timestamp."
-    problem: "Test needing one fixed moment must not depend on real clock or on time progressing; single frozen moment, no real clock, decorator pin, no progress, multi-jump fixture, destination fixed."
-    use_when: "Test needs one fixed moment, system reads clock but time must not progress, and decorator pins destination without real clock; single frozen moment, no real clock, decorator pin, no progress, multi jump fixture, destination fixed."
-    avoid_when: "Do not stack multiple decorators on the same function to simulate time jumps — use the `time_machine` fixture or context manager instead."
+    problem: "Test that needs one fixed moment must not depend on real clock or on time progressing, otherwise assertions flake across runs and CI dates; single frozen moment, no real clock, decorator pin, no progress, destination fixed."
+    use_when: "A whole test must run at one pinned timestamp; time should not advance during the test; the decorator is the simplest mechanism."
+    avoid_when: "The test needs multiple time jumps; stacking decorators is required; a fixture or context manager is more appropriate."
     expected: "The test runs at a single frozen destination with no real-clock dependence; multi-jump scenarios use the fixture."
   - anchor: time-control-fixture
     what: "The `time_machine` fixture yields a `Traveller` for the current test, enabling multiple jumps and relative shifts inside one function."
-    problem: "Scenarios like token expiry or retry backoff need clock to advance within test without real-time delays; advance inside test, traveller, instantaneous shift, token expiry, backoff window, no real sleep."
-    use_when: "Token expiry or retry backoff needs clock advancement inside test, real time delays would flake, and traveller shifts instantly; advance inside test, traveller, instantaneous shift, token expiry, backoff window, no real sleep."
-    avoid_when: "Do not use it to simulate real-time delays — shift the clock instantaneously."
-    expected: "Time advances via instantaneous shifts inside the test; no real-time sleeps."
+    problem: "Scenarios like token expiry or retry backoff need clock to advance within test without real-time delays, otherwise sleeps make suite slow and flaky; advance inside test, traveller, instantaneous shift, token expiry, backoff window, no real sleep."
+    use_when: "A single test needs several clock jumps or relative shifts; expiry deadlines or backoff intervals must be exercised; real sleeps would slow the suite."
+    avoid_when: "Only one fixed timestamp is needed; real-time delays are acceptable; global decorator is preferred."
+    expected: "Time advances via instantaneous jumps inside the test; no real-time sleeps are used."
   - anchor: time-control-marker
     what: "`pytest.mark.time_machine(destination)` (or module `pytestmark`) freezes every test in a class/module at one moment without repeating the decorator."
-    problem: "Date-driven suites need shared frozen moment without per-test decorator repetition; class module freeze, one moment, date-driven rules, no repeat, one pinning mechanism, marker pin."
-    use_when: "Date driven suite needs shared frozen moment, per test decorator repetition is wasteful, and marker pins whole class or module; class module freeze, one moment, date driven rules, no repeat, one pinning mechanism, marker pin."
-    avoid_when: "Do not mix the marker with per-test decorators that conflict on the same function — choose one pinning mechanism per test."
-    expected: "One pinning mechanism per test; class/module-wide freeze via marker, per-test jumps via fixture."
+    problem: "Date-driven suites need shared frozen moment without per-test decorator repetition, and mismatched decorators across suite create conflicting baselines; class module freeze, single moment, date-driven rules, no repeat, single pinning mechanism, marker pin."
+    use_when: "Every test in a class or module shares the same frozen timestamp; repeating the decorator on each test is wasteful; one pinning mechanism per scope is desired."
+    avoid_when: "Tests in the same scope need different timestamps; a per-test decorator conflicts with the marker; multiple pinning mechanisms are mixed."
+    expected: "One pinning mechanism per scope; class/module-wide freeze via marker, per-test jumps via fixture."
   - anchor: time-control-traveller
     what: "A `Traveller` jumps to an absolute time with `move_to()` or advances by a relative delta with `shift()`."
-    problem: "Tests need both absolute calendar boundaries and relative intervals, applied with consistent units; move_to absolute, shift relative, consistent units, calendar boundary, interval, no mixed units."
-    use_when: "Test needs absolute calendar boundary and relative interval, mixed units confuse expectation, and traveller move_to plus shift keeps units consistent; move_to absolute, shift relative, consistent units, calendar boundary, interval, no mixed units."
-    avoid_when: "Do not mix units such as raw seconds and `timedelta` inconsistently within the same test."
-    expected: "Absolute jumps use `move_to()`, relative advances use `shift()`, with consistent units throughout the test."
+    problem: "Tests need both absolute calendar boundaries and relative intervals, and mixing seconds with timedeltas or timezone offsets produces wrong expectations; move_to absolute, shift relative, consistent units, calendar boundary, interval, no mixed units."
+    use_when: "A test must jump to an exact calendar time and then advance by a relative delta; units must stay consistent across the test."
+    avoid_when: "Only absolute jumps are needed; only relative shifts are needed; units are mixed without conversion."
+    expected: "Absolute jumps use `move_to()`, relative advances use `shift()`, with matching units throughout the test."
   - anchor: time-control-tick
     what: "`tick=True` lets the mocked clock advance naturally from the destination; `tick=False` freezes it completely."
-    problem: "Some code needs monotonic or short timeouts to progress, while other assertions need absolutely stable timestamp; tick progress, freeze stable, monotonic, short timeout, no wall-clock measure, match expectation."
-    use_when: "Code needs monotonic or short timeout progression, another assertion needs absolutely stable timestamp, and tick choice matches expectation per scenario; tick progress, freeze stable, monotonic, short timeout, no wall clock measure, match expectation."
-    avoid_when: "Never rely on `tick=True` to measure real wall-clock durations."
+    problem: "Some code needs monotonic or short timeouts to progress, while other assertions need absolutely stable timestamp, and choosing wrong tick mode causes flaky or misleading results; tick progress, freeze stable, monotonic, short timeout, no wall-clock measure, match expectation."
+    use_when: "The test must decide whether the mocked clock advances or stays frozen; monotonic timeouts need progress; exact timestamp comparisons need stability."
+    avoid_when: "Wall-clock durations are being measured; the test relies on real elapsed time; tick mode is chosen without understanding code needs."
     expected: "Ticking is chosen to match the code's clock expectations; no wall-clock duration is measured via `tick=True`."
   - anchor: time-control-naive-mode
     what: "`time_machine.naive_mode` controls how destinations without tzinfo are interpreted; set to `NaiveMode.ERROR` in `conftest.py` to enforce timezone-aware datetimes."
-    problem: "Naive datetimes silently inherit ambiguous local interpretations; error on naive, conftest set, timezone-aware enforce, ambiguous local, runtime error, explicit tzinfo."
-    use_when: "Naive datetimes inherit ambiguous local interpretation, timezone aware enforcement must catch them, and conftest error mode sets policy; error on naive, conftest set, timezone aware enforce, ambiguous local, runtime error, explicit tzinfo."
-    avoid_when: "Never leave naive datetimes in assertions."
+    problem: "Naive datetimes silently inherit ambiguous local interpretations, cause non-portable failures across developer machines and CI, and complicate timezone debugging; error on naive, conftest set, timezone-aware enforce, ambiguous local, runtime error, explicit tzinfo."
+    use_when: "The project requires timezone-aware datetimes; naive destinations must be rejected at travel time; a global policy should be set in `conftest.py`."
+    avoid_when: "Naive datetimes are acceptable in the domain; `NaiveMode.ERROR` would break existing tests; timezone handling is not relevant."
     expected: "Naive destinations raise `RuntimeError`; all test datetimes are timezone-aware."
   - anchor: time-control-timezone-aware
     what: "All datetime values in tests carry an explicit `tzinfo` (`datetime.UTC`, `zoneinfo.ZoneInfo`, or `datetime.timezone.utc`)."
-    problem: "Naive and aware mixing and now without timezone produce ambiguous, non-portable assertions; explicit tzinfo, utc zoneinfo, no naive aware mix, now with tz, portable, aware everywhere."
-    use_when: "Naive and aware datetimes mix, now without timezone produces non portable assertion, and explicit tzinfo everywhere keeps portable time; explicit tzinfo, utc zoneinfo, no naive aware mix, now with tz, portable, aware everywhere."
-    avoid_when: "Do not assert equality between naive and aware datetimes, and never trust `datetime.now()` without a timezone argument."
+    problem: "Naive and aware datetimes mix, and `now()` without timezone produces ambiguous, non-portable assertions that fail on machines with different local settings; explicit tzinfo, utc zoneinfo, no naive aware mix, now with tz, portable, aware everywhere."
+    use_when: "Datetime assertions must be portable across timezones; all timestamps must carry explicit `tzinfo`; naive datetimes must be rejected."
+    avoid_when: "Local timezone is stable and acceptable; the domain uses naive datetimes by design; portability across timezones is not required."
     expected: "Every datetime in assertions is explicitly timezone-aware; no naive/aware mixing."
   - anchor: time-control-freezegun
     what: "Use `freezegun` only as a legacy fallback or compatibility bridge when `time-machine` cannot be installed or the codebase already depends on it; prefer `time-machine` for new tests."
-    problem: "Defaulting to freezegun for new code locks in slower older mocking approach and risks event-loop stalls; legacy bridge, tick false, real async, modern mocker preferred, compatibility, not default new."
-    use_when: "New code defaults to freezegun, slower older mocking approach locks in, and time-machine stays preferred unless compatibility requires fallback; legacy bridge, tick false, real async, modern mocker preferred, compatibility, not default new."
-    avoid_when: "Do not choose `freezegun` for new tests when `time-machine` is available."
+    problem: "Defaulting to freezegun for new code locks in slower older mocking approach, risks event-loop stalls, and prevents adopting faster modern tooling; legacy bridge, tick false, real async, modern mocker preferred, compatibility, not default new."
+    use_when: "`time-machine` is unavailable; the codebase already depends on `freezegun`; a temporary compatibility bridge is needed."
+    avoid_when: "New tests are being written; `time-machine` is available; `freezegun` is chosen out of habit."
     expected: "`freezegun` appears only as a documented bridge with `tick=False, real_asyncio=True`; new tests use `time-machine`."
   - anchor: time-control-pytest-timeout
     what: "`pytest-timeout` is a safety net against hanging tests (infinite loops, deadlocks, accidental real-time waits), not a timing assertion."
-    problem: "Using timeout values to assert timing behavior is flaky; clock mocking is correct tool for timing; hang guardrail, infinite loop, deadlock, accidental wait, not timing assert, mock clock."
-    use_when: "Timeout value is used to assert timing behavior, that flakes, and timeout should only guard hangs while clock mocking checks timing; hang guardrail, infinite loop, deadlock, accidental wait, not timing assert, mock clock."
-    avoid_when: "Do not use timeout values as the primary way to assert timing behavior — mock the clock instead."
-    expected: "Timeouts act purely as hang guardrails; all timing behavior is asserted via mocked clocks."
+    problem: "Using timeout values to assert timing behavior is flaky, hides off-by-millisecond bugs, misleads reviewers into thinking performance is tested, and slows CI; hang guard rail, endless loop, deadlock, accidental wait, not timing assert, mock clock."
+    use_when: "The suite needs a hard limit to catch hangs, infinite loops, or deadlocks; timing behavior itself is asserted with mocked clocks."
+    avoid_when: "Timeout values are used as timing assertions; the suite has no hang risk; a global timeout policy is already in place."
+    expected: "Timeouts act purely as hang safety nets; all timing behavior is asserted via mocked clocks."
   - anchor: time-control-clock-provider
     what: "Inject a `Clock` protocol/fake (e.g., `FixedClock`) into components so tests use a fully deterministic fake clock without global side effects, instead of mocking global time."
-    problem: "Mocking global time across many components creates global side effects and brittle tests; inject clock protocol, deterministic fake, no global side effect, fixed clock, complex system, trivial use travel."
-    use_when: "Global time mocking across many components creates side effects and brittle tests, injected clock protocol gives deterministic fake without global mutation; inject clock protocol, deterministic fake, no global side effect, fixed clock, complex system, trivial use travel."
-    avoid_when: "Avoid it for trivial one-off datetime checks where `time-machine` is simpler and less invasive."
+    problem: "Mocking global time across many components creates global side effects and brittle tests, and makes parallel or shared runs unreliable; inject clock protocol, predictable fake, no global side effect, fixed clock, large system, trivial use travel."
+    use_when: "Many components read the clock and global mocking causes side effects; deterministic fake clock can be injected through a protocol; the system is too complex for simple travel."
+    avoid_when: "Only one function reads the clock; `time-machine` travel is simpler; injecting a clock would over-engineer the design."
     expected: "Complex systems take an injected fake clock; trivial checks use `time-machine`; no global time mocking."
 libraries:
   - freezegun
   - pytest-timeout
   - time-machine
 ---
+
 
 # TIME CONTROL
 

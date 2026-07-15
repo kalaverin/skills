@@ -46,7 +46,7 @@ Every card is a self-contained **decision-making system** and has EXACTLY these 
 - `anchor` — `{{ANCHOR_PREFIX}}-<recipe-slug>`, kebab-case, 1–4-word recipe slug (often embedding the API name).
 - `what` — brief, concise WHAT the entity under the anchor is, framed **as applied to solving `problem`** (not a detached generic definition); name the exact `API`/technique and key parameters.
 - `problem` — the agent's decision-time **situation + stake** for the case in this card (declarative), so the agent recognizes "this is my situation." Never a capability ("Assert on…"), never a goal/imperative ("Avoid…"), never the solution API (→ `what`), never the success state (→ `expected`). Ends with `; <concept/synonym keyword cloud>` (no commands, no library names). 30–50 words (≥3-letter tokens), no `a`/`the`. See §A.5.
-- `use_when` — a **list of clear, precise criteria** for when this recipe MUST be loaded and used (enumerate; version gates; concrete scenarios).
+- `use_when` — a **list of clear, precise criteria** for when this recipe MUST be loaded and used (enumerate; version gates; concrete scenarios). **MUST NOT restate or paraphrase `problem`** — it is the selection criterion ("pick this recipe when …"), not a rewording of the situation.
 - `avoid_when` — a **list of clear, precise criteria** for when this recipe MUST NOT be used (the canonical wrong forms). Fill it; empty only for a pure lookup entry.
 - `expected` — the **attainability criterion**: what we expect to hold after applying the recipe (the sign that `problem` is solved). Fill it; empty only for a pure lookup entry.
 
@@ -224,6 +224,7 @@ For other domains, substitute that domain's idioms but keep the same discipline:
 - `subject` follows the firm style: `<essence>; <keyword/API cloud>`, 30–50 words (≥3-letter tokens), no `a`/`the`, no tier marker, identifiers backticked; library/API names allowed in the cloud.
 - Every card has exactly the six keys, each a non-empty (avoid_when/expected may be empty only for pure lookups) double-quoted sentence; backticks on every identifier/flag/value/version.
 - Every `problem` follows the firm style: declarative **situation + stake** (not capability/goal/imperative), no solution API (→ `what`) and no success language (→ `expected`), 30–50 words (≥3-letter tokens), no `a`/`the`, and a concept/synonym-only keyword cloud with no Python commands or library names.
+- Every `use_when` gives independent selection criteria and does not restate or paraphrase its `problem`.
 - Every decision/routing/selection fact is in a card; the body has none of it.
 - Every body table is intra-recipe content, not a cross-recipe router; selection among recipes lives only in the cards. `## Anti-patterns`/`## Common Errors` (if any) carry their own anchor and card.
 - Anchors kebab-case `<prefix>-<slug>`, consistent prefix; card `anchor` == body `[ref: #anchor]`; convergence expressed by repeating anchors; markers partition the file (no nesting/bleed).

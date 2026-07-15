@@ -1,48 +1,54 @@
 ---
-subject: "Assert that the right events are logged: stdlib logs via `caplog` with `set_level`/`at_level`, inspecting `records`/`record_tuples`/`text`/`messages`/`get_records(when)`/`clear()`; structured events via `pytest-structlog` or `structlog.testing.capture_logs`; JSON output via a custom `StreamHandler`; avoid `logging.config.dictConfig` in tests, configure levels in `pyproject.toml`."
+subject: "Assert logged events and exception text carry expected content: stdlib capture via `caplog` with `set_level`/`at_level` and `records`/`record_tuples`/`text`/`messages`/`get_records(when)`/`clear()`, field-named error messages via `pytest.raises(match=...)`, structured events via `pytest-structlog` `log.events`/`log.has` or `structlog.testing.capture_logs`/`LogCapture`/`CapturingLoggerFactory`, JSON output via custom `StreamHandler`+`io.StringIO` parsed per line, `logging.config.dictConfig` runtime ban, `--log-cli-level`/`log_cli` display tuning."
 index:
   - anchor: logging-caplog
     what: "The built-in `caplog` fixture captures records emitted by the standard `logging` module, storing `WARNING` or higher by default; the level is changed for a whole test with `caplog.set_level(level, logger=...)` or scoped to a block with the `caplog.at_level(level, logger=...)` context manager, and records are read via `caplog.records`, `caplog.record_tuples`, `caplog.text`, and `caplog.messages`, reset with `caplog.clear()`, and phase-sliced with `caplog.get_records(when)` for 'setup'/'call'/'teardown'."
-    problem: "Test must prove what stdlib logging emits during run without installing custom handlers, capturing only level and logger opted into; capture records, level scope, logger filter, phase slice, clear setup noise, auto-restore level, no custom handler."
-    use_when: "Test must prove stdlib logging output, custom handlers are unnecessary, and opted level plus logger scope enough; capture records, level scope, logger filter, phase slice, clear setup noise, auto restore level, no custom handler."
-    avoid_when: "Do not assert against the default `WARNING`-and-above capture when the log under test is `INFO`/`DEBUG` (lower the level with `at_level`/`set_level` first), and do not read unfiltered `caplog.records` across phases when setup or teardown noise would pollute the assertion (use `caplog.clear()` and `caplog.get_records(when)`)."
-    expected: "Only the opted-in level and logger are captured, levels auto-restore after the test, and assertions read the right phase and logger via `records`/`record_tuples`/`get_records` with no setup or teardown noise."
+    problem: "Test must prove what stdlib logging emits during run without installing custom handlers, capturing only level and logger opted into; default warning threshold, invisible info debug, setup teardown pollution, record tuple shape, formatted text versus messages, phase-scoped read."
+    use_when: "Assertion concerns stdlib logging output; capture default would hide INFO/DEBUG record under test; capture must narrow to specific level, logger, or test phase."
+    avoid_when: "Default WARNING-only capture asserted against INFO/DEBUG emission; unfiltered `caplog.records` read across phases although setup/teardown noise pollutes assertion; custom handler installed where built-in fixture suffices."
+    expected: "Only opted-in level and logger are captured, levels restore after test, and assertions read correct phase via `records`/`record_tuples`/`get_records` with no setup or teardown noise."
   - anchor: logging-messages-and-exceptions
     what: "Asserting that log messages and exception text carry actionable context and the expected field names, verified with `pytest.raises(Exc, match=...)` and by inspecting `str(exc_info.value)`."
-    problem: "Error messages omitting offending field or context make failures hard to diagnose from logs alone; actionable message, field name present, context in text, match fragment, diagnose from log, missing field."
-    use_when: "Error text must name offending field and context, logs alone should diagnose failure, and exception string carries that fragment; actionable message, field name present, context in text, match fragment, diagnose from log, missing field, exception text."
-    avoid_when: "Do not assert only that an exception type is raised; the example constructs `UserCreate(email=None)` and asserts the field name `email` is present, so verify the actionable field/context in the message rather than the type alone."
-    expected: "Raised exceptions and log messages include the offending field name and context, so failures are diagnosable from message text asserted via `match=` and `str(exc_info.value)`."
+    problem: "Error message omits offending field name and context, so diagnosing failure from logs alone turns into guesswork once only records remain; type-only assertion gap, production log diagnosis, required-field message, message as contract, support ticket reading, offending value echoed."
+    use_when: "Error contract includes message content, not just type; log text must suffice for diagnosis without reproducing; specific field or context fragment belongs in output."
+    avoid_when: "Assertion stops at exception type with no message check; vague message without field name or context accepted as contract; `match=` fragment so broad it passes on any text."
+    expected: "Raised errors and log messages name offending field with context, so message text alone supports diagnosis via `match=` and `str(exc_info.value)`."
   - anchor: logging-avoid-dictconfig
     what: "The rule that `logging.config.dictConfig` must not run during a `caplog`-dependent test because it can remove the capture handler pytest installed; configure logging at session or import time, or patch out the runtime reconfiguration in the code under test."
-    problem: "Mid-test logging reconfiguration can strip capture handler, so caplog silently records nothing and test gives false negative; capture handler stripped, silent empty capture, patch out reconfigure, session-time config, false negative, handler stays installed."
-    use_when: "Runtime logging reconfiguration can strip capture handler, caplog would silently record nothing, and session time config or patch keeps handler installed; capture handler stripped, silent empty capture, patch out reconfigure, session time config, false negative, handler stays installed."
-    avoid_when: "Do not call `logging.config.dictConfig` during a test that relies on `caplog`; configure logging at session or import time instead, or neutralize the runtime reconfiguration with a patch."
-    expected: "Runtime logging reconfiguration is disabled or moved out of the test path, so pytest's capture handler stays installed and `caplog` keeps recording the expected records."
+    problem: "Code under test reconfigures logging mid-run, which can remove capture handler pytest installed, so caplog records nothing while suite stays green; dictconfig at runtime, false green build, handler ownership, configure timing choice, reconfigure hidden in fixture."
+    use_when: "Code under test calls logging configuration at runtime; `caplog` assertions exist in same suite; empty capture must be distinguishable from genuine no-log."
+    avoid_when: "`logging.config.dictConfig` executes on test path relying on `caplog`; reconfiguration left active where patching it out is one line; logging configured repeatedly per test instead of once at session/import time."
+    expected: "Runtime reconfiguration is patched out or moved to session/import time, capture handler survives, and `caplog` keeps recording expected records."
   - anchor: logging-structured
     what: "Capturing structured structlog events with the `log` fixture from `pytest-structlog`, which exposes `log.events` and the helper `log.has(event, **context)`."
-    problem: "Plain caplog hides structured bound context inside formatted message, so structured fields cannot be asserted directly; bound context intact, structured event, has helper, no text parsing, contextvar fields, event list assert."
-    use_when: "Structured logging binds context fields, formatted message hides them, and event list or helper can assert fields directly; bound context intact, structured event, has helper, no text parsing, contextvar fields, event list assert, structlog fixture."
-    avoid_when: "Do not rely on plain `caplog` to inspect structlog bound context (it is hidden in the formatted message); use the `log` fixture's `log.has(...)` and `log.events` instead."
-    expected: "Structured events are captured with bound context intact and asserted via `log.has(...)`/`log.events` rather than by parsing formatted log text."
-  - anchor: logging-json
+    problem: "Plain caplog flattens structlog bound context into formatted message string, so key-value fields like user_id escape direct assertion and force fragile text parsing; event dict shape, plugin fixture present, bound user id field, event list membership."
+    use_when: "Application logs through structlog with bound context; assertion targets individual fields rather than formatted text; `pytest-structlog` available in environment."
+    avoid_when: "Plain `caplog` expected to expose bound context (it lands inside formatted message); field assertions done through string parsing of `caplog.text`; stdlib-only logging under test (fixture adds nothing there)."
+    expected: "Structured events arrive with bound context intact, asserted per field via `log.has(...)` or `log.events` membership instead of text parsing."
+  - anchor: logging-structured
     what: "Capturing raw structlog events without `pytest-structlog` using `structlog.testing.capture_logs()` as a context manager, with `structlog.testing.LogCapture` installable as a custom fixture and `structlog.testing.CapturingLoggerFactory` for low-level logger-call assertions."
-    problem: "Structlog emitter behavior must unit-test in projects without structlog plugin, including processor-chain effects like contextvar merging; plugin-free capture, raw events, processors explicit, contextvar merge, json render, logger factory."
-    use_when: "Structlog behavior must unit test without plugin, processor chain effects matter, and raw events give direct field assertions; plugin free capture, raw events, processors explicit, contextvar merge, json render, logger factory, testing capture."
-    avoid_when: "Do not assume `capture_logs()` runs your processors by default (it disables them); pass a `processors` list when processor behavior such as contextvar merging affects the result."
-    expected: "Plugin-free structlog tests capture raw events with processors enabled explicitly when they affect the result, and assert on event fields via `capture_logs()`, `LogCapture`, or `CapturingLoggerFactory`."
-  - anchor: logging-cli
+    problem: "Structlog emitter behavior needs unit-level verification in project without `pytest-structlog` plugin, and processor-chain effects like contextvar merging must survive capture intact; processors disabled gotcha, low-level logger calls, dict-style event access, custom capture fixture."
+    use_when: "Structlog behavior needs unit tests and `pytest-structlog` is absent or unwanted; processor chain affects emitted event; assertions target raw event fields."
+    avoid_when: "`capture_logs()` expected to run processors (they are disabled unless passed explicitly); contextvar-dependent events asserted without enabling chain; plugin fixture available but bypassed for hand-rolled capture."
+    expected: "Raw events captured plugin-free with processors enabled explicitly when they shape the result, asserted via `capture_logs()`, `LogCapture`, or `CapturingLoggerFactory`."
+  - anchor: logging-json
     what: "Testing JSON-formatted stdlib logs by configuring a `JSONFormatter` subclass or `python-json-logger`, capturing the formatted output through a `logging.StreamHandler` backed by `io.StringIO`, then parsing each JSON line and asserting on its fields."
-    problem: "Emitted JSON log lines must contain expected structured fields (message, level, logger, extras) verified by parsing, not raw string assert; parse json line, field assert, in-memory handler, isolate logger, extras field, no raw string."
-    use_when: "Emitted logs are JSON lines, expected fields must verify by parsing, and raw string assertion would miss structure; parse json line, field assert, in memory handler, isolate logger, extras field, no raw string, json formatter."
-    avoid_when: "Do not assert on the raw formatted string instead of parsing JSON and checking fields, and do not leave the patched logger propagating to other handlers (the example sets `propagate=False` and replaces `handlers`) so duplicate or differently formatted records do not pollute the stream."
-    expected: "JSON log lines are parsed into dicts and their fields (message, level, logger, extras like `request_id`) are asserted, with the test logger isolated to the in-memory handler."
-  - anchor: logging-variety-booster
+    problem: "Emitted JSON log lines must carry expected structured fields (message, level, logger, extras like request_id), and asserting on raw formatted string instead of parsed document misses structure-level regressions; propagation duplicate records, request id extra, formatter under test, json line schema."
+    use_when: "Service emits JSON-formatted logs; field-level verification matters more than string matching; formatted output can route through in-memory stream."
+    avoid_when: "Raw formatted string asserted instead of parsed fields; patched logger left propagating to other handlers so records duplicate or mix formats; formatter behavior assumed rather than exercised through `StreamHandler`."
+    expected: "Each emitted line parses into dict whose message, level, logger, and extras fields assert cleanly, with test logger isolated to in-memory handler."
+  - anchor: logging-cli
     what: "Pytest's log-visibility controls — CLI options `--log-cli-level`, `--log-cli-format`, `--log-format`, `--log-date-format`, `--log-file`, and `--log-file-level`, with persistent equivalents `log_cli` and `log_level` under `[tool.pytest.ini_options]`."
-    problem: "Log display in console or file must tune during run without changing capture semantics that tests rely on; live console output, file output, format tune, capture unchanged, persistent setting, ad-hoc display."
-    use_when: "Log display must tune during run, capture semantics tests rely on must stay unchanged, and persistent or ad hoc options control visibility; live console output, file output, format tune, capture unchanged, persistent setting, ad hoc display, log level."
-    avoid_when: "Do not expect these CLI options or `log_cli`/`log_level` settings to change how `caplog` captures records; they only affect how logs are displayed or written to files."
-    expected: "Log display and file output are tuned via `--log-*` options or `log_cli`/`log_level`, while `caplog` capture semantics remain unchanged."
+    problem: "Console shows too little during failure triage and persistent display preferences scatter across developer machines, yet tuning display must never alter capture semantics assertions depend on; ci log artifact, live debugging visibility, post-mortem log review, date format control."
+    use_when: "Console or file display needs adjustment for one run or persistently; `caplog`-based assertions exist and their semantics must stay untouched; team shares ini-level logging preferences."
+    avoid_when: "Display options expected to change what `caplog` records (they only affect presentation and file writes); per-developer flags relied on where shared ini setting expresses team default; capture tuning attempted through `--log-*` flags."
+    expected: "Visibility is tuned via `--log-*` options or `log_cli`/`log_level` settings while `caplog` keeps capturing exactly as before."
+  - anchor: logging-variety-booster
+    what: "Covering level routing, logger identity, and message content in one parametrized test by combining `@pytest.mark.parametrize` over `(level, message_fragment)` with `caplog.at_level` and `record_tuples` membership assertions."
+    problem: "Level, logger name, and message fragment each deserve coverage, yet separate test per combination triples body count with identical arrange and assert logic; tuple membership proof, randomized input stability, info warning error ladder, fragment substring match, tuple name level message."
+    use_when: "Several level/message combinations need identical assertion logic; captured tuples must match regardless of randomized input; one body should cover level routing, logger name, and content."
+    avoid_when: "One test cloned per level or fragment; assertion tied to specific random value instead of stable fragment; `record_tuples` ignored while re-parsing `caplog.text` manually."
+    expected: "Single parametrized body proves every level routes with expected fragment on right logger, independent of faker-generated inputs."
 libraries:
   - pytest-structlog
   - python-json-logger

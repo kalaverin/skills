@@ -1,36 +1,42 @@
 ---
-subject: "Exercise command-line interfaces in-process and reserve subprocess for installed binaries: design `argparse` as `main(arg_list)` with `shlex.split`+`capsys`, drive `click` via `CliRunner`, drive `typer` via its runner, and smoke-test entry points with `subprocess.run`; parametrize missing/invalid/unknown args, `--help`, `--version`, and error paths."
+subject: "Exercise command-line interfaces in-process and reserve subprocess for installed binaries: design `argparse` as `main(arg_list)` with `shlex.split`+`capsys`, drive `click`/`typer` via `CliRunner`, smoke-test entry points with `subprocess.run`; parametrize missing/invalid/unknown args, `--help`, `--version`, error paths, avoiding brittle global state and exact-string assertions."
 index:
   - anchor: cli-testing-argparse
     what: "Designing an `argparse` entry point as `main(arg_list)` that accepts an optional argument list so tests call it directly in-process and assert on `SystemExit.code` and captured output."
-    problem: "Mutating global `sys.argv` and spawning subprocesses makes CLI test nondeterministic, so entry point must run in-process with captured streams; in-process invocation, argument list, exit code assert, no global state, flag variants, deterministic output."
-    use_when: "CLI entry point can run in process through argument list, global `sys.argv` mutation is unnecessary, and exit code plus captured streams define behavior; in process invocation, argument list, exit code assert, no global state, flag variants, deterministic output, shlex split."
-    avoid_when: "Do not patch `sys.argv` directly instead of designing `main(arg_list)`, do not run pytest with `-s` to see output (use `capsys` or `capfd`), do not assert equality against the full output string, and do not ignore `SystemExit.code` (verify it via `exc_info.value.code`)."
-    expected: "The CLI runs in-process with no global-state mutation, exit codes and output substrings are asserted deterministically, and harmless message changes do not break tests."
+    problem: "Mutating global `sys.argv` and spawning subprocesses makes CLI test nondeterministic, so entry point must run in-process with captured streams; in-process invocation, main signature, exit code assert, importable entry point, direct call, flag variants."
+    use_when: "CLI entry point can be imported and invoked in-process; designing or refactoring toward `main(arg_list)`; exit code plus output content define the behavior under test."
+    avoid_when: "Patching `sys.argv` directly instead of designing `main(arg_list)`; running pytest with `-s` to see output (use `capsys` or `capfd`); asserting equality against the full output string; ignoring `SystemExit.code` (verify it via `exc_info.value.code`)."
+    expected: "The CLI runs in-process without touching global state, exit codes and output substrings are asserted deterministically, and harmless message changes do not break tests."
   - anchor: cli-testing-click
     what: "Driving `click` commands with `click.testing.CliRunner` and asserting on structured `result` fields (`exit_code`, `output`, `exception`) instead of global capture fixtures."
-    problem: "Click command with prompts, file-system side effects, or subcommands must run isolated without process-wide capture, asserting structured result fields; isolated filesystem, prompt input, subcommand routing, result exit code, result output, runner invoke."
-    use_when: "Click command includes prompts, filesystem side effects, or subcommands, and structured runner result gives stronger assertion than global capture; isolated filesystem, prompt input, subcommand routing, result exit code, result output, runner invoke, command result."
-    avoid_when: "Do not run pytest with `-s` to observe output (use the runner's result fields), do not assert equality against the entire output string, and do not ignore the exit code (verify `result.exit_code`); use `catch_exceptions=False` and `mix_stderr=False` only to target specific error-formatting or stderr-only behavior."
+    problem: "Click command with prompts, file-system side effects, or subcommands must run isolated without process-wide capture, asserting structured result fields; runner invoke, command harness, prompt simulation, fs isolation, group routing, temporary directory, exception capture."
+    use_when: "Testing `click` commands, especially with prompts, filesystem isolation, or group subcommands involved; runner-managed results beat process-wide stream capture."
+    avoid_when: "Running pytest with `-s` to observe output (the runner's result fields replace it); equality asserted against the entire output string; exit code ignored (verify `result.exit_code`); `catch_exceptions=False` and `mix_stderr=False` flipped on without a specific error-formatting or stderr-only target."
     expected: "Commands run through `CliRunner` with isolated side effects, and assertions read `result.exit_code`, `result.output`, and `result.exception` rather than global streams."
   - anchor: cli-testing-typer
     what: "Using `typer.testing.CliRunner` exactly like Click's runner, and wrapping plain functions in a temporary `typer.Typer()` app to test them as commands."
-    problem: "Typer application or Typer-annotated function must run as command with same structured-result assertions, covering routing and option aliases; ad-hoc command, temporary app, runner invoke, alias behavior, exit code, consistent routing."
-    use_when: "Typer app or Typer annotated function must run as command, with same runner semantics as Click and alias behavior under assertion; ad hoc command, temporary app, runner invoke, alias behavior, exit code, consistent routing, typed command."
-    avoid_when: "Do not run pytest with `-s` to see output (use the runner's result fields), do not assert equality against the entire output string, and do not ignore the exit code (verify `result.exit_code`)."
-    expected: "Typer apps and ad-hoc commands run through `CliRunner` with consistent routing and alias behavior, asserted via `result.exit_code` and `result.output`."
+    problem: "Typer application or Typer-annotated function must run as command with same structured-result assertions, covering routing and option aliases; ad-hoc command, temporary app, function wrapping, command registration, plain function harness, option alias check."
+    use_when: "Testing a `typer` application; plain function must be exercised as a command via a temporary `typer.Typer()` app; option aliases and routing must be verified."
+    avoid_when: "Pytest run with `-s` to see output (the runner's result fields replace it); equality asserted against the entire output string; exit code ignored (verify `result.exit_code`)."
+    expected: "Apps and temporary commands execute through `CliRunner` with verified routing and aliases, asserted via `result.exit_code` and `result.output`."
   - anchor: cli-testing-subprocess
     what: "Shelling out with `subprocess.run(shlex.split(cmd), capture_output=True, text=True)` to verify an installed entry point as a user would run it, asserting only `returncode` and salient output fragments."
-    problem: "Installed entry point runs as real process that in-process runners cannot reach, yet asserting whole output strings makes test brittle; packaged binary, console script, executable smoke test, end-to-end invocation, deployment artifact, fragment assertion."
-    use_when: "Installed entry point cannot be imported, packaging smoke test needs real process, and only return code plus salient fragments matter; packaged binary, console script, executable smoke test, end to end invocation, deployment artifact, fragment assertion, return code."
-    avoid_when: "Do not shell out when an in-process invocation would exercise the same behavior, and do not assert equality against the entire output string."
-    expected: "The installed entry point is verified end-to-end with `returncode` and fragment assertions, while in-process runners remain the default for importable CLIs."
+    problem: "Installed entry point runs as real process that in-process runners cannot reach, yet asserting whole output strings makes test brittle; packaged binary, console script, executable smoke test, end-to-end invocation, fragment assertion."
+    use_when: "Entry point cannot be imported and must run as a real process; smoke-testing a packaged or installed binary; only exit status and key output fragments carry the contract."
+    avoid_when: "Shelling out when an in-process invocation would exercise the same behavior; equality asserted against the entire output string."
+    expected: "Installed binaries are smoke-verified through `returncode` plus salient fragments, while importable CLIs keep their faster in-process path."
   - anchor: cli-testing-common-cases
-    what: "A framework-independent checklist of invariant categories (valid arguments, missing required argument, invalid value or wrong type, unknown flag, `--help`/`--version`, error path) and what to assert for each."
-    problem: "CLI behavior drifts across refactors unless every framework shares one invariant sweep over valid, missing, invalid, unknown, help, version, and error paths; invariant categories, parametrized matrix, flag coverage, error path, help version, refactor safety."
-    use_when: "CLI behavior must stay stable across refactors, valid missing invalid unknown help version and error paths form one matrix; invariant categories, parametrized matrix, flag coverage, error path, help version, refactor safety, cli contract."
-    avoid_when: "Do not write a separate test per flag or argument — collapse the categories into one `@pytest.mark.parametrize` invariant sweep."
-    expected: "Every CLI is covered across all invariant categories with a single parametrized matrix."
+    what: "A framework-independent checklist of CLI scenarios (valid arguments, missing required argument, invalid value or wrong type, unknown flag, `--help`/`--version`, failures) and what to assert for each."
+    problem: "CLI behavior drifts across refactors unless every framework shares one invariant sweep over valid, missing, invalid, unknown, help, version, and error paths; scenario grid, parametrized matrix, flag coverage, usage hint, exit code table."
+    use_when: "Designing the test matrix for any CLI; coverage must span valid input, missing required arguments, invalid values, unknown flags, `--help`/`--version`, and failure handling; refactoring safety requires a shared invariant sweep."
+    avoid_when: "Separate test per flag or argument — collapse the categories into one `@pytest.mark.parametrize` matrix."
+    expected: "Every CLI is covered by one parametrized sweep spanning all scenario rows."
+  - anchor: cli-testing-anti-patterns
+    what: "A checklist of brittle CLI-test forms: global `sys.argv` mutation, output leaked to the terminal, and full-string output equality that snaps on any cosmetic change."
+    problem: "CLI suite hardcodes exact output strings and mutates process-wide argument state, so harmless message edits break tests and parallel runs collide; brittle equality, argv patching, terminal pollution, cosmetic churn, snapshot fragility, ci flakiness."
+    use_when: "Reviewing a CLI suite for brittleness; tests fail after harmless message edits; output appears on the terminal despite capture fixtures; removing direct `sys.argv` patching from existing tests."
+    avoid_when: "Snapshot baselines where full-output comparison is the deliberate mechanism (e.g. `pytest-regressions`) — this checklist targets hand-written exact-string equality."
+    expected: "CLI tests assert exit codes plus salient fragments, global state stays untouched, and cosmetic message edits no longer break the suite."
 libraries:
   - click>=8.4
   - typer
