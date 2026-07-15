@@ -1,0 +1,11 @@
+# Nim Standard Library — Markdown Reference
+
+Generated from Nim sources. Each module links to its rendered page.
+{% for group in groups %}
+
+## {{ group.name }}
+{% for entry in group.entries %}
+
+- [{{ entry.name }}]({{ entry.link }}) — `[ref: #{{ entry.anchor }}]`
+{% endfor %}
+{% endfor %}

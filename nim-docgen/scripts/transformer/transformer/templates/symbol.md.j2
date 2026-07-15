@@ -1,0 +1,50 @@
+
+### {{ symbol.name }}
+
+[ref: #{{ symbol.anchor }}]
+{% if symbol.summary %}
+
+{{ symbol.summary }}
+{% endif %}
+{% if symbol.show_signature %}
+
+**Input:**
+{% for input in symbol.inputs %}
+- `{{ input }}`
+{% else %}
+- *(none)*
+{% endfor %}
+
+**Output:** {% if symbol.output %}`{{ symbol.output }}`{% else %}*(none)*{% endif %}
+{% if symbol.generic_params %}
+
+**Generic parameters:** {{ symbol.generic_params }}
+{% endif %}
+{% if symbol.pragmas %}
+
+**Pragmas:** {{ symbol.pragmas }}
+{% endif %}
+{% if symbol.effects %}
+
+**Effects:** {{ symbol.effects }}
+{% endif %}
+{% elif symbol.code %}
+
+```nim
+{{ symbol.code }}
+```
+{% endif %}
+{% if symbol.description %}
+
+{{ symbol.description }}
+{% endif %}
+{% if symbol.examples %}
+
+**Examples:**
+{% for example in symbol.examples %}
+
+```nim
+{{ example }}
+```
+{% endfor %}
+{% endif %}
