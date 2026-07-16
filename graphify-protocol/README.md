@@ -1,29 +1,37 @@
 # graphify-protocol
 
-Agent skill that turns folders of code, documentation, images, video, and papers into a persistent, queryable knowledge graph.
+Turns code, docs, images, video, and papers into a queryable knowledge graph.
 
-## What this skill does
+## What it does
 
-`graphify-protocol` defines a slash-command interface and a multi-stage pipeline for building knowledge graphs from arbitrary inputs. The skill itself is a documentation-only protocol; the actual work is performed by the `graphify` Python package (`graphifyy` on PyPI). The pipeline covers:
+This skill defines the `/graphify` command interface for building knowledge graphs from arbitrary inputs.
+It runs a multi-stage pipeline that detects files, extracts structure from code ASTs, extracts semantics from documents and images, builds a graph, detects communities, labels them, and produces interactive HTML, a plain-language report, and raw graph data.
+You can then query the graph, trace paths between concepts, and export to formats such as Obsidian, Neo4j, FalkorDB, SVG, GraphML, or MCP.
 
-- File detection.
-- AST and LLM-based semantic extraction.
-- Graph construction.
-- Community detection and labeling.
-- Export and serving.
+## When it activates
 
-The skill exposes commands such as `/graphify`, `/graphify query`, `/graphify path`, and `/graphify explain`.
+Activates when a `graphify-out/` directory exists in the workspace and you ask a question about the codebase, its architecture, or file relationships.
+Also activates when you use the `/graphify` slash command.
+Examples:
+- "How does authentication work in this project?"
+- "What calls the payment service?"
+- "/graphify ."
+- "/graphify query trace data flow from API to database"
 
-## When to use it
+## How to use it
 
-Use this skill when the request involves:
+Install the `graphify` package from PyPI, for example with `uv tool install graphifyy` or `pip install graphifyy`.
+Run `/graphify <path>` to build a graph from a directory, or `/graphify https://github.com/<owner>/<repo>` to clone and graph a repository.
+Once `graphify-out/graph.json` exists, ask natural-language questions and the agent will query the graph directly.
+Set `GEMINI_API_KEY` or `GOOGLE_API_KEY` to enable the Gemini semantic extraction backend; otherwise the agent dispatches general-purpose subagents.
 
-- Understanding a codebase, its architecture, or file relationships.
-- Querying a project as a knowledge graph.
-- Explaining connections between symbols, files, or concepts.
-- Ingesting documentation, papers, images, or video into a graph.
+## What it produces
 
-The skill is especially relevant when a `graphify-out/` directory already exists in the workspace.
+- `graphify-out/graph.html` — interactive graph.
+- `graphify-out/GRAPH_REPORT.md` — plain-language audit report.
+- `graphify-out/graph.json` — raw graph data.
+- Optional exports: Obsidian vault, Neo4j/FalkorDB cypher, SVG, GraphML, MCP server, or wiki.
+- `graphify-out/cost.json` with cumulative token spend.
 
 ## Repository layout
 
@@ -38,44 +46,28 @@ graphify-protocol/
 │   ├── query.md
 │   ├── transcribe.md
 │   └── update.md
-├── .graphify_version     # Declares the recommended graphify package version (0.8.39)
-└ SKILL.md                # Skill entry point and /graphify command reference
+├── .graphify_version     # Recommended graphify package version
+└── SKILL.md              # Agent entry point and `/graphify` command reference
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Install the `graphify` package from PyPI:
-   - `uv tool install graphifyy` or `pip install graphifyy`.
-   - Optional extras: `graphifyy[gemini]` for Gemini backend, `graphifyy[video]` for video/audio transcription.
-2. Open `SKILL.md` for the command reference and lazy-load routing index.
-3. Build the graph with `/graphify` and the appropriate source path or URL.
-4. Query the graph with `/graphify query`, `/graphify path`, or `/graphify explain`.
-5. Export or serve the graph using the options documented in `references/exports.md`.
-
-## Reference index
-
-| File | Purpose |
-|------|---------|
+| File | What it covers |
+|------|----------------|
 | `references/add-watch.md` | Ingestion and watch mode (`add`, `--watch`, URLs) |
 | `references/exports.md` | Export formats: HTML, SVG, GraphML, Obsidian, wiki, Neo4j, FalkorDB, MCP stdio |
 | `references/extraction-spec.md` | Semantic extraction JSON schema, node/edge/hyperedge rules |
-| `references/github-and-merge.md` | GitHub clone and graph merge workflows |
-| `references/hooks.md` | Git hooks and Claude Code integration |
+| `references/github-and-merge.md` | GitHub clone and cross-repo graph merge workflows |
+| `references/hooks.md` | Git commit hook and Claude Code integration |
 | `references/query.md` | Query commands: `query`, `path`, `explain`, `--dfs`, `--budget` |
-| `references/transcribe.md` | Video/audio transcription with `yt-dlp` and Whisper |
-| `references/update.md` | Incremental update pipeline |
+| `references/transcribe.md` | Video and audio transcription with `yt-dlp` and Whisper |
+| `references/update.md` | Incremental update and cluster-only pipelines |
 
-## Important environment variables
+## Important conventions / gotchas
 
-- `GEMINI_API_KEY` / `GOOGLE_API_KEY` — enables the Gemini semantic extraction backend.
-- `GRAPHIFY_GEMINI_MODEL` — overrides the default Gemini model (`gemini-3-flash-preview`).
-- `GRAPHIFY_WHISPER_MODEL` — selects the Whisper model for transcription (default `base`).
-- `GRAPHIFY_WHISPER_PROMPT` — domain hint passed to Whisper.
-
-## Conventions
-
-- Slash commands (`/graphify ...`) are the primary user interface.
-- Output artifacts are written to `graphify-out/`.
-- Semantic extraction requires general-purpose subagents; read-only Explore subagents will silently drop chunks.
-- Token spend is tracked in `graphify-out/cost.json` but is not hard-capped.
-- The recommended package version is stored in `.graphify_version`.
+- The actual work is performed by the PyPI package `graphifyy`, not by this skill directly.
+- Semantic extraction requires general-purpose subagents; read-only subagents will drop chunks silently.
+- Large corpora trigger a warning and may ask you to narrow to a subfolder.
+- Token spend is tracked but not hard-capped.
+- `GEMINI_API_KEY` or `GOOGLE_API_KEY` enables Gemini backend; `GRAPHIFY_GEMINI_MODEL` overrides the default model.
+- `GRAPHIFY_WHISPER_MODEL` and `GRAPHIFY_WHISPER_PROMPT` configure video/audio transcription.

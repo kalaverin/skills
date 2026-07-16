@@ -1,21 +1,46 @@
 # shell-protocol
 
-Mandatory CLI tooling conventions for this agent workspace.
+Defines the modern CLI toolkit the agent uses when it works with files, search, and Python projects.
 
-## What this skill does
+## What it does
 
-`shell-protocol` replaces legacy UNIX utilities with modern, high-performance alternatives and provides a routing table so agents know which reference section to extract for a given filesystem, search, replacement, or Python-ecosystem task. It governs:
+This skill replaces legacy UNIX utilities with fast, modern alternatives.
+It tells the agent to use `lsd` instead of `ls`, `fd` instead of `find`, `rg` instead of `grep`, `ruplacer` instead of `sed` for bulk replacements, `uv` instead of `pip`/`poetry`/`virtualenv`, and `ruff` instead of `black`/`flake8`/`isort`.
+It also ships tool-specific recipes so the agent picks the right flags for listing, searching, replacing, linting, formatting, and dependency management.
 
-- Core filesystem and search tools.
-- Bulk code replacement.
-- Python ecosystem tooling.
-- Tool-specific recipes for agents.
+## When it activates
 
-The skill contains no executable code; it is a prose guidance module consumed by the agent prompt system.
+No action needed — loaded automatically in every session.
 
-## When to use it
+It applies whenever you ask the agent to:
 
-This skill is loaded automatically (`triggers: always: true`) because every file/code operation uses CLI tools.
+- list directory contents
+- search the filesystem by name, extension, or type
+- grep or search text inside files
+- lint or format Python code
+- replace text across multiple files
+- run Python tools or manage dependencies
+
+Example prompts:
+
+- "List the top-level files in this repo."
+- "Find all Python files that import `temporalio`."
+- "Search for `TODO` across the codebase."
+- "Format and lint the changed Python files."
+- "Replace `old_name` with `new_name` everywhere."
+
+## How to use it
+
+You do not need to configure anything.
+Just ask the agent for the file or code operation you want.
+The skill will route the request to the modern tool and apply safety rules, such as running a dry run before a `ruplacer` write and running `ruff` after Python edits.
+
+## What it produces
+
+- Consistent tool selection across every session.
+- Safe bulk edits via dry-run-first replacement.
+- Cleaner Python code through `ruff check` and `ruff format`.
+- Manageable directory listings with depth limits.
 
 ## Repository layout
 
@@ -30,50 +55,25 @@ shell-protocol/
 │   ├── tree.md
 │   ├── uv-full.md
 │   └── uv.md
-└ SKILL.md                # Entry point, tool-replacement rules, and routing table
+└── SKILL.md              # Agent entry point: tool-replacement rules and routing index
 ```
 
-## Mandatory tool replacements
+## Reference overview
 
-| Legacy tool | Modern replacement |
-|-------------|-------------------|
-| `ls` | `lsd` |
-| `find` | `fd` |
-| `grep` | `rg` (ripgrep) |
-| `sed` (bulk symbol replaces) | `ruplacer` |
-| `pip`, `poetry`, `virtualenv` | `uv` |
-| `black`, `flake8`, `isort` | `ruff` |
-
-## How to use this skill
-
-1. Open `SKILL.md` for the tool-replacement rules and master routing table.
-2. Match the task to a routing-table entry.
-3. Extract the relevant `[ref: #...]` section from the target reference file using `rg`.
-4. Execute the command using the modern tool.
-5. Verify the output and confirm no unmodified files were changed.
-
-## Reference index
-
-| File | Topic |
-|------|-------|
+| File | What it covers |
+|------|----------------|
+| `references/fd-find.md` | Finding files by name, extension, type, size, and modified time |
+| `references/lsd.md` | Colorized directory listings and git-aware displays |
+| `references/ripgrep.md` | Searching text and symbols inside files |
+| `references/ruff.md` | Linting and formatting Python code |
+| `references/ruplacer.md` | Bulk find/replace with dry-run safety |
 | `references/tree.md` | Directory-tree visualization |
-| `references/lsd.md` | Directory listing with sizes, permissions, git status |
-| `references/fd-find.md` | Finding files by name, extension, type, size, modified time |
-| `references/ripgrep.md` | Searching text/code inside files; finding imports/usages |
-| `references/ruplacer.md` | Bulk find/replace with mandatory dry-run-first rule |
-| `references/ruff.md` | Python linting and formatting |
-| `references/uv.md` | Safe, read-only `uv` command subset |
+| `references/uv.md` | Safe, read-only `uv` commands |
 | `references/uv-full.md` | Complete `uv` command reference |
 
-## Core execution mandates
+## Important conventions / gotchas
 
-- **`ruplacer`**: perform a dry run (omit `--go`) first, review stdout, then execute writes.
-- **`ruff`**: run `ruff check` and `ruff format` after any Python file modification; only fix code you modified.
-- **`uv`**: prefer the safe workflow (`uv run --no-sync`, `--frozen`, `--locked`) unless explicit package installation or lock mutation is required.
-- **`tree` / `lsd`**: limit recursion depth (e.g., `--depth 3` or `-L 3`) to avoid output flooding.
-
-## Conventions
-
-- `SKILL.md` begins with a YAML frontmatter block declaring `name`, `description`, and `triggers: always: true`.
-- Reference files use `[ref: #...]` anchors for lazy extraction.
-- Agents are forbidden from reading full reference manuals; they must extract only the relevant section.
+- This skill governs tool selection, not Python language rules; for full Python style guidance use the `python-lang` skill.
+- The agent always performs a `ruplacer` dry run before writing.
+- The agent runs `ruff check` and `ruff format` after any Python file change.
+- Directory listings and tree views are limited in depth to avoid flooding the context.

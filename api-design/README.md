@@ -1,37 +1,40 @@
 # api-design
 
-Agent skill that codifies the Google API Improvement Proposal (AIP) standards for resource-oriented API design.
+Enforces Google AIP rules when you design or review resource-oriented APIs.
 
-## What this skill does
+## What it does
 
-`api-design` provides a binding rule set and a lazy-load routing index for designing and reviewing:
+This skill gives you a binding, Google AIP-driven reference for resource-oriented API design.
+It covers resource naming, parent-child relationships, standard and custom operations, field design, pagination, filtering, field masks, soft delete, ETags, compatibility, versioning, deprecation, naming conventions, documentation, errors, retry configuration, and Protocol Buffers API structure.
+Use it to keep REST, gRPC, OpenAPI, Swagger, and GraphQL designs consistent with Google's API Improvement Proposals.
 
-- Resources, resource names, and parent-child relationships.
-- Standard and custom operations.
-- Field design, field behavior, and common types.
-- Design patterns such as soft delete, optimistic concurrency, pagination, long-running operations, and ETags.
-- API compatibility and versioning policies.
-- Polish: canonical errors, localized messages, and help metadata.
-- Protocol Buffers API structure (`proto3`, `google.api.http`, `google.api.resource`, `google.api.field_behavior`, `google.longrunning.Operation`, `google.rpc.Status`).
+## When it activates
 
-The skill is consumed by other agents during API design and code-review tasks. It does not run as a service and contains no executable code.
+Activates when you ask about API design, resource modeling, URL schemes, method definitions, Google AIP compliance, or API versioning.
+Examples:
+- "Review this API design"
+- "Is this resource name AIP-compliant?"
+- "How should I model batch operations?"
+- "Design a gRPC API for orders and order items"
 
-## When to use it
+## How to use it
 
-Load this skill when the request involves:
+Ask the agent to design or review your API.
+Place your `.proto`, OpenAPI, or schema files in the repo so the agent can inspect them.
+The agent will apply the AIP rules automatically and route any `.proto` file questions to the `protobuf-lang` skill for Buf lint and schema style.
+No manual skill loading is required.
 
-- OpenAPI, Swagger, REST, or gRPC API design.
-- Resource modeling, URL schemes, or API methods.
-- Google AIP compliance checks.
-- API review, polish, or compatibility decisions.
+## What it produces
 
-> **Boundary:** Buf lint and raw proto schema style live in the sibling `protobuf-lang` skill. Use `protobuf-lang` for `.proto` file linting and `buf.yaml` configuration questions.
+- AIP-compliant API designs and design reviews.
+- Corrected resource names, routes, request/response shapes, field semantics, and error behavior.
+- For `.proto` files, coordination with `protobuf-lang` for Buf lint and schema style.
 
 ## Repository layout
 
 ```text
 api-design/
-├── references/           # AIP reference sections and authoritative RFC texts
+├── references/           # AIP reference sections and authoritative RFC verbs
 │   ├── 01_foundation_and_process.md
 │   ├── 02_design_review.md
 │   ├── 03_api_concepts.md
@@ -43,37 +46,28 @@ api-design/
 │   ├── 09_polish.md
 │   ├── 10_protocol_buffers.md
 │   └── rfc_verbs.md
-└── SKILL.md              # Skill entry point with lazy-load routing index
+└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Open `SKILL.md` first. It contains the YAML manifest, trigger conditions, and the routing index.
-2. Find the relevant topic in the routing index.
-3. Extract only the referenced section from `references/*.md` using the `[ref: #...]` anchor.
-4. Apply RFC 2119 / RFC 8174 requirement verbs (`MUST`, `SHOULD`, `MAY`) as defined in `references/rfc_verbs.md`.
+| File | What it covers |
+|------|----------------|
+| `references/01_foundation_and_process.md` | AIP purpose, numbering, versioning, precedent, style, and glossary |
+| `references/02_design_review.md` | Design review FAQ and beta-blocking changes |
+| `references/03_api_concepts.md` | Management vs data planes and declarative clients |
+| `references/04_resource_design.md` | Resource orientation, names, types, associations, enumerations, singletons |
+| `references/05_operations.md` | Standard, batch, custom, and long-running operations |
+| `references/06_fields.md` | Field names, behavior, quantities, time, codes, repeated fields, ranges |
+| `references/07_design_patterns.md` | Jobs, import/export, ETags, pagination, filtering, field masks, soft delete |
+| `references/08_compatibility_and_versioning.md` | Backwards compatibility, stability levels, and API versioning |
+| `references/09_polish.md` | Naming, file structure, documentation, errors, and retry configuration |
+| `references/10_protocol_buffers.md` | HTTP/gRPC transcoding, common components, and API-specific protos |
+| `references/rfc_verbs.md` | Definitions of `MUST`, `MUST NOT`, `SHOULD`, `MAY`, etc. |
 
-## Reference index
+## Important conventions / gotchas
 
-| File | Topic |
-|------|-------|
-| `references/01_foundation_and_process.md` | Resource-oriented design and design process |
-| `references/02_design_review.md` | Design review checklist and gate |
-| `references/03_api_concepts.md` | API concepts and terminology |
-| `references/04_resource_design.md` | Resource naming, parent-child, soft delete, DNS compatibility |
-| `references/05_operations.md` | Standard methods, custom methods, and mutations |
-| `references/06_fields.md` | Field types, formats, UUID/IP standards, field behavior |
-| `references/07_design_patterns.md` | ETags, pagination, long-running operations, common flows |
-| `references/08_compatibility_and_versioning.md` | Breaking vs non-breaking changes, versioning policy |
-| `references/09_polish.md` | Canonical errors, `google.rpc.Status`, help and localized messages |
-| `references/10_protocol_buffers.md` | Proto package, message, service, and method conventions |
-| `references/rfc_verbs.md` | Definitions of `MUST`, `MUST NOT`, `REQUIRED`, `SHOULD`, etc. |
-| `read-for-comments` skill | Authoritative RFC 2119 and RFC 8174 texts |
-
-## Conventions
-
-- `SKILL.md` is the single entry point; reference sections are lazy-loaded.
-- Requirement verbs follow RFC 2119 / RFC 8174 (BCP 14).
-- Resource IDs and names follow RFC 1035 / RFC 1123 DNS rules.
-- ETags follow RFC 7232.
-- UUIDs follow RFC 4122; IPv4/IPv6 follow RFC 791, RFC 4291, and RFC 5952.
+- Requires the `read-for-comments` and `protobuf-lang` skills.
+- This skill enforces AIP resource-design rules; it does not handle Buf lint or raw `.proto` schema style.
+- Buf lint and `.proto` style questions are handled by `protobuf-lang`.
+- Requirement verbs follow RFC 2119 / RFC 8174.

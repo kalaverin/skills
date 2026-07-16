@@ -1,38 +1,40 @@
 # business-audit
 
-Agent skill for extracting business and domain knowledge from a repository's source code.
+Extracts the business domain hidden in your repository's code.
 
-## What this skill does
+## What it does
 
-`business-audit` defines the workflow, prompts, and memory routing that an agent follows to produce a business-domain view of a project. It does not run as a service and contains no executable code. Instead, it gives the root agent:
+This skill produces a business-domain view of a project entity.
+It identifies business entities, processes, rules, invariants, actors, external integrations, and risks, then writes the findings into Serena memory and updates the project glossary.
+Use it when you need to understand what business a service or library actually implements.
 
-- A master workflow for commissioning business-domain analysis.
-- A base prompt for business-domain subagents.
-- Specialized subagent prompts for:
-  - Entity catalog extraction.
-  - Process map extraction.
-  - Business rules extraction.
-  - Integration points extraction.
-  - Risk analysis.
-- Writer instructions for assembling the final report.
-- Memory routing rules that send findings to the correct Serena namespace.
+## When it activates
 
-## When to use it
+Activates when you ask about business analysis, domain modeling, business rules, business logic, or what a repository does in business terms.
+Examples:
+- "What business does this service implement?"
+- "Analyze the business domain of the billing service"
+- "Extract business rules from this repo"
+- "Build a domain model for user subscriptions"
 
-Use this skill when the request involves:
+## How to use it
 
-- Business entity analysis or domain model extraction.
-- Identifying business rules, invariants, actors, or domain events.
-- Understanding what business a repository implements.
-- Expanding an existing `project-audit` entity card with a business-domain view.
+Ask the agent to analyze the business domain of one entity.
+The entity must already have a technical card created by the `project-audit` skill at `entities/<entity>`.
+The agent will run read-only subagents in parallel, synthesize a report, save business-domain memories, and update `project/glossary` and `logic/<entity>/glossary`.
+You do not need to prepare any files beyond the existing entity card and project memory layout.
 
-> **Prerequisite:** A technical entity card created by `project-audit` must already exist at `entities/<entity>`. This skill builds on top of that card.
+## What it produces
+
+- A business-domain report, either as a single file or a split model depending on complexity.
+- Business-domain memories under `logic/<entity>/` for entities, processes, rules, integrations, and risks.
+- Updated `project/glossary` and `logic/<entity>/glossary` with business terms, definitions, scopes, and code anchors.
 
 ## Repository layout
 
 ```text
 business-audit/
-├── references/           # Subagent prompts, writer instructions, memory routing
+├── references/           # Subagent prompts, writer instructions, and memory routing
 │   ├── 01_make_business_analysis.md
 │   ├── 02_business_domain_base_prompt.md
 │   ├── 03_entity_catalog_subagent.md
@@ -42,38 +44,27 @@ business-audit/
 │   ├── 07_risks_subagent.md
 │   ├── 08_business_domain_writer.md
 │   └── 09_domain_memory_routing.md
-└── SKILL.md              # Skill entry point with lazy-load routing index
+└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Confirm that `entities/<entity>` exists (created by `project-audit`).
-2. Open `SKILL.md` and locate the routing index.
-3. Load `references/01_make_business_analysis.md` for the master workflow.
-4. Dispatch read-only subagents using the prompts in `references/02_*.md` through `references/07_*.md`.
-5. Route findings according to `references/09_domain_memory_routing.md`:
-   - Domain findings → `logic/<entity>/<topic>.md`
-   - Non-domain findings → `notes/<entity>/<topic>.md`, `decisions/<entity>/<topic>.md`, or `bugs/<entity>/<topic>.md`
-6. Assemble the final report with `references/08_business_domain_writer.md`.
-
-## Reference index
-
-| File | Purpose |
-|------|---------|
+| File | What it covers |
+|------|----------------|
 | `references/01_make_business_analysis.md` | Master orchestration workflow |
 | `references/02_business_domain_base_prompt.md` | Base prompt for business-domain subagents |
 | `references/03_entity_catalog_subagent.md` | Extract business entities |
-| `references/04_process_map_subagent.md` | Extract processes and flows (Mermaid diagrams required) |
+| `references/04_process_map_subagent.md` | Extract processes and workflows |
 | `references/05_rules_subagent.md` | Extract business rules and invariants |
-| `references/06_integrations_subagent.md` | Extract integration points |
-| `references/07_risks_subagent.md` | Risk analysis |
+| `references/06_integrations_subagent.md` | Extract actors and external integrations |
+| `references/07_risks_subagent.md` | Risk register and gap analysis |
 | `references/08_business_domain_writer.md` | Final report writer instructions |
-| `references/09_domain_memory_routing.md` | Memory namespace routing and metadata rules |
+| `references/09_domain_memory_routing.md` | Memory namespace routing and glossary rules |
 
-## Conventions
+## Important conventions / gotchas
 
-- `SKILL.md` is the single entry point; reference sections use `[ref: #bda-<name>]` anchors.
-- Business-domain findings are owned by the `logic/<entity>/...` namespace.
-- Memory paths use `snake_case` with underscores and no hyphens.
+- Requires an existing entity card at `entities/<entity>` created by `project-audit`.
+- Also requires `serena-protocol` for memory rules.
+- The agent analyzes exactly one entity per run.
 - Mermaid diagrams are required for non-trivial flows and multi-actor interactions.
-- All memory files must carry the standard Serena YAML frontmatter with UTC ISO 8601 timestamps.
+- Memory paths and entity names use `snake_case` with underscores and no hyphens.

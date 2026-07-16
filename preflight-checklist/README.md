@@ -1,37 +1,42 @@
 # preflight-checklist
 
-Mandatory pre-flight compliance skill loaded in every agent session.
+Verifies that core mandatory skills are active before the agent starts working.
 
-## What this skill does
+## What it does
 
-`preflight-checklist` is a runtime protocol skill that augments the Startup Gate defined in the repository `AGENTS.md`. It verifies that the two core mandatory skills have been discovered and loaded before any user-facing output is produced:
+This skill augments the Startup Gate in the repository `AGENTS.md`.
+It documents the check that the agent must perform before producing any user-facing output: confirming that `shell-protocol`, `serena-protocol`, and `read-for-comments` have been discovered and loaded.
+You do not interact with it directly.
 
-- `shell-protocol`
-- `serena-protocol`
+## When it activates
 
-The skill is a single-file Markdown document with a short checklist. It does not implement runtime logic itself; it documents the verification step that every agent must perform.
+No action needed — loaded automatically in every session.
 
-## When to use it
+## How to use it
 
-This skill is loaded unconditionally (`triggers: always: true`). It runs as part of the startup sequence for every task.
+Nothing.
+This skill is a compliance gate for the agent.
+
+## What it produces
+
+No files or reports for you.
+It ensures the agent has the core protocol skills loaded before handling your request.
 
 ## Repository layout
 
 ```text
 preflight-checklist/
-└── SKILL.md              # Single-file skill with compliance checklist
+└── SKILL.md              # Single-file skill with manifest and compliance checklist
 ```
 
-## How to use this skill
+## Reference overview
 
-Before producing output for any user request, confirm:
+| File | What it covers |
+|------|----------------|
+| `SKILL.md` | Mandatory pre-flight checklist for the agent |
 
-- [ ] `shell-protocol` was discovered during Skill Discovery and its `SKILL.md` is loaded.
-- [ ] `serena-protocol` was discovered during Skill Discovery and its `SKILL.md` is loaded.
+## Important conventions / gotchas
 
-If either skill is missing, halt, load it, and restart the Startup Gate.
-
-## Conventions
-
-- `SKILL.md` begins with a YAML frontmatter block declaring `name`, `description`, and `triggers: always: true`.
-- This skill augments, but does not replace, the Startup Gate in `AGENTS.md`.
+- Loaded unconditionally in every session.
+- Does not replace the Startup Gate in `AGENTS.md`; it augments it.
+- The skills it checks are `shell-protocol`, `serena-protocol`, and `read-for-comments`.

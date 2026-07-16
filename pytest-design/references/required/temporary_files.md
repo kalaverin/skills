@@ -1,8 +1,8 @@
 ---
-subject: "Create isolated, reproducible filesystem fixtures: function-scoped `tmp_path` for per-test dirs, build files with `joinpath`/`write_text`/`write_bytes` and explicit encoding, organize with `mkdir`, shared immutable artifacts via `tmp_path_factory.mktemp`, avoid legacy `tmpdir` (`-p no:legacypath`), tune retention with `tmp_path_retention_count`/`tmp_path_retention_policy`, `--basetemp`, and `PYTEST_DEBUG_TEMPROOT`; parametrize extensions/encodings/counts/nesting."
+subject: "Create isolated, reproducible filesystem fixtures: function-scoped `isolated_dir` for per-test dirs, build files with `joinpath`/`write_text`/`write_bytes` and explicit encoding, organize with `mkdir`, shared immutable artifacts via `tmp_path_factory.mktemp`, avoid legacy `tmpdir` (`-p no:legacypath`), tune retention with `tmp_path_retention_count`/`tmp_path_retention_policy`, `--basetemp`, and `PYTEST_DEBUG_TEMPROOT`; parametrize extensions/encodings/counts/nesting."
 index:
   - anchor: temporary-files-tmp-path
-    what: "The `tmp_path` fixture returns a unique `pathlib.Path` directory for every test invocation, created under the pytest temp root and cleaned up automatically."
+    what: "The `isolated_dir` fixture returns a unique `pathlib.Path` directory for every test invocation, created under the pytest temp root and cleaned up automatically."
     problem: "Per-test filesystem state must isolate so it never leaks into other tests, and assertions must not depend on leftover files from previous invocations; unique dir, per-test, auto removed, no leak, local state, clean slate."
     use_when: "A test needs an isolated writable directory created automatically and cleaned up after the run; no other test may read or write the same directory."
     avoid_when: "Several tests must read the same expensive artifact; the directory contents must persist after the test for manual inspection outside retention; mutable state must be shared across tests."
@@ -14,10 +14,10 @@ index:
     avoid_when: "`open(..., 'w')` is used without an encoding; legacy `py.path.local` write methods are used; assertions target the mock instead of the actual file content."
     expected: "Files are written with declared encodings and read back via the production abstraction, keeping assertions on content rather than mocks."
   - anchor: temporary-files-subdirectories
-    what: "Using `mkdir()` under `tmp_path` to create named subdirectories that group artifacts by role (input, output, cache)."
+    what: "Using `mkdir()` under `isolated_dir` to create named subdirectories that group artifacts by role (input, output, cache)."
     problem: "Dumping every artifact into root temp directory makes multi-role tests harder to diagnose on failure and lets unrelated outputs hide real culprit; group by role, input output cache, mkdir, diagnose failure, no flatten, purpose subdirs."
     use_when: "A single test produces multiple artifact kinds and grouping them by role simplifies diagnosis."
-    avoid_when: "All artifacts are flattened into the root `tmp_path` when distinct roles exist; only one artifact kind is produced; subdirectories add no diagnostic value."
+    avoid_when: "All artifacts are flattened into the root `isolated_dir` when distinct roles exist; only one artifact kind is produced; subdirectories add no diagnostic value."
     expected: "Multi-role tests organize artifacts into input/output/cache subdirectories, so failures point to the right role."
   - anchor: temporary-files-tmp-path-factory
     what: "The session-scoped `tmp_path_factory.mktemp()` for directories shared across tests, holding only immutable/read-only data to preserve isolation."
@@ -26,7 +26,7 @@ index:
     avoid_when: "A session-scoped fixture depends on a function-scoped fixture such as `fake`; mutable data is placed in the shared directory; artifacts are written by individual tests."
     expected: "Expensive immutable artifacts are built once per session and shared read-only, with no function-scoped dependency leaking into session scope."
   - anchor: temporary-files-legacy-tmpdir
-    what: "Preferring `tmp_path`/`tmp_path_factory` (standard `pathlib.Path`) over legacy `tmpdir`/`tmpdir_factory` (`py.path.local`), and disabling the legacy fixtures with `-p no:legacypath`."
+    what: "Preferring `isolated_dir`/`tmp_path_factory` (standard `pathlib.Path`) over legacy `tmpdir`/`tmpdir_factory` (`py.path.local`), and disabling the legacy fixtures with `-p no:legacypath`."
     problem: "Mixing legacy and pathlib paths in one codebase adds conversion friction, lets legacy APIs creep back, and forces new contributors to learn deprecated types; pathlib only, disable legacy, ci grep, no conversion, no mix, modernize."
     use_when: "The codebase still contains `tmpdir`/`tmpdir_factory` or `py.path.local` and must be migrated to `pathlib.Path`."
     avoid_when: "New code uses `tmpdir`/`tmpdir_factory`; `py.path.local` is mixed with `pathlib.Path` in the same test; legacy fixtures are not disabled project-wide."
@@ -44,11 +44,11 @@ index:
     avoid_when: "The callable returns the same directory from every call; it writes outside the parent directory; the parent directory is not created session-wide."
     expected: "Each call yields a unique subdirectory under one session base, so callers stay isolated while sharing the parent."
   - anchor: temporary-files-path-containment
-    what: "Asserting that every path the code under test computes stays inside `tmp_path` by resolving operands and checking `Path.is_relative_to`."
+    what: "Asserting that every path the code under test computes stays inside `isolated_dir` by resolving operands and checking `Path.is_relative_to`."
     problem: "Code building output paths from input can escape intended directory (path traversal) and write outside test workspace, causing false passes and disk pollution; resolve both, is_relative_to, no string prefix, symlink safe, traversal fails, contained path."
     use_when: "The code under test computes output paths from input paths and must be proven to stay inside the test workspace."
     avoid_when: "String prefixes (e.g. `str(path).startswith(...)`) are used for containment; symlinks are ignored; the test does not verify path boundaries."
-    expected: "Computed output paths are provably contained inside `tmp_path`, and any traversal escapes fail the assertion."
+    expected: "Computed output paths are provably contained inside `isolated_dir`, and any traversal escapes fail the assertion."
   - anchor: temporary-files-readonly-shared
     what: "Marking session-shared immutable artifacts read-only with `Path.chmod(0o444)` so accidental writes during the suite fail loudly instead of silently corrupting shared state."
     problem: "Session-shared directory documented as immutable can still mutate via buggy test, poisoning later tests without obvious failure at mutation site and producing hard-to-reproduce flakes; chmod read-only, write bits off, fail at mutation, no convention only, no corrupt downstream."
@@ -61,11 +61,11 @@ index:
 
 # TEMPORARY FILES AND DIRECTORIES
 
-## tmp_path (Function-Scoped Per-Test Directory)
+## isolated_dir (Function-Scoped Per-Test Directory)
 
 [ref: #temporary-files-tmp-path]
 
-The `tmp_path` fixture returns a unique `pathlib.Path` directory for every test invocation.
+The `isolated_dir` fixture returns a unique `pathlib.Path` directory for every test invocation.
 
 ```python
 from pathlib import Path
@@ -76,16 +76,16 @@ from faker import Faker
 CONFIG_ENCODING = "utf-8"
 
 
-def test_parser_reads_key_value_file(tmp_path: Path, fake: Faker) -> None:
+def test_parser_reads_key_value_file(isolated_dir: Path, fake: Faker) -> None:
     """
-    Given: key-value config file written to tmp_path.
+    Given: key-value config file written to isolated_dir.
     When: parser reads the file.
     Then: parsed value matches input.
     """
     # --- Arrange ---
     key = fake.pystr(min_chars=3, max_chars=10)
     value = fake.pystr(min_chars=5, max_chars=20)
-    config_file = tmp_path / "config.yaml"
+    config_file = isolated_dir / "config.yaml"
     config_file.write_text(f"{key}: {value}\n", encoding=CONFIG_ENCODING)
 
     # --- Act ---
@@ -116,7 +116,7 @@ BINARY_PREFIX = b"\x89PNG\r\n\x1a\n"
 CHUNK_SIZE = 1024
 
 
-def test_text_reader_preserves_content(tmp_path: Path, fake: Faker) -> None:
+def test_text_reader_preserves_content(isolated_dir: Path, fake: Faker) -> None:
     """
     Given: text file with generated paragraph.
     When: reader reads the file.
@@ -124,7 +124,7 @@ def test_text_reader_preserves_content(tmp_path: Path, fake: Faker) -> None:
     """
     # --- Arrange ---
     payload = fake.paragraph(nb_sentences=fake.pyint(min_value=1, max_value=5))
-    text_file = tmp_path / "document.txt"
+    text_file = isolated_dir / "document.txt"
     text_file.write_text(payload, encoding=TEXT_ENCODING)
 
     # --- Act ---
@@ -135,7 +135,7 @@ def test_text_reader_preserves_content(tmp_path: Path, fake: Faker) -> None:
     assert result == payload
 
 
-def test_binary_reader_detects_magic_bytes(tmp_path: Path, fake: Faker) -> None:
+def test_binary_reader_detects_magic_bytes(isolated_dir: Path, fake: Faker) -> None:
     """
     Given: binary file with PNG magic bytes and random suffix.
     When: binary reader checks magic bytes.
@@ -144,7 +144,7 @@ def test_binary_reader_detects_magic_bytes(tmp_path: Path, fake: Faker) -> None:
     # --- Arrange ---
     suffix = fake.binary(length=fake.pyint(min_value=8, max_value=64))
     payload = BINARY_PREFIX + suffix
-    binary_file = tmp_path / "image.png"
+    binary_file = isolated_dir / "image.png"
     binary_file.write_bytes(payload)
 
     # --- Act ---
@@ -166,7 +166,7 @@ Reading back via `read_text` and `read_bytes` keeps assertions focused on conten
 
 [ref: #temporary-files-subdirectories]
 
-Use `mkdir` to create named subdirectories under `tmp_path` when a test involves multiple roles such as input, output, and cache.
+Use `mkdir` to create named subdirectories under `isolated_dir` when a test involves multiple roles such as input, output, and cache.
 
 ```python
 from pathlib import Path
@@ -177,15 +177,15 @@ from faker import Faker
 TEXT_ENCODING = "utf-8"
 
 
-def test_processor_writes_output_beside_input(tmp_path: Path, fake: Faker) -> None:
+def test_processor_writes_output_beside_input(isolated_dir: Path, fake: Faker) -> None:
     """
     Given: input directory with one text file and empty output directory.
     When: processor runs.
     Then: output directory contains upper-cased content.
     """
     # --- Arrange ---
-    input_dir = tmp_path / "inputs"
-    output_dir = tmp_path / "outputs"
+    input_dir = isolated_dir / "inputs"
+    output_dir = isolated_dir / "outputs"
     input_dir.mkdir()
     output_dir.mkdir()
     payload = fake.sentence()
@@ -390,15 +390,15 @@ from faker import Faker
 TEXT_ENCODING = "utf-8"
 
 
-def test_writer_creates_expected_file(tmp_path: Path, fake: Faker) -> None:
+def test_writer_creates_expected_file(isolated_dir: Path, fake: Faker) -> None:
     """
-    Given: generated payload and target path in tmp_path.
+    Given: generated payload and target path in isolated_dir.
     When: writer writes the file.
     Then: file contains the payload.
     """
     # --- Arrange ---
     payload = fake.sentence()
-    target = tmp_path / "output.txt"
+    target = isolated_dir / "output.txt"
 
     # --- Act ---
     FileWriter(target).write(payload)  # provided by project code
@@ -415,7 +415,7 @@ No conversion between `py.path.local` and `pathlib.Path` is needed.
 
 [ref: #temporary-files-path-containment]
 
-Resolve both paths and assert `is_relative_to` to prove the code under test never escapes `tmp_path`.
+Resolve both paths and assert `is_relative_to` to prove the code under test never escapes `isolated_dir`.
 
 ```python
 from pathlib import Path
@@ -427,25 +427,25 @@ TEXT_ENCODING = "utf-8"
 NESTED_OUTPUT = "nested/output.txt"
 
 
-def test_writer_stays_inside_tmp_path(tmp_path: Path, fake: Faker) -> None:
+def test_writer_stays_inside_tmp_path(isolated_dir: Path, fake: Faker) -> None:
     """
-    Given: target path nested under tmp_path.
+    Given: target path nested under isolated_dir.
     When: writer creates the file.
-    Then: resolved target is contained in tmp_path and content matches.
+    Then: resolved target is contained in isolated_dir and content matches.
     """
     # --- Arrange ---
     payload = fake.sentence()
-    target = tmp_path / NESTED_OUTPUT
+    target = isolated_dir / NESTED_OUTPUT
 
     # --- Act ---
     FileWriter(target).write(payload)  # provided by project code
 
     # --- Assert ---
-    assert target.resolve().is_relative_to(tmp_path.resolve())
+    assert target.resolve().is_relative_to(isolated_dir.resolve())
     assert target.read_text(encoding=TEXT_ENCODING) == payload
 ```
 
-**Variety booster:** Parametrize a list of malicious relative inputs such as `"../escape.txt"` and assert the writer either rejects them or the resolved path still stays inside `tmp_path`.
+**Variety booster:** Parametrize a list of malicious relative inputs such as `"../escape.txt"` and assert the writer either rejects them or the resolved path still stays inside `isolated_dir`.
 
 ## Retention and CLI Options
 

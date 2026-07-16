@@ -1,5 +1,5 @@
 ---
-subject: "Keep tests independent of shared, mutable, external state: `yield` teardown and context managers, transactional rollback, `monkeypatch.setenv`/`delenv`/`setattr`/`setitem`/`syspath_prepend`/`chdir`, `pytest-env` in `pyproject.toml`, disable sockets with `pytest_socket.disable_socket`, fake subprocesses with `pytest-subprocess`/`fake_process`, `tmp_path`/`tmp_path_factory`; retrofit types with `monkeytype` trace corpus + `stub --diff` drift guard, lock output with `syrupy` snapshots + `path_type` matchers + JSON extension."
+subject: "Keep tests independent of shared, mutable, external state: `yield` teardown and context managers, transactional rollback, `monkey.setenv`/`delenv`/`setattr`/`setitem`/`syspath_prepend`/`chdir`, `pytest-env` in `pyproject.toml`, disable sockets with `pytest_socket.disable_socket`, fake subprocesses with `pytest-subprocess`/`fake_process`, `isolated_dir`/`tmp_path_factory`; retrofit types with `monkeytype` trace corpus + `stub --diff` drift guard, lock output with `syrupy` snapshots + `path_type` matchers + JSON extension."
 index:
   - anchor: isolation-core-principles
     what: "The rule that each test starts from a known clean state, depends on no other test's mutable state, rolls back database changes (via a begin/yield/rollback fixture), and leaves the environment unchanged."
@@ -8,13 +8,13 @@ index:
     avoid_when: "Test depends on rows or objects created by another test; database writes committed beyond test boundary; fixture allocates resource with no teardown or context manager."
     expected: "Tests pass in any order and alone, database changes roll back per test, and every allocated resource is deterministically torn down."
   - anchor: isolation-environment-variables
-    what: "Per-test environment overrides via `monkeypatch.setenv`/`monkeypatch.delenv` (auto-reverted), plus optional global defaults through the `pytest-env` plugin's `[tool.pytest_env]`."
+    what: "Per-test environment overrides via `monkey.setenv`/`monkey.delenv` (auto-reverted), plus optional global defaults through the `pytest-env` plugin's `[tool.pytest_env]`."
     problem: "Test reads configuration from process environment, and mutating `os.environ` directly leaks override into every later test within same worker process; missing variable keyerror, run-wide default layer, declared pyproject config, unicode value sweep, shell metachar value, env plugin installed."
     use_when: "Test needs specific env var present, changed, or absent; override must vanish after test; suite-wide defaults should live in declared configuration."
     avoid_when: "`os.environ` mutated directly (bypasses auto-revert); `pytest-env` relied on without confirming installation (ask user when missing); per-test values stuffed into global plugin config."
     expected: "Env overrides revert automatically after each test, run-wide defaults arrive from declared plugin config, and no variable leaks into neighbors."
   - anchor: isolation-monkeypatching-global-state
-    what: "Using the built-in `monkeypatch` fixture (`setattr`, `setitem`, `setenv`/`delenv`, `syspath_prepend`, `chdir`) to temporarily modify global state with automatic revert."
+    what: "Using the built-in `monkey` fixture (`setattr`, `setitem`, `setenv`/`delenv`, `syspath_prepend`, `chdir`) to temporarily modify global state with automatic revert."
     problem: "Code under test depends on mutable global (module attribute, dict entry, sys.path, cwd, env var), and direct assignment in one test poisons runtime state for everything executing afterward; leftover patched value, silent global drift, manual revert gap, import path pollution, working dir leak, class attribute swap."
     use_when: "Global attribute, mapping entry, path entry, working directory, or env var must differ for one test only; automatic revert after test is required; patch target is known by dotted path."
     avoid_when: "Direct assignment or manual mutation used instead of fixture (no automatic revert); patch left active beyond its test; string target misspelled and silently failing `raising=True` check."
@@ -32,17 +32,17 @@ index:
     avoid_when: "Shelling out for real inside unit test; unregistered invocation allowed to slip through silently; `pytest-subprocess` assumed present without install check."
     expected: "No real process spawns during unit run; success, non-zero exit, and timeout paths are covered through declared fake or stubbed behavior."
   - anchor: isolation-filesystem-isolation
-    what: "Using `tmp_path` for a per-test unique temporary directory (removed after the run) and `tmp_path_factory` for directories that must outlive a single test."
+    what: "Using `isolated_dir` for a per-test unique temporary directory (removed after the run) and `tmp_path_factory` for directories that must outlive a single test."
     problem: "Test writes scratch files, and shared or repository-relative path collides with other tests and pollutes working tree; outliving single test, nested tree generation, symlink edge case, path normalization stress, session-scoped asset, fixture-shared directory."
     use_when: "Test needs writable scratch directory unique to itself; artifact must survive across several tests or session; repository and shared paths are off limits."
-    avoid_when: "Writes land in repository or any shared/global path; `tmp_path` used for directory needed beyond one test (reach for `tmp_path_factory`); cleanup left to manual deletion."
+    avoid_when: "Writes land in repository or any shared/global path; `isolated_dir` used for directory needed beyond one test (reach for `tmp_path_factory`); cleanup left to manual deletion."
     expected: "Each test writes under own auto-removed directory, longer-lived artifacts come from explicit factory, and working tree stays clean."
   - anchor: isolation-runtime-type-collection-monkeytype
-    what: "Using the pytest suite as a trace corpus to retrofit type annotations onto legacy/dynamic code, with the trace store isolated under `tmp_path` and the CLI faked via `pytest-subprocess`."
+    what: "Using the pytest suite as a trace corpus to retrofit type annotations onto legacy/dynamic code, with the trace store isolated under `isolated_dir` and the CLI faked via `pytest-subprocess`."
     problem: "Legacy dynamic module resists static type inference, and retrofitting annotations needs runtime-observed call data, yet naive trace run writes its sqlite store into repository tree; accidental in-place rewrite, stub stdout capture, inferred signature check, per-module retrofit sweep."
     use_when: "Annotations must be retrofitted onto dynamic or legacy code; test suite can serve as tracing corpus; trace artifacts and CLI interaction must stay off repository."
     avoid_when: "Trace store allowed into repository or shared between tests; `monkeytype apply` executed against repo in unit test; real tracing performed instead of faked CLI."
-    expected: "Trace artifacts stay scoped to `tmp_path` via fixture cleanup, stub output is read from faked CLI, and repository remains untouched."
+    expected: "Trace artifacts stay scoped to `isolated_dir` via fixture cleanup, stub output is read from faked CLI, and repository remains untouched."
   - anchor: isolation-annotation-drift-guard-monkeytype
     what: "Asserting that `monkeytype stub --diff` is empty (preserving vs ignoring existing annotations), proving checked-in annotations still match runtime-observed types."
     problem: "Checked-in annotations age silently as implementation evolves, and without guard drift between declared signatures and runtime-observed types surfaces only as confusing production type errors; preserve existing annotations, stub diff non-empty, apply rewrite temptation, ci gate placement, signature changed output."
@@ -50,11 +50,11 @@ index:
     avoid_when: "`monkeytype apply` run inside unit test to silence diff (rewrites repo); non-empty diff allowed through build; guard executed without isolated trace store."
     expected: "Clean state yields empty `--diff` and green build, while any drift produces non-empty diff that fails loudly without rewriting repository."
   - anchor: isolation-stub-generation-sourceless-monkeytype
-    what: "Emitting `.pyi` stubs for C extensions or modules without Python source by reading `monkeytype stub` from stdout and writing the result under `tmp_path`."
+    what: "Emitting `.pyi` stubs for C extensions or modules without Python source by reading `monkeytype stub` from stdout and writing the result under `isolated_dir`."
     problem: "C extension or shipped-binary module exposes no Python source for static analysis, so only recorded runtime calls reveal its signatures, and materializing `.pyi` must not rewrite repository; per-extension stub sweep, expected symbol assertion, type stub deliverable, binary module documentation."
     use_when: "Module lacks Python source (C extension, binary wheel); signatures must come from recorded calls; stub output belongs under temp directory, never inside repository."
     avoid_when: "In-place rewrite via `monkeytype apply` attempted against repository; stub written into source tree; generation attempted without recorded trace data."
-    expected: "`.pyi` file materializes under `tmp_path` per sourceless module, content comes from recorded calls, and repository is never rewritten."
+    expected: "`.pyi` file materializes under `isolated_dir` per sourceless module, content comes from recorded calls, and repository is never rewritten."
   - anchor: isolation-snapshot-syrupy
     what: "Locking a large or deeply nested output with `assert value == snapshot` (typed as `syrupy.assertion.SnapshotAssertion`), generating/refreshing via the CLI `pytest --snapshot-update`, and committing `__snapshots__/`."
     problem: "Large deeply nested output makes hand-written expected value unreadable and brittle on every intentional change, while unmanaged snapshot without seeding flakes across runs; committed snapshot dir, unique name per assert, regression radar, partial shape pin, multi-snapshot test."
@@ -138,7 +138,7 @@ import pytest
 from faker import Faker
 
 
-def test_client_uses_env_base_url(monkeypatch: pytest.MonkeyPatch, fake: Faker) -> None:
+def test_client_uses_env_base_url(monkey: pytest.MonkeyPatch, fake: Faker) -> None:
     """
     Given: environment variable API_BASE_URL is set to a generated URL.
     When: client is built.
@@ -146,7 +146,7 @@ def test_client_uses_env_base_url(monkeypatch: pytest.MonkeyPatch, fake: Faker) 
     """
     # --- Arrange ---
     base_url = fake.url()
-    monkeypatch.setenv("API_BASE_URL", base_url)
+    monkey.setenv("API_BASE_URL", base_url)
 
     # --- Act ---
     client = build_client()
@@ -155,7 +155,7 @@ def test_client_uses_env_base_url(monkeypatch: pytest.MonkeyPatch, fake: Faker) 
     assert client.base_url == base_url
 
 
-def test_missing_env_raises_on_access(monkeypatch: pytest.MonkeyPatch, fake: Faker) -> None:
+def test_missing_env_raises_on_access(monkey: pytest.MonkeyPatch, fake: Faker) -> None:
     """
     Given: environment variable is set and then removed.
     When: the variable is accessed.
@@ -163,8 +163,8 @@ def test_missing_env_raises_on_access(monkeypatch: pytest.MonkeyPatch, fake: Fak
     """
     # --- Arrange ---
     var_name = fake.word().upper()
-    monkeypatch.setenv(var_name, fake.word())
-    monkeypatch.delenv(var_name)
+    monkey.setenv(var_name, fake.word())
+    monkey.delenv(var_name)
 
     # --- Act ---
     with pytest.raises(KeyError, match=re.escape(var_name)):
@@ -189,14 +189,14 @@ API_BASE_URL = "http://api.example.test"
 
 [ref: #isolation-monkeypatching-global-state]
 
-Use `monkeypatch.setattr` to replace module attributes, class attributes, or functions.
+Use `monkey.setattr` to replace module attributes, class attributes, or functions.
 
 ```python
 import pytest
 from faker import Faker
 
 
-def test_service_uses_patched_timeout(monkeypatch: pytest.MonkeyPatch, fake: Faker) -> None:
+def test_service_uses_patched_timeout(monkey: pytest.MonkeyPatch, fake: Faker) -> None:
     """
     Given: app.config.DEFAULT_TIMEOUT is patched to a generated value.
     When: service is instantiated.
@@ -204,7 +204,7 @@ def test_service_uses_patched_timeout(monkeypatch: pytest.MonkeyPatch, fake: Fak
     """
     # --- Arrange ---
     timeout = fake.pyfloat(min_value=0.1, max_value=10.0)
-    monkeypatch.setattr("app.config.DEFAULT_TIMEOUT", timeout)
+    monkey.setattr("app.config.DEFAULT_TIMEOUT", timeout)
 
     # --- Act ---
     service = Service()
@@ -213,14 +213,14 @@ def test_service_uses_patched_timeout(monkeypatch: pytest.MonkeyPatch, fake: Fak
     assert service.timeout == timeout
 ```
 
-Use `monkeypatch.setitem` to override dictionary entries.
+Use `monkey.setitem` to override dictionary entries.
 
 ```python
 import pytest
 from faker import Faker
 
 
-def test_handler_uses_patched_setting(monkeypatch: pytest.MonkeyPatch, fake: Faker) -> None:
+def test_handler_uses_patched_setting(monkey: pytest.MonkeyPatch, fake: Faker) -> None:
     """
     Given: config dictionary has a patched entry.
     When: setting is resolved.
@@ -230,7 +230,7 @@ def test_handler_uses_patched_setting(monkeypatch: pytest.MonkeyPatch, fake: Fak
     config = app.settings.load_defaults()
     key = fake.word()
     value = fake.sentence()
-    monkeypatch.setitem(config, key, value)
+    monkey.setitem(config, key, value)
 
     # --- Act ---
     resolved = app.settings.resolve(config)
@@ -239,9 +239,9 @@ def test_handler_uses_patched_setting(monkeypatch: pytest.MonkeyPatch, fake: Fak
     assert resolved[key] == value
 ```
 
-Use `monkeypatch.setenv` and `monkeypatch.delenv` for environment variables, as shown in the Environment Variables section.
+Use `monkey.setenv` and `monkey.delenv` for environment variables, as shown in the Environment Variables section.
 
-Use `monkeypatch.syspath_prepend` to inject a temporary directory into `sys.path`.
+Use `monkey.syspath_prepend` to inject a temporary directory into `sys.path`.
 
 ```python
 import pathlib
@@ -251,16 +251,16 @@ import pytest
 from faker import Faker
 
 
-def test_loader_finds_local_package(monkeypatch: pytest.MonkeyPatch, fake: Faker, tmp_path: pathlib.Path) -> None:
+def test_loader_finds_local_package(monkey: pytest.MonkeyPatch, fake: Faker, isolated_dir: pathlib.Path) -> None:
     """
     Given: temporary directory is prepended to sys.path.
     When: sys.path is inspected.
     Then: directory is present.
     """
     # --- Arrange ---
-    local_dir = tmp_path / fake.word()
+    local_dir = isolated_dir / fake.word()
     local_dir.mkdir()
-    monkeypatch.syspath_prepend(str(local_dir))
+    monkey.syspath_prepend(str(local_dir))
 
     # --- Act ---
     path_entries = sys.path
@@ -269,7 +269,7 @@ def test_loader_finds_local_package(monkeypatch: pytest.MonkeyPatch, fake: Faker
     assert str(local_dir) in path_entries
 ```
 
-Use `monkeypatch.chdir` to change the working directory for one test.
+Use `monkey.chdir` to change the working directory for one test.
 
 ```python
 import pathlib
@@ -278,16 +278,16 @@ import pytest
 from faker import Faker
 
 
-def test_loader_resolves_relative_to_workdir(monkeypatch: pytest.MonkeyPatch, fake: Faker, tmp_path: pathlib.Path) -> None:
+def test_loader_resolves_relative_to_workdir(monkey: pytest.MonkeyPatch, fake: Faker, isolated_dir: pathlib.Path) -> None:
     """
     Given: working directory is changed to a generated path.
     When: current working directory is queried.
     Then: generated path is returned.
     """
     # --- Arrange ---
-    workdir = tmp_path / fake.word()
+    workdir = isolated_dir / fake.word()
     workdir.mkdir()
-    monkeypatch.chdir(workdir)
+    monkey.chdir(workdir)
 
     # --- Act ---
     cwd = pathlib.Path.cwd()
@@ -396,7 +396,7 @@ def test_updater_reads_version(fake_process: FakeProcess, fake: Faker) -> None:
     assert version in result
 ```
 
-When `pytest-subprocess` is unavailable or too heavy, mock `subprocess.run` or `subprocess.Popen` directly with `monkeypatch`.
+When `pytest-subprocess` is unavailable or too heavy, mock `subprocess.run` or `subprocess.Popen` directly with `monkey`.
 
 ```python
 from collections.abc import Sequence
@@ -410,7 +410,7 @@ from faker import Faker
 EXIT_SUCCESS = 0
 
 
-def test_executor_returns_stdout_on_success(monkeypatch: pytest.MonkeyPatch, fake: Faker) -> None:
+def test_executor_returns_stdout_on_success(monkey: pytest.MonkeyPatch, fake: Faker) -> None:
     """
     Given: subprocess.run is patched to return generated stdout.
     When: executor runs a command.
@@ -422,7 +422,7 @@ def test_executor_returns_stdout_on_success(monkeypatch: pytest.MonkeyPatch, fak
     def fake_run(cmd: Sequence[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(args=list(cmd), returncode=EXIT_SUCCESS, stdout=expected_stdout)
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkey.setattr(subprocess, "run", fake_run)
 
     # --- Act ---
     result = executor.run([fake.word(), fake.word()])
@@ -445,7 +445,7 @@ import pytest
 from faker import Faker
 
 
-def test_writer_creates_file(tmp_path: pathlib.Path, fake: Faker) -> None:
+def test_writer_creates_file(isolated_dir: pathlib.Path, fake: Faker) -> None:
     """
     Given: target path and content are generated.
     When: writer writes the file.
@@ -453,7 +453,7 @@ def test_writer_creates_file(tmp_path: pathlib.Path, fake: Faker) -> None:
     """
     # --- Arrange ---
     extension = fake.file_extension()
-    target = tmp_path / fake.file_name(extension=extension)
+    target = isolated_dir / fake.file_name(extension=extension)
     content = fake.paragraph()
 
     # --- Act ---
@@ -463,7 +463,7 @@ def test_writer_creates_file(tmp_path: pathlib.Path, fake: Faker) -> None:
     assert target.read_text() == content
 
 
-def test_reader_rejects_missing_file(tmp_path: pathlib.Path, fake: Faker) -> None:
+def test_reader_rejects_missing_file(isolated_dir: pathlib.Path, fake: Faker) -> None:
     """
     Given: missing file path is generated.
     When: reader loads the file.
@@ -471,7 +471,7 @@ def test_reader_rejects_missing_file(tmp_path: pathlib.Path, fake: Faker) -> Non
     """
     # --- Arrange ---
     extension = fake.file_extension()
-    missing = tmp_path / fake.file_name(extension=extension)
+    missing = isolated_dir / fake.file_name(extension=extension)
 
     # --- Act ---
     with pytest.raises(FileNotFoundError, match=re.escape(str(missing))):
@@ -522,9 +522,9 @@ EXIT_SUCCESS = 0
 
 
 @pytest.fixture
-def isolated_trace_store(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> Iterator[pathlib.Path]:
-    monkeypatch.chdir(tmp_path)
-    db_path = tmp_path / TRACE_DB_FILENAME
+def isolated_trace_store(monkey: pytest.MonkeyPatch, isolated_dir: pathlib.Path) -> Iterator[pathlib.Path]:
+    monkey.chdir(isolated_dir)
+    db_path = isolated_dir / TRACE_DB_FILENAME
     yield db_path
     if db_path.exists():
         db_path.unlink()
@@ -533,13 +533,13 @@ def isolated_trace_store(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
 def test_stub_is_generated_from_isolated_trace_store(
     fake_process: FakeProcess,
     isolated_trace_store: pathlib.Path,
-    tmp_path: pathlib.Path,
+    isolated_dir: pathlib.Path,
     fake: Faker,
 ) -> None:
     """
     Given: the working directory is redirected to a temporary path and the CLI is faked.
     When: a stub is generated for a traced module.
-    Then: the trace database is scoped to tmp_path and the inferred return type is emitted.
+    Then: the trace database is scoped to isolated_dir and the inferred return type is emitted.
     """
     # --- Arrange ---
     module_name = fake.word()
@@ -558,7 +558,7 @@ def test_stub_is_generated_from_isolated_trace_store(
     )
 
     # --- Assert ---
-    assert isolated_trace_store.is_relative_to(tmp_path)
+    assert isolated_trace_store.is_relative_to(isolated_dir)
     assert re.search(rf"->\s+{re.escape(inferred_return)}", completed.stdout.decode())
 ```
 
@@ -584,7 +584,7 @@ EXIT_SUCCESS = 0
 def test_checked_in_annotations_match_runtime(
     fake_process: FakeProcess,
     isolated_trace_store: pathlib.Path,
-    tmp_path: pathlib.Path,
+    isolated_dir: pathlib.Path,
     fake: Faker,
 ) -> None:
     """
@@ -608,7 +608,7 @@ def test_checked_in_annotations_match_runtime(
     )
 
     # --- Assert ---
-    assert isolated_trace_store.is_relative_to(tmp_path)
+    assert isolated_trace_store.is_relative_to(isolated_dir)
     assert completed.stdout == b""
 
 
@@ -642,7 +642,7 @@ def test_drift_guard_flags_stale_annotations(
     assert new_param.encode() in completed.stdout
 ```
 
-Reuse the `isolated_trace_store` fixture from the Runtime Type Collection section so the path-under-`tmp_path` invariant is asserted once and shared.
+Reuse the `isolated_trace_store` fixture from the Runtime Type Collection section so the path-under-`isolated_dir` invariant is asserted once and shared.
 
 **Variety booster:** Parametrize over modules and over empty versus non-empty diffs so one body proves the guard both passes clean builds and fails on drift.
 
@@ -667,13 +667,13 @@ STUB_SUFFIX = ".pyi"
 def test_pyi_stub_is_written_without_touching_repo(
     fake_process: FakeProcess,
     isolated_trace_store: pathlib.Path,
-    tmp_path: pathlib.Path,
+    isolated_dir: pathlib.Path,
     fake: Faker,
 ) -> None:
     """
     Given: the trace store is isolated and the CLI returns a generated stub on stdout.
     When: a .pyi is materialized for a sourceless extension module via monkeytype stub.
-    Then: the stub file is written under tmp_path and the repository is never rewritten.
+    Then: the stub file is written under isolated_dir and the repository is never rewritten.
     """
     # --- Arrange ---
     module_name = fake.word()
@@ -690,12 +690,12 @@ def test_pyi_stub_is_written_without_touching_repo(
         capture_output=True,
         check=True,
     )
-    stub_path = tmp_path / f"{module_name}{STUB_SUFFIX}"
+    stub_path = isolated_dir / f"{module_name}{STUB_SUFFIX}"
     stub_path.write_text(completed.stdout.decode())
 
     # --- Assert ---
-    assert isolated_trace_store.is_relative_to(tmp_path)
-    assert stub_path.is_relative_to(tmp_path)
+    assert isolated_trace_store.is_relative_to(isolated_dir)
+    assert stub_path.is_relative_to(isolated_dir)
     assert stub_path.read_text().startswith(f"def {symbol}")
 ```
 

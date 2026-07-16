@@ -402,7 +402,7 @@ NAIVE_DESTINATION = datetime(2024, 1, 15, 12, 0, 0)
 
 
 def test_naive_mode_error_rejects_awareness_lapse(
-    monkeypatch: pytest.MonkeyPatch,
+    monkey: pytest.MonkeyPatch,
     fake: Faker,
 ) -> None:
     """
@@ -411,7 +411,7 @@ def test_naive_mode_error_rejects_awareness_lapse(
     Then: RuntimeError is raised.
     """
     # --- Arrange ---
-    monkeypatch.setattr(time_machine, "naive_mode", time_machine.NaiveMode.ERROR)
+    monkey.setattr(time_machine, "naive_mode", time_machine.NaiveMode.ERROR)
 
     # --- Act ---
     with pytest.raises(RuntimeError):

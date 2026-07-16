@@ -265,7 +265,7 @@ def get_current_schema_version() -> int:
 
 
 def test_new_column_stores_generated_value(
-    monkeypatch: pytest.MonkeyPatch,
+    monkey: pytest.MonkeyPatch,
     fake: Faker,
 ) -> None:
     """
@@ -274,7 +274,7 @@ def test_new_column_stores_generated_value(
     Then: a generated value is stored and retrieved.
     """
     # --- Arrange ---
-    monkeypatch.setattr(
+    monkey.setattr(
         f"{__name__}.get_current_schema_version",
         lambda: SCHEMA_VERSION_REQUIRED,
     )

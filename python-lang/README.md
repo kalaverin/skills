@@ -1,18 +1,38 @@
 # python-lang
 
-Mandatory Python style and language rule skill for agents writing, editing, refactoring, and reviewing Python code.
+Enforces strict Python language and style rules based on the Google Python Style Guide and Ruff.
 
-## What this skill does
+## What it does
 
-`python-lang` codifies the Google Python Style Guide plus project-specific strictures. It is consumed as Markdown documentation and is triggered automatically when `.py` or `.pyi` files are present in the workspace. The skill covers:
+This skill governs how Python code is written, edited, refactored, and reviewed in the project.
+It covers language-level rules such as imports, packages, exceptions, comprehensions, generators, decorators, threading, type annotations, and modern Python idioms.
+It also covers style-level rules such as line length, indentation, whitespace, comments, docstrings, naming, and function length.
+After every edit, the agent runs a mandatory four-step Ruff self-linting protocol.
 
-- Language-level rules: lint, imports, packages, exceptions, global state, nested scopes, comprehensions, iterators, generators, lambdas, conditionals, default arguments, properties, truthiness, decorators, threading, power features, modern Python, and type-annotated code.
-- Style-level rules: semicolons, line length, parentheses, indentation, blank lines, whitespace, shebang, comments, docstrings, strings, files/sockets, TODOs, import formatting, statements, accessors, naming, `main`, function length, and type annotations.
-- A mandatory four-step Ruff self-linting protocol after any Python file edit.
+## When it activates
 
-## When to use it
+Activates automatically when the project contains `.py` or `.pyi` files.
 
-This skill is loaded automatically when the workspace contains `.py` or `.pyi` files, or when the request explicitly involves Python, Ruff, or `uv`.
+Example prompts:
+
+- "Refactor this module to use dataclasses."
+- "Add type annotations to the payment service."
+- "Review my Python code for style issues."
+- "Write a pytest fixture for this test suite."
+
+## How to use it
+
+Ask the agent to write, edit, refactor, or review Python code.
+The agent checks the relevant language and style rules, respects local file consistency, and runs Ruff on the files it changed.
+You do not need to configure Ruff or invoke it yourself.
+
+If the project root contains a `.sdk/` directory, the agent also checks for reusable components before writing new code.
+
+## What it produces
+
+- Python code that follows the project style guide.
+- Ruff-clean files scoped to the agent's own changes.
+- Optional reuse of existing `.sdk/` components.
 
 ## Repository layout
 
@@ -21,47 +41,20 @@ python-lang/
 ├── references/           # Language and style rule references
 │   ├── 01_language_rules.md
 │   └── 02_style_rules.md
-└── SKILL.md              # Skill entry point, triggers, and self-linting protocol
+└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Open `SKILL.md` for the compliance preamble, lazy-load index, and self-linting protocol.
-2. Match the current task to a section in the routing index.
-3. Extract only the relevant `[ref: #...]` section from `references/01_language_rules.md` or `references/02_style_rules.md`.
-4. Apply the rules to the Python code under review or edit.
-5. After any Python file modification, run the four-step Ruff protocol:
-   - `ruff check .`
-   - `ruff check --fix .`
-   - `ruff format .`
-   - `ruff check .` again to confirm a clean state.
+| File | What it covers |
+|------|----------------|
+| `references/01_language_rules.md` | Lint, imports, packages, exceptions, mutable global state, nested classes, comprehensions, iterators, generators, lambdas, conditional expressions, default arguments, properties, truthiness, lexical scoping, decorators, threading, power features, modern Python, and type-annotated code. |
+| `references/02_style_rules.md` | Semicolons, line length, parentheses, indentation, blank lines, whitespace, shebang, comments and docstrings, strings, files and sockets, TODO comments, import formatting, statements, accessors, naming, main entry points, function length, and type annotations. |
 
-## Reference index
+## Important conventions / gotchas
 
-| File | Sections |
-|------|----------|
-| `references/01_language_rules.md` | 1.1 Lint — 1.21 Type Annotated Code |
-| `references/02_style_rules.md` | 2.1 Semicolons — 2.19 Type Annotations |
-
-Key topics include:
-
-- Imports and package layout.
-- Exceptions and error handling.
-- Comprehensions and generator expressions.
-- Default argument values and mutable defaults.
-- Properties and descriptors.
-- Threading and concurrency.
-- Modern Python 3.10+ generic types (`list[int]`, `X \| None`).
-- `from __future__ import annotations` for forward declarations.
-- Line length, indentation, and blank-line rules.
-- Google-style docstrings (PEP 257).
-- Naming conventions.
-- Type annotations and import style.
-
-## Conventions
-
-- `SKILL.md` is the single entry point.
-- Requirement verbs follow RFC 2119 / RFC 8174 (BCP 14).
+- Requires the `read-for-comments` skill automatically for RFC 2119 / RFC 8174 verb semantics.
 - Ruff is the mandatory linter and formatter; `black`, `flake8`, and `isort` are not used.
 - `uv` is the mandatory Python project tool; `pip`, `poetry`, and `virtualenv` are not used.
-- Only fix code that you modified yourself.
+- The agent fixes only code it explicitly modified and ignores pre-existing violations in untouched code.
+- All timestamps use UTC ISO 8601 format.

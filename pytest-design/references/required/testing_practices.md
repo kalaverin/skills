@@ -27,7 +27,7 @@ index:
     expected: "Doctests exist only where CI runs them; everything else is a plain unit test."
   - anchor: testing-practices-pathlib-vs-str
     what: "Prefer `pathlib.Path` everywhere and convert to `str` only at external boundaries (C extensions, CLIs that require strings)."
-    problem: "Mixing Path and str without explicit conversion causes type errors and boundary ambiguity, letting paths break at system edges and complicating path manipulation; path end-to-end, convert at boundary, c extension string, no mix, explicit conversion, tmp_path."
+    problem: "Mixing Path and str without explicit conversion causes type errors and boundary ambiguity, letting paths break at system edges and complicating path manipulation; path end-to-end, convert at boundary, c extension string, no mix, explicit conversion, isolated_dir."
     use_when: "The codebase handles filesystem paths; `pathlib.Path` is preferred; conversion to `str` should happen only at external boundaries."
     avoid_when: "Legacy code requires `str` paths everywhere; mixing `Path` and `str` without declared conversion is acceptable; `pathlib` is not available."
     expected: "Tests pass `Path` end-to-end and convert to `str` only at the documented external boundary."
@@ -406,14 +406,14 @@ class ConfigParser:
         return {key: value}
 
 
-def test_config_file_is_parsed_from_path_object(tmp_path: Path, fake: Faker) -> None:
+def test_config_file_is_parsed_from_path_object(isolated_dir: Path, fake: Faker) -> None:
     """
     Given: a YAML config file created as a Path.
     When: the parser receives the Path.
     Then: it returns the configured value.
     """
     # --- Arrange ---
-    config_file = tmp_path / f"{fake.word()}.{YAML_EXTENSION}"
+    config_file = isolated_dir / f"{fake.word()}.{YAML_EXTENSION}"
     key = fake.word()
     value = fake.word()
     config_file.write_text(
@@ -428,7 +428,7 @@ def test_config_file_is_parsed_from_path_object(tmp_path: Path, fake: Faker) -> 
     assert parsed[key] == value
 ```
 
-**Variety booster:** Use `tmp_path` fixtures with different directory depths and file extensions, and centralize path-to-string conversions in a single boundary helper.
+**Variety booster:** Use `isolated_dir` fixtures with different directory depths and file extensions, and centralize path-to-string conversions in a single boundary helper.
 
 ## Dependency marker forbidden
 

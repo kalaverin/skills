@@ -1,23 +1,36 @@
 # serena-audit
 
-Skill that keeps the Serena memory store in sync with the source repositories it describes.
+Reconciles Serena memory files against their source repositories to keep knowledge fresh and metadata accurate.
 
-## What this skill does
+## What it does
 
-`serena-audit` defines a two-phase reconciliation workflow:
+This skill detects drift between Serena memory entries and the code they describe.
+It runs in two phases: first it scans every memory file, classifies discrepancies, and writes a reconciliation plan; then it executes the plan by updating each memory in turn.
+It also resolves git source directories, maps entity names between memory paths and git directories, and validates memory frontmatter.
 
-1. **Plan phase** — scan every memory file under `.serena/memories/`, classify discrepancies, and write a compact reconciliation plan.
-2. **Execute phase** — run the plan by delegating per-memory updates to subagents.
+## When it activates
 
-The skill also ships a stub Python validator that checks YAML frontmatter and naming compliance.
+Activates when the project contains a `.serena/memories/` directory and you ask to reconcile or audit Serena memory.
 
-## When to use it
+Example prompts:
 
-Use this skill when the request involves:
+- "Reconcile Serena memory with the source repos."
+- "Audit memory freshness."
+- "Update stale memory headers."
+- "Реконсиляция памяти проекта."
 
-- Reconciling Serena memory against source repositories.
-- Auditing memory freshness, metadata, or naming compliance.
-- Running a memory audit or reconciliation pass.
+## How to use it
+
+Ask the agent to reconcile or audit memory.
+The agent enumerates all memories, checks their YAML frontmatter and git metadata, classifies discrepancies, and produces a plan.
+After you approve or the agent continues per policy, it updates each memory with refreshed content and metadata.
+You do not need to edit memory files manually.
+
+## What it produces
+
+- A reconciliation plan saved as a Serena memory under `.serena/memories/plans/...`.
+- Updated memory files with refreshed YAML frontmatter and corrected content.
+- Output from the frontmatter validation script.
 
 ## Repository layout
 
@@ -32,41 +45,26 @@ serena-audit/
 │   └── 06_validation_and_edits.md
 ├── scripts/              # Stub memory frontmatter validator
 │   └── validate_memory_frontmatter.py
-└ SKILL.md                # Skill entry point and master workflow
+└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Open `SKILL.md` for the master workflow.
-2. Load `references/01_reconcile_and_plan.md` for the scan and plan steps.
-3. Use `references/02_reconciliation_subagent_prompt.md` to delegate the scan.
-4. Use `references/03_plan_writer.md` to assemble the reconciliation plan.
-5. Use `references/04_execute_update.md` to run the plan.
-6. Use `references/05_per_memory_subagent_prompt.md` for per-memory updates.
-7. Use `references/06_validation_and_edits.md` for validation, git source resolution, and entity mapping.
-8. Invoke the stub validator directly:
-   ```bash
-   python serena-audit/scripts/validate_memory_frontmatter.py --memories-dir .serena/memories
-   ```
-9. After every memory mutation, run `just serena-checkpoint` from the project root.
+| File | What it covers |
+|------|----------------|
+| `references/01_reconcile_and_plan.md` | Phase 1: scan every memory, classify discrepancies, and write a reconciliation plan. |
+| `references/02_reconciliation_subagent_prompt.md` | Read-only scan subagent prompt. |
+| `references/03_plan_writer.md` | Plan-memory format and routing. |
+| `references/04_execute_update.md` | Phase 2: execute the update plan. |
+| `references/05_per_memory_subagent_prompt.md` | Per-memory update subagent prompt. |
+| `references/06_validation_and_edits.md` | Validation checklist and edit rules. |
+| `scripts/validate_memory_frontmatter.py` | Stub frontmatter validator. |
 
-## Reference index
+## Important conventions / gotchas
 
-| File | Purpose |
-|------|---------|
-| `references/01_reconcile_and_plan.md` | Reconciliation planning |
-| `references/02_reconciliation_subagent_prompt.md` | Scan subagent prompt |
-| `references/03_plan_writer.md` | Plan writer instructions |
-| `references/04_execute_update.md` | Plan execution workflow |
-| `references/05_per_memory_subagent_prompt.md` | Per-memory update subagent prompt |
-| `references/06_validation_and_edits.md` | Validation, git source resolution, entity mapping |
-
-## Conventions
-
-- `SKILL.md` is the single entry point.
-- Reconciliation runs in two phases: plan and execute.
-- The scan subagent classifies discrepancies without modifying files.
-- Per-memory updates are delegated to subagents.
-- Memory frontmatter must include `title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, and `source`.
+- Requires the `serena-protocol` skill automatically.
+- Missing entity cards must be created via `project-audit` before entity-scoped memories can be reconciled.
+- Memory paths and entity names use `snake_case` with underscores and no hyphens.
+- Every memory file must start with strict YAML frontmatter followed immediately by an H1 title.
+- Keep each `write_memory` payload under 25 KB; store large artifacts outside Serena memory.
 - All timestamps use UTC ISO 8601 format.
-- Memory paths and entity names use `snake_case` with underscores.

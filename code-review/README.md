@@ -1,38 +1,36 @@
 # code-review
 
-Language-agnostic code-review protocol for Kimi agents.
+Runs a thorough, language-agnostic review of your code or pull request.
 
-## What this skill does
+## What it does
 
-`code-review` defines a repeatable, multi-phase code-review workflow that delegates inspection work to specialist subagents. It contains no runtime service; it is consumed as Markdown documentation and subagent prompts. The skill covers:
+This skill performs repeatable code reviews by delegating inspection work to specialist subagents.
+It supports two modes: a feature/diff-based review for pull requests, and a full-project review for audits.
+Findings are classified into five severity levels from `INFO` to `CRITICAL` and written into both a machine-readable Serena memory report and a human-readable report.
 
-- Two review modes:
-  - **Feature / diff-based review** — reviews changes between a base branch and `HEAD`.
-  - **Full-project review** — reviews the entire codebase.
-- A five-level severity taxonomy.
-- Mandatory report boilerplate and file naming.
-- A six-phase workflow:
-  1. Scope and skill selection.
-  2. Architecture reconnaissance.
-  3. Parallel specialist inspection.
-  4. Finding validation.
-  5. Consolidation.
-  6. Persistence.
-- Four specialist subagent prompts:
-  - Security and configuration.
-  - Correctness, concurrency, and performance.
-  - Resilience and observability.
-  - Architecture and maintainability.
+## When it activates
 
-## When to use it
+Activates when you ask for a code review, PR review, diff review, or project review.
+Examples:
+- "Review this pull request"
+- "Check this diff for bugs"
+- "Audit the whole project"
+- "Review feature branch user-auth against main"
 
-Use this skill when the request involves:
+## How to use it
 
-- Code review, PR review, or diff review.
-- Reviewing a feature, project, or repository.
-- Checking correctness, security, performance, concurrency, resilience, observability, or architecture.
+Ask the agent to review your code.
+For a feature review, make sure your branch has commits and a base branch exists; the agent will use `git diff` to determine scope.
+For a full-project review, the agent will inspect the entire source tree.
+The agent auto-detects language- and domain-specific skills triggered by the codebase and applies them during the review.
+If you are on a branch other than `main` or `master`, the agent will ask you to choose the review mode.
 
-The skill responds to prompts such as "code review", "review code", "PR review", "ревью", "код-ревью", and "проверь код".
+## What it produces
+
+- A machine-readable report under `.serena/memories/review/` named `feature_YYYYMMDDTHHMMSSZ.md` or `project_YYYYMMDDTHHMMSSZ.md`.
+- A human-readable report under `.reports/` named `review-YYYY-mmdd-HHMM-feature.md` or `review-YYYY-mmdd-HHMM-project.md`.
+- Findings grouped by severity, with sections for architecture, security, resilience, observability, and data privacy.
+- Optional CodeRabbit cross-validation in feature mode.
 
 ## Repository layout
 
@@ -45,40 +43,24 @@ code-review/
 │   ├── subagent-correctness-concurrency-performance.md
 │   ├── subagent-resilience-and-observability.md
 │   └── subagent-security-and-configuration.md
-└── SKILL.md              # Skill entry point with workflow and routing
+└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Open `SKILL.md` and determine the review mode (feature or full-project).
-2. For feature mode, gather the diff with `git diff {{ BASE_BRANCH }}...HEAD`.
-3. Load `references/checklist.md` for the language-agnostic review checklist.
-4. Load `references/report-templates.md` for the mandatory report skeleton.
-5. Dispatch the four specialist subagents in parallel using the prompts under `references/subagent-*.md`.
-6. Validate findings and write the consolidated report using the template.
-7. Persist the machine-readable report as a Serena memory entry with the required YAML frontmatter.
-
-## Reference index
-
-| File | Purpose |
-|------|---------|
+| File | What it covers |
+|------|----------------|
 | `references/checklist.md` | Language-agnostic review checklist |
 | `references/report-templates.md` | Machine-readable and human-readable report templates |
-| `references/subagent-security-and-configuration.md` | Security and configuration specialist prompt |
+| `references/subagent-security-and-configuration.md` | Security, privacy, and configuration specialist prompt |
 | `references/subagent-correctness-concurrency-performance.md` | Correctness, concurrency, and performance specialist prompt |
-| `references/subagent-resilience-and-observability.md` | Resilience and observability specialist prompt |
+| `references/subagent-resilience-and-observability.md` | Resilience, observability, and logging specialist prompt |
 | `references/subagent-architecture-and-maintainability.md` | Architecture and maintainability specialist prompt |
 
-## Conventions
+## Important conventions / gotchas
 
-- `SKILL.md` is the single entry point.
-- Reports must begin with the standard Serena YAML frontmatter.
-- Machine-readable reports are written in English; human-readable reports are written in Russian.
-- Timestamps use UTC ISO 8601 format.
-- Severity follows the five-level taxonomy defined in `SKILL.md`.
-- Feature-mode reviews use the base branch diff as the primary scope.
-- Four specialist subagents run in parallel during the inspection phase.
-
-## Optional cross-validation
-
-Feature-mode reviews may use the CodeRabbit CLI (`coderabbit review`) for advisory cross-validation when it is available.
+- Requires `serena-protocol` when writing machine-readable reports into `.serena/memories/`.
+- Language-specific style rules come from sibling skills such as `python-lang` or `protobuf-lang`.
+- The agent uses the repository default branch as the comparison base; confirm if it is not `main` or `master`.
+- Tests are skipped unless you explicitly ask to review them.
+- Machine-readable reports are in English; human-readable reports are in Russian.

@@ -30,6 +30,10 @@ Skills that govern the agent itself, its tool selection, and its startup behavio
 | **shell-protocol** | Mandates modern CLI tooling for filesystem, search, and Python operations: `lsd`, `fd`, `rg`, `ruplacer`, `uv`, `ruff`. Replaces legacy `ls`, `find`, `grep`, `sed`, `pip`, `black`, `flake8`, etc. |
 | **serena-protocol** | Defines the Serena MCP contract: memory namespaces, YAML frontmatter schema, entity-card prerequisites, mutation rules, and the `just serena-checkpoint` persistence ritual. |
 | **read-for-comments** | Always-active local reference library for technical standards (RFC, OWASP, STD, etc.). Agents MUST check `references/` here before fetching a standard from the internet. |
+| **kagi-search** | Mandatory and exclusive protocol for web search and page enrichment through the `kagimcp` MCP tools. Governs `kagi_search_fetch`, `kagi_fastgpt`, `kagi_extract`, and `kagi_summarizer`. Always active. |
+| **markdown-protocol** | Mandatory Markdown authoring rules for every `.md` file the agent creates or edits, including `SKILL.md` frontmatter, READMEs, and Serena memory entries. Always active. |
+| **subagents-protocol** | Mandatory protocol for delegating work to built-in `coder`, `explore`, and `plan` subagents. Governs when to delegate, prompt quality, context passing, launch parameters, foreground/background execution, resume behavior, and the web-search bridge. |
+| **todo-protocol** | Mandatory protocol for using the `SetTodoList` tool. Governs when to create a todo list, how to update it without violating immutability rules, how to synchronize item status after every tool call, and the forbidden mutations. |
 
 ### Languages & API Design
 
@@ -39,6 +43,7 @@ Skills that enforce language-specific and API-specific rules.
 |-------|---------|
 | **api-design** | Enforces Google AIP compliance for resource-oriented APIs: resource naming, standard methods, custom methods, pagination, filtering, planes, compatibility guarantees, and HTTP/gRPC transcoding. |
 | **python-lang** | Mandatory Google Python Style Guide enforcement plus a Ruff self-linting protocol. Covers imports, mutability, exceptions, type hints, comprehensions, decorators, docstrings, and formatting. |
+| **pytest-design** | Mandatory skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Covers fixtures, parametrization, mocking, markers, async tests, coverage, xdist, and faker-driven test data. |
 | **protobuf-lang** | Buf Protobuf lint and schema style. Governs `buf.yaml`, packages, imports, enums, messages, services, RPCs, and comments against the Buf STANDARD rule set. |
 | **temporal-lang** | Guidance for Temporal durable execution across Python, TypeScript, Go, Java, .NET, and Ruby: workflow determinism, activities, signals, queries, versioning, continue-as-new, saga patterns, and troubleshooting non-determinism errors. |
 
@@ -51,6 +56,7 @@ Skills that extract, structure, and navigate project knowledge.
 | **project-audit** | Creates and maintains Serena entity cards (`entities/<entity>`) for services, libraries, repositories, and infrastructure components. Orchestrates a read-only explorer subagent and writes scoped findings to `bugs/`, `notes/`, `decisions/`, `style/`, `todo/`. |
 | **business-audit** | Extracts the business layer from source code for a single entity: domain entities, processes, rules, invariants, actors, integrations, and risks. Requires an existing entity card and project glossary. |
 | **dependencies-audit** | Builds exhaustive per-service dependency cards (`logic/<entity>/dependencies.md`): public interfaces, downstream calls, databases, external integrations, libraries, infrastructure, and mandatory Mermaid diagrams. |
+| **pytest-planner** | Generates repository-specific pytest enablement artifacts for a Python project: a test-authoring/research prompt and an iteration-ready unit-test coverage plan pinned to the exact `pytest-design` reference anchors. |
 
 ### Audits & Reviews
 

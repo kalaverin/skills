@@ -38,17 +38,17 @@ index:
     avoid_when: "`return_value` used where per-call variation or exception needed; multiple mocks stacked to simulate sequence when one iterable suffices; behavior split across mocks for no reason."
     expected: "Static results use `return_value`, exceptions and sequences use `side_effect`, giving one mock stable, dynamic, or sequential behavior as needed."
   - anchor: mocking-monkeypatch
-    what: "Using the built-in `monkeypatch` fixture for temporary environment variables, configuration values, and dotted attribute replacement, all auto-reverted."
+    what: "Using the built-in `monkey` fixture for temporary environment variables, configuration values, and dotted attribute replacement, all auto-reverted."
     problem: "Environment and config changes must be temporary and reverted, and mixing two cleanup mechanisms in one test causes confusion; env var leakage, config attribute leakage, mixed cleanup confusion, auto revert guarantee, dotted attribute target."
     use_when: "Environment variable, config value, or dotted attribute must change only for one test; teardown must happen automatically even on failure; no other patch mechanism already active."
-    avoid_when: "`mocker.patch.dict(os.environ, ...)` combined with `monkeypatch` in same test (two cleanup paths); state change left unreverted; monkeypatch chosen where mocker patch is more appropriate."
-    expected: "Environment and config changes are applied via one mechanism (`monkeypatch`) and reverted automatically, with no competing cleanup path."
+    avoid_when: "`mocker.patch.dict(os.environ, ...)` combined with `monkey` in same test (two cleanup paths); state change left unreverted; monkey chosen where mocker patch is more appropriate."
+    expected: "Environment and config changes are applied via one mechanism (`monkey`) and reverted automatically, with no competing cleanup path."
   - anchor: mocking-mock-open
     what: "`mock_open` as a configurable stand-in for built-in `open` (with iteration and context-manager support) for small text reads."
-    problem: "Tests reading small text via `open` do not need real file, but large, binary, or version-controlled content fits real temp file better; in-memory read shortcut, context manager iteration, binary content real file, version-controlled fixture, tmp_path clarity, decoding edge case."
+    problem: "Tests reading small text via `open` do not need real file, but large, binary, or version-controlled content fits real temp file better; in-memory read shortcut, context manager iteration, binary content real file, version-controlled fixture, isolated_dir clarity, decoding edge case."
     use_when: "Code reads small text through `open`; real filesystem is unnecessary; content is generated, not version-controlled or binary."
     avoid_when: "`mock_open` used for large or binary content; version-controlled content mocked instead of read from real file; decoding behavior needs real filesystem verification."
-    expected: "Small text reads are patched with `mock_open`, while substantial or binary content uses a real `tmp_path` file."
+    expected: "Small text reads are patched with `mock_open`, while substantial or binary content uses a real `isolated_dir` file."
   - anchor: mocking-async-mock
     what: "`AsyncMock` for coroutine and `async for` boundaries, integrating with `mocker.patch` (e.g. `new_callable=AsyncMock`) like synchronous mocks."
     problem: "Async boundaries must mock as awaitables; plain mock is not awaitable and forgotten await makes await assertion fail; nonawaitable boundary, forgotten await gap, async iterator shape, await assertion helper, coroutine return contract."
@@ -434,7 +434,7 @@ def test_side_effect_raises_configurable_exception(mocker: MockerFixture, fake: 
 
 [ref: #mocking-monkeypatch]
 
-The built-in `monkeypatch` fixture is the right tool for temporary state changes such as environment variables, configuration values, and dotted attribute replacement.
+The built-in `monkey` fixture is the right tool for temporary state changes such as environment variables, configuration values, and dotted attribute replacement.
 
 ```python
 import os
@@ -448,7 +448,7 @@ class Settings:
     FEATURE_FLAG: bool = False
 
 
-def test_monkeypatch_changes_config(monkeypatch: pytest.MonkeyPatch, fake: Faker) -> None:
+def test_monkeypatch_changes_config(monkey: pytest.MonkeyPatch, fake: Faker) -> None:
     """
     Given: settings timeout and environment variable are patched.
     When: settings and environment are read.
@@ -456,10 +456,10 @@ def test_monkeypatch_changes_config(monkeypatch: pytest.MonkeyPatch, fake: Faker
     """
     # --- Arrange ---
     timeout = fake.pyint(min_value=1, max_value=60)
-    monkeypatch.setattr(Settings, "API_TIMEOUT_SECONDS", timeout)
+    monkey.setattr(Settings, "API_TIMEOUT_SECONDS", timeout)
     key = fake.pystr(min_chars=12, max_chars=16).upper()
     value = fake.password(length=32)
-    monkeypatch.setenv(key, value)
+    monkey.setenv(key, value)
 
     # --- Act ---
     timeout_result = Settings.API_TIMEOUT_SECONDS
@@ -470,7 +470,7 @@ def test_monkeypatch_changes_config(monkeypatch: pytest.MonkeyPatch, fake: Faker
     assert env_result == value
 
 
-def test_monkeypatch_can_remove_env(monkeypatch: pytest.MonkeyPatch, fake: Faker) -> None:
+def test_monkeypatch_can_remove_env(monkey: pytest.MonkeyPatch, fake: Faker) -> None:
     """
     Given: environment variable is set and then deleted.
     When: environment is checked.
@@ -479,8 +479,8 @@ def test_monkeypatch_can_remove_env(monkeypatch: pytest.MonkeyPatch, fake: Faker
     # --- Arrange ---
     key = fake.pystr(min_chars=12, max_chars=16).upper()
     value = fake.password(length=32)
-    monkeypatch.setenv(key, value)
-    monkeypatch.delenv(key)
+    monkey.setenv(key, value)
+    monkey.delenv(key)
 
     # --- Act ---
     present = key in os.environ

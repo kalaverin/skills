@@ -1,81 +1,82 @@
 # project-audit
 
-Serena skill for creating and maintaining entity cards for services, libraries, repositories, and infrastructure/GitOps components.
+Creates and maintains structured Serena entity cards for services, libraries, repositories, and infrastructure components.
 
-## What this skill does
+## What it does
 
-`project-audit` defines the workflow for producing a Serena entity card. It does not explore code directly; instead, it orchestrates a read-only exploration subagent and then writes the resulting card and focused findings to Serena memory. The skill provides:
+This skill turns a codebase into a concise, structured entity card in Serena memory.
+It captures the exported interface, responsibilities, dependencies, and important conventions of a project component.
+The skill also produces focused finding memories for bugs, notes, decisions, style issues, and todos scoped to that entity.
+A read-only exploration subagent does the heavy lifting so the root agent can orchestrate and verify results.
 
-- A root-agent orchestration prompt.
-- A read-only exploration subagent prompt.
-- A common card skeleton and agent rules.
-- Type-specific templates for:
-  - gRPC services.
-  - REST API gateways.
-  - Temporal workflow workers.
-  - Infrastructure / GitOps components.
-  - Libraries.
+## When it activates
 
-## When to use it
+Activates when you ask about creating, updating, or studying an entity, project, service, or repository card.
 
-Use this skill when the request involves:
+Example prompts:
 
-- Creating or updating an entity card, project card, service card, or repository card.
-- Exploring or studying a project, service, repository, or library.
-- Gathering information for an entity card.
+- "Create a card for the payment service."
+- "Study the user-api repository and write an entity card."
+- "Update the card for order-service."
+- "Изучи сервис биллинга и создай карточку."
 
-The skill responds to prompts such as "create service card", "explore project", "study repository", "создай карточку сервиса", and "изучи проект".
+## How to use it
+
+Tell the agent which component you want documented and, if possible, where it lives in the workspace.
+The agent will identify the entity name, verify whether a card already exists, and choose the right template.
+You do not need to open reference files or run subagents yourself.
+
+The skill supports several entity types:
+
+- gRPC service
+- REST API gateway
+- Temporal workflow worker
+- Infrastructure / GitOps component
+- Library
+
+If the target entity has no card yet, the agent will ask you before creating the first one.
+
+## What it produces
+
+- An entity card saved to `.serena/memories/entities/<entity_name>.md`.
+- Focused finding memories under `.serena/memories/bugs/<entity>/...`, `notes/<entity>/...`, `decisions/<entity>/...`, `style/<entity>/...`, and `todo/<entity>/...`.
 
 ## Repository layout
 
 ```text
 project-audit/
-├── references/           # Templates and subagent prompts
-│   ├── 01_make_card.md           # Root-agent orchestration prompt
-│   ├── 02_service_card_writer.md # Final card writing instructions
-│   ├── 03_service_card_explorer.md # Read-only exploration subagent prompt
-│   ├── 04_service_card_common.md # Common skeleton and agent rules
-│   ├── 05_grpc_service.md        # gRPC service template
-│   ├── 06_rest_gateway.md        # REST gateway template
-│   ├── 07_temporal_worker.md     # Temporal worker template
-│   ├── 08_infrastructure_gitops.md # Infrastructure / GitOps template
-│   └── 09_library.md             # Library template
-└ SKILL.md                # Skill entry point and master execution workflow
+├── references/           # Card templates and subagent prompts
+│   ├── 01_make_card.md              # Root-agent orchestration from verification to persistence
+│   ├── 02_service_card_writer.md    # Final card writing instructions
+│   ├── 03_service_card_explorer.md  # Read-only exploration subagent prompt
+│   ├── 04_service_card_common.md    # Common skeleton and agent rules
+│   ├── 05_grpc_service.md           # gRPC service template
+│   ├── 06_rest_gateway.md           # REST gateway template
+│   ├── 07_temporal_worker.md        # Temporal worker template
+│   ├── 08_infrastructure_gitops.md  # Infrastructure / GitOps template
+│   └── 09_library.md                # Library template
+└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Identify the entity name (`snake_case`) and path.
-2. Check whether `entities/<entity_name>` already exists.
-3. Read `references/01_make_card.md` for the master workflow.
-4. Read `references/02_service_card_writer.md` for final writing instructions.
-5. Determine the entity type and load the matching template from `references/05_*.md` through `references/09_*.md`.
-6. Collect relevant memory paths under `.serena/memories/` for the entity.
-7. Launch the read-only exploration subagent using the prompt in `references/03_service_card_explorer.md`.
-8. Generate the directory tree yourself using the command in `references/04_service_card_common.md`.
-9. Write the final card to `entities/<entity_name>` and findings to the appropriate namespaces.
-10. Verify and persist with `just serena-checkpoint`.
+| File | What it covers |
+|------|----------------|
+| `references/01_make_card.md` | Root-agent orchestration from verification to persistence. |
+| `references/02_service_card_writer.md` | Final card writing instructions and section order. |
+| `references/03_service_card_explorer.md` | Read-only exploration subagent prompt. |
+| `references/04_service_card_common.md` | Common skeleton and agent rules. |
+| `references/05_grpc_service.md` | gRPC service exported interface template. |
+| `references/06_rest_gateway.md` | REST API gateway exported interface template. |
+| `references/07_temporal_worker.md` | Temporal workflow worker exported interface template. |
+| `references/08_infrastructure_gitops.md` | Infrastructure / GitOps exported interface template. |
+| `references/09_library.md` | Library exported interface template. |
 
-## Reference index
+## Important conventions / gotchas
 
-| File | Purpose |
-|------|---------|
-| `references/01_make_card.md` | Root-agent orchestration from verification to persistence |
-| `references/02_service_card_writer.md` | Final card writing instructions and quality checklist |
-| `references/03_service_card_explorer.md` | Read-only exploration subagent prompt and report schema |
-| `references/04_service_card_common.md` | Common skeleton, agent rules, and omitted items |
-| `references/05_grpc_service.md` | gRPC service exported interface template |
-| `references/06_rest_gateway.md` | REST gateway exported interface template |
-| `references/07_temporal_worker.md` | Temporal worker exported interface template |
-| `references/08_infrastructure_gitops.md` | Infrastructure / GitOps exported interface template |
-| `references/09_library.md` | Library exported interface template |
-
-## Conventions
-
-- `SKILL.md` is the single entry point.
-- Entity names use `snake_case`.
-- Entity cards are saved to `entities/<entity_name>` in Serena memory.
-- Findings route to `bugs/<entity>/...`, `notes/<entity>/...`, `decisions/<entity>/...`, `style/<entity>/...`, or `todo/<entity>/...`.
-- Entity-specific metadata (branch, commit, commit date) must come from the entity's own git repository.
-- The root agent orchestrates; the subagent explores read-only.
-- Do not include Sentry, Prometheus, tests, linters, CI, Makefile, Docker, or entry points in the final card.
+- Requires the `serena-protocol` skill automatically.
+- Entity names and memory paths use `snake_case` with underscores.
+- The first entity card must be created explicitly before other entity-scoped memories can be written.
+- The final card intentionally omits Sentry, Prometheus, tests, linters, CI, Makefile, Docker, and entry points.
+- Do not expect environment variable values, defaults, examples, or secrets to appear in the card.
+- All timestamps use UTC ISO 8601 format.

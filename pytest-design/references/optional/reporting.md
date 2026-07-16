@@ -162,16 +162,16 @@ from faker import Faker
 
 
 def test_exported_report_contains_expected_fields(
-    tmp_path: Path,
+    isolated_dir: Path,
     fake: Faker,
 ) -> None:
     """
-    Given: a JSON report written to tmp_path.
+    Given: a JSON report written to isolated_dir.
     When: the report is attached and read back.
     Then: it contains the expected email field.
     """
     # --- Arrange ---
-    report_path = tmp_path / "report.json"
+    report_path = isolated_dir / "report.json"
     payload = {"name": fake.name(), "email": fake.fake_email()}
     report_path.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -390,7 +390,7 @@ from faker import Faker
 
 def test_login_page_renders_dashboard(
     page: Any,
-    tmp_path: Path,
+    isolated_dir: Path,
     fake: Faker,
 ) -> None:
     """
@@ -412,7 +412,7 @@ def test_login_page_renders_dashboard(
     try:
         page.wait_for_url("/dashboard")
     except AssertionError:
-        screenshot = tmp_path / "failure.png"
+        screenshot = isolated_dir / "failure.png"
         page.screenshot(path=str(screenshot))
         allure.attach.file(
             str(screenshot),

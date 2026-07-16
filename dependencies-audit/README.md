@@ -1,69 +1,61 @@
 # dependencies-audit
 
-Agent skill for creating and maintaining exhaustive dependency cards for project entities.
+Maps what each project entity exposes and depends on.
 
-## What this skill does
+## What it does
 
-`dependencies-audit` orchestrates the production of dependency documentation. It consumes:
+This skill creates and maintains dependency cards for project entities.
+A dependency card documents every surface an entity exposes, every downstream call it makes, every database, external system, library, and infrastructure component it touches, plus a visual dependency diagram.
+It can also build a project-level dependency index when all per-service cards are up to date.
 
-- An existing technical entity card at `entities/<entity>`.
-- Up-to-date business-domain memories at `logic/<entity>/business_domain_report`, `logic/<entity>/integrations`, and `logic/<entity>/processes`.
+## When it activates
 
-It produces:
+Activates when you ask for a dependency card, dependency map, service dependencies, or architecture dependencies.
+Examples:
+- "Create a dependency card for the payment service"
+- "What does the auth service depend on?"
+- "Build a dependency map for this project"
+- "List all downstream calls from the order service"
 
-- A per-service dependency card at `logic/<entity>/dependencies.md`.
-- Optionally, a project-level dependency index at `project/dependencies.md` when explicitly requested and every entity has a fresh card.
+## How to use it
 
-The skill contains templates, subagent prompts, and quality checks, but no executable code or runtime service.
+Ask the agent to create a dependency card for one entity.
+The entity must already have a technical card at `entities/<entity>` and up-to-date business-domain memories under `logic/<entity>/` from `business-audit`.
+The agent will check memory freshness, run specialized read-only subagents, synthesize the card, and save it to `logic/<entity>/dependencies.md`.
+For a project-level index, ask explicitly after every entity has a fresh per-service card.
 
-## When to use it
+## What it produces
 
-Use this skill when the request involves:
-
-- Creating a dependency card or dependency map for a service.
-- Listing what a service depends on.
-- Building a project-level architecture dependency index.
-
-> **Prerequisite:** The target entity must have a card at `entities/<entity>` and up-to-date business-domain memories at `logic/<entity>/`.
+- A per-service dependency card at `logic/<entity>/dependencies.md` with a Mermaid diagram.
+- A project-level dependency index at `project/dependencies.md`, only on explicit request and when every per-service card is fresh.
 
 ## Repository layout
 
 ```text
 dependencies-audit/
-├── references/           # Templates and subagent prompts
+├── references/           # Templates, subagent prompts, and quality checks
 │   ├── 01_overview_and_boundary.md
 │   ├── 02_per_service_template.md
 │   ├── 03_project_template.md
 │   ├── 04_subagent_prompts.md
 │   └── 05_quality_checks.md
-└── SKILL.md              # Skill entry point and master workflow
+└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Verify the entity card exists and the business-domain memories are fresh.
-2. Open `SKILL.md` for the 11-step master workflow.
-3. Use `references/01_overview_and_boundary.md` to confirm inputs, constraints, and reuse maps.
-4. Generate the per-service card with `references/02_per_service_template.md`.
-5. Generate the project-level index with `references/03_project_template.md` only when explicitly requested.
-6. Dispatch read-only subagents using the prompts in `references/04_subagent_prompts.md`.
-7. Apply the quality checks in `references/05_quality_checks.md`.
-
-## Reference index
-
-| File | Purpose |
-|------|---------|
-| `references/01_overview_and_boundary.md` | Inputs, constraints, freshness gate, memory path list |
+| File | What it covers |
+|------|----------------|
+| `references/01_overview_and_boundary.md` | Inputs, constraints, freshness gate, and memory path list |
 | `references/02_per_service_template.md` | Per-service dependency card template with Mermaid diagram rules |
 | `references/03_project_template.md` | Project-level dependency index template |
-| `references/04_subagent_prompts.md` | Specialized subagent prompts for interface extraction and diagram synthesis |
+| `references/04_subagent_prompts.md` | Specialized subagent prompts for interface, downstream, infra, and diagram tasks |
 | `references/05_quality_checks.md` | Pre-generation, per-service, project-level, and persistence checks |
 
-## Conventions
+## Important conventions / gotchas
 
-- `SKILL.md` is the single entry point.
-- Dependency cards are Markdown documents with mandatory Mermaid diagrams.
-- Memory paths use `snake_case` with underscores.
-- Per-service cards live at `logic/<entity>/dependencies.md`.
-- Project-level index lives at `project/dependencies.md` and is generated only on explicit request.
-- All produced memory files must include the standard Serena YAML frontmatter.
+- Requires an existing entity card from `project-audit` and up-to-date business-domain memories from `business-audit`.
+- Also requires `serena-protocol` for memory rules.
+- The agent handles exactly one entity per per-service run.
+- Stale input memories stop the workflow until you reconcile them.
+- Per-service cards use Mermaid diagrams and standard Serena YAML frontmatter.

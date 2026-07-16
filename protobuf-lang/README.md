@@ -1,67 +1,55 @@
 # protobuf-lang
 
-Buf Protobuf style and lint reference for agents editing `.proto` files and `buf.yaml` configurations.
+Enforces Buf Protobuf style and lint rules when you write, edit, or review `.proto` files and `buf.yaml` configuration.
 
-## What this skill does
+## What it does
 
-`protobuf-lang` provides a comprehensive Buf style and lint rule set. It is a documentation-only skill: no runtime code, no build step, no lockfiles. It covers:
+This skill keeps Protobuf schemas consistent with the Buf STANDARD ruleset.
+It covers proto file and package conventions, import ordering, enum naming and values, message field naming and numbering, service and RPC naming, comment style, file layout, schema evolution, and `buf.yaml` v2 lint configuration.
+The agent looks up only the relevant rule section for the task at hand.
 
-- Files and packages.
-- Imports.
-- Enums.
-- Messages.
-- Services and RPCs.
-- Comments and layout.
-- Design recommendations.
-- Buf lint rule categories (`MINIMAL`, `BASIC`, `STANDARD`, `COMMENTS`, `UNARY_RPC`).
-- Rule reference.
-- Quick start and `buf.yaml` configuration examples for Buf v2.
+## When it activates
 
-## When to use it
+Activates automatically when the project contains `.proto` files.
+It also activates when you ask about protobuf, proto, buf, or `buf.yaml`.
 
-Load this skill when the request involves:
+Example prompts:
 
-- Writing, editing, or reviewing `.proto` files.
-- Configuring `buf.yaml` lint or breaking-change rules.
-- Questions about proto packages, imports, enums, messages, services, RPCs, or comments.
+- "Review my protobuf schema."
+- "Add a new RPC to the payment service."
+- "Configure buf lint for this repo."
+- "Are these enum values named correctly?"
 
-> **Boundary:** Google AIP resource design is handled by the sibling `api-design` skill. Use `api-design` for resource naming, operations, and API design compliance.
+## How to use it
+
+Place your `.proto` files in the repository and add a `buf.yaml` if you want linting.
+When you ask the agent to write or review proto code, it applies the Buf rules automatically.
+If `buf` is available, the agent runs `buf lint` on the files it changed and fixes only those files.
+
+## What it produces
+
+- Lint-compliant `.proto` files.
+- A `buf.yaml` configuration matching your chosen rule category.
+- Optional `buf lint` output when the tool is present.
 
 ## Repository layout
 
 ```text
 protobuf-lang/
-├── references/           # Exhaustive Buf lint/style reference
+├── references/           # Exhaustive Buf lint and style reference
 │   └── rules.md
-└── SKILL.md              # Skill entry point, triggers, and lazy-load protocol
+└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
-## How to use this skill
+## Reference overview
 
-1. Open `SKILL.md` for the trigger conditions and lazy-load routing index.
-2. Identify the relevant topic (files/packages, imports, enums, messages, services, comments, design, rule categories, rule reference, quick start, configuration).
-3. Extract only the targeted `[ref: #...]` section from `references/rules.md`.
-4. Apply the extracted rules to the proto schema under review.
+| File | What it covers |
+|------|----------------|
+| `references/rules.md` | Quick start, `buf.yaml` configuration, file and package conventions, imports, enums, messages, services and RPCs, comments and layout, design recommendations, rule categories, per-rule reference, and intentionally excluded topics. |
 
-## Reference index
+## Important conventions / gotchas
 
-| Section in `references/rules.md` | Topic |
-|----------------------------------|-------|
-| `#quick-start` | Quick start and default rule category |
-| `#configuration` | `buf.yaml` v2 lint and breaking-change configuration |
-| `#files-and-packages` | Proto file and package conventions |
-| `#imports` | Import rules and ordering |
-| `#enums` | Enum naming and value rules |
-| `#messages` | Message field naming, numbering, and structure |
-| `#services-and-rpcs` | Service and RPC naming conventions |
-| `#comments-and-layout` | Comment style and file layout |
-| `#design-recommendations` | Design-level recommendations |
-| `#rule-categories` | Buf lint rule categories |
-| `#rule-reference` | Per-rule reference |
-
-## Conventions
-
-- `SKILL.md` is the single entry point.
-- Agents must use the lazy-load protocol and extract only the targeted section.
-- Buf v2 configuration schema is used for `buf.yaml` examples.
+- Requires the `api-design` skill automatically.
+- Google AIP resource design, HTTP/gRPC transcoding, and overall API structure live in `api-design`, not here.
 - The default lint category is `STANDARD`.
+- The agent fixes only code it explicitly modified; pre-existing lint violations in untouched files are left alone.

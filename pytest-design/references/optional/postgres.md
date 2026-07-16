@@ -39,8 +39,8 @@ index:
     expected: "Each test receives a fresh isolated `AsyncSession` bound to a `SQLite` savepoint, `db.setup()` is bypassed, and all patched globals and metadata are restored in `finally`."
   - anchor: postgres-null-pool
     what: "Creating the `SQLite` engine with `poolclass=sa.pool.NullPool` so each operation opens and closes its own connection against the per-test file."
-    problem: "Each test writes fresh `tmp_path` SQLite file, so default connection pool keeps stale descriptors pointing at deleted file and next test reads wrong database; stale handle, per-test file, pool reuse, descriptor leak, wrong database, connection lifecycle, isolated store."
-    use_when: "Each test uses a fresh `tmp_path` database file; the engine must not retain connections across tests; file handles must release immediately."
+    problem: "Each test writes fresh `isolated_dir` SQLite file, so default connection pool keeps stale descriptors pointing at deleted file and next test reads wrong database; stale handle, per-test file, pool reuse, descriptor leak, wrong database, connection lifecycle, isolated store."
+    use_when: "Each test uses a fresh `isolated_dir` database file; the engine must not retain connections across tests; file handles must release immediately."
     avoid_when: "A pooled engine is bound to a per-test file (stale descriptors cross tests); a shared in-memory pool is used when files rotate; connection lifetime spans multiple tests."
     expected: "No stale file descriptors leak between tests; every operation uses a fresh connection to the current test's file."
   - anchor: postgres-nested-transaction
@@ -175,7 +175,7 @@ Activate this file when testing repositories, services, or gRPC servicers agains
 
 [ref: #postgres-surrogate-approach]
 
-Use `SQLite` as a runtime surrogate for `PostgreSQL`: execute real SQL against an in-memory or `tmp_path` `SQLite` database shaped by import-time patches and one scoped-session fixture. Never mock repositories or storage layers; never spin up `PostgreSQL`; never require Docker.
+Use `SQLite` as a runtime surrogate for `PostgreSQL`: execute real SQL against an in-memory or `isolated_dir` `SQLite` database shaped by import-time patches and one scoped-session fixture. Never mock repositories or storage layers; never spin up `PostgreSQL`; never require Docker.
 
 Bind every test to a single `function`-scoped `db_session` that builds a fresh `SQLite` engine, patches `db.get_dsn`/`db.get_ssl_options`, wires `StorageFactory.tr_manager`, strips partial indexes, runs `create_all`, opens a nested transaction, yields the session, then rolls back and restores every global in `finally`.
 
@@ -311,6 +311,7 @@ The canonical fixture:
 ```python
 import gc
 from collections.abc import AsyncGenerator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -324,8 +325,8 @@ from app.storages.sqlalchemy_postgres import db
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session(tmp_path: Any) -> AsyncGenerator[AsyncSession, None]:
-    db_path = tmp_path / "test.db"
+async def db_session(isolated_dir: Path) -> AsyncGenerator[AsyncSession, None]:
+    db_path = isolated_dir / "test.db"
     dsn = f"sqlite+aiosqlite:///{db_path}"
     engine = create_async_engine(dsn, poolclass=sa.pool.NullPool)
 
@@ -390,7 +391,7 @@ storages.StorageFactory.tr_manager = TransactionManager()
 
 [ref: #postgres-null-pool]
 
-Create the engine with `poolclass=sa.pool.NullPool` when each test owns a fresh `tmp_path` file. A pooled engine holds file descriptors that outlive the test file, so the next test can read a stale handle against a deleted path.
+Create the engine with `poolclass=sa.pool.NullPool` when each test owns a fresh `isolated_dir` file. A pooled engine holds file descriptors that outlive the test file, so the next test can read a stale handle against a deleted path.
 
 Bind the engine to the per-test file with no pooling:
 
@@ -398,7 +399,7 @@ Bind the engine to the per-test file with no pooling:
 engine = create_async_engine(dsn, poolclass=sa.pool.NullPool)
 ```
 
-**Variety booster:** Pair `NullPool` with `tmp_path / "test.db"` so file rotation and connection release stay aligned across every test.
+**Variety booster:** Pair `NullPool` with `isolated_dir / "test.db"` so file rotation and connection release stay aligned across every test.
 
 ## Nested Transaction (Savepoint) Isolation
 
@@ -1002,7 +1003,7 @@ Step 1 — audit models for `PostgreSQL`-only constructs:
 
 Step 2 — place import-time patches before any model import, saving originals.
 
-Step 3 — implement `db_session`: build the `SQLite` DSN from `tmp_path`; override `db.get_dsn` and `db.get_ssl_options`; assign `StorageFactory.tr_manager = TransactionManager()`; strip partial indexes and save them; `create_all` inside `engine.begin()`; `begin_nested()`; yield the nested-bound session; roll back; restore globals and indexes.
+Step 3 — implement `db_session`: build the `SQLite` DSN from `isolated_dir`; override `db.get_dsn` and `db.get_ssl_options`; assign `StorageFactory.tr_manager = TransactionManager()`; strip partial indexes and save them; `create_all` inside `engine.begin()`; `begin_nested()`; yield the nested-bound session; roll back; restore globals and indexes.
 
 Step 4 — write helpers: seeded `fake`, Faker-powered synchronous factories, `add_item` (`flush` + `refresh`, no `commit`), and composite `sample_*` fixtures.
 

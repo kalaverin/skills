@@ -12,6 +12,7 @@ import random
 import sqlite3
 import uuid
 from collections.abc import AsyncGenerator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -84,8 +85,8 @@ def fake(pytestconfig: pytest.Config) -> Faker:
 
 # ── 4. db_session fixture ───────────────────────────────────
 @pytest_asyncio.fixture(scope="function")
-async def db_session(tmp_path: Any) -> AsyncGenerator[AsyncSession, None]:
-    db_path = tmp_path / "test.db"
+async def db_session(isolated_dir: Path) -> AsyncGenerator[AsyncSession, None]:
+    db_path = isolated_dir / "test.db"
     dsn = f"sqlite+aiosqlite:///{db_path}"
     engine = create_async_engine(dsn, poolclass=sa.pool.NullPool)
 
