@@ -67,8 +67,18 @@ Serena memory files are Markdown. The same rule applies to their YAML frontmatte
 - **Clean diffs:** Adding or removing a word in a wrapped paragraph reshuffles many lines; a single-line paragraph produces a minimal diff.
 - **Predictability:** One logical line = one source line. There is no ambiguity about whether a newline is a paragraph break or just wrapping.
 
-## 3. Hard Rules
+## 3. No Bare `---` Thematic Breaks (HARD RULE)
+
+A line containing only `---` (a Markdown thematic break / horizontal rule) MUST NOT appear in a document body outside fenced code blocks. Separate sections with headings; if a visual break is truly unavoidable, use `***` instead.
+
+### 3.1 Rationale
+
+Documents in this ecosystem carry YAML frontmatter delimited by `---` lines and are machine-parsed: frontmatter extraction tooling keys on anchored delimiter lines (`^---[ \t]*$` in awk), so a bare body `---` is indistinguishable from a delimiter and falsifies splitter assumptions. Inside fenced code blocks `---` is content, not markup, and remains allowed.
+
+## 4. Hard Rules
 
 - **NEVER** wrap a single sentence or logical line across multiple source lines.
 - **NEVER** use YAML `>` folded blocks just to split a long string over several lines for visual narrowing.
+- **NEVER** place a bare `---` thematic break in a document body outside fenced code blocks; use headings, or `***` when a break is unavoidable.
+- **ALWAYS** write term–description list items in the single-line inline colon form `- `term`: description`; **NEVER** split the description onto an indented continuation line (the HTML-style description-list form).
 - **ALWAYS** prefer a single continuous source line unless a line break carries real structural meaning (new paragraph, list item, code block, etc.).

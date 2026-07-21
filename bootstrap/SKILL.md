@@ -149,4 +149,14 @@ Before proceeding with the user's request, confirm:
 2. You know which skill takes precedence when rules conflict.
 3. You will not use training data or general heuristics in place of the loaded skill rules.
 
+## 6. Reference File & Frontmatter Standard
+
+Every skill whose `references/**/*.md` files use `[ref: #<anchor>]` lazy-load routing MUST conform to the normative standard at `references/REFERENCE_STANDARD.md` (relative to this skill's directory). It governs the frontmatter card schema (`subject` + `index` decision cards), anchor mechanics, body skeleton, the two-command loading funnel, and the conformance checklist. The reference implementation of the §9 checklist lives at `scripts/validate_reference_frontmatter.py` (same directory scheme; run with `uv run --no-project --with pyyaml python`, supports `--allow-extra KEY` for skill-declared extras). Load the standard when:
+
+- authoring or editing any reference file or its frontmatter;
+- migrating a skill's references to anchor-based lazy loading;
+- reviewing or validating a reference corpus for conformance.
+
+Skill-specific presentation details (section terminators, code-example style, taxonomy tiers) belong to the owning skill's addendum, which MUST defer to that standard.
+
 **Violation protocol:** If you produce output without discovering all skill directories, batch-extracting the frontmatter of every discovered `SKILL.md` with a single shell one-liner, loading every triggered skill, and documenting the loaded skills in the `think` block, halt immediately, discard the output, and restart the Startup Gate from skill discovery.

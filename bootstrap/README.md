@@ -27,12 +27,18 @@ The agent uses this skill at startup to figure out which other skills are releva
 
 ```text
 bootstrap/
-└── SKILL.md              # Agent entry point: manifest and full loading protocol
+├── prompts/
+│   └── REFERENCE_MIGRATION_PROMPT.md  # Six-phase orchestration prompt for standardizing a skill's reference corpus
+├── references/
+│   └── REFERENCE_STANDARD.md          # Normative cross-skill standard for reference files, frontmatter cards, and anchors
+└── SKILL.md                           # Agent entry point: manifest and full loading protocol
 ```
 
 ## Reference overview
 
-This skill has no reference files; all guidance lives in `SKILL.md`.
+| Reference | Purpose |
+|---|---|
+| `references/REFERENCE_STANDARD.md` | Normative standard for every skill's reference files that use `[ref: #anchor]` lazy-load routing: frontmatter card schema, anchor mechanics, loader funnel, conformance checklist. Load when authoring, migrating, or validating reference corpora. |
 
 ## Important conventions / gotchas
 
