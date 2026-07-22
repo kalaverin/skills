@@ -4,7 +4,7 @@ Use this prompt to generate a **repository-specific pytest test-authoring and re
 
 Copy everything from `<BEGIN PROMPT>` to `<END PROMPT>` and fill `{{ENTITY_NAME}}`.
 
----
+***
 
 <BEGIN PROMPT>
 
@@ -19,7 +19,7 @@ The current working directory is the target repository root, and Serena is conne
 ## Absolute Constraints
 
 1. **Never duplicate `pytest-design`.** The generated prompt references cards by anchor; it does not copy rule prose, examples, or recipes.
-2. **Never invent anchors.** Every anchor you emit MUST exist in the harvested feature file. A non-existent anchor is a critical failure.
+2. **Never invent anchors.** Every anchor you emit MUST exist in the frontmatter-harvest file. A non-existent anchor is a critical failure.
 3. **Never install dependencies.** Collect ALL dependencies the agent will need (from pinned cards, detected plugins, fixtures, test utilities) and explicitly ASK THE USER to install them. Present the full list with installation command(s). Do not proceed until the user confirms installation. Missing packages go into the stack profile as "required but missing" with explicit installation instructions for the user.
 4. **Never pass Serena memory contents to subagents.** Pass absolute file paths that resolve inside the repository root only; subagents are root-locked and cannot read anything outside it.
 5. **Never trust subagent output blindly.** Validate every anchor against the declaring cards in `.kimi/mirror/pytest-design/references/`, spot-check evidence, and extend the set yourself.
@@ -39,24 +39,24 @@ If anything is missing, STOP and ask the user to create it via the named skill. 
 ## Phase 1 — Feature Discovery
 
 1. `cd` into `.kimi/mirror/pytest-design` (the in-root mirror; HARD STOP if absent).
-2. Harvest the frontmatter of every reference card into a temporary file (path is your choice, but never inside `.kimi/mirror/`). The feature file is your working inventory — never hand it to subagents:
+2. Harvest the frontmatter of every reference card into a temporary file (path is your choice, but never inside `.kimi/mirror/`). The frontmatter-harvest file is your working inventory — never hand it to subagents:
 
 ```bash
 fd -t f . references/ 2>/dev/null | sort -u \
     | xargs -I{} sh -c 'printf "\n### {}\n"; awk "/^---$/{c++; if(c==2) exit; next} c==1{print}" "{}"' | grep -v 'expected:' \
-    > <FEATURE_FILE>
+    > <HARVEST_FILE>
 ```
 
 ## Phase 2 — Fan-Out to Read-Only Subagents
 
-Slice the **codebase** into coherent regions — by directory, module, or subsystem — and include the tests that belong to each region. Launch one read-only `explore` subagent per region, in parallel, per `subagents-protocol` (no MCP for subagents; timeout ≥ 30–55 min).
+Slice the **codebase** into coherent regions — by directory, module, or subsystem — and include the tests that belong to each region. Launch one read-only `explore` subagent per region, in parallel, per `subagents-protocol` (no MCP for subagents; timeout ≥ 600 s for a simple region, ≥ 3300 s (55 min) for a complex investigation).
 
 Each subagent receives ONLY absolute paths that resolve inside the repository root:
 
 - The absolute path to its assigned code region (including related tests).
 - Absolute paths to `.serena/memories/entities/{{ENTITY_NAME}}.md` and `.serena/memories/logic/{{ENTITY_NAME}}/...` for domain context (pass paths, not contents).
 
-Each subagent surveys the `pytest-design` reference cards itself from the in-root mirror `.kimi/mirror/pytest-design/references/` (batch-extract the frontmatter with `fd`+`awk`, then read card sections by their `[ref: #...]` headings with `rg`). Never hand subagents the feature file, the skills repo path, or the `.kimi/skills` symlink.
+Each subagent surveys the `pytest-design` reference cards itself from the in-root mirror `.kimi/mirror/pytest-design/references/` (batch-extract the frontmatter with `fd`+`awk`, then read card sections by their `[ref: #...]` headings with `rg`). Never hand subagents the frontmatter-harvest file, the skills repo path, or the `.kimi/skills` symlink.
 
 Each subagent's task: study its region against the full set of reference cards and return every recipe anchor that will be needed to write tests for that region.
 
@@ -150,7 +150,7 @@ Only rules NOT already covered by the pinned cards. The universal floor lives in
 ## Self-Check (must all pass before finalizing)
 
 - Preconditions satisfied (mirror present with the skill tree; technical + business cards present).
-- `<FEATURE_FILE>` harvested from `.kimi/mirror/pytest-design/`, never written inside `.kimi/mirror/`, never handed to subagents; routing fields intact.
+- `<HARVEST_FILE>` harvested from `.kimi/mirror/pytest-design/`, never written inside `.kimi/mirror/`, never handed to subagents; routing fields intact.
 - Every emitted anchor exists in its declaring card under `.kimi/mirror/pytest-design/references/`; none invented.
 - Evidence spot-checked; stack coverage complete; convergence deduplicated; missing anchors added by you.
 - `agent/tests` contains: header, domain identity from cards, evidence-backed stack profile, pinned manifest grouped by file, minimal repo-only rules (or explicit "none"), usage note.
