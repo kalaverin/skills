@@ -1,10 +1,6 @@
 ---
 name: python-lang
-description: >
-  MANDATORY skill for Python code. Use when writing, editing, refactoring, or
-  reviewing Python files, modules, packages, classes, functions, type
-  annotations, imports, exceptions, comprehensions, decorators, or docstrings.
-  Enforces Google Python Style Guide and a strict Ruff self-linting protocol.
+description: MANDATORY skill for Python code. Use when writing, editing, refactoring, or reviewing Python files, modules, packages, classes, functions, type annotations, imports, exceptions, comprehensions, decorators, or docstrings. Enforces Google Python Style Guide and a mandatory, unconditional Ruff format+check pipeline scoped strictly to the agent's own changes.
 triggers:
   files: "fd -e py -e pyi"
 requires:
@@ -25,7 +21,7 @@ Every directive in this guide MUST be followed unless it explicitly uses **SHOUL
 * **Skill Boundary:** This skill covers Python language and style rules. For API resource design, HTTP/gRPC routes, and proto structure, consult the `api-design` skill.
 * **RFC Verbs:** For precise semantics of requirement-level verbs, consult the `read-for-comments` skill.
 
----
+***
 
 ## 2. Mandatory Lookups (Lazy-Load Protocol)
 
@@ -88,17 +84,33 @@ You MUST NOT read the files `references/01_language_rules.md` or `references/02_
 | Evaluating function length; extracting smaller functions. | 2.18 Function Length | `[ref: #s2.18-function-length]` |
 | Type annotation style; line breaks; generics; conditional imports. | 2.19 Type Annotations | `[ref: #s2.19-type-annotations]` |
 
----
+***
 
-## 3. Agent Self-Linting Protocol
+## 3. Mandatory Lint & Format Pipeline (Unconditional Gate)
 
-**MANDATORY:** Before declaring any Python editing task complete, the agent MUST run `ruff check` on all files it modified.
+**MANDATORY — ALWAYS, WITHOUT REMINDERS:** For EVERY Python file the agent writes, creates, or edits, the agent MUST run this pipeline before declaring the task complete. This gate is unconditional: it applies in addition to — and independently of — any project-level linting, formatter configuration, pre-commit hooks, or CI checks present in the target project. The agent MUST NOT skip it because "the project has its own linting", MUST NOT wait for the user to ask, and MUST NOT consider the task done until both stages pass on the agent's own changes.
 
-### Hard Constraint: No Unmodified Code Changes
-* **ONLY** fix violations in code you explicitly wrote or modified.
-* **NEVER** change unmodified code to satisfy the linter.
+The pipeline is Ruff-only (`black`, `flake8`, and `isort` are forbidden per the `shell-protocol` skill) and has two mandatory stages, executed in this exact order:
+
+1. **Format** — `ruff format` (black-compatible automatic formatting).
+2. **Lint** — `ruff check` (full-rule diagnostics; fixes scoped to the agent's own edits).
+
+### Hard Constraint: Foreign Code Isolation
+* **ONLY** format and fix violations in code you explicitly wrote or modified.
+* **NEVER** change unmodified ("foreign") code to satisfy the formatter or linter.
 * If a violation exists in unmodified code, ignore it completely.
 * If the linter suggests moving or refactoring that would affect unmodified code, skip the suggestion.
+* Run every pipeline command with an explicit file list (`<changed_files>`) — NEVER against the whole project, a whole directory, or files you did not touch.
+
+### Restoring Foreign Code After Formatting (MANDATORY)
+Automatic formatters rewrite whole lines and may reformat code the agent never intended to touch. Foreign code MUST be returned to its exact prior state:
+
+1. **Baseline first.** Before running `ruff format`, make sure a restorable baseline exists for every target file (a git-tracked file with a committed or staged state, or an explicit backup copy). If `git diff <file>` cannot serve as the baseline for a target file, create a backup copy of it BEFORE formatting.
+2. **Inspect every hunk.** After formatting, run `git diff <file>` (or diff against the backup) and review each hunk individually.
+3. **Revert foreign hunks.** Any hunk that rewrites lines the agent did NOT author or intend to modify MUST be reverted (targeted `git checkout -p`, interactive hunk discard, or manual re-application) so foreign code becomes byte-identical to its baseline. NEVER blanket-revert: your own changes MUST survive.
+4. **Re-verify.** Re-run `ruff format --check` and `ruff check` on the file. If reverting a foreign hunk makes your own code fail the pipeline, re-apply formatting to your lines manually until both stages pass.
+5. **Justify unavoidable bleed.** If a formatter-mandated change physically cannot be limited to your own lines (for example, the formatter rewraps a construct that spans your edit), you MUST explicitly justify the deviation in your output per §1 (Deviation Justification).
+6. **Final scope check.** The delivered diff MUST contain formatting and lint changes ONLY within code the agent wrote or modified.
 
 ### Step 3.1: Discover Target Python Version
 Determine the project's target Python version before linting by executing:
@@ -107,27 +119,34 @@ uv run python -c "import sys; print(f'py{sys.version_info.major}{sys.version_inf
 ```
 *Use this exact value for `<PYVER>` in the subsequent steps.*
 
-### Step 3.2: Read Linter Suggestions
+### Step 3.2: Format Own Changes (Black-Compatible)
+Run the formatter targeting **ONLY the files you created or modified**, then immediately perform the **Restoring Foreign Code After Formatting** procedure above:
+```bash
+uvx ruff format <changed_files>
+```
+`<changed_files>` is the explicit list of files the agent wrote or edited — nothing else. This stage replaces `black`: `ruff format` implements black-compatible formatting, and invoking `black` itself is forbidden.
+
+### Step 3.3: Read Linter Suggestions
 Run the following command targeting **ONLY the files you modified**:
 ```bash
 uvx ruff check --select ALL --ignore D,CPY,DOC,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --output-format concise <changed_files>
 ```
 Read every suggestion carefully. Apply fixes ONLY to the code you altered.
 
-### Step 3.3: Verify Diff Scope
+### Step 3.4: Verify Diff Scope
 After applying fixes, verify the diff touches **ONLY changed code**:
 ```bash
 uvx ruff check --select ALL --ignore D,CPY,DOC,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --diff <changed_files>
 ```
 
-### Step 3.4: Rule Lookup
+### Step 3.5: Rule Lookup
 If you are uncertain about any rule code generated by the linter, use:
 ```bash
 uvx ruff rule <RULE_CODE>
 ```
 *(Example: `uvx ruff rule E501`)*
 
----
+***
 
 ## 4. Master Execution Workflow
 1. **Analyze Task:** Determine the specific Python operations required.
@@ -135,10 +154,10 @@ uvx ruff rule <RULE_CODE>
 3. **Trigger Match:** Locate the relevant rows in Table A and Table B.
 4. **Partial Read:** Run `rg` on the specific `[ref: ...]` tags in `references/01_language_rules.md` and `references/02_style_rules.md`.
 5. **Code Generation:** Write the code strictly adhering to the extracted rules, the reuse manifests, AND local file consistency.
-6. **Self-Linting:** Execute the 4-step Agent Self-Linting Protocol.
-7. **Final Verification:** Confirm no unmodified code was altered before concluding the task.
+6. **Lint & Format:** Execute the full Mandatory Lint & Format Pipeline (§3), including foreign-code restoration, on every file the agent wrote or edited — unconditionally, without reminders, and regardless of any project-level linting.
+7. **Final Verification:** Confirm via `git diff` that no unmodified (foreign) code was altered before concluding the task; any formatter bleed into foreign lines must already be reverted or explicitly justified.
 
----
+***
 
 ## 5. Component Reuse Rule
 

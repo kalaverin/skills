@@ -7,7 +7,7 @@ Enforces strict Python language and style rules based on the Google Python Style
 This skill governs how Python code is written, edited, refactored, and reviewed in the project.
 It covers language-level rules such as imports, packages, exceptions, comprehensions, generators, decorators, threading, type annotations, and modern Python idioms.
 It also covers style-level rules such as line length, indentation, whitespace, comments, docstrings, naming, and function length.
-After every edit, the agent runs a mandatory four-step Ruff self-linting protocol.
+After every edit, the agent unconditionally runs a mandatory two-stage Ruff pipeline (`ruff format` + `ruff check`) on every file it wrote or edited — independently of any project-level linting — and restores any foreign code the formatter touched.
 
 ## When it activates
 
@@ -31,7 +31,7 @@ If the project root contains a `.sdk/` directory, the agent also checks for reus
 ## What it produces
 
 - Python code that follows the project style guide.
-- Ruff-clean files scoped to the agent's own changes.
+- Ruff-clean, black-compatibly formatted files scoped to the agent's own changes, with foreign code restored byte-identical.
 - Optional reuse of existing `.sdk/` components.
 
 ## Repository layout
@@ -56,5 +56,5 @@ python-lang/
 - Requires the `read-for-comments` skill automatically for RFC 2119 / RFC 8174 verb semantics.
 - Ruff is the mandatory linter and formatter; `black`, `flake8`, and `isort` are not used.
 - `uv` is the mandatory Python project tool; `pip`, `poetry`, and `virtualenv` are not used.
-- The agent fixes only code it explicitly modified and ignores pre-existing violations in untouched code.
+- The agent formats and fixes only code it explicitly modified, ignores pre-existing violations in untouched code, and reverts any formatter hunks that bleed into foreign lines so foreign code returns byte-identical to its prior state.
 - All timestamps use UTC ISO 8601 format.
