@@ -28,7 +28,7 @@ If you are on a branch other than `main` or `master`, the agent will ask you to 
 ## What it produces
 
 - A machine-readable report under `.serena/memories/review/` named `feature_YYYYMMDDTHHMMSSZ.md` or `project_YYYYMMDDTHHMMSSZ.md`.
-- A human-readable report under `.reports/` named `review-YYYY-mmdd-HHMM-feature.md` or `review-YYYY-mmdd-HHMM-project.md`.
+- A human-readable report under `.reports/` (or `.reports/<entity>/` when the entity is known) named per `SKILL.md` Section 2.2: `review-YYYY-mmdd-HHMM-project.md`, or `review-YYYY-mmdd-HHMM-feature.md` with optional branch-key / feature-slug forms (e.g. `review-YYYY-mmdd-HHMM-CRYPTO4176-rate-limiting.md`).
 - Findings grouped by severity, with sections for architecture, security, resilience, observability, and data privacy.
 - Optional CodeRabbit cross-validation in feature mode.
 

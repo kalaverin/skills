@@ -10,6 +10,7 @@ description: >
 triggers:
   request: "code review, review code, review diff, review feature, review project, pull request review, pr review, ревью, код-ревью, ревью кода, проверь код, проверь diff, проверь изменения, проверь проект"
 requires:
+  - api-design
   - serena-protocol
 ---
 
@@ -65,14 +66,29 @@ The report MUST be created under `.serena/memories/review/`.
 
 ### 2.2 Human-readable reports
 
-| Review mode | Output path pattern |
-|---|---|
-| Feature / diff-based | `.reports/review-YYYY-mmdd-HHMM-feature.md` |
-| Full project | `.reports/review-YYYY-mmdd-HHMM-project.md` |
+Base directory:
 
-- `YYYY-mmdd-HHMM` MUST use the same UTC timestamp as the machine-readable
-  report, formatted as shown.
-- Create `.reports/` if it does not exist.
+- If the target entity is known, write under `.reports/<entity>/`.
+- If the entity is unknown or the review covers the top level (the whole repository), write directly under `.reports/`.
+- Create the target directory if it does not exist.
+
+File name:
+
+| Review mode / knowledge | File name pattern |
+|---|---|
+| Full project | `review-YYYY-mmdd-HHMM-project.md` |
+| Feature — branch key and slug both known | `review-YYYY-mmdd-HHMM-<BRANCHKEY>-<feature-slug>.md` |
+| Feature — only slug known | `review-YYYY-mmdd-HHMM-<feature-slug>.md` |
+| Feature — only branch key known | `review-YYYY-mmdd-HHMM-<BRANCHKEY>.md` |
+| Feature — neither known | `review-YYYY-mmdd-HHMM-feature.md` |
+
+- `YYYY-mmdd-HHMM` MUST use the same UTC timestamp as the machine-readable report, formatted as shown. No seconds: same-minute collisions are accepted.
+- The literal word `feature` appears in the file name ONLY when neither the branch key nor the feature slug is known. The word `project` is always present for project mode.
+- The separator is strictly a hyphen.
+- `<feature-slug>` is a short English kebab-case slug of the feature (about five words maximum), e.g. `trading-statistics`, `custom-user-bans`. If the user named the feature, use that name; otherwise derive the slug from the branch and the diff. If you cannot derive a confident slug or have doubts, STOP and ask the user.
+- `<BRANCHKEY>` is the issue key extracted from the feature branch with intelligent sanitization: strip path segments (`feature/`, `bugfix/`, etc.), extract the issue marker, and MERGE it by removing the internal separator — `CRYPTO-1337` becomes `CRYPTO1337`, `binder_571` becomes `binder571`. Original letter case is preserved. Example: branch `feature/CRYPTO-4176-rate-limiting` yields key `CRYPTO4176`.
+- If the branch name already contains the feature slug, do NOT duplicate it: branch `feature/CRYPTO-4176-rate-limiting` with slug `rate-limiting` yields `review-YYYY-mmdd-HHMM-CRYPTO4176-rate-limiting.md`, never `...-CRYPTO4176-rate-limiting-rate-limiting.md`.
+- Examples: `review-2026-07-23-0015-project.md`, `review-2026-07-23-0015-CRYPTO4176-rate-limiting.md`, `review-2026-07-23-0015-custom-user-bans.md`, `review-2026-07-23-0015-CRYPTO4176.md`, `review-2026-07-23-0015-feature.md`.
 
 ### 2.3 Branch and commit metadata
 
@@ -100,6 +116,7 @@ reviewer: Kimi + optional CodeRabbit cross-validation
 scope: <Diff-based review `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}`> OR <Full project review (not diff-based)>
 skills_used:
   - code-review
+  - api-design
   - <language-specific skill if any>
   - <domain-specific skill if any>
   - serena-protocol
@@ -184,8 +201,7 @@ produce a single final report.
    the user's request, and load every triggered skill. Use the skill
    `description` to decide relevance — pay special attention to any
    language- or domain-specific skills that the codebase or request triggers. If
-   multiple skills match, load **all** of them. Record every loaded skill in the
-   `skills_used` frontmatter tag of the machine-readable report.
+   multiple skills match, load **all** of them. The `api-design` skill is a mandatory load for every review (declared in this skill's `requires:`); route it per Section 7 BEFORE launching the Phase 1 subagents. Record every loaded skill in the `skills_used` frontmatter tag of the machine-readable report.
 4. If the review mode is `feature`, generate a unique CodeRabbit log filename
    so old logs are not confused with the current one:
 
@@ -252,6 +268,8 @@ target file(s).
    absolute path you provide, and then to review the selected project directory. Do not paste the subprompt contents into the prompt — pass
    the file path.
 
+   The Architecture & Maintainability subagent prompt MUST additionally contain the AIP material selected and extracted per Section 7 as binding review criteria. Do NOT modify the subagent prompt files; pass the extracted material inline in the launch prompt.
+
 3. Collect the `## Findings` section from each subagent.
 4. Verify that each finding maps to a real line in the provided files. Drop any
    hallucinated or out-of-scope entries.
@@ -294,8 +312,7 @@ Include:
 - Executive summary.
 - Findings grouped by severity.
 - Dismissed CodeRabbit issues (if any).
-- Dedicated sections for Architecture, Security, Resilience, Observability, and
-  PII/Data Privacy. Write "<Topic>: clean" if there are no findings.
+- Dedicated sections for Architecture, API Design (AIP), Security, Resilience, Observability, and PII/Data Privacy. Write "<Topic>: clean" if there are no findings.
 - A final "Recommendations" section for anything that did not fit the issue
   table but is worth mentioning.
 
@@ -317,7 +334,24 @@ discovery to decide which additional skills to load.
 Record every loaded skill in the `skills_used` frontmatter tag of the
 machine-readable report.
 
-## 7. Lazy-Load Protocol
+## 7. Architectural Design Review via api-design (MANDATORY)
+
+Every review — `feature` or `project` mode, any programming language — MUST include an architectural design review grounded in the `api-design` skill (Google AIP corpus). This skill's `requires:` frontmatter guarantees api-design is loaded; this section defines how to route it. The pass is never skipped: when the reviewed code exposes no API surface, it concludes "clean" quickly — but the routing steps below are still executed and documented.
+
+1. **Root-agent routing (never delegated).** The ROOT agent MUST read the FULL YAML frontmatter (the complete decision-card index) of EVERY file in `api-design/references/`. Do NOT use the shortlist funnel (api-design §2.1 Command 1 → shortlist → Command 2): a review has no design task to route from, so the whole card index is the routing input. Run Command 2 from api-design §2.1 over all reference files at once:
+
+   ```bash
+   cd <api-design skill directory> && for f in references/*.md; do printf '\n### %s\n' "$f"; awk '/^---[ \t]*$/{c++; if(c==2) exit; next} c==1{print}' "$f"; done
+   ```
+
+2. **Card selection.** Read every card and semantically match `what`/`use_when`/`avoid_when` against the API surface actually present in the reviewed code (HTTP routes, gRPC services, resource models, field semantics, error model, pagination, versioning, etc.). Deduplicate anchors per api-design §2.2.
+3. **Bounded extraction.** Extract each selected anchor with the bounded awk command from api-design §2.3. Never read reference bodies in full.
+4. **Hand criteria to the architecture subagent.** Inject the extracted AIP sections into the Architecture & Maintainability subagent's launch prompt as binding review criteria. Routing stays in the main agent; subagents receive already-selected material (api-design §2.2 rule 4). Do NOT modify the subagent prompt files.
+5. **Report.** Record design findings in the mandatory "API Design (AIP) Observations" subsection of both reports (see `references/report-templates.md`). Write "API Design (AIP): clean" when the reviewed code exposes no API surface or no violations are found. List `api-design` in the `skills_used` frontmatter tag.
+
+For Python code this pass applies with full force whenever the code exposes an API surface (FastAPI, Flask, gRPC, REST, etc.); the same holds for API code in any other language.
+
+## 8. Lazy-Load Protocol
 
 Do not read the full reference files unless required. Use the routing table below.
 
@@ -331,10 +365,14 @@ Do not read the full reference files unless required. Use the routing table belo
 | Need exact machine-readable report template. | `references/report-templates.md` | `[ref: #machine-readable-template]` |
 | Need exact human-readable report template. | `references/report-templates.md` | `[ref: #human-readable-template]` |
 | Need to adapt concepts to a specific language. | Section 6 above | `[ref: #language-adaptation]` |
+| Need the mandatory AIP design review procedure. | Section 7 above | — |
 
-## 8. Hard Rules
+## 9. Hard Rules
 
 - NEVER invent issues that do not exist.
+- NEVER skip the architectural design review (Section 7) or the full api-design frontmatter read, in any review mode and for any language.
+- NEVER delegate api-design card routing to a subagent; subagents receive already-extracted AIP material.
+- NEVER omit the "API Design (AIP) Observations" subsection from either report.
 - NEVER ignore issues that do exist.
 - NEVER skip the boilerplate file names or metadata from Section 2.
 - NEVER guess or assume the review mode outside the `main`/`master` → `project`

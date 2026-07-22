@@ -32,6 +32,7 @@ reviewer: Kimi + optional CodeRabbit cross-validation
 scope: <Diff-based review `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}`> OR <Full project review (not diff-based)>
 skills_used:
   - code-review
+  - api-design
   - <language-specific skill if any>
   - <domain-specific skill if any>
   - serena-protocol
@@ -76,6 +77,10 @@ skills_used:
 [Problems at the architectural level: coupling, cohesion, boundary violations,
 or "Architecture: clean" if there are none.]
 
+## API Design (AIP) Observations
+
+[Google AIP design findings from the mandatory api-design pass (`SKILL.md` Section 7), or "API Design (AIP): clean" if the reviewed code exposes no API surface or no violations are found.]
+
 ## Security Notes
 
 [Security findings or "Security: clean".]
@@ -97,8 +102,7 @@ or "Architecture: clean" if there are none.]
 
 ## Human-Readable Template
 
-Target: `.reports/review-YYYY-mmdd-HHMM-feature.md` or
-`.reports/review-YYYY-mmdd-HHMM-project.md`.
+Target: `<base-dir>/<file-name>`, where `<base-dir>` is `.reports/<entity>/` when the target entity is known and `.reports/` otherwise, and `<file-name>` follows the naming rules in `SKILL.md` Section 2.2 (`review-YYYY-mmdd-HHMM-project.md` for project mode; for feature mode `review-YYYY-mmdd-HHMM-feature.md` or the branch-key / feature-slug forms).
 
 The report MUST be written in **Russian**.
 
@@ -157,6 +161,10 @@ Notes: |
 ## Architecture Observations
 
 [Architectural findings or "Architecture: clean".]
+
+## API Design (AIP) Observations
+
+[Google AIP design findings from the mandatory api-design pass (`SKILL.md` Section 7), or "API Design (AIP): clean" if the reviewed code exposes no API surface or no violations are found.]
 
 ## Security Notes
 
