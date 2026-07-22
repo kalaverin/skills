@@ -1,3 +1,29 @@
+---
+subject: "API design review process and launch-stage gates; approval requirements by audience and release level, `AIP-100` FAQ, reviewer expectations, precedent consistency, PA team guidelines, early engagement, alpha beta GA promotion, `AIP-205` beta-blocker comments, `aip.dev/beta-blocker` usability fixes, temporary deviations, `aip.dev/not-precedent` contrast."
+index:
+  - anchor: api-design-review-faq-aip-100
+    what: "The AIP-100 design-review FAQ: who needs approval (audience-by-release-level flowchart), why review exists, what reviewers examine, timeline guidance, and PA or team-specific reviewer pools."
+    problem: "Team approaches beta launch unsure whether approval applies, engages reviewers late after code freeze, so launch slips weeks and usability findings arrive when changes cost most; approval requirement, audience release matrix, alpha skip tradeoff, team guideline lookup, launch timeline planning, early engagement, self-check walkthrough."
+    use_when: "Scoping whether upcoming launch needs formal sign-off; planning review lead time into release schedule; preparing surface for first reviewer pass (linter run, proto comments complete); checking whether PA-specific guidelines and dedicated reviewers apply."
+    avoid_when: "Internal-only tooling with no outside coders (review not required); executable-only surface never coded against directly; permanently single-customer contract API (recommended, not mandatory)."
+    expected: "Approval gate determined per audience and launch stage, reviewers engaged during design phase with linter-clean commented protos, and launch date reflects realistic feedback cycles."
+  - anchor: api-design-review-faq-aip-100
+    what: "The AIP-100 FAQ's process answers for a running review: expected durations by surface size, handling unresponsive reviewers, deference to previously decided issues, meeting path for convoluted questions, and disagreement routing via AIP-1."
+    problem: "Review stalls because assigned reviewer goes unresponsive, settled naming decision gets relitigated, tangled question languishes in comment threads, so launch date slips without escalation path; stalled feedback loop, reopened ruling, async deadlock, volunteer reviewer bandwidth, thirty minute meeting, documented history, escalation ladder."
+    use_when: "Feedback stops arriving mid-review; earlier ruling resurfaces as new objection; thread grows past quick resolution; timeline pressure demands realistic duration estimate."
+    avoid_when: "Question already answered by style guide or AIP index (consult those first); issue unsettled and suitable for asynchronous comments; bypass sought without director or VP sign-off for post-alpha stages."
+    expected: "Stalls resolve through direct outreach, coordinated handoff, or AIP-1 escalation; settled rulings stay settled with prior-review references; outcomes documented inside review history."
+  - anchor: beta-blocking-changes-aip-205
+    what: "The AIP-205 beta-blocker mechanism: usability or standards flaws tolerated at Alpha but requiring correction before promotion get an internal `aip.dev/beta-blocker` comment stating the exact required change, distinct from permanent `aip.dev/not-precedent` exceptions."
+    problem: "Usability fixes deferred during alpha get forgotten under launch pressure, so provisional design hardens into stable surface and promotion ships known flaws permanently; deferred usability debt, deadline-driven amnesia, provisional alpha iteration, promotion gate, actionable comment quality, temporary versus durable exception, auditable record."
+    use_when: "Alpha surface carries known standards deviation awaiting user feedback; reviewer and author disagree and real usage will arbitrate; fix is genuinely planned before Beta, not permanent; element needs in-code reminder visible at promotion time."
+    avoid_when: "Deviation intended to persist through Beta and GA (01_foundation_and_process › precedent exceptions); vague 'fix later' note without specific change; style concern with no promotion plan; standards avoidance used as indefinite strategy."
+    expected: "Every pre-Beta flaw sits next to its element with `aip.dev/beta-blocker` link, states concrete fix plus reason, and promotion waits until each resolves or gets explicitly waived."
+aips: [100, 205]
+---
+
+# Design Review
+
 ## 2. Process — Design Review and Launch Stages
 
 ### 2.1 API Design Review FAQ (AIP-100)
@@ -115,6 +141,8 @@ Escalate according to AIP-1.
 
 Some teams (e.g., Cloud PA, machine learning) have specific guidelines and their own reviewer pools to ensure additional uniformity. These guidelines are published as AIPs; higher AIP numbers are reserved for PA and team use (see AIP-2).
 
+> **Agent extension — not part of the AIP standard.** Reviews are cheapest when engaged early: bring reviewers in during the design phase rather than after the API is fully coded, and walk the AIP catalog as a self-check checklist before requesting review (AIP-121 resource-oriented design, AIP-122 resource names, standard methods AIP-131..135). Skipping the formal review at Alpha is permitted precisely to iterate on real usage — but usability questions left open at Alpha become `aip.dev/beta-blocker` items that gate the Beta launch (see AIP-205).
+
 ### 2.2 Beta-Blocking Changes (AIP-205)
 [ref: #beta-blocking-changes-aip-205]
 
@@ -186,3 +214,5 @@ Beta-blocker comments are intended for temporary exceptions that **will** be res
 
 - [AIP-200](01_foundation_and_process.md#precedent-and-standards-exceptions-aip-200) — Precedent and Standards Exceptions
 - [AIP-181](08_compatibility_and_versioning.md#stability-levels-aip-181) — Stability Levels
+
+> **Agent extension — not part of the AIP standard.** Write the `aip.dev/beta-blocker` comment at the moment the deviation is introduced, not retroactively: the comment states exactly which change is required for compliance and sits next to the offending proto element, pairing naturally with the `aip.dev/not-precedent` convention (AIP-200) when the deviation must not be copied. Stability-level expectations frame the urgency: Alpha is provisional and may break, Beta is feature-complete and must be standards-compliant, GA adds strict backwards-compatibility guarantees — every beta-blocker must be resolved or explicitly waived before promoting to Beta.

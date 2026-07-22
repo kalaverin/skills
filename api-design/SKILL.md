@@ -14,8 +14,7 @@ requires:
 
 # SKILL: Strict API Design & Compliance (Google AIP)
 
-You are an expert API Architect. **This document is a binding rule set, not a recommendation.**"
-"
+You are an expert API Architect. **This document is a binding rule set, not a recommendation.**
 Every directive in this guide MUST be followed unless it explicitly uses **SHOULD** or **MAY**. The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when they appear in all capitals or in bold markup.
 
 ## 1. Compliance and Default Rules
@@ -25,146 +24,60 @@ Every directive in this guide MUST be followed unless it explicitly uses **SHOUL
 * **Skill Boundary:** This skill enforces Google AIP resource-design rules (resources, operations, fields, patterns, compatibility, polish, and proto API structure). For Buf lint and proto schema style, consult the `protobuf-lang` skill.
 * **RFC Verbs:** For precise semantics of requirement-level verbs, consult the `read-for-comments` skill.
 
-## 2. Agent Context Management (CRITICAL LAZY-LOAD PROTOCOL)
+## 2. Reference Corpus and Lazy-Load Protocol (CRITICAL)
 
-The individual chapter files linked in the index below are extremely large (hundreds of pages in aggregate). You **MUST NOT** read them in full, load them into context indiscriminately, or attempt to summarize the entire collection.
+The `references/` corpus is extremely large (7,300+ lines across 11 files). You **MUST NOT** read reference files in full, load them into context indiscriminately, or summarize the collection. Every reference file opens with YAML frontmatter — a `subject` line (file-level coarse router) plus an `index` of decision cards (each card is the selection gate for ONE body section) — and every routable body section is addressed by a `[ref: #<anchor>]` marker. You MUST route through the frontmatter, never through full-body reads.
 
-Instead, you MUST use the index below as your sole routing table:
-1. Match your current task to the exact trigger in the tables.
-2. Identify the specific `Target File` and the exact `Anchor`.
-3. Use your file search tool (e.g., `rg`) to extract **only** the section corresponding to that Anchor/Header.
-   *Example CLI command:* `rg -A 100 "\[ref: #resource-oriented-design-aip-121\]" references/04_resource_design.md` (Use the exact `[ref: #...]` marker in the search query).
-4. If a task spans multiple triggers, open each referenced section in turn. Keep context usage minimal and precise.
+### 2.1 The Two-Command Routing Funnel
 
----
+Run both commands (and the extraction in §2.3) **from the skill directory** — the directory containing this SKILL.md — so that the relative `references/` path resolves. If the session working directory is fixed elsewhere, prefix every `references/` path with the skill directory path.
 
-## 3. Mandatory Lookups by Task (The Routing Index)
+**Command 1 — subject map** (coarse routing, one line per file):
 
-**This index is mandatory.** Do not guess, do not rely on training data, and do not skip the section because the topic seems familiar. All triggers carry the weight of MUST.
+```bash
+rg -N -H '^subject:' references/ | sed -E 's/:subject:[[:space:]]*/\t/'
+```
 
-### RFC 2119 / 8174 Requirement Verbs
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Interpreting RFC 2119/8174 requirement verbs (MUST, SHOULD, MAY). | `references/rfc_verbs.md` | RFC 2119 / 8174 Requirement Verbs | `[ref: #rfc-verbs]` |
+**Command 2 — full frontmatter of shortlisted files only** (`<FILE-1> … <FILE-n>` are the chosen paths):
 
-### Chapter 1 — Foundation and Process
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Creating a new AIP; deciding AIP type; approval workflow. | `references/01_foundation_and_process.md` | 1.1 AIP Purpose | `[ref: #aip-purpose-and-guidelines-aip-1]` |
-| Assigning an AIP number; choosing a number block. | `references/01_foundation_and_process.md` | 1.2 AIP Numbering | `[ref: #aip-numbering-aip-2]` |
-| Versioning AIPs; changelog tags; historical referencing. | `references/01_foundation_and_process.md` | 1.3 AIP Versioning | `[ref: #aip-versioning-aip-3]` |
-| Violating a standard; documenting exceptions. | `references/01_foundation_and_process.md` | 1.4 Precedent | `[ref: #precedent-and-standards-exceptions-aip-200]` |
-| Writing/editing an AIP document: structure, RFC keywords. | `references/01_foundation_and_process.md` | 1.5 AIP Style | `[ref: #aip-style-and-guidance-aip-8]` |
-| Unclear terminology: backend/frontend, declarative client. | `references/01_foundation_and_process.md` | 1.6 Glossary | `[ref: #glossary-aip-9]` |
+```bash
+for f in "<FILE-1>" "<FILE-2>" ...; do printf '\n### %s\n' "$f"; awk '/^---[ \t]*$/{c++; if(c==2) exit; next} c==1{print}' "$f"; done
+```
 
-### Chapter 2 — Design Review
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Formal design approval needs; release levels (Alpha/Beta). | `references/02_design_review.md` | 2.1 Design Review FAQ | `[ref: #api-design-review-faq-aip-100]` |
-| Promoting Alpha to Beta; temporary violations (`beta-blocker`). | `references/02_design_review.md` | 2.2 Beta-Blocking | `[ref: #beta-blocking-changes-aip-205]` |
+### 2.2 Semantic Routing Rules
 
-### Chapter 3 — API Concepts
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Management vs Data plane; declarative clients; tradeoffs. | `references/03_api_concepts.md` | 3.1 Planes | `[ref: #planes-aip-111]` |
+Routing is **semantic and context-aware**, never substring/keyword matching:
 
-### Chapter 4 — Resource Design
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Designing from scratch; standard vs custom methods. | `references/04_resource_design.md` | 4.1 Resource-Oriented | `[ref: #resource-oriented-design-aip-121]` |
-| Forming resource names; relative vs full. | `references/04_resource_design.md` | 4.2 Resource Names | `[ref: #resource-names-aip-122]` |
-| Defining `google.api.resource`; resource types. | `references/04_resource_design.md` | 4.3 Resource Types | `[ref: #resource-types-aip-123]` |
-| Modeling many-to-one or many-to-many relationships. | `references/04_resource_design.md` | 4.4 Resource Association | `[ref: #resource-association-aip-124]` |
-| Enums vs strings/booleans; naming enum values. | `references/04_resource_design.md` | 4.5 Enumerations | `[ref: #enumerations-aip-126]` |
-| Designing for Terraform/IaC; `reconciling` fields. | `references/04_resource_design.md` | 4.6 Declarative-Friendly | `[ref: #declarative-friendly-interfaces-aip-128]` |
-| Field ownership; effective/default values. | `references/04_resource_design.md` | 4.7 Server-Modified | `[ref: #server-modified-values-and-defaults-aip-129]` |
-| Singleton resources (one instance per parent). | `references/04_resource_design.md` | 4.8 Singleton Resources | `[ref: #singleton-resources-aip-156]` |
-| Safe rollout for policy resources; experiment preview. | `references/04_resource_design.md` | 4.9 Policy Preview | `[ref: #policy-preview-aip-236]` |
+1. Shortlist candidate files from the subject map using `subject` plus the request **plus inferred session work** (the artifact you are about to produce, the questions the problem implies). Shortlist generously — when uncertain, expand the file list and re-run Command 2.
+2. Within shortlisted frontmatter, read **every** card and match `what`/`use_when`/`avoid_when` semantically (OR semantics within and across files). Mark each matching card's `anchor`.
+3. **Deduplicate** anchors: several cards MAY share one anchor (convergence); load the shared section once.
+4. Routing stays in the **main agent**: inferred session context cannot be serialized to a subagent without loss. Subagents receive already-selected material.
+5. Cross-references inside card fields point to better alternatives: `(sibling card)` = another card for the same anchor in the same file; `(<NN>_<name> › <topic>)` = a section in the named corpus file (e.g. `(07_design_patterns › soft delete)`).
 
-### Chapter 5 — Operations
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Method categories: standard, batch, custom, streaming. | `references/05_operations.md` | 5.1 Method Categories | `[ref: #method-categories-aip-130]` |
-| Retrieval of a single resource (`Get` RPC). | `references/05_operations.md` | 5.2 Get | `[ref: #standard-method-get-aip-131]` |
-| Retrieval of a collection (`List` RPC); pagination. | `references/05_operations.md` | 5.3 List | `[ref: #standard-method-list-aip-132]` |
-| Resource creation (`Create` RPC); sync vs async. | `references/05_operations.md` | 5.4 Create | `[ref: #standard-method-create-aip-133]` |
-| Resource update (`Update` RPC); PATCH vs PUT. | `references/05_operations.md` | 5.5 Update | `[ref: #standard-method-update-aip-134]` |
-| Resource deletion (`Delete` RPC); soft vs hard delete. | `references/05_operations.md` | 5.6 Delete | `[ref: #standard-method-delete-aip-135]` |
-| Custom methods (verb + noun). | `references/05_operations.md` | 5.7 Custom Methods | `[ref: #custom-methods-aip-136]` |
-| Long-running operations (>10s); `Operation`. | `references/05_operations.md` | 5.8 Long-Running | `[ref: #long-running-operations-aip-151]` |
-| Batch Get (multiple resources atomically). | `references/05_operations.md` | 5.9 Batch Get | `[ref: #batch-method-get-aip-231]` |
-| Batch Create (multiple resources in a transaction). | `references/05_operations.md` | 5.10 Batch Create | `[ref: #batch-method-create-aip-233]` |
-| Batch Update (multiple resources in a transaction). | `references/05_operations.md` | 5.11 Batch Update | `[ref: #batch-method-update-aip-234]` |
-| Batch Delete (multiple resources in a transaction). | `references/05_operations.md` | 5.12 Batch Delete | `[ref: #batch-method-delete-aip-235]` |
+### 2.3 Bounded Section Extraction (MANDATORY)
 
-### Chapter 6 — Fields
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Naming a field; string vs bytes; `display_name`. | `references/06_fields.md` | 6.1 Field Names | `[ref: #field-names-aip-140]` |
-| Annotating format (UUID4, IPv4) via `field_info`. | `references/06_fields.md` | 6.2 FieldInfo | `[ref: #fields-and-fieldinfo-aip-202]` |
-| Documenting behavior (`REQUIRED`, `OPTIONAL`). | `references/06_fields.md` | 6.3 Field Behavior | `[ref: #field-behavior-documentation-aip-203]` |
-| Naming quantity fields; unit suffixes. | `references/06_fields.md` | 6.4 Quantities | `[ref: #quantities-aip-141]` |
-| Time representation (`Timestamp`, `Duration`). | `references/06_fields.md` | 6.5 Time and Duration | `[ref: #time-and-duration-aip-142]` |
-| Standardized codes (language, region, currency). | `references/06_fields.md` | 6.6 Standardized Codes | `[ref: #standardized-codes-aip-143]` |
-| Repeated fields (scalar vs message). | `references/06_fields.md` | 6.7 Repeated Fields | `[ref: #repeated-fields-aip-144]` |
-| Modeling ranges (`start_`/`end_`). | `references/06_fields.md` | 6.8 Ranges | `[ref: #ranges-aip-145]` |
-| Generic fields (`oneof`, `map`, `Struct`, `Any`). | `references/06_fields.md` | 6.9 Generic Fields | `[ref: #generic-fields-aip-146]` |
-| Sensitive data (secrets, keys). | `references/06_fields.md` | 6.10 Sensitive Fields | `[ref: #sensitive-fields-aip-147]` |
-| Standard field names (`name`, `parent`, etc.). | `references/06_fields.md` | 6.11 Standard Fields | `[ref: #standard-fields-aip-148]` |
-| Default vs unset values; `optional` keyword. | `references/06_fields.md` | 6.12 Unset Fields | `[ref: #unset-field-values-aip-149]` |
-| Resource state enum (`ACTIVE`, `SUCCEEDED`). | `references/06_fields.md` | 6.13 States | `[ref: #states-aip-216]` |
+Never use a blind fixed window like `rg -A 100` — it truncates large sections and over-reads small ones. Extract exactly from the target marker to the next marker:
 
-### Chapter 7 — Design Patterns
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Configurable tasks; `Job` resources; `Run` custom methods. | `references/07_design_patterns.md` | 7.1 Jobs | `[ref: #jobs-aip-152]` |
-| Bulk import or export of data. | `references/07_design_patterns.md` | 7.2 Import/Export | `[ref: #import-and-export-aip-153]` |
-| Optimistic concurrency control; `etag` field. | `references/07_design_patterns.md` | 7.3 Freshness | `[ref: #resource-freshness-validation-aip-154]` |
-| Request idempotency; `request_id` field. | `references/07_design_patterns.md` | 7.4 Request ID | `[ref: #request-identification-aip-155]` |
-| Partial responses; field masks vs view enums. | `references/07_design_patterns.md` | 7.5 Partial Responses | `[ref: #partial-responses-aip-157]` |
-| Pagination (`page_size`, `page_token`). | `references/07_design_patterns.md` | 7.6 Pagination | `[ref: #pagination-aip-158]` |
-| Reading across multiple collections (wildcard `-`). | `references/07_design_patterns.md` | 7.7 Reading Across | `[ref: #reading-across-collections-aip-159]` |
-| Filter queries on `List` methods; syntax. | `references/07_design_patterns.md` | 7.8 Filtering | `[ref: #filtering-aip-160]` |
-| Partial updates; `google.protobuf.FieldMask`. | `references/07_design_patterns.md` | 7.9 Field Masks | `[ref: #field-masks-aip-161]` |
-| Revision history; `{Resource}Revision`; `rollback`. | `references/07_design_patterns.md` | 7.10 Resource Revisions | `[ref: #resource-revisions-aip-162]` |
-| Validate-only mode; `validate_only` field. | `references/07_design_patterns.md` | 7.11 Change Validation | `[ref: #change-validation-aip-163]` |
-| Soft delete with recovery (`Undelete` method). | `references/07_design_patterns.md` | 7.12 Soft Delete | `[ref: #soft-delete-aip-164]` |
-| Criteria-based delete (Purge method). | `references/07_design_patterns.md` | 7.13 Criteria Delete | `[ref: #criteria-based-delete-aip-165]` |
-| Unicode limits, uniqueness, normalization. | `references/07_design_patterns.md` | 7.14 Unicode | `[ref: #unicode-aip-210]` |
-| Authorization checks (`PERMISSION_DENIED`). | `references/07_design_patterns.md` | 7.15 Authorization | `[ref: #authorization-checks-aip-211]` |
-| Resource expiration (`expire_time` vs `ttl`). | `references/07_design_patterns.md` | 7.16 Resource Expiration| `[ref: #resource-expiration-aip-214]` |
-| Temporarily unreachable resources. | `references/07_design_patterns.md` | 7.17 Unreachable | `[ref: #unreachable-resources-aip-217]` |
+```bash
+awk '/^\[ref: #<ANCHOR>\]$/{f=1;print;next} f&&/^\[ref: #/{exit} f' references/<FILE>.md
+```
 
-### Chapter 8 — Compatibility and Versioning
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Backwards compatibility; adding/removing fields. | `references/08_compatibility_and_versioning.md` | 8.1 Backwards Compat | `[ref: #backwards-compatibility-aip-180]` |
-| Stability levels (alpha, beta, stable); deprecation. | `references/08_compatibility_and_versioning.md` | 8.2 Stability Levels | `[ref: #stability-levels-aip-181]` |
-| External software versions; EOL management. | `references/08_compatibility_and_versioning.md` | 8.3 External Dependencies| `[ref: #external-software-dependencies-aip-182]` |
-| API versioning strategy; package naming; URIs. | `references/08_compatibility_and_versioning.md` | 8.4 API Versioning | `[ref: #api-versioning-aip-185]` |
+When the anchor id is needed first, `rg -n '^\[ref: #' references/<FILE>.md` lists all marker line numbers.
 
-### Chapter 9 — Polish
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| Naming conventions (services, methods); abbreviations. | `references/09_polish.md` | 9.1 Naming Conventions | `[ref: #naming-conventions-aip-190]` |
-| File/directory structure; package names; languages. | `references/09_polish.md` | 9.2 File Structure | `[ref: #file-and-directory-structure-aip-191]` |
-| Public comments; CommonMark; deprecation notices. | `references/09_polish.md` | 9.3 Documentation | `[ref: #documentation-aip-192]` |
-| Designing error responses (`ErrorInfo`, status codes). | `references/09_polish.md` | 9.4 Errors | `[ref: #errors-aip-193]` |
-| Automatic retry configuration; retryable errors. | `references/09_polish.md` | 9.5 Retry Configuration | `[ref: #automatic-retry-configuration-aip-194]` |
+**Frontmatter extraction warning:** match delimiters as anchored whole lines (`^---\s*$`; in awk: `^---[ \t]*$`). Never split on the bare substring `---` — bodies legitimately contain `---` inside code, and a naive split truncates the frontmatter with false YAML errors.
 
-### Chapter 10 — Protocol Buffers
-| Trigger / Situation | Target File | Section Header | Anchor |
-|---|---|---|---|
-| HTTP and gRPC transcoding; URI mapping. | `references/10_protocol_buffers.md` | 10.1 HTTP Transcoding | `[ref: #http-and-grpc-transcoding-aip-127]` |
-| Common components; global vs org-specific packages. | `references/10_protocol_buffers.md` | 10.2 Common Components | `[ref: #common-components-aip-213]` |
-| Structuring API-specific protos; major versioning. | `references/10_protocol_buffers.md` | 10.3 API-Specific Protos| `[ref: #api-specific-protos-aip-215]` |
+### 2.4 Frontmatter Schema Notes
 
----
+- Top-level keys: `subject`, `index`, `aips` (skill-extra, below). Cards carry exactly `{anchor, what, problem, use_when, avoid_when, expected}`.
+- `aips` — **api-design skill-extra field** (declared per the cross-skill reference standard, `bootstrap/references/REFERENCE_STANDARD.md` §2): a sorted list of the AIP numbers covered by the file, mechanically cross-checked against body section headings. Use it for coarse filtering when the request cites an AIP number directly.
+- `avoid_when` and `expected` are empty only for pure lookup sections (Glossary, RFC verbs) that have no anti-pattern and no success state.
+- The normative frontmatter schema, card semantics, and conformance checklist live in `bootstrap/references/REFERENCE_STANDARD.md`; api-design presentation choices live in `prompts/REFERENCE_STANDARD_ADDENDUM.md`.
 
-## 4. Master Execution Workflow
+## 3. Master Execution Workflow
+
 1. **Analyze Design Task:** Identify the API component (resource, method, field, relationship, error model, etc.) you are creating or reviewing.
-2. **Consult the Index:** Locate every row in the Routing Index that matches the component or decision. Read `references/rfc_verbs.md` first if any requirement-level verb is ambiguous.
-3. **Extract Rules:** For each matched row, run a precise `rg` search using the `[ref: #...]` marker in the `Target File` and read only that section. Do not load full reference files into context.
+2. **Route via the Funnel:** Run Command 1, shortlist generously, run Command 2, and select cards semantically (§2.2). Load `references/rfc_verbs.md` (anchor `rfc-verbs`) first if any requirement-level verb is ambiguous.
+3. **Extract Rules:** For each selected anchor, run the bounded extraction (§2.3) and read only that section. Do not load full reference files into context.
 4. **Apply Rules:** Draft or review routes, resource names, request/response shapes, field semantics, and error behavior so that every element complies with the extracted AIP section.
 5. **Proto Review (if applicable):** If the change touches `.proto` files, invoke the `protobuf-lang` skill for Buf lint and proto schema style. Do not duplicate those rules here.
 6. **Verify:**

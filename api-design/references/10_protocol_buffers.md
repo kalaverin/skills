@@ -1,3 +1,29 @@
+---
+subject: "Protocol buffer API structure corpus; `google.api.http` transcoding annotations, HTTP verb and URI template bindings, `body` mapping, `additional_bindings`, bi-directional streaming exception, common component packages ending `.type`, `google.type.*` and `google.protobuf.*` imports, self-contained major-versioned package trees, cross-API resource-name references."
+index:
+  - anchor: http-and-grpc-transcoding-aip-127
+    what: "The AIP-127 transcoding contract: `google.api.http` annotation on each RPC mapping HTTP verb plus URI template, `{field=pattern/*}` capture variables covering whole resource names, flat `body` assignment, recursive `additional_bindings`."
+    problem: "REST-accustomed developers face gRPC-only interface, so most existing tooling and browser clients cannot reach endpoints and hand-written HTTP shims diverge per service; rest interoperability, json transcoding, gateway mapping, verb mismatch, wildcard capture, body field routing, streaming exception, custom method suffix, developer familiarity."
+    use_when: "Defining any RPC that must also answer HTTP/JSON callers; choosing verb, path, and payload assignment for standard or custom operations; one operation needs several URI bindings; weighing a non-streaming alternative."
+    avoid_when: "Bi-directional stream under design (annotation omitted entirely, alternative offered); Buf lint or schema style question (protobuf-lang skill territory); gRPC-only surface with no REST gateway obligation."
+    expected: "Every RPC carries a verb-matched, template-correct binding, bodies stay single-field and flat, extra bindings recurse without nesting, and REST consumers reach the full surface."
+  - anchor: common-components-aip-213
+    what: "The AIP-213 shared-component rules: permitted imports limited to curated packages (`google.api.*`, `google.protobuf.*`, `google.rpc.*`, `google.type.*`, `google.longrunning.Operation`, optionally `google.iam.v1.*`), organization-wide bundles ending `.type`, near-frozen evolution with rare additive change."
+    problem: "Several APIs reinvent timestamp, money, or postal address locally, so representations diverge, client code cannot flow messages between services, and shared changes roll out without version isolation; duplicated domain type, representation drift, cross-service message reuse, unversioned shared surface, propagation lag, frozen contract discipline, generic versus organizational, promotion one-way door."
+    use_when: "Concept genuinely reused across multiple APIs (money, date, coordinates); choosing between global and organization-specific tier; checking whether `google.type.*` already covers the need; proposing new entry into a common bundle."
+    avoid_when: "Type serves one API only (10_protocol_buffers › API-specific protos); frequent field growth planned (shared messages evolve slowly); lint or schema style question (protobuf-lang skill)."
+    expected: "APIs import only sanctioned bundles, representations stay uniform across services, additions ship rarely with propagation allowance, and generic concepts never hide in organizational tiers."
+  - anchor: api-specific-protos-aip-215
+    what: "The AIP-215 self-containment mandate: all API-specific protos inside one major-versioned package (`google.library.v1`), cross-API references expressed as resource names rather than foreign messages, protos duplicated per version instead of private common packages."
+    problem: "Internal API imports message types straight from another service, so any upstream field addition or major-version bump forces cascading republish and client-library dependency hell; cross-api proto coupling, release train entanglement, dependency cascade, undeletable contract, packaging conflict, versioning uncertainty, isolation boundary, consumer expectation fog."
+    use_when: "Drawing package boundaries for a new service; referencing another API's resource (name string, not message); same proto needed in two major versions (copy it); deciding whether component deserves promotion to shared tier."
+    avoid_when: "Component genuinely shared across service boundaries (10_protocol_buffers › common components); lint, layout, or package-style enforcement (protobuf-lang skill); compatibility policy for evolving versions (08_compatibility_and_versioning › API versioning)."
+    expected: "Each service's protos live under its own versioned tree, foreign resources appear only by name, versions diverge independently, and client libraries package without cross-API dependency knots."
+aips: [127, 213, 215]
+---
+
+# Protocol Buffers
+
 ## 10. Protocol Buffers
 
 ### 10.1 HTTP and gRPC Transcoding (AIP-127)
@@ -88,6 +114,8 @@ rpc CreateBook(CreateBookRequest) returns (Book) {
 - RPCs **must not** define an additional binding within an additional binding.
 - The `body` clause **must** be identical in the top-level annotation and each additional binding.
 
+> **Agent extension — not part of the AIP standard.** URI template variables must capture the whole resource path, not just the final ID (`{name=publishers/*/books/*}`), because `*` stops at `/`. Keep `POST`/`PATCH` body mapping flat — `body: "*"` or a single top-level field; nested body structures transcode poorly and confuse REST clients. Custom-method URIs use the `:verb` suffix (`:publish`), which is exactly what keeps them from colliding with standard resource paths.
+
 ### 10.2 Common Components (AIP-213)
 [ref: #common-components-aip-213]
 
@@ -168,29 +196,20 @@ Occasionally, it may be useful to add protos to these packages or to add to the 
 
 The following organization-specific common component packages exist and conform with the above guidance:
 
-- `google.apps.script.type`
-  Common component package for Google Apps Script.
-- `google.geo.type`
-  Common component package for Google Maps and the Geo organization.
-- `google.actions.type`
-  Common component package for Actions on Google APIs.
+- `google.apps.script.type`: Common component package for Google Apps Script.
+- `google.geo.type`: Common component package for Google Maps and the Geo organization.
+- `google.actions.type`: Common component package for Actions on Google APIs.
 
 #### Non-conformant common component packages
 
 The following common component packages exist, but do not conform with the above guidance, and do not form a precedent for further such packages.
 
-- `google.cloud.common`:
-  This does not conform to the requirement for the package name to end in `.type`. (This would otherwise be acceptable, and this package should be considered as the Cloud common component package.)
-- `google.logging.type`:
-  This appears to be API-specific, although it's used from multiple APIs; some aspects should probably be global or in a Cloud common component package.
-- `google.cloud.workflows.type`:
-  API-specific types.
-- `google.cloud.oslogin.common`:
-  API-specific types, and a non-conformant name.
-- `google.identity.accesscontextmanager.type`:
-  API-specific types.
-- `google.networking.trafficdirector.type`:
-  API-specific types.
+- `google.cloud.common`: This does not conform to the requirement for the package name to end in `.type`. (This would otherwise be acceptable, and this package should be considered as the Cloud common component package.)
+- `google.logging.type`: This appears to be API-specific, although it's used from multiple APIs; some aspects should probably be global or in a Cloud common component package.
+- `google.cloud.workflows.type`: API-specific types.
+- `google.cloud.oslogin.common`: API-specific types, and a non-conformant name.
+- `google.identity.accesscontextmanager.type`: API-specific types.
+- `google.networking.trafficdirector.type`: API-specific types.
 
 #### Rationale
 
@@ -199,6 +218,8 @@ Common components are effectively unversioned: APIs evolve independently of each
 Adding a new message or enum is backward-compatible, as it does not affect existing APIs that may import other messages or enums from the same common component package.
 
 Consultation with the API design team is required for global common components and suggested for organization-specific common components as the border between "generic" and "organization-specific" is a gray area; some generic _concepts_ have organization-specific use cases which surface through the components.
+
+> **Agent extension — not part of the AIP standard.** Reach for the shared packages before inventing types: `google.type.*` covers Money, Date, LatLng and friends; `google.rpc.*` covers Status and error details; `google.api.*` covers the annotations. A type used by several APIs of one organization belongs in an organization-wide common package — but moving a type there is a one-way door (the package becomes a public contract), so promote only genuinely shared components. The 2023 restructuring of AIP-213 sharpened exactly this global-versus-organizational boundary.
 
 ### 10.3 API-Specific Protos (AIP-215)
 [ref: #api-specific-protos-aip-215]
@@ -226,3 +247,5 @@ For example:
 Keeping APIs isolated from each other, with a limited set of common components which are maintained in a highly disciplined way, reduces a lot of the issues with dependencies.
 
 API-specific common components shared across versions add complexity for client library generation and packaging, and are inflexible in terms of versioning. When protos are duplicated because they _start_ off the same in multiple versions, they can still diverge over time as they are isolated from each other.
+
+> **Agent extension — not part of the AIP standard.** API-specific protos stay inside the API's own versioned package tree (`myapi.v1`), and the API must be self-contained — depending on another internal API's messages couples two release trains and makes independent versioning impossible. Move a component to a common package only when reuse across service boundaries is real and intended; "might be useful someday" is how internal APIs become undeletable public contracts.

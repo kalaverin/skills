@@ -1,3 +1,77 @@
+---
+subject: "Resource-oriented API design corpus; `AIP-121` nouns standard methods stateless consistency, `AIP-122` names hierarchy IDs full URIs, `AIP-123` types annotations patterns, `AIP-124` associations canonical parent many-to-many, `AIP-126` enums, `AIP-128` declarative-friendly reconciliation, `AIP-129` field ownership effective values normalization, `AIP-156` singletons, `AIP-236` policy preview experiments."
+index:
+  - anchor: resource-oriented-design-aip-121
+    what: "The AIP-121 resource-oriented paradigm: model APIs as hierarchies of named resources manipulated by a small set of standard methods over a stateless protocol, with strong consistency after mutations and an acyclic resource graph."
+    problem: "API modeled around verbs and bespoke RPC shapes forces consumers to relearn every service, so client generation, declarative tooling, and orchestration pipelines break across teams; noun verb imbalance, per-service rpc dialects, cognitive load, tooling payoff loss, database schema mirroring, cyclic reference trap, read-after-write gap."
+    use_when: "Greenfield API taking shape; noun set and hierarchy being sketched before methods; evaluating whether custom verb justified over standard set; weighing consistency guarantees clients need after mutation."
+    avoid_when: "Pure data-plane streaming or analytics surface where resource model fits poorly; existing RPC-style API under maintenance-only stewardship; method-level details needed rather than paradigm choice (05_operations › standard methods)."
+    expected: "Surface organizes around named resources and shared verbs, every mutation reaches steady state before completion, references form acyclic graph, and generic tooling consumes API uniformly."
+  - anchor: resource-names-aip-122
+    what: "The AIP-122 naming rules for structure: relative names alternate plural camelCase collection identifiers with IDs, `name` and `parent` string fields carry them with `google.api.resource_reference` annotations, and cross-resource fields use snake-case references rather than embedded messages."
+    problem: "Resources identified by ad-hoc tuples, embedded messages, or self-links force consumers to juggle opaque identifiers, so logging, access control, and reusable interfaces fail to understand references; anonymous tuple burden, identifier opacity, payload nesting coupling, permission bypass, canonical name storage, collection hierarchy shape, reference field convention."
+    use_when: "Naming new resource or request message; deciding how one resource points at another; choosing collection segment words; reserving `name` field semantics against display-title misuse."
+    avoid_when: "ID character rules or user-settable identifiers at stake (sibling card); cross-API or versioned URI form needed (sibling card); internal-only API embedding resources under tight lifecycle exception."
+    expected: "Every resource exposes canonical string `name`, references travel as annotated strings, collections read as plural lowercase-led segments, and tuple or self-link identification never leaks into surface."
+  - anchor: resource-names-aip-122
+    what: "The AIP-122 resource ID rules: user-specified IDs follow RFC-1034-derived lowercase hyphenated format (`^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$`) documented by the API, system-generated IDs document basic shape, and aliases like `users/me` map onto canonical IDs."
+    problem: "User-chosen identifiers accepted without documented format allow embedded slashes, unicode, or uppercase through, so URLs break, percent-encoding proliferates, and stored names become unusable in DNS contexts; undocumented id format, url-hostile characters, sixty-three character cap, lowercase hyphen pattern, alias lookup shortcut, create-time id field, dns compatibility."
+    use_when: "Create request accepts caller-chosen identifier; alias shortcut like `users/me` under consideration; documentation of accepted identifier shape overdue; distinguishing idempotency `request_id` from resource identifier."
+    avoid_when: "Whole-name structure or hierarchy question (sibling card); cross-API full-name form at stake (sibling card); tuple-based legacy identification under migration (whole-name rules apply first)."
+    expected: "User-specified IDs validate against documented RFC-1034-style regex, aliases resolve to canonical form in responses, and `book_id`-style create fields land as final name component only."
+  - anchor: resource-names-aip-122
+    what: "The AIP-122 distinction between relative names, full resource names (schemeless `//service.googleapis.com/...` URIs without version, stable across versions and endpoints), and access URIs carrying protocol, version, and endpoint."
+    problem: "Field references resources across multiple APIs with owning service ambiguous, so relative strings misresolve and version-pinned URIs baked into stored data rot on upgrade; cross-api ambiguity, schemeless uri form, version persistence trap, endpoint regionalization drift, authority hostname, persisted uri decay, multi-endpoint convention."
+    use_when: "Field may point into arbitrary external API; deciding whether version belongs in persisted reference; regional or mTLS endpoints multiply; choosing between relative and schemeless form for given context."
+    avoid_when: "Owning API obvious from context (relative form suffices); intra-service naming or ID format at stake (sibling cards); full access URL construction needed rather than identity form."
+    expected: "Cross-API fields carry schemeless version-free full names, intra-service fields stay relative, and stored references survive major version upgrades and endpoint changes."
+  - anchor: resource-types-aip-123
+    what: "The AIP-123 globally-unique type name (`{Service Name}/{Type}`, PascalCase singular matching the message) plus the `google.api.resource` annotation contract: `pattern` ordering stability, snake_case variables without `_id`, `singular`/`plural` lower-camel forms."
+    problem: "Tools spanning providers like Kubernetes or GraphQL cannot distinguish identically-named messages from different APIs, so generic integrations collide and later pattern edits break generated clients; global type uniqueness, multi-provider tooling collision, message alignment payoff, append-only pattern list, annotation variable casing, singular plural derivation."
+    use_when: "Registering resource annotation for new message; adding secondary pattern to existing type; deriving `singular`/`plural` noun forms; checking variable naming inside braces."
+    avoid_when: "Plain intra-API naming questions without tooling identity concerns; pattern removal or reorder contemplated (forbidden, additions at end only); association structure between types at stake."
+    expected: "Each resource declares PascalCase type under service namespace, annotation patterns append-only with well-formed variables, and Kubernetes-style tools resolve type identity across providers."
+  - anchor: resource-association-aip-124
+    what: "The AIP-124 association rules: exactly one canonical parent per resource, secondary many-to-one links via annotated reference fields plus `filter`, and many-to-many via repeated name fields or a metadata-bearing sub-resource."
+    problem: "Resource legitimately belongs under two hierarchies and List demands both parents at once, so routing, authorization, pagination, and caching tangle into exponential complexity; dual parent trap, parentage election, many-to-many modeling, join table misfit, association metadata carrier, filter-based lookup, repeated reference list."
+    use_when: "Entity relates to several parents many-to-one; relationship itself carries attributes; choosing between repeated field and association sub-resource; List must stay single-parent with secondary filtering."
+    avoid_when: "Simple tree hierarchy expressible directly; cross-API reference format at stake (04_resource_design › resource names); repeated-field atomicity question (06_fields › repeated fields)."
+    expected: "Single parentage anchors each pattern, secondary associations ride annotated fields or filters, many-to-many uses name lists unless metadata justifies sub-resource."
+  - anchor: enumerations-aip-126
+    what: "The AIP-126 enum rules: `UPPER_SNAKE_CASE` values with `<NAME>_UNSPECIFIED` zero, nested versus package-level placement with prefixing to dodge hoisting collisions, documented frozen-or-evolving stance, and string or boolean alternatives for fast-changing or standards-covered value sets."
+    problem: "Field accepts discrete values but chosen representation changes weekly, so enum additions ripple breaking changes into client code and proto3 zero default silently acquires meaning; enum evolution asymmetry, breaking rename renumber, unspecified zero value, hoisting namespace collision, kebab-case string fallback, widely-adopted standard clash, boolean inflexibility."
+    use_when: "Value set stable for year-plus horizon; deciding inline versus shared placement; proto3 default must stay explicit; weighing enum against string when standard representation exists."
+    avoid_when: "Values churn faster than yearly cadence (string with documented kebab-case); competing ISO-style standard already defines representation; genuine two-state flag with `false` default suffices."
+    expected: "Enums carry explicit `<NAME>_UNSPECIFIED` default, values stay append-only with documented growth policy, placement avoids hoisted collisions, and volatile sets ship as documented strings."
+  - anchor: declarative-friendly-interfaces-aip-128
+    what: "The AIP-128 declarative-friendly contract: strongly-consistent standard lifecycle methods only, `style: DECLARATIVE_FRIENDLY` designation, output-only `bool reconciling` exposing in-flight convergence, and `Get` returning actual current state."
+    problem: "Terraform-style client reconciles desired configuration against reads, but server-injected defaults and read-after-write lag make plan diffs report phantom changes forever; ghost plan noise, server default injection, convergence visibility gap, intended versus actual state, generic automation uniformity, configuration as code, drift correction cycle."
+    use_when: "Resource targets IaC ecosystem; updates take more than seconds to materialize; generic lifecycle automation expected without per-resource glue; deciding whether designation annotation warranted."
+    avoid_when: "Data-plane imperative operation surface; custom-method-heavy design that cannot honor lifecycle uniformity; ephemeral resources outside IaC-driven workflows."
+    expected: "Reads reflect live truth, `reconciling` flags unfinished convergence, lifecycle runs on standard methods alone, and post-apply comparisons stay empty."
+  - anchor: server-modified-values-and-defaults-aip-129
+    what: "The AIP-129 ownership and normalization rules: every field has single owner (`OUTPUT_ONLY` marks server-owned), server-decided fallbacks split into mutable input plus `effective_`-prefixed output twin, and documented `google.api.field_info` normalizations (`uuid`, `ipv4`, `ipv6`, `email`)."
+    problem: "Server silently rewrites client-supplied values or injects defaults without marking ownership, so declarative tools fight endless correction loops and echoed fields get rejected on update; ownership ambiguity, undocumented value rewrite, server overwrite battle, effective value twin, output-only marking, round-trip update failure, documented comparison method."
+    use_when: "Service allocates or computes fallback when client omits value; input canonicalized for storage (case folding, CIDR shortening); deciding which side owns each field; choosing companion field name for service-decided outcome."
+    avoid_when: "Pure client-owned payload with no server touch; normalization beyond allowed annotation formats invented ad hoc; intended-state semantics wanted (04_resource_design › declarative-friendly interfaces)."
+    expected: "Ownership is unambiguous for every field, service-decided results live in `effective_` twins, normalizations declared via `google.api.field_info`, and echoed updates never bounce."
+  - anchor: singleton-resources-aip-156
+    what: "The AIP-156 singleton pattern: exactly one instance per parent addressed by static trailing segment without ID (e.g. `users/{user}/config`), only `Get`/`Update` (never `Create`/`Delete`), mandatory `singular`/`plural` declaration, and pseudo-collection `List` per AIP-159."
+    problem: "Per-parent configuration object modeled as regular collection forces fake IDs and create-delete lifecycle onto something that always exists, so clients handle NotFound for unavoidable entity; fake id ceremony, config object shape, constant final segment, implicit lifecycle, orphaned instance risk, pseudo-collection listing, collection lint misfire."
+    use_when: "Exactly one settings-style entity exists for each parent; create-delete semantics meaningless because existence ties to parent; listing across parents desirable despite singularity; wondering whether `Update` allowed when fields output-only."
+    avoid_when: "Multiple instances under one parent plausible later (real collection safer); user-chosen identifier needed; entity lifecycle independent from parent."
+    expected: "Singleton addressed by parent name plus static segment, lifecycle limited to get-update, both noun forms declared, and cross-parent listing works via pseudo-collection."
+  - anchor: policy-preview-aip-236
+    what: "The AIP-236 preview mechanism: candidate policy configuration stored as nested `*Experiment` resource, evaluated against production traffic via `startPreview`/`stopPreview` with `log_prefix`-tagged evaluation logs, and promoted atomically by etag-guarded `commit`."
+    problem: "Access-rule change shipped straight to production can lock out legitimate users or expose sensitive resources, with no way to observe effect on real traffic beforehand; blast-radius lockout, unvalidated rollout, live traffic evaluation gap, experiment nesting, preview metadata lifecycle, etag-guarded promotion, comparison log isolation."
+    use_when: "Firewall-style rule resource needs safe rollout path; customer must observe proposed effect before activation; multiple candidate configurations compared concurrently; promotion requires atomic swap with version guard."
+    avoid_when: "Non-policy resource rollout (explicit non-goal); plain validation of syntax rather than traffic effect; experiment already promoted and only policy CRUD remains."
+    expected: "Experiments nest under live policy, preview logs tagged with `log_prefix` isolate candidate behavior, `commit` swaps atomically behind matching etag, and failed promotion leaves both sides untouched."
+aips: [121, 122, 123, 124, 126, 128, 129, 156, 236]
+---
+
+# Resource Design
+
 ## 4. Resource Design
 
 ### 4.1 Resource-Oriented Design (AIP-121)
@@ -101,6 +175,8 @@ The stateless requirement ensures that resources are directly addressable and ca
 - [AIP-128](04_resource_design.md#declarative-friendly-interfaces-aip-128) — Declarative-Friendly Interfaces
 - [AIP-131](05_operations.md#standard-method-get-aip-131) through [AIP-135](05_operations.md#standard-method-delete-aip-135) — Standard Methods
 - [AIP-136](05_operations.md#custom-methods-aip-136) — Custom Methods
+
+> **Agent extension — not part of the AIP standard.** Resource-oriented design pays off mechanically: when an API is modeled as resources with standard methods, the Google API Linter can enforce most of the AIP rule set in CI against the proto surface, catching design drift before code generation. Modeling around verbs instead of nouns forfeits that tooling and typically resurfaces later as inconsistent method shapes across teams.
 
 ### 4.2 Resource Names (AIP-122)
 [ref: #resource-names-aip-122]
@@ -368,6 +444,8 @@ Referencing by name, as is recommended, eliminates all of this complexity by pre
 - [AIP-162](07_design_patterns.md#resource-revisions-aip-162) — Resource Revisions
 - [AIP-180](08_compatibility_and_versioning.md#backwards-compatibility-aip-180) — Backwards Compatibility
 
+> **Agent extension — not part of the AIP standard.** Practical naming pitfalls that recur in reviews: keep resource IDs URL-friendly (avoid embedded slashes or percent-encoded characters); treat a user-specified ID (the `book_id` field of a Create request) as the final name component, never as a whole name; return full resource names in responses and cross-resource references, reserving relative names for intra-service contexts; and do not confuse the idempotency `request_id` (AIP-155) with the resource ID — the linter checks them separately.
+
 ### 4.3 Resource Types (AIP-123)
 [ref: #resource-types-aip-123]
 
@@ -624,6 +702,8 @@ Boolean fields **may** be used in situations where it is clear that no further f
 - [AIP-191](09_polish.md#file-and-directory-structure-aip-191) — File and Directory Structure
 - [AIP-216](06_fields.md#states-aip-216) — States
 
+> **Agent extension — not part of the AIP standard.** Enum evolution is asymmetric: adding new values is generally safe, while renaming, renumbering, or removing existing values is a breaking change. Always keep a `0` value (`<NAME>_UNSPECIFIED`) so proto3 defaults are explicit rather than silently meaningful, and define enums at package level when more than one message could use them — nested enums collide in generated-code namespaces surprisingly often.
+
 ### 4.6 Declarative-Friendly Interfaces (AIP-128)
 [ref: #declarative-friendly-interfaces-aip-128]
 
@@ -675,6 +755,8 @@ A significant amount of guidance is more strict for declarative-friendly interfa
 ##### Annotations
 
 For declarative-friendly annotations, see [AIP-148](06_fields.md#standard-fields-aip-148).
+
+> **Agent extension — not part of the AIP standard.** Declarative clients (Terraform, Kubernetes controllers) live or die on two properties: `Get` must return the actual current state rather than the intended state, and long-running updates must surface an output-only `reconciling` boolean so the client knows the system is still converging. The two classic failure modes are persistent drift (server-injected defaults in `Get` responses that the user never configured) and read-after-write inconsistency (an update not visible in the immediately following `Get`), both of which make IaC tools report phantom changes.
 
 ### 4.7 Server-Modified Values and Defaults (AIP-129)
 [ref: #server-modified-values-and-defaults-aip-129]
@@ -761,6 +843,8 @@ For fields not using an allowed normalization, declarative clients will not be a
 
 - [AIP-128](04_resource_design.md#declarative-friendly-interfaces-aip-128) — Declarative-Friendly Interfaces
 - [AIP-202](06_fields.md#fields-and-fieldinfo-aip-202) — Fields and FieldInfo
+
+> **Agent extension — not part of the AIP standard.** Server-owned values must be marked output-only; if a declarative client echoes a server-populated field back in an update, strict services correctly reject it. Input normalization (canonicalizing case, shortening CIDR blocks) is the subtle cousin: if the server rewrites input without documenting it, the client's next plan diff shows a phantom change. AIP-129 was substantially clarified in 2023 around field ownership precisely to make these drift sources explicit.
 
 ### 4.8 Singleton Resources (AIP-156)
 [ref: #singleton-resources-aip-156]
@@ -853,6 +937,8 @@ While a singleton is by definition singular, there are certain cases where a sin
 - [AIP-131](05_operations.md#standard-method-get-aip-131) — Standard Method: Get
 - [AIP-134](05_operations.md#standard-method-update-aip-134) — Standard Method: Update
 - [AIP-159](07_design_patterns.md#reading-across-collections-aip-159) — Reading Across Collections
+
+> **Agent extension — not part of the AIP standard.** Singleton names use a constant final segment instead of an ID (for example `projects/{project}/config`), and since the 2024 revision singleton resource definitions must still declare both `singular` and `plural` names even though only one instance exists. Deleting the parent is expected to clean up the singleton — orphaned singletons become unreachable but continue to exist. Collection-oriented lint rules sometimes misfire on singletons; treat those findings as candidates for a documented `aip.dev/not-precedent` disable.
 
 ### 4.9 Policy Preview (AIP-236)
 [ref: #policy-preview-aip-236]
@@ -1145,3 +1231,5 @@ Policy resources govern access and permissions; an incorrect policy change can l
 - [AIP-135](05_operations.md#standard-method-delete-aip-135) — Standard Method: Delete
 - [AIP-151](05_operations.md#long-running-operations-aip-151) — Long-Running Operations
 - [AIP-160](07_design_patterns.md#filtering-aip-160) — Filtering
+
+> **Agent extension — not part of the AIP standard.** A policy preview is only useful if it is fast enough to gate a rollout: return or log the predicted outcome synchronously so that CI and IaC pipelines can block a dangerous change automatically (firewall and IAM policies are the canonical cases). Treat the preview as a dry-run contract — its result must match what the real apply would do, or users learn to ignore it.

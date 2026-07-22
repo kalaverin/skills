@@ -1,3 +1,23 @@
+---
+subject: "Management and data plane taxonomy from `AIP-111`; provisioning configure audit lifecycle, uniform resource-oriented interface, user data operations, throughput latency availability, consistency tradeoffs, blast radius, declarative clients Terraform exclusivity, plane determination heuristics, management-plane contract, `AIP-131..135` standard methods, `AIP-128` declarative-friendly."
+index:
+  - anchor: planes-aip-111
+    what: "The AIP-111 plane taxonomy: management resources provision, configure, and audit infrastructure via uniform resource-oriented APIs, while data methods operate on user content, plus heuristics for assigning any resource or method to its plane."
+    problem: "Designer mixes configuration lifecycle with user-content operations inside one surface, so uniform tooling breaks and awkward resource-oriented wrappers throttle high-throughput paths; plane classification, provisioning versus content, infrastructure prerequisite, critical path latency, mixed taxonomy confusion, scope creep, declarative boundary."
+    use_when: "Deciding whether new resource belongs with provisioning APIs; splitting one service into two surfaces; checking if method qualifies as uniform standard-method target; evaluating whether IaC tools will manage the element."
+    avoid_when: "Control or power planes from networking architecture sought (out of AIP scope); cross-references to standard methods needed directly (05_operations › standard methods); plane already evident and only field-level naming guidance wanted."
+    expected: "Every resource and method carries explicit plane assignment, configuration lives behind uniform resource-oriented surface, and user-content operations stay free of provisioning constraints."
+  - anchor: planes-aip-111
+    what: "The AIP-111 distinctions table: management planes favor uniformity and consistency with system-wide failure impact and exclusive declarative-client access, data planes favor throughput, availability, and low latency, and data resources exposed via management APIs must satisfy the management-plane contract (`AIP-131..135`, `AIP-128`)."
+    problem: "Team exposes queue or table rows through strict standard-method interface expecting Terraform support, so imperative stateful traffic fights declarative reconciliation and consistency guarantees silently weaken; tooling fit mismatch, desired state drift, reconciliation conflict, availability consistency tradeoff, blast radius scope, throughput latency pressure, exposed resource contract."
+    use_when: "Choosing between strict consistency and uptime for new API; deciding whether Terraform or Kubernetes controllers should manage element; setting performance budget for user-facing path; exposing data resource through management surface and needing its obligations."
+    avoid_when: "Plane of element still undetermined (sibling card); pure throughput tuning with no tooling or consistency question; networking control-plane concepts expected."
+    expected: "Design states consistency-versus-availability priority explicitly, declarative tooling targets only provisioning APIs, and every such published element satisfies standard methods plus declarative-friendliness."
+aips: [111]
+---
+
+# API Concepts
+
 ## 3. API Concepts
 
 ### 3.1 Planes (AIP-111)
@@ -72,3 +92,5 @@ Explicitly classifying every resource and method by plane prevents scope creep, 
 - [AIP-121](04_resource_design.md#resource-oriented-design-aip-121) — Resource-Oriented Design
 - [AIP-131](05_operations.md#standard-method-get-aip-131) through [AIP-135](05_operations.md#standard-method-delete-aip-135) — Standard Methods
 - [AIP-128](04_resource_design.md#declarative-friendly-interfaces-aip-128) — Declarative-Friendly Interfaces
+
+> **Agent extension — not part of the AIP standard.** The plane distinction drives concrete design choices. Management-plane APIs are the exclusive domain of declarative clients (Terraform, Kubernetes controllers): those clients reconcile desired state, so management resources need predictable standard methods and robust user-specified IDs, and the plane favors consistency over availability — a failed operation is better than an inconsistent or insecure configuration; its blast radius is system-wide. Data-plane APIs optimize for throughput, availability, and low latency with resource-scoped blast radius and fall outside declarative tooling. If data-plane resources are exposed through a management API, they must still satisfy the management-plane contract (standard methods AIP-131..135, declarative-friendliness per AIP-128).

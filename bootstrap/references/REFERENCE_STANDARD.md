@@ -141,6 +141,7 @@ Bad — and the rule each breaks:
 - The keyword cloud appears **exactly once per card** — at the tail of `problem`. `what` / `use_when` / `avoid_when` / `expected` carry no trailing clouds.
 - Information is partitioned across fields: mechanism+API → `what`; situation+stake+cloud → `problem`; positive criteria → `use_when`; anti-criteria → `avoid_when`; observable outcome → `expected`. **No verbatim phrase (≥2 words) may be cloned between fields of one card** — watch singular/plural inflection (`X` ⊂ `Xs`), the most common leak shape; grep both forms of every cloud phrase against all four other fields.
 - No library/tool names in the `problem` cloud — including names not listed in `libraries` (the mechanical check only covers listed ones; editorial attention covers the rest).
+- **Identifier exemption:** the clone ban targets *prose phrases*. A backticked identifier (`google.api.field_info`, `next_page_token`, `aip.dev/not-precedent`) MAY repeat across fields of one card — naming the mechanism is each field's job (§4.3), and scrubbing identifiers from `expected`/`use_when` destroys semantic routing. The exemption covers the identifier token itself plus its immediate generic shadow noun (`comment`, `field`, `operation`); it does NOT cover surrounding prose (`every field has …`, `citation uses bare unpadded …`), which MUST still be deduplicated.
 
 ### 4.6 Anchors are not unique (convergence)
 
@@ -298,7 +299,7 @@ A reference implementation of this checklist lives at `bootstrap/scripts/validat
 3. Every `index` item has exactly the keys `{anchor, what, problem, use_when, avoid_when, expected}`; each a non-empty (except the two optional) double-quoted sentence.
 4. Every `problem` follows §4.4: declarative situation + stake, no banned opener, no solution-API, no success language, 30–50 words (≥3-letter tokens), no `a`/`the`, concept-only cloud with no commands or library names.
 5. `use_when` does not open with "Load when"/"Use when"; `avoid_when` does not open with "Do not"/"Don't"/"Never"; openers vary across cards; neither field restates `problem`.
-6. Cross-field dedup: no ≥2-word cloud phrase appears verbatim in the card's other fields (check singular/plural both ways); cloud tokens are pairwise distinct.
+6. Cross-field dedup: no ≥2-word cloud phrase appears verbatim in the card's other fields (check singular/plural both ways); cloud tokens are pairwise distinct; no ≥2-word *prose* phrase is cloned between any two fields of one card, with backticked identifiers exempt (§4.5).
 7. For every card `anchor`, a body line `[ref: #<anchor>]` exists exactly once; for every body marker, a declaring card exists.
 8. Anchors kebab-case `<file-prefix>-<section-slug>`; consistent prefix within the file; one placement form throughout the skill.
 9. Exactly one `#` H1; routable sections are `##` (or deliberately routable `###`); markers partition the file with no nesting (scan outside fenced code).

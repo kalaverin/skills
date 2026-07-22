@@ -143,6 +143,7 @@ Goal: from "valid draft" to "ideal". Work file by file with the user; this phase
 
 ## Progress persistence rules (all phases)
 
+- **Strict phase isolation (HARD RULE):** phases run strictly sequentially. A phase processes the ENTIRE reference file list before the next phase starts; never mix phases on any file or batch (e.g. do not enrich a file while another file is still unformatted). The only exception is a file the user explicitly excludes from a phase.
 - The Serena plan memory `plans/{{SKILL}}/reference_standardization` is the single source of truth for progress: full file list × full phase checkbox list, updated immediately after every file completes a phase.
 - Use the session todo list (`SetTodoList`) for the current phase's active batch only; never let it replace the Serena plan.
 - If the session breaks, the next session resumes by reading the plan memory and continuing from the first unchecked box — no re-inventory.

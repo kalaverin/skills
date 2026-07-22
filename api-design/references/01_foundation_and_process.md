@@ -1,3 +1,47 @@
+---
+subject: "Google AIP system foundation and governance process; proposal purpose, lifecycle states, editor workflow, `AIP-1` types, number assignment, reserved blocks, `AIP-2` reference format, date-based `YYYY-MM-DD` versioning, changelog, `AIP-3`, precedent violations, standards exceptions, `aip.dev/not-precedent` comments, `AIP-200`, authoring style, document structure, front matter, requirement keywords, `AIP-8`, API terminology glossary, `AIP-9`."
+index:
+  - anchor: aip-purpose-and-guidelines-aip-1
+    what: "The AIP-1 charter defining what an API Improvement Proposal is, its `Draft`/`Reviewing`/`Approved` lifecycle states, escalation ladder (producer, editors, TL), and consensus workflow for proposing and accepting guidance."
+    problem: "Team ships API design based on unapproved draft proposal or writes guidance that duplicates existing corpus, so standards fragment and reviewers argue from inconsistent baselines; draft versus approved state, consensus process, editor signoff, stakeholder escalation, guidance duplication, proposal lifecycle, withdrawn replaced deferred."
+    use_when: "Evaluating whether cited AIP is binding best practice; deciding whom to approach about disputed design ruling; drafting new entry for the corpus; tracking proposal through review toward approval."
+    avoid_when: "Guidance treated as binding while state is `Draft` or `Reviewing`; rejected corpus entries mined for current rules; local team policy contradicting approved AIPs upheld without escalation."
+    expected: "Only `Approved` AIPs serve as review baseline, proposals advance through consensus signoff, and every state transition is recorded by editors."
+  - anchor: aip-numbering-aip-2
+    what: "The AIP-2 numbering scheme: editors assign every proposal an arbitrary number at draft intake, the space partitions into scoped ranges (meta `1–99`, general `100–999`, product areas like `2500–2599`), and citations use bare unpadded form like `AIP-8`."
+    problem: "Design documents cite proposals inconsistently with zero-padded or invented identifiers, so cross-references break and domain-scoped guidance gets mistaken for general rules; zero padding, bare number citation, reserved block allocation, index collision, scope routing, editor assignment, mnemonic numbering."
+    use_when: "Citing any AIP in prose, code comments, or review feedback; requesting dedicated number range for team-scoped guidance; interpreting which corpus range covers given topic area; deciding whether identifier refers to meta process or design rule."
+    avoid_when: "Numbers minted by authors instead of editors; padding added for sorting (`AIP-0008`); block boundaries assumed to signal normative weight rather than scope."
+    expected: "Every identifier appears exactly as assigned without padding, domain proposals live inside their allocated range, and the index distinguishes approved entries from drafts."
+  - anchor: aip-versioning-aip-3
+    what: "The AIP-3 date-based versioning scheme: one universal corpus version stamped `YYYY-MM-DD`, tagged `v{version}` in source control, bumped on significant change, with per-AIP changelog entries."
+    problem: "API designed under older guidance cannot justify its choices after rules reverse, because corpus evolved without fixed reference points and per-document versions tangle cross-references; guidance reversal, historical justification, date stamp tagging, snapshot date, changelog audit, design archaeology, combinatorial pinning."
+    use_when: "Pinning design decision to guidance in force at authoring date; cutting release tag after significant corpus edit; auditing why old API diverges from current rules; choosing between per-document and corpus-wide scheme."
+    avoid_when: "Semantic versions invented for AIPs; per-AIP version pins multiplied across cross-references; changelog skipped after significant edit."
+    expected: "Corpus carries one date tag per notable revision, each AIP lists its changelog, and any past design choice can be traced to guidance valid at that date."
+  - anchor: precedent-and-standards-exceptions-aip-200
+    what: "The AIP-200 not-precedent policy: existing violations never justify new ones, every intentional deviation carries an internal `aip.dev/not-precedent` comment explaining what and why, and single-API consistency may outweigh global style."
+    problem: "Legacy API violating standards gets cited as precedent for new surfaces, so contra-standard patterns multiply silently and original rationale disappears; undocumented exception, copy propagation, not-precedent marker, local consistency tradeoff, oauth conformance, expediency waiver, historical mistake."
+    use_when: "Inheriting interface that predates current guidance; weighing deviation for external spec conformance (OAuth), partner-system fit, hard deadline, or technical constraint; documenting deliberate rule break so future designers see it."
+    avoid_when: "Pre-beta API treated as precedent source (only beta/GA sets precedent); violation copied without linking comment; global pattern broken mid-API where internal uniformity matters more."
+    expected: "Each deliberate break carries linking `aip.dev/not-precedent` comment with reason, new APIs follow standards despite legacy counterexamples, and in-API uniformity stays intact."
+  - anchor: aip-style-and-guidance-aip-8
+    what: "The AIP-8 authoring standard for AIPs themselves: one-subject mandate, Markdown file `NNNN.md` with required metadata header (`id`, `state`, `created`, `permalink`), noun title plus `## Guidance` layout, bold lower-case RFC-2119 keywords, and protobuf-based examples."
+    problem: "Drafted design proposal uses imperative title, embeds normative rules inside rationale prose, or misuses requirement keywords, so editors bounce it and readers cannot cite actionable clauses; discrete topic scope, front matter fields, heading skeleton, bold keyword casing, guidance versus rationale, length discipline, protobuf example style."
+    use_when: "Authoring or editing any corpus entry; formatting file header and four-digit filename for publication; deciding where normative text ends and background justification begins; choosing obligation keyword strength with documented escape cases."
+    avoid_when: "Anti-pattern-only content proposed as standalone entry; RFC-2119 terms placed inside rationale section; imperative verb title chosen over noun phrase; conditional pattern documented without stating applicability conditions."
+    expected: "Entry covers one narrow subject in roughly two pages, header and heading layout conform, keywords stay properly cased with override examples, and rationale stays free of obligations."
+  - anchor: glossary-aip-9
+    what: "The AIP-9 shared glossary pinning canonical meanings for terms like `API service`, `API definition`, `API producer`/`API consumer`, `client` vs `user`, and `declarative client` across all AIPs."
+    problem: "Discussion or review mixes terms like service, definition, product, backend, frontend, so participants argue past each other and documents read inconsistently; terminology ambiguity, producer consumer confusion, client versus user, network api boundary, declarative infrastructure automation, service endpoint naming."
+    use_when: "Any term from shared vocabulary needs exact definition; writing or reviewing text that distinguishes an API's producer side from its consumer side or interface from implementation; interpreting which entity owns billing, deployment, or naming."
+    avoid_when: ""
+    expected: ""
+aips: [1, 2, 3, 8, 9, 200]
+---
+
+# Foundation and Process
+
 ## 1. Meta — Foundation and Process
 
 ### 1.1 AIP Purpose and Guidelines (AIP-1)
@@ -56,6 +100,8 @@ Once ready, create a pull request adding a new file (typically under `aip/new.md
 *Withdrawing or rejecting an AIP.* The author may withdraw an AIP by updating the pull request with a notice of withdrawal and rationale. If the group cannot reach consensus, the editors may reject the AIP by amending the pull request with a notice of rejection and rationale. In both cases, the editors update the state accordingly.
 
 *Replacing an AIP.* In rare cases, an AIP may be replaced by another. This is **not** general practice: minor edits to approved AIPs are the common way to tweak guidance. However, if new guidance fundamentally alters the old guidance, the editors create a new AIP that, once approved, causes the old one to enter the **Replaced** state. The old AIP links to the new one.
+
+> **Agent extension — not part of the AIP standard.** AIP lifecycle states are `Draft`, `Reviewing`, and `Approved` (plus inactive/suspended states for retired guidance); API producers should rely only on `Approved` AIPs. Moving a draft to `Reviewing` requires formal signoff from at least one AIP approver other than the author, after which AIP editors approve the final pull request. Much of the AIP guidance for protobuf APIs is mechanically enforceable with the Google API Linter (https://linter.aip.dev, `github.com/googleapis/api-linter`): it checks proto surfaces against AIP rules in CI, every rule has its own documentation page, and individual rules can be disabled with a leading comment. The linter is an aid, not a substitute for reading the AIPs — not all guidance is expressible as lint rules.
 
 ### 1.2 AIP Numbering (AIP-2)
 [ref: #aip-numbering-aip-2]
@@ -196,6 +242,8 @@ Sometimes there are users who need an API surface by a very hard deadline or mon
 **Technical concerns**
 
 Internal systems sometimes have very specific implementation needs (e.g., they rely on operation transforms that speak UTF-16, not UTF-8) and adhering to AIP guidelines would require extra work that does not add significant value to API consumers. Future systems which are likely to expose an API at some point **should** bear this in mind to avoid building underlying infrastructure which makes it difficult to follow AIP guidelines.
+
+> **Agent extension — not part of the AIP standard.** The practical companion of the not-precedent policy is the `aip.dev/not-precedent` comment convention used with the Google API Linter: when a rule violation is intentional, the rule is disabled with a leading comment above the element and an `aip.dev/not-precedent` comment documents why the deviation exists. This keeps justified exceptions recorded at the exact point of violation instead of letting them become silent precedent for future designs.
 
 ### 1.5 AIP Style and Guidance (AIP-8)
 [ref: #aip-style-and-guidance-aip-8]

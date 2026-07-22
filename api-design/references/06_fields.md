@@ -1,3 +1,89 @@
+---
+subject: "Field design corpus; `AIP-140` naming conventions, `AIP-202` field_info formats, `AIP-203` behavior annotations, `AIP-141` quantity units, `AIP-142` time duration types, `AIP-143` standardized codes, `AIP-144` repeated lists, `AIP-145` ranges, `AIP-146` struct oneof generic, `AIP-147` sensitive secrets, `AIP-148` standard fields, `AIP-149` unset presence, `AIP-216` states."
+index:
+  - anchor: field-names-aip-140
+    what: "The AIP-140 naming conventions: `lower_snake_case` always, no leading digits or underscore anomalies, plurals for repeated fields, no prepositions or verbs, adjective-before-noun, `is`-free booleans, abbreviations (`config`, `id`, `km`, `px`), `uri` over `url`, `display_name`/`title` without uniqueness."
+    problem: "Field christened hastily ships in generated clients, so rename becomes breaking change and inconsistent vocabulary across APIs confuses every consumer; irreversible naming decision, generated surface permanence, snake case discipline, preposition smell, verb name ban, boolean is prefix, abbreviation canon, reserved word collision."
+    use_when: "New field entering any message; rename contemplated on shipped surface (breaking); choosing plural form for multi-value fields; boolean or URI-typed field needing convention."
+    avoid_when: "Machine-readable format annotation at stake (06_fields › FieldInfo formats); behavior annotation vocabulary needed (06_fields › field behavior); unit-suffixed quantity naming (06_fields › quantities)."
+    expected: "Fields read as precise lowercase nouns, repeated ones pluralized, shipped names stay stable in client code forever, and linter-enforced conventions pass without reviewer memory."
+  - anchor: fields-and-fieldinfo-aip-202
+    what: "The AIP-202 `google.api.field_info` extension: machine-readable `Format` markers (`UUID4`, `IPV4`, `IPV6`, `IPV4_OR_IPV6`) on strings, documented normalization behavior, RFC-compliant equivalence instead of text comparison, and strict compatibility rules for adding formats."
+    problem: "String field secretly holds UUID or IP address, so clients compare raw text, normalized values look like drift, and late format declaration breaks existing consumers; hidden string format, primitive equality trap, normalization drift illusion, retrofit compatibility breakage, rfc-governed equivalence, declarative-only declaration trap, validation layer sync."
+    use_when: "Primitive string carries RFC-governed structure; service normalizes values before storage; tooling must compare equivalence correctly; new format candidate backed by IETF standard."
+    avoid_when: "Decoration without stated guide requirement (annotation unnecessary); format regex declared but never enforced by service logic; behavior vocabulary (`REQUIRED` et al) wanted instead (06_fields › field behavior)."
+    expected: "Formatted strings declare their `field_info` format, equivalence checks use RFC-compliant comparison, normalization documented, and validation logic enforces exactly what schema promises."
+  - anchor: field-behavior-documentation-aip-203
+    what: "The AIP-203 `google.api.field_behavior` vocabulary: mandatory `REQUIRED`/`OPTIONAL`/`OUTPUT_ONLY` minimum plus `IMMUTABLE`, `INPUT_ONLY`, `IDENTIFIER`, `UNORDERED_LIST`, with nested-message independence and explicit compatibility table for later changes."
+    problem: "Fields ship unannotated or misannotated, so SDK generators guess wrong, output-only values echo into updates, and retrofitting behavior onto shipped surface becomes breaking contract change; annotation retrofit breakage, tooling misinterpretation, output echo misuse, identifier dual role, immutability violation handling, required truthy semantics, unordered list honesty."
+    use_when: "Authoring any request-facing message field; weighing `IMMUTABLE` against update masks; deciding `IDENTIFIER` placement (name field only); checking compatibility before flipping annotation on live field."
+    avoid_when: "`OUTPUT_ONLY` stamped on response-message fields (redundant); conditional requirement expressed via `REQUIRED` (forbidden); presence tracking wanted (proto3 `optional`, 06_fields › unset field values); `FIELD_BEHAVIOR_UNSPECIFIED` emitted."
+    expected: "Every request field carries accurate behavior set, servers silently discard echoed read-only input, immutable-field edits error `INVALID_ARGUMENT`, and later annotation flips follow the compatibility rules."
+  - anchor: quantities-aip-141
+    what: "The AIP-141 quantity rules: mandatory unit suffixes (`distance_miles`, `memory_bytes`), `_count` for item tallies (never `num_`), compound and inverse units with `per` (`speed_miles_per_hour`), no unsigned integers, and specialized messages like `google.type.Money`."
+    problem: "Quantity field named bare like timeout or size, so client and server disagree whether seconds or millis, bytes or megabytes, and unit bugs detonate in production calculations; unit ambiguity bug, missing measurement suffix, count not num, compound unit spelling, inverse per phrasing, signedness portability, named-unit carve-out."
+    use_when: "Numeric field carries measurable unit; tally of items needs name; compound or inverse measurement phrased; choosing between suffixed primitive and `google.type.Money`-style message."
+    avoid_when: "Derived SI unit with own name exists (`hertz` stays suffix-free); timestamp or duration concept (06_fields › time and duration); unitless ratio or enum-like discrete value."
+    expected: "Every measurable quantity broadcasts its unit in its name, tallies end in `_count`, inverse units spell full `per` compounds, and no unsigned types leak into schema."
+  - anchor: time-and-duration-aip-142
+    what: "The AIP-142 temporal types: `google.protobuf.Timestamp` with `_time` (imperative naming, never past tense), `google.protobuf.Duration` with `_duration`/`_offset` (commented reference point), civil `google.type.Date`/`TimeOfDay`/`DateTime`, plus documented legacy integer or string fallbacks."
+    problem: "Time represented as epoch integer or local string with embedded zone, so DST and locale formatting silently corrupt values and tooling cannot convert into native datetime types; unix millis guesswork, zoned text trap, daylight saving skew, imperative time naming, offset reference comment, civil versus absolute, nanosecond interop."
+    use_when: "Absolute instant needs representation; span or stream-relative segment modeled; calendar date or wall-clock concept without zone; legacy spec mandates integers (document format and rationale)."
+    avoid_when: "Quantity with non-time unit (06_fields › quantities); past-tense field name contemplated (`created_time` forbidden); timezone-naïve type used where zone awareness required."
+    expected: "Instants ride `Timestamp` with imperative `_time` names, spans ride `Duration`, offsets document their anchor, and legacy representations carry explicit format justification."
+  - anchor: standardized-codes-aip-143
+    what: "The AIP-143 standardized-code rules: strings over enums for ISO-governed concepts (`language_code` BCP-47, `region_code` CLDR, `currency_code` ISO-4217, `mime_type` IANA, `time_zone`, `utc_offset`), canonical-case output with case-insensitive input, and mandatory standard citation."
+    problem: "Concept with existing ISO standard modeled as enum or free text, so schema freezes evolving list, lookup tables multiply across APIs, and region politics sneak into naming; frozen standard enum, living code registry, mapping table sprawl, canonical emit casing, case-insensitive intake, region not country, spec link duty."
+    use_when: "Language, currency, region, media-type, or zone concept arises; validation casing policy set; suffix chosen between `_code` and `_type`; money amount rather than currency needed (`google.type.Money`)."
+    avoid_when: "Closed value set governed by API itself (04_resource_design › enumerations); no recognized standard covers concept; enum already shipped freezing subset (migration, not greenfield)."
+    expected: "Standardized concepts stay strings with canonical casing on output, enums never freeze external lists, fields cite governing standard, and region naming sidesteps sovereignty disputes."
+  - anchor: repeated-fields-aip-144
+    what: "The AIP-144 list rules: plural names, ~100-element ceiling before sub-resource, never embedding another resource's body, scalar-versus-message foresight, whole-list `Update` for declarative resources, and atomic `Add`/`Remove` custom verbs with `ALREADY_EXISTS`/`NOT_FOUND`."
+    problem: "List inside resource grows unbounded and embeds foreign bodies, so payloads bloat past pagination, masks cannot address individual entries, and races corrupt read-modify-write cycles; payload size explosion, smuggled resource payload, entry-level mask blindness, concurrent write clobbering, add-remove atomicity, proactive message choice, parallel list trap."
+    use_when: "Resource owns collection-typed attribute; size plausibly exceeds hundred entries (sub-resource); atomic entry mutation required; declarative compatibility constrains strategy to standard `Update`."
+    avoid_when: "Foreign resource body inlined (reference by name instead); complex keyed structures needed (map plus `Update`); entry-level addressing via mask attempted (impossible)."
+    expected: "Lists stay bounded and pluralized, whole-list updates serve small sets, atomic verbs guard entry changes with proper errors, and external resources live behind references."
+  - anchor: ranges-aip-145
+    what: "The AIP-145 interval conventions: paired `start_`/`end_` fields with inclusive-start exclusive-end (half-closed) semantics, `google.type.Interval` for timestamp spans, and `first_`/`last_` closed intervals only under strong colloquial precedent (conference dates), each documented."
+    problem: "Range modeled with ambiguous bound semantics, so abutting intervals double-count boundary values, imprecise limit timestamps like 23:59:59 proliferate, and consumers misread inclusivity; half-closed interval, edge overlap double-booking, limit value hack, abut chaining, colloquial closed exception, timestamp interval message, documented inclusivity."
+    use_when: "Span between two values needs modeling; bounds must chain without gaps or overlaps; timestamp pair fits `Interval` semantics; dates carry closed-interval user expectation."
+    avoid_when: "Single bound suffices (use plain field with unit suffix); nesting overhead of `Interval` undesirable for enriched message; inclusivity left undocumented."
+    expected: "Ranges read as half-closed pairs, timestamps reuse `Interval` where fitting, date-style closed spans switch to `first_`/`last_`, and every bound documents its inclusivity."
+  - anchor: generic-fields-aip-146
+    what: "The AIP-146 escalation order: `oneof` unions first (type-safe, non-breaking additions), maps for same-typed dynamic keys, `google.protobuf.Struct` for genuinely schema-less JSON (JSONSchema to reason about it), and `google.protobuf.Any` only when everything else is infeasible."
+    problem: "Field typed as Struct or Any for convenience, so contract hides from documentation, client generators, and linters while users discover shapes at runtime; contract hiding, late contract surprise, opaque json blob, oneof type union, blind data propagation, cascading oneof limit, least-generic ladder."
+    use_when: "Truly polymorphic payload unavoidable; option set finite and type-safe (`oneof`); keys dynamic but values same-typed (map); arbitrary user JSON stored without service-side reasoning."
+    avoid_when: "Shape knowable at design time (model distinct messages); proto-less consumers must deserialize (`Any` useless); `Struct` adopted to dodge schema discipline."
+    expected: "Polymorphism lands on the most precise construct available, `oneof` covers finite unions, `Struct` reserved for open-ended user data, and `Any` stays last resort."
+  - anchor: sensitive-fields-aip-147
+    what: "The AIP-147 secret-handling patterns: required secrets as `INPUT_ONLY` with no output twin, optional secrets paired with output-only `<name>_set` boolean, and `obfuscated_`-prefixed readable stand-ins where identification without exposure matters."
+    problem: "Private key or secret readable after write, so credentials leak through responses, logs, and error details while post-hoc redaction proves impossible; password in response, read-back exposure, log pipeline leakage, set-flag twin, obfuscated stand-in, status payload scrubbing, existence implies storage."
+    use_when: "Credential or key material stored but never read; optional secret needs presence signal; identification without full exposure required; log and error pipelines audited for leaks."
+    avoid_when: "Data safe to return (plain field); secret needed back verbatim later (redesign storage); boolean companion hand-rolled where obfuscated form communicates more."
+    expected: "Secrets enter via input-only fields, presence surfaces through `_set` flags or obfuscated twins, responses never carry raw values, and pipelines stay scrubbed."
+  - anchor: standard-fields-aip-148
+    what: "The AIP-148 canonical field set: `name`/`parent`, `display_name`/`title`/`given_name`/`family_name`, lifecycle timestamps (`create_time`, `update_time`, `delete_time`, `expire_time`, `purge_time`), Kubernetes-limited `annotations`, `ip_address` with format, and UUID4 `uid`."
+    problem: "Common concept like creation timestamp or display title invented per resource with bespoke name, so tooling cannot learn shape once and GitOps clients special-case every resource generation; per-resource invention, uniform shape payoff, gitops uniformity, timestamp vocabulary canon, annotations versus labels, culture-safe person names, late standard retrofit."
+    use_when: "Resource needs human-facing title; lifecycle moments recorded; arbitrary client metadata stored (dot-namespaced keys); IP or UID concept appears; person naming across cultures."
+    avoid_when: "Standard name repurposed for different concept (forbidden); uniqueness constraint attached to `display_name`; `first_name`/`last_name` coined (culture-unsafe); labels confused with annotations."
+    expected: "Resources share one vocabulary for names and lifecycle moments, tooling manages every resource uniformly, annotations follow Kubernetes limits, and person fields respect cultural ordering."
+  - anchor: unset-field-values-aip-149
+    what: "The AIP-149 presence rule: proto3 `optional` on primitives exactly when default-versus-unset distinction matters (`0` rating versus no rating), practically limited to numbers, independent from `field_behavior`, and frozen after ship (adding or removing it breaks compiled clients)."
+    problem: "Zero value carries business meaning distinct from absence, but proto3 collapses both, so PATCH merges misbehave and hand-rolled has-field booleans drift out of sync; presence tracking, absence ambiguity, three-way merge misbehavior, companion boolean drift, pointer type breakage, rating semantics example, behavior annotation independence."
+    use_when: "Default value must differ semantically from omission; numeric field needs explicit-presence merge behavior; greenfield schema (qualifier frozen post-ship); distinguishing presence from behavior-vocabulary confusion."
+    avoid_when: "Alternative design removes distinction (preferred); strings or booleans casual use (numbers only in practice); shipped field gaining or losing qualifier (breaking); `optional` treated as behavior documentation."
+    expected: "Presence-sensitive numbers declare `optional`, merges distinguish zero from missing, no helper flags duplicate presence, and `field_behavior` stays orthogonal."
+  - anchor: states-aip-216
+    what: "The AIP-216 lifecycle-state rules: nested output-only `State` enum (never `Status`), `STATE_UNSPECIFIED` zero, `-ED` resting and `-ING` self-resolving values, transitions via custom verb methods returning `FAILED_PRECONDITION` on illegal moves, and new values officially non-breaking."
+    problem: "Resource lifecycle exposed as writable status field with ad-hoc vocabulary, so users set impossible states directly, else-branches break silently when values arrive, and internal states leak without use case; direct state mutation, direct set side effects, inconsistent term soup, default-branch fragility, status naming collision, self-resolving ing values, customer-useful subset."
+    use_when: "Resource progresses through lifecycle worth communicating; transition must fire accompanying processes (verb-named RPC, not Update); terminology chosen from common resting and active lists; two-value-only state reconsidered (`delete_time` alternative)."
+    avoid_when: "States not mutually exclusive; value set tiny and timestamp suffices; internal-only states without customer use case; enum shared at package top level (C++ flattening collision)."
+    expected: "Lifecycle surfaces as nested read-only `State`, transitions ride verb-named custom methods with precondition errors, vocabulary matches common lists, and clients tolerate future values."
+aips: [140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 202, 203, 216]
+---
+
+# Fields
+
 ## 6. Fields
 
 ### 6.1 Field Names (AIP-140)
@@ -138,6 +224,8 @@ If an entity has an official, formal name (such as a company name or the title o
 
 **URI vs. URL.** All URLs are URIs, but not all URIs are URLs. Aligning on `uri` enables a more generalizable field that handles a variety of use cases and drives standardization across APIs. The requirement is a **should** to allow more specific terms when truly merited.
 
+> **Agent extension — not part of the AIP standard.** Naming rules are cheap to get right and expensive to change later (renames are breaking): `lower_snake_case` always, no leading digits, American English, and precise nouns over generic `data`/`info` — use `uri` rather than `url`. The API Linter enforces casing and most naming conventions in CI, so wire it into the proto build instead of relying on reviewer memory.
+
 ### 6.2 Fields and FieldInfo (AIP-202)
 [ref: #fields-and-fieldinfo-aip-202]
 
@@ -203,6 +291,8 @@ While primitive comparison is not recommended for any of the supported formats, 
 **Why require an RFC or AIP for new formats?**
 
 Those formats which are sufficiently standardized to merit an RFC or AIP are stable enough and widely enough known to be incorporated as a supported value and see usage in APIs. Requiring such extra guidance means that governing the format specification is not the responsibility of the `FieldInfo.Format` enumeration itself.
+
+> **Agent extension — not part of the AIP standard.** `google.api.field_info` carries schema constraints that plain proto types cannot express (string formats, length bounds, resource references). The recurring pitfall is declarative-only adoption: a `format` regex declared in `field_info` but never enforced by service logic is worse than no declaration, because clients trust it. Make the validation layer consume the same definition.
 
 ### 6.3 Field Behavior Documentation (AIP-203)
 [ref: #field-behavior-documentation-aip-203]
@@ -376,6 +466,8 @@ By including the field behavior annotation for each field, the overall behavior 
 
 In 2023-05, `field_behavior` was made mandatory. Prior to this change, the annotation was often omitted. Its values are relied upon to produce high quality clients. Furthermore, adding or changing some of the `field_behavior` values after the fact within a major version can be backwards-incompatible. The benefits of requiring `field_behavior` at the time that the API is authored surpass the costs to clients and API users of not doing so.
 
+> **Agent extension — not part of the AIP standard.** `field_behavior` annotations drive SDK and documentation generation, and two misuse patterns recur: `OUTPUT_ONLY` fields must be ignored during Update even when a field mask names them, and `OUTPUT_ONLY` is redundant on response messages (`ListBooksResponse` fields are output by definition). Annotate at design time — retrofitting behavior onto a shipped field can itself be a breaking contract change.
+
 ### 6.4 Quantities (AIP-141)
 [ref: #quantities-aip-141]
 
@@ -440,6 +532,8 @@ It is sometimes useful to create a message that represents a particular quantity
 - Representing a common concept where the unit of measurement may itself vary. Example: `google.type.Money`
 
 APIs **may** create messages to represent quantities when appropriate. When using these messages as fields, APIs **should** use the name of the message as the suffix for the field name if it makes intuitive sense to do so.
+
+> **Agent extension — not part of the AIP standard.** Unit-suffixed names (`timeout_seconds`, `memory_bytes`) remove the most common quantity bug class — unit ambiguity between client and server. Derived SI units with their own names stay suffix-free (`hertz`, not `hertz_count`); when in doubt, spell the base unit out.
 
 ### 6.5 Time and Duration (AIP-142)
 [ref: #time-and-duration-aip-142]
@@ -529,6 +623,8 @@ In these situations, fields **may** use other types. If possible, the following 
 
 In all cases, clearly document the expected format, and the rationale for its use.
 
+> **Agent extension — not part of the AIP standard.** `google.protobuf.Timestamp` for absolute points in time (fields end in `_time`) and `google.protobuf.Duration` for calendar-independent spans give nanosecond precision and free interop with language-native types. Never accept local-time strings with embedded zones — they silently break when clients and servers disagree about DST and locale formatting.
+
 ### 6.6 Standardized Codes (AIP-143)
 [ref: #standardized-codes-aip-143]
 
@@ -596,6 +692,8 @@ Fields also **may** represent a UTC offset rather than a time zone (note that th
 **Why `region_code` instead of `country_code`?**
 
 The use of `region_code` instead of `country_code` is critical to being able to convey regions that are distinct from any country and to avoid any political disputes associated with said region regarding their sovereignty or affiliation. Furthermore, many of the values supported by Unicode CLDR are not countries on their own, so using a more generic name is actually more compatible with the specification.
+
+> **Agent extension — not part of the AIP standard.** Standardized-code fields are always `string`, never enums: ISO lists evolve (currencies change, regions split), and an enum would freeze the standard into your schema. Canonical examples: `language_code` (BCP 47 / ISO 639), `region_code` (ISO 3166), `currency_code` (ISO 4217).
 
 ### 6.7 Repeated Fields (AIP-144)
 [ref: #repeated-fields-aip-144]
@@ -705,6 +803,8 @@ message RemoveAuthorRequest {
   - The field **should** be annotated as required.
 - The request message **must not** contain any other required fields, and **should not** contain other optional fields except those described in this or another AIP.
 
+> **Agent extension — not part of the AIP standard.** The practical ceiling for a repeated field is roughly 100 elements: beyond that, payload size and pagination argue for a sub-resource with a real List method. A repeated field must never smuggle the body of another resource — collections get sub-resources, so tooling, IAM, and pagination all work uniformly.
+
 ### 6.8 Ranges (AIP-145)
 [ref: #ranges-aip-145]
 
@@ -811,6 +911,8 @@ However, this introduces complexity, because an `Any` becomes useless for any ta
 
 Because of this, `Any` **should not** be used unless other options are infeasible.
 
+> **Agent extension — not part of the AIP standard.** `google.protobuf.Struct`, `Any`, and `Value` hide the API contract from documentation, client generators, and the linter — every field deferred to a `Struct` is a field your users discover at runtime. If the shape is dynamic but knowable, model it with `oneof` or distinct messages; reserve generic types for genuinely open-ended user data.
+
 ### 6.10 Sensitive Fields (AIP-147)
 [ref: #sensitive-fields-aip-147]
 
@@ -870,6 +972,8 @@ message AccountRecoverySettings {
     (google.api.field_behavior) = OUTPUT_ONLY];
 }
 ```
+
+> **Agent extension — not part of the AIP standard.** Sensitive fields fail most often at the edges: they leak into logs, error details, and analytics rather than the primary response path. Mark them deliberately, exclude them from log pipelines and `google.rpc.Status` details, and gate read access explicitly — redaction after the fact is not a control.
 
 ### 6.11 Standard Fields (AIP-148)
 [ref: #standard-fields-aip-148]
@@ -986,6 +1090,8 @@ Some fields represent very well defined concepts or artifacts that sometimes als
 
 Before 2023-07, `purge_time` for soft-deleted resources was also called `expire_time`. `purge_time` was introduced to reduce user confusion.
 
+> **Agent extension — not part of the AIP standard.** The standard field set (`name`, `create_time`, `update_time`, `etag`, soft-delete fields where applicable) is what makes resources uniformly manageable by declarative/GitOps tooling — clients learn the shape once and apply it everywhere. Conform new resources up front; adding standard fields later is possible but splits client expectations across resource generations.
+
 ### 6.12 Unset Field Values (AIP-149)
 [ref: #unset-field-values-aip-149]
 
@@ -1027,6 +1133,8 @@ It is a backwards incompatible change to add or remove the `optional` qualifier 
 **Field behavior and `optional`**
 
 The field behavior annotation and `optional` label are not mutually exclusive, because they address different problems. The former, `google.api.field_behavior`, focuses on communicating the server's perception of a field within the API (e.g. if it is required or not, if it is immutable, etc.). The latter, proto3's `optional`, is a wire format and code generation option that is strictly for toggling field presence tracking. While it might be confusing for a field to be simultaneously annotated with `google.api.field_behavior = REQUIRED` and labeled as `optional`, they are unrelated in practice and can reasonably be used together.
+
+> **Agent extension — not part of the AIP standard.** In proto3, declare `optional` on any field where unset must be distinguishable from the zero value (`false` versus not-provided is the classic case) — presence tracking is what makes PATCH semantics and three-way merges behave. Avoid hand-rolled `has_field` companion booleans; they duplicate presence information and drift out of sync.
 
 ### 6.13 States (AIP-216)
 [ref: #states-aip-216]
@@ -1181,3 +1289,5 @@ The following is a list of states in common use. APIs **should** consider prior 
 #### Further reading
 
 - For information on enums generally, see AIP-126.
+
+> **Agent extension — not part of the AIP standard.** State fields are `OUTPUT_ONLY` and change only through dedicated transition methods (`Publish`, `Archive`): a directly writable `state` field lets clients skip validation, hooks, and audit trails embedded in the transitions. Model the lifecycle as an enum plus transition RPCs from the start — retrofitting transitions onto a writable state field breaks existing writers.

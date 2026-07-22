@@ -1,3 +1,95 @@
+---
+subject: "Method design and execution corpus; `AIP-130` category ladder, standard methods `AIP-131` get `AIP-132` list pagination `AIP-133` create user IDs `AIP-134` update masks `AIP-135` delete, `AIP-136` custom verbs naming, `AIP-151` LRO operation metadata, batch `AIP-231` atomic get `AIP-233` create `AIP-234` update `AIP-235` delete partial-success `failed_requests`."
+index:
+  - anchor: method-categories-aip-130
+    what: "The AIP-130 category ladder (standard, then batch or aggregate, then custom, then streaming) mapping each method shape to its automatibility across declarative clients, CLIs, UIs, and SDKs."
+    problem: "Method designed by habit as streaming or free-form RPC before checking simpler categories, so declarative clients and CLIs cannot automate it and every consumer hand-writes integration; category priority order, automatibility matrix, client integration breadth, premature streaming, ad-hoc rpc shape, uniformity spectrum, handwritten fallback."
+    use_when: "Fresh method under design and category undecided; tempted to reach for streaming first; auditing surface for automation-hostile shapes; explaining why mutation sits outside declarative reach."
+    avoid_when: "Concrete field layout of chosen standard verb needed (05_operations › standard methods); LRO mechanics at stake; category already fixed and only naming remains."
+    expected: "Every method occupies simplest viable category, standard shapes cover CRUD, custom verbs mount to resources or collections, and streaming appears only where nothing simpler fits."
+  - anchor: standard-method-get-aip-131
+    what: "The AIP-131 fetch contract: mandatory `Get<Resource>` RPC returning the bare resource itself over HTTP GET with lone `name` path variable, no request body, and `method_signature` of `\"name\"`."
+    problem: "Resource exists but cannot be read back by name through uniform shape, so clients wrap fetches in bespoke response envelopes and orchestration cannot validate state after mutation; unreadable resource, custom read wrapper, single name variable, unwrapped result, post-mutation validation, query-parameter spill, read consistency baseline."
+    use_when: "Any resource lacking fetch RPC; wiring REST gateway for retrieval; deciding whether wrapper message justified (it is not); keeping request free of extra required fields."
+    avoid_when: "Collection retrieval wanted (05_operations › list); several resources fetched atomically (05_operations › batch get); partial field selection needed (07_design_patterns › partial responses)."
+    expected: "Each resource retrievable through uniform `Get` RPC, response carries fully-populated resource directly, and post-mutation reads confirm steady state."
+  - anchor: standard-method-list-aip-132
+    what: "The AIP-132 collection read contract: `List<Resources>` over HTTP GET on the parent path with mandatory `page_size`/`page_token`/`next_page_token`, optional `filter`/`order_by`/`show_deleted`, and `total_size` caveats."
+    problem: "Collection endpoint ships without pagination and later retrofits tokens, filters, ordering as breaking field additions, so early clients page through entire datasets and upgrades break them; retrofit breaking change, page token choreography, unbounded dataset dump, filter ordering afterthought, soft-deleted visibility, coerced page size, consistent snapshot paging."
+    use_when: "Collection needs enumeration endpoint; pagination trio being wired for first time; weighing whether sorting or filtering justified now versus later; soft-delete visibility toggle needed."
+    avoid_when: "Single-resource fetch (05_operations › get); cross-collection reading (07_design_patterns › reading across collections); exact count guarantee assumed from `total_size` estimate; ordering removed from shipped API (breaking)."
+    expected: "Lists page deterministically with token contract, filtering and sort behavior documented from day one, soft-deleted entries hidden unless requested, and oversized page requests coerce to documented maximum."
+  - anchor: standard-method-create-aip-133
+    what: "The AIP-133 creation contract: `Create<Resource>` POSTs to the parent collection returning the new resource, caller-assigned `{resource}_id` living on the request (mandatory on management plane), and `ALREADY_EXISTS`/`PERMISSION_DENIED` duplicate handling."
+    problem: "Server mints identifiers for management-plane resources, so declarative clients cannot precalculate names, retries spawn duplicates, and every referencing resource chases newly assigned ID; service-side id minting, replayed submission clone, predictable resource naming, caller-assigned id field, reference cascade churn, already-exists signaling, idempotency by construction."
+    use_when: "Creation endpoint under design; deciding where ID input lives (request, never resource message); duplicate submission handling being pinned; declarative reachability of fresh resources required."
+    avoid_when: "Row-like data without disambiguation need (system IDs acceptable on data plane); modification of existing resource (05_operations › update); creation exceeding unary timeout (05_operations › long-running operations)."
+    expected: "Creations accept caller-assigned IDs on request messages, retries with identical ID yield `ALREADY_EXISTS` not duplicates, and references resolve final names before submission."
+  - anchor: standard-method-update-aip-134
+    what: "The AIP-134 mutation contract: `Update<Resource>` PATCHes `{resource}.name` with explicit `google.protobuf.FieldMask update_mask` (omitted mask implies populated fields, `*` means full replacement), side-effect-free semantics, plus `allow_missing` upsert and etag concurrency options."
+    problem: "Full-replacement PUT semantics meet resource evolution, so old clients silently wipe fields added after their schema shipped and state transitions hide inside plain mutations; field-wiping put trap, mask-omission ambiguity, wildcard replacement hazard, hidden side effect, state field writability, upsert flag semantics, etag race guard."
+    use_when: "Modification semantics under design; mask behavior for omitted or `*` values being pinned; field change tempted to trigger larger process (05_operations › custom methods); concurrent-writer protection via etag needed."
+    avoid_when: "Creation of absent resource as primary goal without client-assigned names; significant process triggers intended (05_operations › custom methods); PUT-only replacement considered (later field additions break old clients)."
+    expected: "Mutations apply exactly masked fields, absent mask covers populated values only, state stays non-writable, and concurrent writers detect races through etag `ABORTED`."
+  - anchor: standard-method-delete-aip-135
+    what: "The AIP-135 removal contract: `Delete<Resource>` over HTTP DELETE without body, `google.protobuf.Empty` response (or the resource for soft delete), `force` opt-in for cascading removal with `FAILED_PRECONDITION` guard, and etag or `allow_missing` options."
+    problem: "Removal endpoint returns bare Empty forever and children block deletion inconsistently, so later need to convey removed payload forces breaking redesign and accidental child wipes destroy unrecoverable data; empty response foreclosure, cascading wipe hazard, explicit force gate, failed-precondition guard, soft-delete marker response, child existence blocking, protected removal etag."
+    use_when: "Deletion contract being drafted; response payload choice made before launch; parent with children needs guarded cascade; absent-resource retries should no-op via flag."
+    avoid_when: "Bulk filter-driven removal (07_design_patterns › criteria-based delete); soft-delete lifecycle with undelete (07_design_patterns › soft delete); singleton children assumed to block (they must not)."
+    expected: "Deletion returns deliberately chosen payload, child presence vetoes removal until `force` set, singletons follow parent automatically, and repeated absent-target calls behave per documented flag."
+  - anchor: custom-methods-aip-136
+    what: "The AIP-136 escape hatch: custom RPCs (Archive, Publish, Cancel) for intent that CRUD cannot express, mounted on resource, collection, or scope, kept away from declarative-friendly resources except rare imperative operations like `Move`."
+    problem: "Designer contorts standard verbs to approximate action like state transition, so semantics blur and clients misread side effects, or sprouts bespoke RPC where plain CRUD sufficed; action intent mismatch, intent-verb mapping, side effect transparency, crud overfit, declarative automation loss, workflow trigger action, imperative escape rarity."
+    use_when: "User intent names an operation beyond CRUD vocabulary (publish, archive, cancel); mutation targets resource yet breaks standard semantics; rarely-used imperative relocation like `Move` justified; fetch across collection inexpressible via List."
+    avoid_when: "Plain field update achieves goal (05_operations › update); standard verb merely feels awkward; declarative-friendly resource would adopt custom verb casually; significant duration involved (pair with LRO)."
+    expected: "Every non-CRUD action rides purpose-built RPC mounted at correct level, CRUD vocabulary keeps clean semantics, and declarative surfaces stay free of unautomatable operations."
+  - anchor: custom-methods-aip-136
+    what: "The AIP-136 naming and mapping grammar: verb-noun RPC names without prepositions or `Async` (`LongRunning` suffix instead), GET for reads and POST for mutations, `:customVerb` URI suffix in camelCase, `body: \"*\"`, and `Request`/`Response` message suffixes."
+    problem: "Custom RPC named with preposition or async marker and mapped to wrong HTTP shape, so client generators choke, faux collection segments confuse routing, and method families bloat with hyper-focused variants; preposition name sprawl, async suffix confusion, colon verb mapping, route ambiguity, verb selection get-post, wildcard body mapping, vocabulary explosion."
+    use_when: "Coining name for justified custom RPC; picking HTTP verb from mutation behavior; structuring URI with colon suffix; deciding message names for request and response pair."
+    avoid_when: "Justification for custom RPC itself unsettled (sibling card); standard-method mapping at stake; preposition-shaped name signaling missing field instead of method."
+    expected: "Names read as crisp verb-noun pairs, reads use GET and mutations POST, URIs end with colon-suffixed action, and generators produce clean client surface."
+  - anchor: long-running-operations-aip-151
+    what: "The AIP-151 promise pattern: slow RPCs return `google.longrunning.Operation` immediately, clients poll the uniform `Operations` service, resources signal unusable interim state, and parallel attempts fail `ABORTED` or queue."
+    problem: "Unary call blocks for minutes while provisioning finishes, so gateways time out, clients invent polling endpoints per service, and user stares at frozen request; unary timeout wall, hanging call experience, promise token pattern, per-service polling invention, mid-provisioning limbo, parallel operation abort, thirty-day expiry."
+    use_when: "Work routinely exceeds ten-second rule of thumb; provisioning or fleet-scale mutation underway; clients need progress visibility mid-flight; concurrent operation attempts must reject cleanly."
+    avoid_when: "Sub-second latency typical; response and metadata type design at stake (sibling card); streaming better fits continuous output."
+    expected: "Slow calls hand back operation handle instantly, progress polls hit uniform service, interim resources signal pending status, and conflicting concurrent attempts abort loudly."
+  - anchor: long-running-operations-aip-151
+    what: "The AIP-151 `operation_info` design-time decisions: `response_type` and `metadata_type` frozen once shipped (changing either breaks clients), named empty messages instead of `google.protobuf.Empty` to keep future doors open, and validate-only mode returning done or polling operations."
+    problem: "Annotation types chosen casually at launch and result payload needed later, so changing declared types becomes breaking change and Empty-typed operations can never return data; frozen type annotation, breaking type swap, stub message placeholder, future payload headroom, metadata progress channel, dry-run request handling, done flag semantics."
+    use_when: "Declaring `operation_info` for first time; result data plausibly needed post-launch; progress or partial-failure reporting anticipated; validation-only requests must produce uniform handles."
+    avoid_when: "Blocking behavior question itself (sibling card); types already shipped and change contemplated (breaking, needs new RPC); Delete-only flow where Empty genuinely final."
+    expected: "Operations declare named types with growth room, validation returns done handles immediately, metadata streams progress while pending, and shipped annotations never mutate."
+  - anchor: batch-method-get-aip-231
+    what: "The AIP-231 atomic batch read: `BatchGet<Resources>` over GET with `:batchGet` suffix taking repeated `names`, all-or-nothing semantics (no per-item errors, no pagination), response order mirroring request."
+    problem: "Bulk read endpoint invented with per-item error channel and pagination, so consistent-time-point snapshot guarantee dissolves and partial results masquerade as complete reads; all-or-nothing reads, itemized failure invention, transactional read boundary, positional response parity, pagination exclusion, wildcard parent dash, hoisted get fields."
+    use_when: "Consistent multi-resource snapshot needed (read transaction); caller tolerates total failure on any miss; results must track request sequence; batch ceiling documented near thousand."
+    avoid_when: "Missing resources acceptable (filtered List fits better); partial results desired; huge unbounded result sets requiring pages."
+    expected: "Batch reads succeed wholly or fail wholly, responses preserve request order, and per-entry error channels or paging tokens never creep in."
+  - anchor: batch-method-create-aip-233
+    what: "The AIP-233 batch creation pattern: `BatchCreate<Resources>` POSTs repeated child `requests`, synchronous variant always atomic, asynchronous variant optionally partial via `map<int32, google.rpc.Status> failed_requests` keyed by child index."
+    problem: "Bulk creation reports bare success while individual entries quietly fail, so caller believes entire batch persisted and retry logic duplicates what actually committed; silent per-entry failure, ok-implies-all fallacy, synchronous atomicity mandate, positional error map, hoisting unique-field ban, legacy partial retrofit, transient retry exclusion."
+    use_when: "Bulk insertion endpoint justified; sync-versus-async shape being chosen against atomicity cost; per-item outcome reporting designed; legacy batch API adopting partial behavior (`return_partial_success` gate)."
+    avoid_when: "Read snapshot wanted (05_operations › batch get); per-child unique fields hoisted (forbidden, caller IDs); partial adoption grafted onto shipped sync surface (requires new version)."
+    expected: "Sync batches commit atomically, async partial mode reports failures by child position, total failure surfaces `Aborted` on operation error, and retries never duplicate committed entries."
+  - anchor: batch-method-update-aip-234
+    what: "The AIP-234 batch mutation pattern: `BatchUpdate<Resources>` carrying per-child `UpdateBookRequest` entries each with own `update_mask`, optional hoisted mask as convenience, and identical partial-success machinery to AIP-233."
+    problem: "Bulk modification applies one shared field mask across heterogeneous items, so fields vanish on entries where mask mismatches and per-item outcomes stay invisible behind aggregate success; uniform mask misfit, heterogeneous entry sets, hidden entry results, per-child mask semantics, collective success smokescreen, mask hoisting convenience, partial machinery reuse."
+    use_when: "Mass modification endpoint justified; each child entry carries distinct field set; uniform edit set might share one mask; outcome granularity per item required."
+    avoid_when: "Identical mask truly fits every entry (hoist it); insertion rather than modification (05_operations › batch create); per-child unique values hoisted (forbidden)."
+    expected: "Every child entry honors its own mask, common mask applies only where child omits one, and per-item failures surface through documented status map."
+  - anchor: batch-method-delete-aip-235
+    what: "The AIP-235 batch removal pattern: `BatchDelete<Resources>` via POST `:batchDelete` (never HTTP DELETE) taking repeated `names`, filter-based matching prohibited, soft-delete variant returning updated resources, absent-target semantics documented."
+    problem: "Bulk removal exposed through filter matching and undefined absent-target behavior, so one loose predicate wipes swaths of production data and retried partial batches cannot tell success from gaps; predicate mass wipe, criteria deletion ban, absent-target ambiguity, retry gap confusion, post-not-delete verb, names-only requests, soft-delete bulk response."
+    use_when: "Many resources removed together; deciding how already-absent entries count (document explicitly); soft-deleted bulk payload needed; idempotent retry of partially failed batch must work."
+    avoid_when: "Criteria-driven mass removal tempting (prohibited; 07_design_patterns › criteria-based delete if truly unavoidable); HTTP DELETE verb mapped (POST required); single-resource removal (05_operations › delete)."
+    expected: "Batch removal takes explicit name lists only, absent entries follow documented success-or-failure rule, soft-delete variant returns marked resources, and partial failures report per documented map."
+aips: [130, 131, 132, 133, 134, 135, 136, 151, 231, 233, 234, 235]
+---
+
+# Operations
+
 ## 5. Operations
 
 ### 5.1 Method Categories (AIP-130)
@@ -220,6 +312,8 @@ See [AIP-193](09_polish.md#errors-aip-193), in particular when to use `PERMISSIO
 - For details on pagination, see [AIP-158](07_design_patterns.md#pagination-aip-158).
 - For listing across multiple parent collections, see [AIP-159](07_design_patterns.md#reading-across-collections-aip-159).
 
+> **Agent extension — not part of the AIP standard.** List rarely stands alone in production: pair it with pagination (AIP-158), filtering (AIP-160), and partial responses (AIP-157) from the start, because retrofitting them onto a shipped List method forces awkward field additions later. Like Get, List uses HTTP GET and therefore must not define a request body — all parameters travel in the query string.
+
 ### 5.4 Standard Method: Create (AIP-133)
 [ref: #standard-method-create-aip-133]
 
@@ -352,6 +446,8 @@ See [AIP-193](09_polish.md#errors-aip-193), in particular when to use `PERMISSIO
 Declarative clients use the resource ID as a way to identify a resource for applying updates and for conflict resolution. The lack of a user-specified ID means a client is unable to find the resource unless they store the identifier locally, and can result in re-creating the resource. This in turn has a downstream effect on all resources that reference it, forcing them to update to the ID of the newly-created resource.
 
 Having a user-specified ID also means the client can precalculate the resource name and use it in references from other resources.
+
+> **Agent extension — not part of the AIP standard.** Create maps to HTTP POST on the parent collection and returns the created resource. When the API accepts user-specified IDs, Create becomes effectively idempotent per AIP-155: a retried request with the same ID must not spawn a duplicate resource — design for this deliberately instead of relying on the client not to retry. Name messages `<Method><Resource>Request` / `<Resource>` so generated docs and lint rules line up.
 
 ### 5.5 Standard Method: Update (AIP-134)
 [ref: #standard-method-update-aip-134]
@@ -550,6 +646,8 @@ See [AIP-193](09_polish.md#errors-aip-193), in particular when to use `PERMISSIO
 
 In addition, if the user does have proper permission, but the requested resource does not exist, the service **must** error with `NOT_FOUND` (HTTP 404) unless `allow_missing` is set to `true`.
 
+> **Agent extension — not part of the AIP standard.** Update maps to HTTP PATCH with an explicit `update_mask`: the mask is what prevents a client that only wants to rename a resource from accidentally wiping every other field it happened to leave unset. Keep Update free of significant side effects — if a field change must trigger a larger process, that process is usually a custom method (AIP-136) or a long-running operation (AIP-151), not a silent consequence of PATCH.
+
 ### 5.6 Standard Method: Delete (AIP-135)
 [ref: #standard-method-delete-aip-135]
 
@@ -708,6 +806,8 @@ If the user does have proper permission, but the requested resource does not exi
 - For soft delete and undelete, see [AIP-164](07_design_patterns.md#soft-delete-aip-164).
 - For bulk deleting large numbers of resources based on a filter, see [AIP-165](07_design_patterns.md#criteria-based-delete-aip-165).
 
+> **Agent extension — not part of the AIP standard.** Delete maps to HTTP DELETE and must not define a request body. Choose the response type deliberately: `google.protobuf.Empty` forecloses ever returning data (a breaking limitation discovered later), while returning the deleted resource helps clients confirm what was removed — and if the resource uses soft delete (AIP-164), Delete marks rather than erases, which changes what the response should convey. For long-running deletes, the LRO `response_type` carries the same Empty-versus-message decision.
+
 ### 5.7 Custom Methods (AIP-136)
 [ref: #custom-methods-aip-136]
 
@@ -820,6 +920,8 @@ Generally, method names with prepositions indicate that a new method is being us
 
 The term "async" is commonly used in programming languages to indicate whether a specific method call is synchronous or asynchronous, including for making RPCs. That sync/async aspect is at a different abstraction level to whether the RPC itself is intended to start a long-running operation. Using "async" within the RPC name itself causes confusion, and can even cause issues for client libraries which generate both synchronous and asynchronous methods to call the RPC in some languages.
 
+> **Agent extension — not part of the AIP standard.** Custom methods are justified when user intent does not map cleanly onto CRUD (Publish, Archive, Cancel) — do not contort a standard method to avoid one. Naming guidance hardened in May 2023: the word `async` is prohibited in RPC names, and HTTP mapping for custom methods (verb choice, `body: "*"` for POST-style actions) follows AIP-127 explicitly. A custom method that takes significant time should still return an LRO rather than block.
+
 ### 5.8 Long-Running Operations (AIP-151)
 [ref: #long-running-operations-aip-151]
 
@@ -898,6 +1000,8 @@ Changing either the `response_type` or `metadata_type` of a long-running operati
 ***Validate-only behavior***
 
 The guidance for validate-only responses comes from a tension between clients, which benefit from "fully formed" operations that can be treated uniformly, and servers, which don't wish to maintain additional state for trivial operations. It seems counterintuitive that just validating a request should generate more state, but a full operation response that can be fetched later would either require that or "special" singleton operation IDs. The guidance provided is a compromise: by returning a "done" operation, clients can use existing logic to check that the operation has completed successfully (and therefore doesn't need to be fetched for an updated status) but servers don't need to maintain any additional state.
+
+> **Agent extension — not part of the AIP standard.** The `google.longrunning.operation_info` annotation must declare both `response_type` and `metadata_type`, and changing either later is a breaking change — decide them at design time. `metadata` streams progress while `done == false`; `response` is populated only on completion. Avoid `google.protobuf.Empty` as `response_type` unless result data will never be needed — an empty named message keeps the door open. In practice, official client libraries wrap LROs in futures and handle polling; document the expected polling interval for raw-HTTP clients.
 
 ### 5.9 Batch Method: Get (AIP-231)
 [ref: #batch-method-get-aip-231]
@@ -1012,6 +1116,8 @@ message BatchGetBooksRequest {
 - Batch get **should not** support pagination because transactionality across API calls would be extremely difficult to implement or enforce, and the request defines the exact scope of the response anyway.
 - The request message **must not** contain any other required fields, and **should not** contain other optional fields except those described in this or another AIP.
 - The comment above the `requests` field **should** document the maximum number of requests allowed.
+
+> **Agent extension — not part of the AIP standard.** Batch Get is atomic: either every requested resource is returned or the whole call fails — there is no partial-success mode. Clients that can tolerate missing resources should use repeated Get calls or a filtered List instead; do not invent a per-item error channel for Batch Get.
 
 ### 5.10 Batch Method: Create (AIP-233)
 [ref: #batch-method-create-aip-233]
@@ -1155,6 +1261,8 @@ The AIP recommends using a `map<int32, google.rpc.Status> failed_requests` field
   - Populating a request ID for the purpose of communicating errors could conflict with AIP-155 if the service can not guarantee idempotency for an individual request across multiple batch requests.
 - A `repeated FailedRequest` field, where `FailedRequest` contains the individual create request and the `google.rpc.Status`. This was rejected because echoing the request payload back in response is discouraged due to additional challenges around user data sensitivity.
 
+> **Agent extension — not part of the AIP standard.** For batch mutations the ecosystem has settled on partial success over all-or-nothing transactions: report per-item failures with a `map<int32, google.rpc.Status> failed_requests` field keyed by the index of the failed request, or make the batch method long-running and convey per-item outcomes in the LRO metadata. A bare `200 OK` with silent per-item failures is the anti-pattern this convention exists to prevent.
+
 ### 5.11 Batch Method: Update (AIP-234)
 [ref: #batch-method-update-aip-234]
 
@@ -1296,6 +1404,8 @@ The AIP recommends using a `map<int32, google.rpc.Status> failed_requests` field
   - Client will need to maintain a map of request_id -> request in order to use the partial success response.
   - Populating a request ID for the purpose of communicating errors could conflict with AIP-155 if the service can not guarantee idempotency for an individual request across multiple batch requests.
 - A `repeated FailedRequest` field, where `FailedRequest` contains the individual update request and the `google.rpc.Status`. This was rejected because echoing the request payload back in response is discouraged due to additional challenges around user data sensitivity.
+
+> **Agent extension — not part of the AIP standard.** Batch Update follows the same partial-success convention as Batch Create (AIP-233): `map<int32, google.rpc.Status> failed_requests` for synchronous calls or LRO metadata for asynchronous ones. Each item in the batch carries its own `update_mask` semantics — a single shared mask for heterogeneous items is a design smell.
 
 ### 5.12 Batch Method: Delete (AIP-235)
 [ref: #batch-method-delete-aip-235]
@@ -1483,3 +1593,5 @@ The AIP recommends using a `map<int32, google.rpc.Status> failed_requests` field
   - Client will need to maintain a map of request_id -> request in order to use the partial success response.
   - Populating a request ID for the purpose of communicating errors could conflict with AIP-155 if the service can not guarantee idempotency for an individual request across multiple batch requests.
 - A `repeated FailedRequest` field, where `FailedRequest` contains the individual delete request and the `google.rpc.Status`. This was rejected because echoing the request payload back in response is discouraged due to additional challenges around user data sensitivity.
+
+> **Agent extension — not part of the AIP standard.** Batch Delete shares the partial-success reporting pattern (`failed_requests` index map or LRO metadata). Decide explicitly whether deleting an already-absent resource counts as success or as a per-item `NOT_FOUND` failure, and document the choice — idempotent retries of a partially failed batch depend on it.

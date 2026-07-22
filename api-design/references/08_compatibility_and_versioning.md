@@ -1,3 +1,41 @@
+---
+subject: "Compatibility and versioning corpus; `AIP-180` breaking-change taxonomy with source/wire/semantic tiers, `AIP-181` alpha/beta/stable stability levels and deprecation clocks, `AIP-182` external dependency end-of-life and LTS policy, `AIP-185` major-version encoding via channel-based, release-based, visibility-based strategies."
+index:
+  - anchor: backwards-compatibility-aip-180
+    what: "The AIP-180 breaking-change rulebook: source, wire, and semantic compatibility tiers with add-don't-remove discipline — no new required fields, frozen defaults, stable serialization, components never renamed, moved, retyped, or shifted across `oneof` boundaries."
+    problem: "Existing client code compiles and runs against deployed contract, so renaming field, flipping default, or retyping message detonates production integrations and hotfix rollbacks consume release window; breaking rename cost, compiled stub drift, default value freeze, serialization presence semantics, resource name permanence, oneof migration trap, enum growth surprise, judgment-call gray zone."
+    use_when: "Change to shipped surface under review (field, enum entry, default, serialization, file layout); pagination retrofit contemplated on previously unpaginated method; gray-zone behavior shift judged for reasonable-consumer impact; deciding whether edit forces version bump."
+    avoid_when: "Greenfield surface without shipped clients (change freely); component carries pre-stable stability label (08_compatibility_and_versioning › stability levels); choosing version encodings or channels (08_compatibility_and_versioning › API versioning); upstream engine lifecycle question (08_compatibility_and_versioning › external dependencies)."
+    expected: "Old clients keep compiling and running against newer servers, defaults and serialization stay frozen, and questionable edits route into deprecation track or next-major planning instead."
+  - anchor: backwards-compatibility-aip-180
+    what: "The AIP-180 additive-evolution rules: new components permitted in-place provided defaults preserve prior behavior, request-only enums grow freely while response enums document expected growth, and generated-code name conflicts avoided."
+    problem: "Planned feature extends live surface mid-version, so careless addition quietly alters behavior of untouched clients and retrofit pagination truncates results users assume complete; stealth semantic shift, additive surprise, latent truncation, generated symbol collision, enum expansion governance, default-preserving introduction, same-name sibling clash, unaware old consumer."
+    use_when: "Adding field, method, message, or enum entry to in-use interface; pagination introduced after launch; enum in response or resource expected to grow; closely-named sibling component planned (e.g. `foo_value` beside `foo`)."
+    avoid_when: "Removing or renaming anything (sibling card); pure bug fix restoring documented contract; stability label explicitly permits breakage (08_compatibility_and_versioning › stability levels)."
+    expected: "Additions land in-place without disturbing existing callers, defaults match pre-change behavior, growing enums carry documented expansion policy, and client stubs compile clean for old and new consumers alike."
+  - anchor: stability-levels-aip-181
+    what: "The AIP-181 stability vocabulary: `alpha` with curated users and expected breakage, `beta` public with minimal changes behind defined deprecation period plus ~90-day timebox to promotion, `stable` banning breaking changes within major version under formal turndown process, isolated and emergency exceptions included."
+    problem: "Surface ships without declared change budget, so consumers assume permanence, producers assume freedom, and first breaking edit becomes trust-destroying incident without notice channel or migration window; unlabeled maturity signal, change-budget ambiguity, user tolerance mismatch, surprise breakage incident, missing migration runway, promotion timing question, curated tester cohort, governance escalation gravity."
+    use_when: "Label chosen for new or graduating surface; breaking change weighed against label promises; deprecation window and timebox defined at marking; emergency or isolated-change exception contemplated; promotion criteria set."
+    avoid_when: "Classifying whether specific edit breaks compatibility (08_compatibility_and_versioning › backwards compatibility); version string encoding or channel mechanics (08_compatibility_and_versioning › API versioning); third-party engine lifecycle policy (08_compatibility_and_versioning › external dependencies)."
+    expected: "Components carry explicit maturity labels, pre-GA breakage arrives with notice and transition window, and stable surfaces get version bumps or formal governance sign-off instead of silent edits."
+  - anchor: external-software-dependencies-aip-182
+    what: "The AIP-182 external-dependency lifecycle rules: resources creatable on any currently-supported LTS version with non-LTS optional, end-of-life versions phased out of creation under mandatory user notification, already-provisioned resources preserved, continued support meaning assumed patching duty."
+    problem: "Managed service exposes database engine, OS image, or language runtime whose upstream release calendar marches toward end-of-life, so exposed versions rot into liability and forced removals blindside tenants mid-workload; vendor release lifecycle, rotting exposed version, tenant blindsiding, support burden transfer, lts selection duty, security patch ownership, legacy adoption anchor, creation-phase removal notice."
+    use_when: "API lets users spin resources on third-party engines, images, or runtimes; version catalog curated by service; end-of-life phase-out policy and notification flow drafted; official support weighed for version past upstream EOL."
+    avoid_when: "Service's own contract compatibility question (08_compatibility_and_versioning › backwards compatibility); maturity labeling of own components (08_compatibility_and_versioning › stability levels); dependency hidden from users (internal implementation detail)."
+    expected: "Users provision on every actively maintained LTS release, EOL versions exit creation flows only after notification, already-running instances stay untouched absent critical security need, and officially continued versions come with owned patching."
+  - anchor: api-versioning-aip-185
+    what: "The AIP-185 versioning model: single major identifier (`v1`, never `v1.1`) at proto-package tail and URI start, in-place minor and patch evolution, parallel coexistence of majors with deprecation, plus channel-based (`v1beta`), release-based (`v1beta1`), and visibility-label strategies for pre-GA surfaces."
+    problem: "Incompatible overhaul looms over live integrations, so absent coexistence plan big-bang cutover strands users and premature stability suffixes hardcode churn into every import path; forced flag day, coexistence gap, version string sprawl, minor number leakage, pre-ga suffix choice, channel superset rule, gradual migration window, acl-gated preview."
+    use_when: "Pre-GA strategy chosen among channel, release, visibility; version placement in package and path decided; breaking overhaul needs parallel-run and turndown plan; preview feature gating via labels contemplated."
+    avoid_when: "Judging whether specific edit is breaking (08_compatibility_and_versioning › backwards compatibility); choosing maturity promises per label (08_compatibility_and_versioning › stability levels); third-party version exposure (08_compatibility_and_versioning › external dependencies)."
+    expected: "Major version encoded once at end of proto package and head of URI path, pre-GA surfaces carry stability suffixes per chosen strategy, old and new majors run side by side until deprecation completes, and deprecated functionality never graduates."
+aips: [180, 181, 182, 185]
+---
+
+# Compatibility and Versioning
+
 ## 8. Compatibility and Versioning
 
 ### 8.1 Backwards Compatibility (AIP-180)
@@ -189,6 +227,8 @@ End users may store resource properties, like the `name`, in a dedicated databas
 
 Customers often depend on the format or algorithmic construction of a field for client-side parsing, hashing, or database table construction. Changing it in an existing field could break that client-side consumption.
 
+> **Agent extension — not part of the AIP standard.** The breaking-change list has two frequently underestimated entries: adding pagination to a previously unpaginated method changes the generated client signature and is breaking (so paginate from day one), and moving an existing field into or out of a `oneof` breaks generated code even though the wire format survives (adding a new field to an existing `oneof` is fine). Tightening `field_behavior` — for example making a field `REQUIRED` — is also a contract break clients will feel immediately.
+
 ### 8.2 Stability Levels (AIP-181)
 [ref: #stability-levels-aip-181]
 
@@ -230,6 +270,8 @@ On very rare occasions, it could be preferable to make a small, isolated breakin
 
 In certain exceptional cases, such as security concerns or regulatory requirements, any API component **may** be changed in a breaking manner regardless of its stability level, and a deprecation is not promised in these situations.
 
+> **Agent extension — not part of the AIP standard.** Stability labels set the change budget: GA admits no breaking changes, while alpha and beta allow them only with a real deprecation window and migration path — and user tolerance in beta is lower than the letter of the rule suggests. Treat every breaking change in a labeled surface as a launch event (notice, timeline, migration guide), not a routine commit.
+
 ### 8.3 External Software Dependencies (AIP-182)
 [ref: #external-software-dependencies-aip-182]
 
@@ -254,6 +296,8 @@ If possible, services **should** allow previously-created resources to remain, a
 #### Continued support
 
 If supporting a version that has reached end-of-life is necessary for business reasons (usually because the end-of-life software still has significant adoption), the service **may** choose to officially support the end-of-life version, but **must** take on the responsibility of patching and maintaining the software if it does so.
+
+> **Agent extension — not part of the AIP standard.** When an API surfaces an external dependency (database engine versions, OS images), the contract is that users can create resources on any currently supported LTS release; non-LTS versions are allowed as additions, never as replacements. Watch the dependency's own EOL calendar — a version you expose past its upstream end-of-life becomes your support problem.
 
 ### 8.4 API Versioning (AIP-185)
 [ref: #api-versioning-aip-185]
@@ -351,3 +395,5 @@ A single API request can specify at most one visibility label.
 API producers can use API visibility for API versioning, such as `INTERNAL` and `PREVIEW`. A new API feature starts with the `INTERNAL` label, then moves to the `PREVIEW` label. When the feature is stable and becomes generally available, all API visibility labels are removed from the API definition.
 
 In general, API visibility is easier to implement than API versioning for incremental changes, but it depends on sophisticated API infrastructure support. Google Cloud APIs often use API visibility for Preview features.
+
+> **Agent extension — not part of the AIP standard.** Encode the major version in the URI path and at the end of the proto package (`v1`), and append the stability level for pre-GA surfaces (`v1beta1`, `v2alpha1`) — package-level versioning is what lets two major versions of the same API coexist in one binary while clients migrate. One channel per stability level per major version; in-place updates inside a channel must stay backwards-compatible.

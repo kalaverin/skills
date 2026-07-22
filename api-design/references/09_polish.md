@@ -1,3 +1,53 @@
+---
+subject: "API polish corpus; `AIP-190` naming conventions for interfaces methods messages, `AIP-191` proto file and directory structure with packaging annotations, `AIP-192` public documentation comments deprecations, `AIP-193` standardized `google.rpc.Status` errors with `ErrorInfo`, `AIP-194` automatic retry policy per status code."
+index:
+  - anchor: naming-conventions-aip-190
+    what: "The AIP-190 naming canon: American English spellings, `UpperCamelCase` definitions, intuitive-noun interface identifiers disambiguated with `Api`/`Service` suffix, `VerbNoun` method pattern, preposition-free concise message pattern, no overloading or reserved-word clashes."
+    problem: "Interface or message christened hastily ships into generated clients, so renaming becomes breaking change and ambiguous overloaded vocabulary confuses consumers across ecosystem; generated surface permanence, vocabulary drift, ambiguous first-order term, keyword collision in target languages, translation friction, review scrutiny, ecosystem consistency, non-native reader burden."
+    use_when: "Coining service, method, or message identifier on new surface; rename contemplated on shipped API (breaking); generic term like `Instance` or `info` shortlisted; candidate clashes with programming-language reserved word; reviewing consistency across sibling APIs."
+    avoid_when: "Field-level naming decisions (06_fields › field names); enum value conventions (04_resource_design › enumerations); collection ID rules (04_resource_design › resource names); proto package or filename question (09_polish › file and directory structure)."
+    expected: "Identifiers read as intuitive stable nouns and `VerbNoun` verbs, spelling follows American canon, collisions surface before freeze, and consumers navigate surface without glossary."
+  - anchor: file-and-directory-structure-aip-191
+    what: "The AIP-191 layout rules: `proto3` syntax, single version-suffixed package mirrored to directory, `snake_case` descriptive entry filenames (never version names), canonical component ordering, and packaging annotations (`java_package`, `java_multiple_files`, `csharp_namespace`, `go_package`) set uniformly or not at all."
+    problem: "Proto files scattered across mismatched directories with arbitrary ordering, so build tooling resolves imports unpredictably and generated module names collide with language keywords; import resolution far from cause, package-directory drift, bizarre client imports, filename as module name, annotation retrofit breakage, compound namespace word breaks, reviewer friction, missing obvious entrypoint."
+    use_when: "Creating or restructuring proto tree for new API; adding packaging options to shipped files (breaking-risk audit); filename becoming generated import identifier assessed; compound package segment like `accessapproval` encountered; component ordering inside file decided."
+    avoid_when: "Non-protobuf IDL surface (spirit only, specifics inapplicable); field-level naming (06_fields › field names); interface or method naming (09_polish › naming conventions); `go_package` value ownership (generated-code team decides)."
+    expected: "Every file sits in package-matching directory, `proto3` declared, entry file recognizable, components ordered canonically, and language annotations identical across files or absent everywhere."
+  - anchor: documentation-aip-192
+    what: "The AIP-192 comment contract: public comments on every component, third-person present subject-free opening sentence, brief-but-complete description checklist (units, ranges, defaults, side effects), CommonMark subset without headings tables HTML ASCII art, Markdown reference links, absolute external URLs."
+    problem: "Reference documentation generated from sparse or jargon-laden comments, so consumers cannot learn semantics, formatting breaks renderers, and undocumented defaults produce misuse; comment poverty, non-native reader, terse uninformative stub, renderer incompatible markup, omitted measurement semantics, behavior-on-failure silence, idempotency ambiguity, untranslatable slang."
+    use_when: "Writing or reviewing proto comments before publish; doc-generation pipeline consumes proto surface; deciding which semantics (measurement, bounds, fallback values) belong in description; linking between components or to external pages; marking non-public notes internal."
+    avoid_when: "Styling Markdown files rather than proto comments (markdown-protocol skill); field shape or annotation questions (06_fields › field design); API-agnostic prose style guidance wanted; error text wording (09_polish › errors)."
+    expected: "All components carry grammatical subject-free comments, generators render cleanly, deprecations pair option with migration path, and internal notes never leak into published docs."
+  - anchor: documentation-aip-192
+    what: "The AIP-192 deprecation mechanism: `deprecated = true` option plus comment opening with \"Deprecated: \" first line, alternative solution or explicit reason, and `(--`/`--)` wrapping for internal material."
+    problem: "Legacy component must exit surface without breaking consumers overnight, so abrupt removal breaks builds and silent phase-out strands users without migration direction; sunsetting surface element, tooling-blind deprecation, comment-only invisibility, consumer notice period, alternative guidance gap, breaking removal shock, obsolete enum value, grace timeline."
+    use_when: "Sunsetting service, method, message, field, or enum member; replacement component ready to recommend; tooling must detect obsolescence programmatically; internal notes mixed with public comments on same element."
+    avoid_when: "Greenfield component authoring (sibling card); version-level retirement rather than component-level; internal-only annotation wanted without deprecation."
+    expected: "Deprecated elements carry both machine-visible flag and human migration guidance, generated docs flag obsolescence, and removal happens only after notice."
+  - anchor: errors-aip-193
+    what: "The AIP-193 error envelope: `google.rpc.Status` with canonical `google.rpc.Code`, developer-facing `message` stability rules, mandatory `ErrorInfo` (`domain`, UPPER_SNAKE `reason`, evolving `metadata`), `LocalizedMessage`, `Help` links, partial-error LRO guidance, `PERMISSION_DENIED`-before-`NOT_FOUND` ordering."
+    problem: "Service emits ad-hoc failure text or bare numeric codes, so every client hand-rolls parsing, message edits break deployed consumers, and dynamic values stay trapped inside prose; bespoke failure shape, centralized handling blocked, string-parsing fragility, implicit message contract, machine-readable identifier gap, localization afterthought, trust-boundary leak, support ticket flood."
+    use_when: "Designing failure responses for any RPC; choosing canonical code for condition; deciding which dynamic values become `metadata`; brownfield message text frozen by compatibility; partial failure in bulk operation contemplated."
+    avoid_when: "Retry policy per code (09_polish › automatic retry); authorization check ordering beyond error shape (07_design_patterns › authorization checks); LRO `Operation.error` mechanics (05_operations › long-running operations); validation annotation vocabulary (06_fields › field behavior)."
+    expected: "Failures return standard envelope with stable reason-domain pairs, clients branch programmatically without parsing prose, localized text rides details, and links stay absolute and auth-free."
+  - anchor: errors-aip-193
+    what: "The AIP-193 diagnostic payloads: `ErrorInfo.metadata` map mirroring each templated message element, `Help` links narrowing multi-error pages via `reason`, `BadRequest` field violations, and JSON transcoding shape with HTTP `code` plus enum `status`."
+    problem: "On-call engineer stares at production failure with only prose text, so root-cause hunt requires log diving, screenshot ping-pong, and guessing which zone or quota broke; incident triage, troubleshooting context starvation, dynamic value extraction, log correlation cost, multi-cause ambiguity, support escalation loop, opaque quota failure, field-level violation hunt."
+    use_when: "Reproducing consumer-reported failure from returned payload; deciding which contextual values accompany new reason; multi-error troubleshooting page needs narrowing; HTTP JSON error shape reviewed for transcoding clients."
+    avoid_when: "First-time envelope design (sibling card); retryability decision (09_polish › automatic retry); permission-existence ordering question (07_design_patterns › authorization checks); brownfield message stability ruling (sibling card)."
+    expected: "Any returned failure self-describes with machine-readable context, on-call resolves incidents without backend log access, and transcoded clients see equivalent detail."
+  - anchor: automatic-retry-configuration-aip-194
+    what: "The AIP-194 retry matrix: automatic retry only for unary non-transactional idempotent calls, `UNAVAILABLE` as canonical retryable code, explicit non-retryable lists (`INVALID_ARGUMENT`, `DATA_LOSS`, `CANCELLED`, `DEADLINE_EXCEEDED`), and condition-change codes (`NOT_FOUND`, `ALREADY_EXISTS`, `FAILED_PRECONDITION`) deferred to callers."
+    problem: "Client retries blindly after every failure, so duplicate mutations corrupt state, quota storms amplify outages, and unrecoverable conditions loop forever instead of surfacing; duplicate execution risk, retry storm amplification, transactional abort mishandling, billing side effect, infinite futile loop, idempotency precondition, deadline disrespect, backoff absence."
+    use_when: "Classifying each status code for retryability; client-side retry policy authored or reviewed; deciding whether method is safe to repeat; transactional boundaries versus per-call retries weighed; streaming RPC scoped out (uncovered)."
+    avoid_when: "Failure envelope or payload design (09_polish › errors); making non-idempotent mutation safe (07_design_patterns › request identification); long-running operation failure handling (05_operations › long-running operations); client streaming or bidi methods (outside scope)."
+    expected: "Retry logic fires only on transient codes for safe methods, harmful codes surface immediately, transaction aborts escalate to block level, and repeated runs never double-apply."
+aips: [190, 191, 192, 193, 194]
+---
+
+# Polish
+
 ## 9. Polish
 
 ### 9.1 Naming Conventions (AIP-190)
@@ -85,6 +135,8 @@ For request and response message names, see [AIP-136](05_operations.md#custom-me
 - For the canonical `List` method `filter` field, see [AIP-132](05_operations.md#standard-method-list-aip-132).
 - For the canonical `List` response message, see [AIP-132](05_operations.md#standard-method-list-aip-132).
 - For well known abbreviations, see [AIP-140](06_fields.md#field-names-aip-140).
+
+> **Agent extension — not part of the AIP standard.** Service names should be intuitive nouns that do not collide with programming-language primitives — disambiguate with an `Api` or `Service` suffix when they would (`BlobStore`, not `String`). Name collisions surface late (in generated clients, not in the proto), so run new interface names past the target languages' keyword lists before freezing them.
 
 ### 9.2 File and Directory Structure (AIP-191)
 [ref: #file-and-directory-structure-aip-191]
@@ -184,6 +236,8 @@ Set the option, `java_multiple_files`, to true to get a cleaner file structure. 
 
 The Go packaging option needs to be decided by the team that owns the generated code, because it is directly tied to the source code management practices of the team. Allowing every proto package to decide on their own Go package creates inconsistencies and friction in management of the code. Within that owning team, having a consistent structure in the Go package naming is critical to a consistent end user experience.
 
+> **Agent extension — not part of the AIP standard.** Keep the proto `package` mirrored to the directory layout (`google.library.v1` ↔ `google/library/v1`), use `snake_case` filenames, and give each API a recognizable entry file named after the API. Build tooling (buf, bazel, the linter) resolves imports predictably only when this mirroring holds — breaking it produces import errors far from the cause.
+
 ### 9.3 Documentation (AIP-192)
 [ref: #documentation-aip-192]
 
@@ -273,6 +327,8 @@ Comments **may** be explicitly marked as internal by wrapping internal content i
 Non-public links, internal implementation notes (such as `TODO` and `FIXME` directives), and other such material **must** be marked as internal.
 
 **Note:** Comments **should** use only leading comments (not trailing comments or detached comments). In particular, comments **must not** use both a leading and trailing comment to describe any component, because this is a common source of inadvertent omissions of the internal content annotation.
+
+> **Agent extension — not part of the AIP standard.** Deprecation is a two-part act: set `deprecated = true` AND start the comment with `Deprecated:` plus a concrete migration path — the option without the comment leaves users guessing, the comment without the option leaves tooling blind. Keep proto comments free of Markdown tables and raw HTML; doc generators across languages render only a conservative subset reliably.
 
 ### 9.4 Errors (AIP-193)
 [ref: #errors-aip-193]
@@ -529,6 +585,8 @@ RPCs which have **always** included `ErrorInfo` are in a better position: the co
 - For which error codes to retry, see [AIP-194](09_polish.md#automatic-retry-configuration-aip-194).
 - For how to retry errors in client libraries, see AIP-4221.
 
+> **Agent extension — not part of the AIP standard.** `google.rpc.ErrorInfo` is the machine-readable contract (stable `domain`/`reason`) that lets clients branch without parsing human-readable messages; pair it with `BadRequest` for field-level validation and `LocalizedMessage` for display text. Two recurring gaps: LRO failures must surface through `Operation.error` in the same Status shape, and error messages must never embed stack traces or internal identifiers — they cross a trust boundary.
+
 ### 9.5 Automatic Retry Configuration (AIP-194)
 [ref: #automatic-retry-configuration-aip-194]
 
@@ -587,3 +645,5 @@ Therefore, the following codes **should not** be automatically retried for any r
 #### Further reading
 
 - For parallel or retried request disambiguation, see [AIP-154](07_design_patterns.md#resource-freshness-validation-aip-154).
+
+> **Agent extension — not part of the AIP standard.** Automatic retry is safe only for unary, non-transactional, idempotent calls with exponential backoff and jitter; `INVALID_ARGUMENT` and `DATA_LOSS` must never be retried — the first can never succeed, the second must not be repeated. Where idempotency is not natural, make it true with AIP-155 request IDs rather than narrowing the retry policy to "never".

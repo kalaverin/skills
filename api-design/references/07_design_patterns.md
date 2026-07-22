@@ -1,3 +1,137 @@
+---
+subject: "Design pattern corpus; `Job` resources with `Run` method, `Import`/`Export` bulk flow, `etag` freshness, `request_id` idempotency, partial responses via `view` enum, `page_token` pagination, `-` wildcard cross-collection reads, `filter` syntax, `update_mask` semantics, revisions and aliases, `validate_only` dry runs, soft delete with `Undelete`, `Purge` criteria delete, Unicode normalization, authorization checks, `expire_time`/`ttl`, `unreachable` partial success."
+index:
+  - anchor: jobs-aip-152
+    what: "The AIP-152 job pattern: `Job`-suffixed resource configured through standard methods, `Run`-prefixed custom method returning `google.longrunning.Operation` under `:run` URI, plus optional `executions` sub-collection retaining past run results."
+    problem: "Recurring heavyweight computation squeezed into one-shot RPC, so transient operation reference vanishes after completion and users cannot reconfigure, pause, or inspect past invocations; scheduled background task, lost result handle, long-lived resource, separate configure permission, execution history, repeated triggering, audit trail, vendor cron replacement."
+    use_when: "Recurring or schedule-bound task needs durable identity; configuring task requires permissions distinct from executing it; past executions must stay listable; choosing between job resource and transient long-running operation."
+    avoid_when: "One-shot slow call (plain `google.longrunning.Operation` suffices); sub-second task (direct synchronous RPC); no management surface wanted beyond fire-and-forget execution."
+    expected: "Tasks exist as manageable `Job` resources with `Run` methods resolving to typed results, executions stay addressable, and configuration happens through ordinary CRUD calls."
+  - anchor: import-and-export-aip-153
+    what: "The AIP-153 bulk-transfer pattern: `Import`/`Export` custom methods returning `google.longrunning.Operation`, `oneof source`/`oneof destination` grouping endpoint config, top-level data config, `InlineSource`/`InlineDestination` variants, per-item errors in metadata."
+    problem: "Enterprise customer must move data into or out of platform, so ad-hoc transfer RPCs diverge per service and vendor lock-in fears stall adoption; bulk ingestion, dataset portability, migration tooling, heterogeneous endpoint mix, partial item failure, inline payload, round-trip symmetry, enterprise onboarding."
+    use_when: "New bulk-loading or bulk-extraction capability scoped; multi-parent fan-in contemplated (`-` wildcard); deciding where endpoint-specific versus data-wide settings live; partial per-item errors must surface."
+    avoid_when: "Single resource mutation at hand (05_operations › standard methods); streaming upload of one large blob; delete-side bulk operation (07_design_patterns › criteria-based delete); query-side shaping rather than transfer."
+    expected: "Import and export methods share one LRO shape with `oneof`-grouped endpoints, item-level errors ride metadata, and customers can leave or onboard without bespoke tooling."
+  - anchor: resource-freshness-validation-aip-154
+    what: "The AIP-154 etag contract: server-computed `string etag` on resource output, client echo on mutation, `ABORTED` on mismatch, optional-on-request with `INVALID_ARGUMENT` when required, strong versus weak (`W/` prefix) semantics."
+    problem: "Two clients read-modify-write concurrently, so second call silently stomps earlier work and corruption surfaces only downstream; concurrent mutation, lost update, optimistic concurrency, stale editor, checksum handshake, clock skew, distributed writers, conditional request."
+    use_when: "Resource mutated by independent actors; update or delete must fail on stale view; weighing comparison strictness levels; `etag` placement debated between resource body and request message."
+    avoid_when: "Single-writer resource with no race window; last-write-wins semantics acceptable; comparison needed is authorization rather than freshness."
+    expected: "Stale writers get `ABORTED`, matching etags pass, declarative resources always carry the field, and weak values show their `W/` prefix."
+  - anchor: resource-freshness-validation-aip-154
+    what: "The AIP-154 mandatory-`etag` rule for declarative-friendly resources: required field on the resource, request-side `etag` with `REQUIRED`/`OPTIONAL` behavior on methods lacking resource payload like `Delete`, documented strong or weak validation."
+    problem: "Declarative tooling reconciles desired state against live object, so unnoticed divergence between plan and apply causes unintended overwrite; infrastructure-as-code reconciliation, desired-state drift, iac pipeline, tooling-managed resource, concurrent console edit, strict consistency mandate, forced checksum requirement."
+    use_when: "Resource marked declarative-friendly; `Delete` or custom method cannot piggyback resource-body checksum; reconciliation loop needs hard conflict signal; deciding whether absence of value fails request."
+    avoid_when: "Imperative-only surface without reconciliation tooling; freshness enforcement optional at service discretion (single-writer case)."
+    expected: "Every declarative resource ships `etag`, mutation methods accept request-level checksums, and GitOps controllers detect drift before overwriting."
+  - anchor: request-identification-aip-155
+    what: "The AIP-155 `request_id` contract: optional client-supplied UUID4 string on request messages only (never on resources), guaranteeing idempotency with replayed prior responses on duplicates and documented validity timeframe."
+    problem: "Network failure mid-mutation forces retry, so without deduplication key server executes twice and billing or inventory corrupts; duplicate execution, at-least-once delivery, idempotent mutation, timeout ambiguity, safe replay, double charge, stale response substitute."
+    use_when: "Mutation unsafe to execute twice; parallel processes may send identical calls; retry-safety guarantee needed in contract; auditing requires customer-supplied correlation."
+    avoid_when: "Pure read method (idempotent by nature); identifier would live on resource itself (forbidden); trace or logging correlation wanted (different concern)."
+    expected: "Duplicate calls replay the original success response, mutations execute exactly once, UUID4 format is annotated, and staleness substitutions stay documented."
+  - anchor: partial-responses-aip-157
+    what: "The AIP-157 response-shaping options: `google.protobuf.FieldMask` via side channel (query parameter, header, metadata) defaulting to `\"*\"`, top-level `BookView`-style enum with `BASIC`/`FULL` values, and the deprecated request-field `read_mask` legacy form."
+    problem: "Large or expensive resource returned whole on every read, so mobile and chatty clients burn bandwidth and serialization cost on ignored fields; payload bloat, compute-heavy field, read-side shaping, wire cost, over-fetching, response trimming, metered connection, sluggish rendering."
+    use_when: "Response payload size or computation cost is a real concern; few fixed permutations suffice (`view` enum); fine-grained per-call selection wanted (mask side channel); legacy `read_mask` surface encountered."
+    avoid_when: "Write-side field selection (07_design_patterns › field masks); resource small and cheap; declarative clients need full default shape; per-field filtering of list items wanted (07_design_patterns › filtering)."
+    expected: "Callers receive exactly requested fields or view, default stays `\"*\"`-equivalent and documented, and no new `read_mask` fields appear on requests."
+  - anchor: pagination-aip-158
+    what: "The AIP-158 pagination contract: `int32 page_size` and `string page_token` on collection requests, `string next_page_token` (plus optional `total_size`) on responses, opaque URL-safe tokens, `skip` offset, empty token signaling end."
+    problem: "Collection RPC ships unpaginated, so retrofit quietly truncates results of deployed consumers and generated-library signatures break; backwards-incompatible change, silent truncation, day-one mandate, paged iterator surface shift, unbounded growth trap, adoption blocker, client upgrade friction."
+    use_when: "Designing any RPC returning collection (`List` or similar); deciding default and maximum `page_size`; token opacity or expiry strategy chosen; `skip` support weighed."
+    avoid_when: "Response is singleton rather than collection; streaming RPC; finite fixed-size set guaranteed forever (rare); token treated as authorization carrier (forbidden)."
+    expected: "Every collection method pages from day one, tokens stay opaque, end-of-collection means empty `next_page_token`, and oversized `page_size` coerces down."
+  - anchor: pagination-aip-158
+    what: "The AIP-158 operational rules: coercing over-limit `page_size`, erroring on negative, honoring changed sizes mid-iteration, `INVALID_ARGUMENT` on inconsistent arguments, expiring stored tokens, and `200 OK` empty page for unfulfillable `skip`."
+    problem: "Backend serves arbitrarily sized scans, so fetch cost and wire payloads grow unboundedly and deep-offset requests time out; giant collection iteration, query latency creep, latency cost spiral, cursor expiry storage, token database bloat, distributed collation delay, timeout-prone paging."
+    use_when: "Collection grows past comfortable single-response size; deep `skip` offsets risk backend timeouts; stored tokens accumulate and need expiry; mid-iteration parameter changes must be handled."
+    avoid_when: "Greenfield design question (sibling card); singleton resource fetch; infinite default page size contemplated (non-compliant)."
+    expected: "Latency stays flat as collections grow, deep skips degrade to empty pages with `200 OK`, stored tokens expire, and argument mismatches error clearly."
+  - anchor: reading-across-collections-aip-159
+    what: "The AIP-159 `-` wildcard parent: listing or getting across every parent collection with real parent identifiers in responses, best-effort `order_by`, unique-ID requirement for cross-parent `Get`, and AIP-217 interplay on unreachable parents."
+    problem: "User needs items spanning every parent container, so client fans out one call per scope and n-plus-one listing multiplies latency and code; fan-out burden, multi-parent aggregation, wildcard lookup, canonical name fidelity, cross-location enumeration, container-agnostic fetch, fleet-wide query."
+    use_when: "Consumers aggregate resources across parents; unique-ID `Get` without parent knowledge contemplated; wildcard support documentation drafted; interplay with partial failure signaling relevant."
+    avoid_when: "Child IDs collide across parents (cross-parent `Get` forbidden); hard-coded `-` in URI pattern (forbidden); deterministic cross-parent ordering promised."
+    expected: "One call spans all parents, responses carry canonical resource names, wildcard behavior documented per method, and unreachable parents surface per AIP-217."
+  - anchor: filtering-aip-160
+    what: "The AIP-160 `string filter` language: bare literals with fuzzy whitespace `AND`, `OR`-binds-tighter precedence, `NOT`/`-` negation, comparison operators with typed coercion, `.` traversal, `:` has-operator, `*` wildcards, function calls, `INVALID_ARGUMENT` validation."
+    problem: "Each API invents bespoke predicate structure, so filter behavior diverges across services and evolving needs force client updates; custom query grammar, inconsistent dialects, non-technical audience, precedence surprise, or-binds-tighter trap, fuzzy matching, literal type coercion, schema drift."
+    use_when: "List or Search method needs caller-driven selection; expression syntax decisions arise (operators, precedence, wildcards); filter validation error policy set; same grammar wanted for purge-style bulk delete."
+    avoid_when: "Deterministic evaluation with ranking unwanted (CEL territory noted); field-level response shaping (07_design_patterns › partial responses); update targeting (07_design_patterns › field masks); deleting by criteria mechanics (07_design_patterns › criteria-based delete)."
+    expected: "One documented `filter` field speaks the common grammar, invalid expressions error `INVALID_ARGUMENT`, and tooling validates against the schema."
+  - anchor: field-masks-aip-161
+    what: "The AIP-161 field-mask rules: `google.protobuf.FieldMask` typed `update_mask`, paths relative to resource, `.` traversal into messages and string/int-keyed maps (backtick-quoted keys), `*` wildcards over collections, index access forbidden."
+    problem: "Update payload arrives fully populated, so server cannot tell intentional clears from untouched attributes and accidental overwrites ensue; wholesale clobbering, intent ambiguity, partial mutation, clear-versus-untouched, sparse patch, attribute targeting, client round-trip fidelity."
+    use_when: "Update or patch-style method accepts resource payload; callers must modify subset without resending everything; map-key or wildcard path semantics designed; no-mask default behavior documented."
+    avoid_when: "Response-side selection (07_design_patterns › partial responses); list item filtering (07_design_patterns › filtering); full-replacement PUT semantics deliberately chosen."
+    expected: "Masks restrict mutations to listed paths, index access errors out, output-only entries stay silently ignored, and absent-mask behavior is contractually explicit."
+  - anchor: field-masks-aip-161
+    what: "The AIP-161 consistency guarantees: read-write symmetry where same mask yields same data, round-trip no-op property, invalid-entry policy (ignore on read, `INVALID_ARGUMENT` on write), and output-only field handling."
+    problem: "Client fetches with one mask then writes back unchanged data, so asymmetric path handling turns replay into unintended mutation and drift checks fail; read-write asymmetry, round-trip corruption, mask portability, silent entry dropping, consistency violation, bogus selector rejection, wildcard expansion surprise."
+    use_when: "Same mask reused across read and write paths; debugging `INVALID_ARGUMENT` from mask entries; wildcard or map-key entries produce surprises; output-only field appears in mask."
+    avoid_when: "First-time mask adoption question (sibling card); filtering list items (07_design_patterns › filtering)."
+    expected: "Identical masks behave identically in both directions, replayed reads are no-ops, bad entries error on mutation, and wildcards expand predictably."
+  - anchor: resource-revisions-aip-162
+    what: "The AIP-162 revision model: `{ResourceType}Revision` nested collection with `snapshot`, `create_time`, `alternate_ids`, `revisions/{revision_id}` naming, server aliases (`latest`), user aliases via `:alias`, `:rollback` custom method, reverse-chronological `List`."
+    problem: "Users must reason about resource state over time, so they hand-roll snapshot storage and rollback tooling per service; point-in-time recovery, history retention, revert capability, copy sprawl, derived-data provenance, diff against past, shadow identifier scheme, audit timeline."
+    use_when: "Older configurations must stay retrievable; rollback or diff requirement stated; dependent resources pin specific configurations; alias (`latest`, `published`) semantics chosen; revision creation strategy documented."
+    avoid_when: "Ephemeral resource without history value; multi-level nested revisions contemplated (forbidden complexity); term `version` wanted (means API version, not revision)."
+    expected: "Revisions live under `revisions` sub-collection with snapshots and timestamps, aliases resolve predictably, rollback restores via custom method, and listing defaults to newest-first."
+  - anchor: change-validation-aip-163
+    what: "The AIP-163 dry-run flag: `bool validate_only` on request messages executing full permission and validation checks without persisting, returning the would-be response with ungeneratable fields omitted, mandatory on declarative-friendly mutators."
+    problem: "High-stakes mutation like fleet provisioning has no rehearsal option, so users discover quota, permission, and cost impact only after irreversible execution; dry-run preview, pre-flight check, blast-radius uncertainty, costly mistake discovery, downstream effect surprise, terraform-plan analogue, speculative apply, false-positive validator drift."
+    use_when: "Mutation has significant cost or side effects; declarative-friendly resource gets mutating method; dry-run parity between validator and executor designed; deciding which response fields to omit."
+    avoid_when: "Pure read RPC; validation shortcut contemplated that skips permission checks (forbidden divergence); idempotency key question (07_design_patterns › request identification)."
+    expected: "Dry runs execute identical checks, fail exactly when real calls would, persist nothing, and declarative mutators always expose the flag."
+  - anchor: soft-delete-aip-164
+    what: "The AIP-164 soft-delete lifecycle: `Delete` marks instead of removing and returns the resource, `delete_time`/`purge_time` fields, `:undelete` restore, `:expunge` permanent removal with separate permission, `show_deleted` listing, full error matrix."
+    problem: "Operator mistake deletes production resource, so support tickets demand impossible recovery and users lose trust in destructive actions; mistaken removal, undelete capability, trash-bin expectation, undo window, irreversible loss, restore path, retention grace period, fat-finger protection."
+    use_when: "Users genuinely need recovery from mistaken deletes; lifecycle fields (`delete_time`, `purge_time`) and error matrix designed; undelete or expunge flows scoped; purge strategy chosen."
+    avoid_when: "Bulk filter-based removal wanted (07_design_patterns › criteria-based delete); plain permanent delete sufficient (05_operations › delete); recovery surface half-implemented — worse than none; declarative-client cost unacceptable."
+    expected: "Deletes mark rather than destroy, restores return full resources, expunge requires its own permission, listings hide deleted entries unless asked, and errors follow the matrix."
+  - anchor: soft-delete-aip-164
+    what: "The AIP-164 purge and visibility policy: automatic expiry after grace window, `expire_time`-driven purging, documented removal timeline, `Get` returning soft-deleted entries while `List` hides them without `show_deleted`."
+    problem: "Soft-deleted entries accumulate forever without plan, so backends grow unbounded and privacy officers cannot say when records truly disappear; retention policy gap, storage bloat, compliance deadline, purge scheduling, visibility inconsistency, grace-window documentation, declarative tooling friction, id reuse blockage."
+    use_when: "Designing end-of-life for marked resources; answering how long recovery stays possible; reconciling `Get`/`List` asymmetry; declarative client impact assessed."
+    avoid_when: "Immediate permanent removal is the requirement (expunge or standard delete); expiration of live resources (07_design_patterns › resource expiration)."
+    expected: "Purge timing documented and honored, visibility rules consistent across read verbs, and deleted IDs stay blocked until purge completes."
+  - anchor: criteria-based-delete-aip-165
+    what: "The AIP-165 `Purge` pattern: collection-level custom method returning `google.longrunning.Operation`, required `filter` reusing AIP-160 grammar, mandatory `force` gate with preview mode, `purge_count` and `purge_sample` (~100 names) response."
+    problem: "Thousands of resources need removal matching conditions, so name-by-name batch calls become unwieldy and one wrong filter erases massive dataset; bulk erasure, filter-driven deletion, mass data loss risk, per-name enumeration cost, preview-first safety, dry-run sample, irreversible sweep, operator footgun."
+    use_when: "Deletion scale exceeds practical batch methods (thousands-plus); filter semantics must match list behavior; preview-then-commit flow designed; sample size and count estimation policy set."
+    avoid_when: "Handful of named resources (05_operations › delete); accidental-loss blast radius unacceptable; recovery after deletion wanted (07_design_patterns › soft delete); filter grammar divergent from list (07_design_patterns › filtering)."
+    expected: "Purge previews counts and samples before `force` commits, filter matches list semantics, and the operation runs as LRO with documented estimation."
+  - anchor: unicode-aip-210
+    what: "The AIP-210 text rules: `character` defined as Unicode code point, length limits enforced in characters, billing units declared, ASCII-restricted identifiers, Normalization Form C storage, NFC-checked uniqueness."
+    problem: "String limits measured in bytes, so non-ASCII users hit ceilings at fraction of advertised length and visually identical identifiers collide across storage; i18n incident, byte-versus-character confusion, grapheme ambiguity, normalization collision, duplicate identity, billing dispute, combining mark divergence, encoding gotcha."
+    use_when: "String field gets length limit; identifier character set defined; uniqueness check implemented over text; billing or quota unit for text declared."
+    avoid_when: "Binary payload (`bytes` type); ASCII-only machine token with no user text; no length constraints anywhere on strings."
+    expected: "Limits count code points, identifiers normalize to NFC before uniqueness checks, billing units documented, and non-ASCII users get advertised capacity."
+  - anchor: authorization-checks-aip-211
+    what: "The AIP-211 authz ordering: permission check before any validation, `PERMISSION_DENIED` with existence-hiding message shape, parent-fallback `NOT_FOUND`, per-operation permission checks without cross-operation hints."
+    problem: "Replies confirm whether hidden resources exist, so unauthorized users enumerate protected namespace and mixed 403/404 behavior confuses legitimate owners; information leakage, existence oracle, tenant enumeration, error-ordering trap, troubleshooting confusion, cacheable hazard, permission debugging, security-versus-usability tension."
+    use_when: "Designing error behavior for unauthorized calls; ordering of checks versus validation decided; user-specified IDs risk existence leaks; multiple operations guard one resource."
+    avoid_when: "Public resources without access control; freshness conflicts rather than permissions (07_design_patterns › freshness validation); request dedup concerns (07_design_patterns › request identification)."
+    expected: "Failures return `PERMISSION_DENIED` with the canonical ambiguous message, checks precede validation, and no operation leaks existence through sibling permissions."
+  - anchor: resource-expiration-aip-214
+    what: "The AIP-214 expiration fields: absolute `google.protobuf.Timestamp expire_time` always on output, `oneof expiration` pairing it with `INPUT_ONLY google.protobuf.Duration ttl` for relative input, `int64 ttl` only for precedent-bound domains like DNS."
+    problem: "Clients compute deadlines from relative offsets, so clock skew and zone confusion cause premature or missed expiry while countdown fields drift during processing; ttl input ambiguity, absolute instant canon, stale timestamp hazard, rotating secret lifetime, temporary credential, automatic cleanup, time-to-live semantics, input-only duration."
+    use_when: "Resource or attribute becomes invalid at known time; relative TTL wanted alongside absolute read; DNS-style precedent mandates integer seconds (document non-precedent); expiration versus soft-delete purge relationship decided."
+    avoid_when: "Permanent resources without lifecycle end; countdown field updated server-side contemplated (drift hazard); deletion recovery wanted (07_design_patterns › soft delete)."
+    expected: "Output always carries absolute `expire_time`, relative values convert at write time, `ttl` stays input-only, and integer exceptions document their precedent."
+  - anchor: unreachable-resources-aip-217
+    what: "The AIP-217 partial-success contract: `repeated string unreachable` with `UNORDERED_LIST` behavior holding service-relative names, whole-call failure when nothing reachable, per-page reporting, opt-in `bool return_partial_success` retrofit added simultaneously with response field."
+    problem: "Distributed read spans regions and one zone drops, so entire call fails or worse silently omits data while user trusts incomplete result; partial fan-out failure, silent coverage gap, location outage, false completeness, cross-region listing, degraded availability, truncated page, retroactive opt-in compatibility."
+    use_when: "List fans out across parents or locations; transient regional unavailability possible; deciding fail-whole versus partial response; retrofitting onto existing error-on-unreachable API."
+    avoid_when: "Single-parent scope where unreachable means empty result (fail entire request); unreachable entries carrying error details (forbidden); ordered structure imposed on the list."
+    expected: "Responses pair available data with `unreachable` names, per-page entries repeat, opt-in retrofit keeps legacy default, and scoped retries yield full errors."
+aips: [152, 153, 154, 155, 157, 158, 159, 160, 161, 162, 163, 164, 165, 210, 211, 214, 217]
+---
+
+# Design Patterns
+
 ## 7. Design Patterns
 
 ### 7.1 Jobs (AIP-152)
@@ -91,6 +225,8 @@ message WriteBookJobExecution {
 ```
 
 In this case, the operation returned by the job's `Run` method **should** refer to the child resource.
+
+> **Agent extension — not part of the AIP standard.** Choose a job resource only for long-lived, recurring, or schedule-bound work; a one-shot slow call is a long-running operation (AIP-151), not a job. The distinction matters to clients: jobs are manageable resources with their own lifecycle (list, disable, delete), while LROs are transient handles that disappear after completion.
 
 ### 7.2 Import and Export (AIP-153)
 [ref: #import-and-export-aip-153]
@@ -297,6 +433,8 @@ ETags can be either "strongly validated" or "weakly validated":
 
 Resources **may** use either strong or weak etags, as it sees fit, but **should** document the behavior. Additionally, weak etags **must** have a `W/` prefix as mandated by RFC 7232.
 
+> **Agent extension — not part of the AIP standard.** Prefer ETags over timestamp comparisons for concurrency control: timestamps suffer clock skew and insufficient granularity in distributed systems, while an ETag changes exactly when the resource changes. The `if_match`/`if_none_match` handshake is what actually prevents lost updates when two clients read-modify-write concurrently.
+
 ### 7.4 Request Identification (AIP-155)
 [ref: #request-identification-aip-155]
 
@@ -354,6 +492,8 @@ In this situation, the method **may** return the current state of the resource i
 ##### Using UUIDs for request identification
 
 When a value is required to be unique, leaving the format open-ended can lead to API consumers incorrectly providing a duplicate identifier. As such, standardizing on a universally unique identifier drastically reduces the chance for collisions when done correctly.
+
+> **Agent extension — not part of the AIP standard.** `request_id` is a protocol-level deduplication key, never a business identifier: the server executes the mutation once, caches the outcome, and replays that cached result for retries carrying the same UUID. Do not overload it as a trace or correlation ID, and do not let business logic reject "duplicates" that are actually legitimate retries.
 
 ### 7.5 Partial Responses (AIP-157)
 [ref: #partial-responses-aip-157]
@@ -432,6 +572,8 @@ An API **may** support read masks as a single field on the request message: `goo
 ##### Deprecating `read_mask` in request messages
 
 As mentioned, API infrastructure implements a service-wide response field filtering mechanism, so there is no need for individual API methods to specify a `read_mask` in their request schema. Doing so is both redundant and a potential point of conflict for the client or service.
+
+> **Agent extension — not part of the AIP standard.** Read-side field masks pay for themselves on chatty or mobile clients: returning only the requested fields cuts payload and serialization cost on every call. The ecosystem trend since 2025 is toward mandatory `update_mask` on writes for the same reason in reverse — make mask handling a first-class part of the method contract, not an afterthought.
 
 ### 7.6 Pagination (AIP-158)
 [ref: #pagination-aip-158]
@@ -543,6 +685,8 @@ For this reason, it is important to always add pagination to RPCs returning coll
 
 Large collections, complex queries, and globally distributed data can all contribute to a paginated method being unable to quickly or confidently fulfill a given `skip` request. Backend queries can timeout, data collation can take time, and the end user experience need not suffer as a result. In such cases, the pagination interface can be leveraged to keep the client engaged by providing a `next_page_token`, while the service collects an appropriate result. When the service has definitively determined that the requested `skip` exceeds the available results, the pagination interface is again applied and `next_page_token` is omitted to signal the end of results.
 
+> **Agent extension — not part of the AIP standard.** Treat `page_token` as strictly opaque: never embed database keys or raw offsets — they leak storage internals and freeze your ability to re-shard or re-index. Changing filter or sort criteria mid-iteration invalidates the token's premise; clients that change the query must restart from the first page, and servers should reject or ignore stale combinations rather than return silently inconsistent pages.
+
 ### 7.7 Reading Across Collections (AIP-159)
 [ref: #reading-across-collections-aip-159]
 
@@ -576,6 +720,8 @@ GET https://example.googleapis.com/v1/publishers/-/books/{book}
 - The method **must** explicitly document that this behavior is supported.
 - The resource name in the response **must** use the canonical name of the resource, with actual parent collection identifiers (instead of `-`). For example, the request above returns a resource with a name like `publishers/123/books/456`, *not* `publishers/-/books/456`.
 - The resource ID **must** be unique within parent collections.
+
+> **Agent extension — not part of the AIP standard.** The `-` wildcard parent (for example `shelves/-/books`) queries across all containers of a collection in one call. Responses must carry canonical resource names with the real parent IDs, never the `-` placeholder — clients store and compare these names. Document wildcard support explicitly per method; it is opt-in behavior, not an automatic consequence of the URI pattern.
 
 ### 7.8 Filtering (AIP-160)
 [ref: #filtering-aip-160]
@@ -725,6 +871,8 @@ Schematic validation refers, but is not limited to, the following:
 - Field values for bounded data types e.g. `enum` provided in the `filter` **must** be a valid value in the set.
 - Field values for standardized types e.g. `Timestamp` **must** conform to the documented standard (see Comparison Operators for a list of such types).
 
+> **Agent extension — not part of the AIP standard.** The filter grammar follows CEL-like syntax with one genuinely counterintuitive rule: `OR` binds tighter than `AND`, the reverse of most programming languages — always write explicit parentheses and encourage users to do the same. Reuse this exact syntax wherever filtering appears (custom methods, criteria-based delete AIP-165) instead of inventing per-method query languages.
+
 ### 7.9 Field Masks (AIP-161)
 [ref: #field-masks-aip-161]
 
@@ -836,6 +984,8 @@ If a user directly specifies an output only field in an update mask, the service
 When reading data, field masks **may** ignore entries that point to a value that can not exist (either a field that does not exist, or a map key that the service considers invalid).
 
 When writing data, field masks **should** return an `INVALID_ARGUMENT` error if an entry points to a value that can not exist; however, the service **may** permit deletions.
+
+> **Agent extension — not part of the AIP standard.** Define the no-mask case explicitly: when `update_mask` is absent, the common contract is "update all fields present in the request," and ambiguity here is a recurring source of accidental overwrites. A mask naming an `OUTPUT_ONLY` field is ignored, not an error (AIP-203) — document that behavior so clients do not read silence as success.
 
 ### 7.10 Resource Revisions (AIP-162)
 [ref: #resource-revisions-aip-162]
@@ -1034,11 +1184,13 @@ The guidance was modified ultimately to enable revisions to behave like a resour
 
 ##### Using resource ID instead of tag
 
-In the previous design, revisions had a separate identifer for a revision known as a `tag`, that would live in a revision.
+In the previous design, revisions had a separate identifier for a revision known as a `tag`, that would live in a revision.
 
 Tags were effectively a shadow resource ID, requiring methods to create, get and filter revisions based on the value of the tag.
 
 By consolidating the concept of a tag into the revision ID, the user no longer needs to be familiar with a second set of retrieval and identifier methods.
+
+> **Agent extension — not part of the AIP standard.** Revisions form a strict sub-collection of the resource — not a shadow resource with its own retrieval surface. The model consolidated: tags and labels folded into revision IDs rather than parallel identifier schemes. Keep revision operations scoped (list, get, rollback via the parent) so IAM and naming stay uniform.
 
 ### 7.11 Change Validation (AIP-163)
 [ref: #change-validation-aip-163]
@@ -1072,6 +1224,8 @@ The API **must** perform permission checks and any other validation that would b
 #### Declarative-friendly resources
 
 A resource that is declarative-friendly ([AIP-128](04_resource_design.md#declarative-friendly-interfaces-aip-128)) **must** include a `validate_only` field on methods that mutate the resource.
+
+> **Agent extension — not part of the AIP standard.** `validate_only` is a contract, not a hint: the dry run must execute the same authorization, quota, and schema checks as the real call, or it becomes a false-positive generator that clients learn to distrust. The classic bug is a fast-path validator that drifts from the executor — share one validation pipeline between the two paths.
 
 ### 7.12 Soft Delete (AIP-164)
 [ref: #soft-delete-aip-164]
@@ -1227,6 +1381,8 @@ If the resource exists but is not in a ready or soft-deleted state, the method *
 
 Standard permission errors (`PERMISSION_DENIED`) apply. Services **must** require an explicit expunge permission that is separate from standard delete permissions (e.g., `<service>.<resource>.expunge`).
 
+> **Agent extension — not part of the AIP standard.** Under soft delete, `Delete` returns the updated (marked) resource, not `google.protobuf.Empty`, and the resource gains `delete_time` plus `expire_time` (purge deadline); `Undelete` restores and optional `Expunge` forces immediate removal. Implement the full pattern only when real user journeys need recovery — a half-implemented soft delete (no purge, no undelete) is worse than plain delete.
+
 ### 7.13 Criteria-Based Delete (AIP-165)
 [ref: #criteria-based-delete-aip-165]
 
@@ -1318,6 +1474,8 @@ message PurgeBooksResponse {
 
 **Note:** Even if `purge_count` and `purge_sample` are not included, the `force` field **must** still be included in the request.
 
+> **Agent extension — not part of the AIP standard.** Criteria-based delete reuses the AIP-160 filter syntax for selection — do not invent a second query language. Document the failure semantics up front: whether the bulk delete is atomic, and if partial success is possible, how per-item failures are reported (the `failed_requests` pattern of AIP-233 applies).
+
 ### 7.14 Unicode (AIP-210)
 [ref: #unicode-aip-210]
 
@@ -1396,6 +1554,8 @@ There is some debate about whether we should view strings as sequences of code p
 
 Put differently, our goal is to allow someone with text in any encoding (ASCII, UTF-16, UTF-32, etc) to interact with our APIs without a lot of "gotchas".
 
+> **Agent extension — not part of the AIP standard.** Measure string limits in characters (code points), not bytes, or non-ASCII users hit limits at a fraction of the advertised length. State normalization behavior predictably (reject or normalize consistently) and define billing and quota units in the same character-based terms — byte-based limits are the recurring i18n incident.
+
 ### 7.15 Authorization Checks (AIP-211)
 [ref: #authorization-checks-aip-211]
 
@@ -1431,6 +1591,8 @@ RFC 7231 §6.5.3 states that services are permitted to use `404 Not Found` in li
 - While `403 Forbidden` is essentially always an error requiring manual action, `404 Not Found` is often a valid response that the application can handle (e.g. "get or create"); overloading it for permission errors deprives applications of this benefit.
 - RFC 7231 §6.5.4 states that `404 Not Found` results are cacheable, but permission errors are not generally cacheable. Sending explicit cache controls on a conditional basis could ameliorate this, but would defeat the purpose.
 - The guidance here is more consistent with most other real-world authorization systems.
+
+> **Agent extension — not part of the AIP standard.** Check authorization before validating existence or the request body, and on failure return `PERMISSION_DENIED` with the canonical message shape "Permission '{p}' denied on resource '{r}' (or it might not exist)" — the parenthetical exists precisely so the error does not confirm whether the resource exists. Returning `NOT_FOUND` to hide existence is the wrong lever: it trains clients into retry loops and breaks debugging for legitimate owners.
 
 ### 7.16 Resource Expiration (AIP-214)
 [ref: #resource-expiration-aip-214]
@@ -1475,6 +1637,8 @@ We considered allowing a standard field called `ttl` as an alternative way of de
 ###### Always use `expire_time`
 
 This is the current state of the world with a few exceptions. In this scenario, we could potentially push the computation of `now + ttl = expire_time` into client libraries; however, this leads to a somewhat frustrating experience in the command-line and using REST/JSON. Leaving things as they are is typically the default, but it seems many customers want the ability to define relative expiration times as it is quite a bit easier and removes questions of time zones, stale clocks, and other silly mistakes.
+
+> **Agent extension — not part of the AIP standard.** `expire_time` is an absolute `google.protobuf.Timestamp`; accepting a relative TTL as input is fine as long as it is converted to the absolute field at write time — clients must always read one unambiguous deadline. Expiration interacts with soft delete (AIP-164): purging at `expire_time` is permanent, so document which resources bypass expiration and why.
 
 ### 7.17 Unreachable Resources (AIP-217)
 [ref: #unreachable-resources-aip-217]
@@ -1556,7 +1720,7 @@ message ListBooksRequest {
   // resources that are reachable, and into including the names of those that
   // were unreachable in the [ListBooksResponse.unreachable] field. This can
   // only be `true` when reading across collections e.g. when `parent` is set to
-  //  `"projects/example/locations/-"`.
+  // `"projects/example/locations/-"`.
   bool return_partial_success = 4;
 }
 
@@ -1580,17 +1744,17 @@ If the `bool return_partial_success` field is set to `true` in a request that is
 
 ##### Using service-relative resource names
 
-In general, relative resource names, as defined in [AIP-122](04_resource_design.md#resource-names-aip-122), are the best practice for referring to resources by name *within* a service and in other services when that other service is obvious. The full resource name format is strictly less consumable (e.g., requires extra parsing client side), and over-specified for the uses of `unreachable`. Resource URIs are not transport agnostic, as they are unusable in standard methods for gRPC users, and simple resource IDs do not provide enough information about exactly which resource was unreachable in a heterogenous list of resources.
+In general, relative resource names, as defined in [AIP-122](04_resource_design.md#resource-names-aip-122), are the best practice for referring to resources by name *within* a service and in other services when that other service is obvious. The full resource name format is strictly less consumable (e.g., requires extra parsing client side), and over-specified for the uses of `unreachable`. Resource URIs are not transport agnostic, as they are unusable in standard methods for gRPC users, and simple resource IDs do not provide enough information about exactly which resource was unreachable in a heterogeneous list of resources.
 
-The context in which an unreachable resource is discovered may be sensitive and the state of the system fluid between calls. As such, it is preferred to defer to the service by making a more specific RPC to get more details about a specific resource or parent. This allows the parent to handle all necessary RPC checks and system state resolution on at time of request, rather than by shoehorning potentially privileged or stale information into the broader list call it was unreachable for.
+The context in which an unreachable resource is discovered may be sensitive and the state of the system fluid between calls. As such, it is preferred to defer to the service by making a more specific RPC to get more details about a specific resource or parent. This allows the parent to handle all necessary RPC checks and system state resolution at time of request, rather than by shoehorning potentially privileged or stale information into the broader list call it was unreachable for.
 
 ##### Unordered `unreachable` contents
 
-It is important for broad API consistency that the contents of `unreachable` not have a specific or order semantic structure. If each API baked a specific ordering into a standard field, no single implementation, client or server side, would be correct.
+It is important for broad API consistency that the contents of `unreachable` not have a specific order or semantic structure. If each API baked a specific ordering into a standard field, no single implementation, client or server side, would be correct.
 
 ##### Per page `unreachable` resources
 
-Populating `unreachable` resources on a per page basis allows end users to identify immediately when a page is incomplete, rather than *after* paging through all results. Paging to completion is not guaranteed, so it is important to communicate as soon as possible when there are unreachable resource missing from a given page. Furthermore, it allows users to identify when there is a potential issue that they need to account for in subsequent calls. Finally, retaining unreachable resources until the end of paging results requires services to retain the state for what should be indepedent and fully isolated API calls.
+Populating `unreachable` resources on a per page basis allows end users to identify immediately when a page is incomplete, rather than *after* paging through all results. Paging to completion is not guaranteed, so it is important to communicate as soon as possible when there are unreachable resources missing from a given page. Furthermore, it allows users to identify when there is a potential issue that they need to account for in subsequent calls. Finally, retaining unreachable resources until the end of paging results requires services to retain the state for what should be independent and fully isolated API calls.
 
 ##### Using request field to opt-in
 
@@ -1607,3 +1771,5 @@ At a certain level of request scope granularity, an API is simply unable to enum
 #### History
 
 The original guidance for how to populate the `unreachable` field revolved around consuming the contents as if they were the paged results. This meant that paged resources and unreachable resources couldn't be returned in the same response i.e. page, and users needed to completely page through all results in order to see if any were unreachable. See the Rationale section for the reasoning around the changes.
+
+> **Agent extension — not part of the AIP standard.** The `unreachable` repeated field is the contract for partial fan-out failures: return the data you have plus the names of unreachable locations, and fail the whole call only when a critical location prevents any meaningful answer. Under pagination, repeat the accumulated unreachable entries on every page so single-page consumers cannot miss them.
