@@ -1,3 +1,74 @@
+---
+subject: "JWT vulnerability detection reference for SAST subagents: OWASP API2 context, insecure-implementation definition, CWE table, 15 weakness classes and exclusions, prevention patterns, per-stack vulnerable/secure recipes incl. FastAPI and modern jjwt/golang-jwt, kid/JWK/JKU injection, URL/storage/refresh/binding/JWE secondary patterns, three-phase execution."
+index:
+  - anchor: jwt-detection
+    what: "Focused JWT weakness detection role using the three-phase subagent approach — lifecycle recon, batched verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic sweep of every token verification, issuance, and storage site, yet unstructured hunting misses weak validators and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "JWT scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual JWT knowledge is needed, not execution."
+    expected: "Verified JWT findings consolidated into the module report with false positives filtered."
+  - anchor: jwt-owasp-context
+    what: "OWASP API2:2023 ratings and JWT-related broken-authentication signals, plus adjacent failures: stuffing, missing re-authentication, microservice gaps, leakage."
+    problem: "Audits treat token flaws as library trivia without business framing, so severity rationale stays weak and unconvincing in reports; risk framing, account takeover, business stakes, taxonomy anchor, authentication failures, impact narrative, reviewer context."
+    use_when: "Writing severity rationale; explaining why token weaknesses matter beyond crypto details."
+    avoid_when: "Detection mechanics are the question — see execution anchors; CWE identifiers wanted."
+    expected: "Reports frame token findings as authentication-breakage with takeover impact."
+  - anchor: jwt-definition
+    what: "Core definition: header.payload.signature structure and the failure modes — trusting token-declared algorithms, skipped signature verification, guessable secrets, attacker-controlled key material."
+    problem: "Reviewers disagree on what counts as token insecurity without shared failure modes, so decode-only paths get missed while compliant verifiers attract noise; concept baseline, shared vocabulary, classification consistency, definition anchor, signature validation, claims checks, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a code path belongs to JWT findings at all."
+    avoid_when: "Concrete stack recipes are needed — jump to the examples anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: tokens trusted without proper authenticity verification."
+  - anchor: jwt-cwe-mapping
+    what: "CWE table per weakness class: CWE-347/345 for signature issues, CWE-798/330 for weak secrets, CWE-89/22/94/502 for kid injection, CWE-613/200/522/327/306/384 for lifecycle flaws."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when key management and injection classes blur categories; weakness taxonomy, cwe 347, misclassification risk, tooling accuracy, identifier precision, reporting feeds, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk framing is the question — see the context anchor."
+    expected: "Each finding carries the most specific CWE identifier."
+  - anchor: jwt-scope-in
+    what: "Fifteen weakness classes: alg:none, RS256-to-HS256 confusion, decode-only paths, weak secrets, embedded JWK, JKU/X5U, kid injection, missing claims, no revocation, URL leakage, insecure storage, refresh failures, no binding, JWKS trust, JWE weaknesses."
+    problem: "Detectors under-report when weakness classes stay implicit, missing header-injection, lifecycle, and storage paths across frameworks and libraries; inclusion rules, class inventory, missed callsites, hidden vectors, recon breadth, primitive coverage, framework gaps."
+    use_when: "Building or checking a recon checklist; unsure whether a construct qualifies; calibrating false negatives."
+    avoid_when: "Exclusions and class boundaries are the question — see the scope-out anchor; prevention patterns wanted."
+    expected: "Every token-handling weakness class is recognized during recon."
+  - anchor: jwt-scope-out
+    what: "Boundary rules excluding IDOR via claim tampering, XSS through rendered claims, and CSRF on cookie-carried tokens."
+    problem: "Findings get misrouted when adjacent classes blur into token forgery, corrupting severity and ownership across scans; misrouting risk, class confusion, double reporting, ownership clarity, dedup discipline, triage errors, category overlap, fuzzy edges."
+    use_when: "A finding could belong to another scan class; triaging overlapping categories."
+    avoid_when: "Positive weaknesses are needed — see the scope-in anchor; prevention patterns wanted."
+    expected: "Each candidate lands in exactly one class, with forgery separated from usage flaws."
+  - anchor: jwt-prevention-patterns
+    what: "Safe verification constructions: pinned algorithms per library, strong env-sourced secrets, JWKS allowlists, and claim validation."
+    problem: "Verify subagents need authoritative safe patterns to avoid flagging secured verifiers, and scattered hardening knowledge produces false positives everywhere; locked algos, env secrets, jwks pinning, false-positive control, secure baseline, mitigation catalog, guard patterns."
+    use_when: "Classifying a candidate as mitigated; comparing site code against known-safe forms; writing remediation notes."
+    avoid_when: "Vulnerable examples per stack are the need — see the examples anchor."
+    expected: "Algorithm-pinned, claim-validating verification correctly classified as not vulnerable."
+  - anchor: jwt-examples
+    what: "Per-stack vulnerable/secure recipe pairs: PyJWT, FastAPI, python-jose, jsonwebtoken, jose, jjwt (legacy and 0.12 APIs), golang-jwt, .NET, plus kid, embedded-JWK, URL, storage, refresh, and JWE patterns."
+    problem: "Verification idioms differ per library and version, and generic token rules miss stack-specific traps like decode-vs-verify, parserBuilder removal, and archived Go modules; stack recipes, release drift, api drift, precise detection, pattern matching, call diversity, framework calls."
+    use_when: "Target uses one of the covered stacks; reviewing token verification call sites."
+    avoid_when: "Weakness-class catalog is the question — see the scope-in anchor; conceptual definitions wanted."
+    expected: "Stack-specific dangerous calls flagged; hardened verification verified."
+  - anchor: jwt-execution
+    what: "Three-phase execution: JWT lifecycle mapping recon with a zero-usage early-exit gate, batched verify per verification site, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the JWT scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual JWT knowledge is the need — see definition and examples anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: jwt-references
+    what: "External link list for JWT concepts, library docs, and attack tooling."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification is required; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, rfc pages."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — the references list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: jwt-important-reminders
+    what: "Closing operational reminders for the JWT module: phase ordering, batch discipline, library-version traps, and cleanup rules."
+    problem: "Modules close with inconsistent final guidance, letting inflated ratings or weak proof slip into reports and client deliverables; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+---
+
 # JWT Vulnerability Detection
 
 [ref: #jwt-detection]
@@ -8,9 +79,10 @@ You are performing a focused security assessment to find insecure JSON Web Token
 
 > **Subagent constraint**: Subagents must NOT modify project source code. They may only read code and write report files under `{{ REPORTS_ROOT }}/`.
 
----
+***
 
 ## Why This Matters (OWASP API2:2023 Context)
+[ref: #jwt-owasp-context]
 
 API2:2023 Broken Authentication is rated:
 
@@ -37,17 +109,19 @@ JWT weaknesses also intersect with broader authentication failures:
 
 The core pattern remains: *the server does not fully verify the JWT's authenticity and integrity before trusting its claims.*
 
----
+***
 
 ## What is an Insecure JWT Implementation
+[ref: #jwt-definition]
 
 JWTs consist of three Base64URL-encoded parts: `header.payload.signature`. The header declares the signing algorithm (`alg`), the payload carries claims (e.g., `sub`, `role`, `exp`), and the signature is a cryptographic proof of integrity. Vulnerabilities arise when the server trusts the token's own claims about how it was signed, fails to verify the signature at all, uses a guessable secret, or trusts attacker-controlled key material embedded in the token itself.
 
 The core pattern: *the server does not fully verify the JWT's authenticity and integrity before trusting its claims.*
 
----
+***
 
 ## CWE Mapping
+[ref: #jwt-cwe-mapping]
 
 Map each weakness class to the relevant CWE. Use this table to label findings consistently in the final report.
 
@@ -69,6 +143,7 @@ Map each weakness class to the relevant CWE. Use this table to label findings co
 | Token not bound to channel / device | CWE-384 | Session Fixation / insecure session binding |
 
 ## What JWT Vulnerabilities ARE
+[ref: #jwt-scope-in]
 
 **1. Algorithm confusion — `alg: none`**
 The server accepts a JWT whose header declares `"alg": "none"`, bypassing signature verification entirely. An attacker crafts an arbitrary payload, sets `alg` to `none`, and omits the signature. If the library processes it, the forged token is accepted.
@@ -124,6 +199,7 @@ The application fetches signing keys from a JWKS URL but does not pin or allowli
 JSON Web Encryption is used with weak algorithms or `dir` (direct) encryption using a symmetric key that is short, hardcoded, or shared. An attacker who obtains the encryption key can decrypt all tokens.
 
 ### What JWT Vulnerabilities are NOT
+[ref: #jwt-scope-out]
 
 Do not flag these as JWT vulnerabilities:
 
@@ -132,9 +208,10 @@ Do not flag these as JWT vulnerabilities:
 - **CSRF**: JWT in cookies without `SameSite` — that's a CSRF concern, not a JWT integrity issue
 - **Properly restricted verification**: `jwt.verify(token, secret, { algorithms: ['HS256'] })` with a strong secret — not vulnerable
 
----
+***
 
 ## Patterns That Prevent JWT Vulnerabilities
+[ref: #jwt-prevention-patterns]
 
 **1. Algorithm allowlist in verification call**
 ```python
@@ -199,9 +276,10 @@ if jku not in ALLOWED_JWKS_URLS:
 - Bind tokens to a TLS session, client certificate, or device fingerprint for high-security contexts.
 - Validate that the token is used from the same channel or device it was issued to.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #jwt-examples]
 
 ### Python — PyJWT
 
@@ -251,6 +329,48 @@ payload = jwt.decode(
     algorithms=["HS256"],
     options={"require": ["exp"]}
 )
+```
+
+### Python — FastAPI
+
+```python
+# VULNERABLE: signature verification disabled or alg:none accepted
+from fastapi import Depends, FastAPI
+from fastapi.security import HTTPBearer
+import jwt
+
+app = FastAPI()
+bearer = HTTPBearer()
+
+@app.get("/me")
+def me(creds=Depends(bearer)):
+    payload = jwt.decode(creds.credentials, options={"verify_signature": False})
+    return payload
+
+@app.get("/me2")
+def me2(creds=Depends(bearer)):
+    payload = jwt.decode(creds.credentials, SECRET, algorithms=["HS256", "none"])  # alg:none accepted
+    return payload
+
+# SECURE: algorithm pinned, strong secret from env, claims validated
+import os
+from fastapi import HTTPException
+from jwt import PyJWTError
+
+SECRET = os.environ["JWT_SECRET"]
+
+@app.get("/me")
+def me(creds=Depends(bearer)):
+    try:
+        payload = jwt.decode(
+            creds.credentials, SECRET,
+            algorithms=["HS256"],
+            audience="myapp-api",
+            issuer="https://myapp.example.com",
+        )  # exp verified by default
+    except PyJWTError:
+        raise HTTPException(status_code=401)
+    return payload
 ```
 
 ### Node.js — jsonwebtoken
@@ -320,7 +440,7 @@ Claims claims = Jwts.parserBuilder()
     .parseClaimsJws(token).getBody();
 // claims.getExpiration() never checked
 
-// SECURE: parserBuilder (does not trust header alg; uses key type)
+// SECURE (jjwt ≤ 0.11.x, legacy API): parserBuilder (does not trust header alg; uses key type)
 Claims claims = Jwts.parserBuilder()
     .requireIssuer("myapp")
     .requireAudience("myapp-api")
@@ -328,9 +448,18 @@ Claims claims = Jwts.parserBuilder()
     .build()
     .parseClaimsJws(token)
     .getBody();
+
+// SECURE (jjwt ≥ 0.12): verifyWith + parseSignedClaims — parserBuilder removed, setSigningKey deprecated
+Claims claims = Jwts.parser()
+    .requireIssuer("myapp")
+    .requireAudience("myapp-api")
+    .verifyWith(key)
+    .build()
+    .parseSignedClaims(token)
+    .getPayload();
 ```
 
-### Go — golang-jwt / dgrijalva/jwt-go
+### Go — golang-jwt
 
 ```go
 // VULNERABLE: accepts any algorithm including "none"
@@ -349,6 +478,8 @@ token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error)
     return jwtKey, nil
 })
 ```
+
+Note: `github.com/dgrijalva/jwt-go` is archived and unmaintained (CVE-2020-26160 — `aud` claim verification bypass); the maintained fork is `github.com/golang-jwt/jwt` (v5+). Flag any `go.mod` still importing dgrijalva.
 
 ### C# — System.IdentityModel.Tokens.Jwt
 
@@ -496,9 +627,10 @@ const jwe = await new EncryptJWT(payload)
   .encrypt(publicKey)
 ```
 
----
+***
 
 ## Execution
+[ref: #jwt-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -518,7 +650,7 @@ Launch a subagent with the following instructions:
 > - Python: `import jwt`, `from jose import`, `from authlib import`, `import python_jose`
 > - Node.js: `require('jsonwebtoken')`, `import jwt from 'jsonwebtoken'`, `jose`, `@nestjs/jwt`
 > - Java: `io.jsonwebtoken`, `com.auth0.jwt`, `nimbus-jose-jwt`
-> - Go: `github.com/golang-jwt/jwt`, `github.com/dgrijalva/jwt-go`, `github.com/lestrrat-go/jwx`
+> - Go: `github.com/golang-jwt/jwt`, `github.com/dgrijalva/jwt-go` (archived — CVE-2020-26160; flag the import itself), `github.com/lestrrat-go/jwx`
 > - Ruby: `jwt` gem (`require 'jwt'`)
 > - PHP: `firebase/php-jwt`, `lcobucci/jwt`
 > - C#: `System.IdentityModel.Tokens.Jwt`, `Microsoft.AspNetCore.Authentication.JwtBearer`
@@ -756,9 +888,10 @@ The merged report must include:
 - For [NEEDS MANUAL REVIEW] findings, note the missing information and assign for manual verification.
 ```
 
----
+***
 
 ## References
+[ref: #jwt-references]
 
 - [OWASP API Security Top 10 2023 — API2:2023 Broken Authentication](https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/)
 - [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
@@ -779,9 +912,10 @@ The merged report must include:
 - [CWE-200: Information Exposure](https://cwe.mitre.org/data/definitions/200.html)
 - [CWE-327: Use of a Broken or Risky Cryptographic Algorithm](https://cwe.mitre.org/data/definitions/327.html)
 
----
+***
 
 ## Important Reminders
+[ref: #jwt-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Subagents must NOT modify project source code; they may only write report files under `{{ REPORTS_ROOT }}/`.

@@ -1,3 +1,44 @@
+---
+subject: "Overview card templates; common skeleton, agent rules, table-heavy factual style, technology stack lockfile versions, standards protocols, directory tree, required resources, env prefixes, per-type sections, gRPC methods, REST endpoints, Temporal workflows activities, HelmRelease, library packages, `repos/<repo>/overview`."
+index:
+  - anchor: ra-tpl-overview-common
+    what: "The common skeleton and agent rules every repo card follows regardless of type: purpose, type, stack, standards, tree, resources, env vars."
+    problem: "Cards diverge between authors and eras; sections appear and vanish, versions get rounded, observability noise sneaks in; section roulette, version rounding, noise invasion, skeleton absence, style drift, format lottery, editorial chaos, uniformity decay."
+    use_when: "Writing any repo overview card; reviewing card compliance; choosing what the common sections contain."
+    avoid_when: "Type-specific interface sections — the five per-type anchors below; anomaly routing — `[ref: #entity-findings-traceability]`."
+    expected: "Every card shares one concise, table-heavy, factual skeleton."
+  - anchor: ra-tpl-overview-grpc
+    what: "The gRPC-service section: exported services with method tables, declared-but-unimplemented methods, business logic."
+    problem: "gRPC card lists methods loosely; unimplemented proto declarations vanish and consumers call into nowhere; incomplete tables, surface fog, phantom endpoints, contract erosion, declaration loss, consumer misdirection, coverage holes, inventory drift, stub fog."
+    use_when: "Documenting a gRPC API service card; enumerating proto methods; marking aliases and unimplemented declarations."
+    avoid_when: "Common sections — `ra-tpl-overview-common`; business-domain depth — business report templates."
+    expected: "Complete method tables with protobuf message names and unimplemented declarations marked."
+  - anchor: ra-tpl-overview-rest
+    what: "The REST-gateway section: endpoint tables split by auth, authentication scheme."
+    problem: "REST card piles routes without auth info; unauthenticated surface hides and security review misses exposure; auth fog, security blindness, endpoint sprawl, exposure blindness, route chaos, review failure, perimeter darkness, access confusion."
+    use_when: "Documenting a REST API gateway card; grouping endpoints by router; recording auth per endpoint."
+    avoid_when: "Full request/response schemas — method, path, auth, purpose only."
+    expected: "Every route tabled with path, auth, and one-line purpose."
+  - anchor: ra-tpl-overview-temporal
+    what: "The Temporal-worker section: workflow and activity inventories, schedules, signals, business logic."
+    problem: "Worker card names Python classes without Temporal semantics; signals and schedules stay hidden and operators cannot run system; class naming, hidden triggers, schedule blindness, operator fog, semantic loss, runtime opacity, platform ignorance, trigger fog."
+    use_when: "Documenting a Temporal workflow worker card; mapping activities to downstreams; listing schedules and signals."
+    avoid_when: "Retry policy internals — business logic section covers behavior-affecting rules only."
+    expected: "Complete Temporal inventories with platform names and downstream mapping."
+  - anchor: ra-tpl-overview-infra
+    what: "The GitOps section: deployed services per environment, key files, infrastructure dependencies, conventions."
+    problem: "Infra card degrades into directory dump; nobody can tell which releases run where with which images; release fog, environment confusion, deployment blindness, chart chaos, image fog, namespace drift, ops confusion."
+    use_when: "Documenting an Infrastructure/GitOps card; grouping HelmReleases by namespace; recording charts and image tags."
+    avoid_when: "Anomalies and gotchas — those route to findings namespaces per `[ref: #entity-findings-traceability]`."
+    expected: "Every release tabled per environment with chart, image, and notes."
+  - anchor: ra-tpl-overview-library
+    what: "The library section: exported packages with public symbols, build/generation, conventions."
+    problem: "Library card lists every generated message; public API surface drowns and consumers cannot find stable entry points; symbol flood, surface burial, consumer confusion, API fog, export sprawl, adoption friction, stability doubt, navigation pain."
+    use_when: "Documenting a shared library card; grouping packages by domain; recording build and generation rules."
+    avoid_when: "Generated internal helpers — omitted by design; runtime service sections — wrong type."
+    expected: "Public packages tabled with purpose and important symbols."
+---
+
 # Overview Card Templates (repo-audit)
 
 ## Common skeleton and agent rules

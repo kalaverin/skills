@@ -1,3 +1,44 @@
+---
+subject: "Business-domain report synthesis; five subagent reports, contradiction hierarchy, glossary delta, single-report template, split-report structure, executive summary, entity process rule integration risk files, metadata header, anti-patterns, `repos/<repo>/business`, Mermaid flows, thresholds, header refresh."
+index:
+  - anchor: ra-tpl-business-writer
+    what: "The business-report synthesis contract: five domain reports become the final memory output without re-exploring code."
+    problem: "Root receives five domain reports; re-exploring code burns budget while shapeless assembly loses business picture; meaning evaporation, report neglect, synthesis confusion, re-exploration temptation, resource drain, assembly drift, effort duplication, coherence failure."
+    use_when: "Synthesizing the business report from domain-wave reports; reviewing the five-input contract."
+    avoid_when: "Wave prompts themselves — `analysis/domain.md` and `generators/domain.md`; technical card writing — overview templates."
+    expected: "One coherent business artifact set from five reports, zero code re-reads."
+  - anchor: ra-tpl-business-synthesis
+    what: "The synthesis steps: cross-report comparison, conflict hierarchy, terminology delta, single-vs-split decision, frontmatter refresh."
+    problem: "Reports conflict with each other and with glossary terms; careless merging imports contradictions into canonical memory; conflict smuggling, glossary drift, step skipping, canonical pollution, precedence doubt, import accidents, haste damage."
+    use_when: "Merging domain reports; resolving factual conflicts; building the glossary delta; deciding report shape."
+    avoid_when: "The hierarchy rules themselves — `serena-protocol` `[ref: #serena-contradictions]` owns them."
+    expected: "Conflicts resolved by precedence, terminology delta unified, shape decided, headers fresh."
+  - anchor: ra-tpl-business-single
+    what: "The single-report template for compact domains (≤5 entities, ≤4 processes, ≤8 rules, ≤300 lines)."
+    problem: "Compact domain gets fragmented into split files; reader chases five memories for one small picture; fragmentation, navigation chase, split overhead, small-picture scatter, template confusion, file hopping, context switching, overview loss."
+    use_when: "Domain under the thresholds; writing `repos/<repo>/business.md` as one file; choosing section order."
+    avoid_when: "Complex domains — the split structure below; metadata rules — `[ref: #tracking-fields]`."
+    expected: "One complete business.md with all sections in order."
+  - anchor: ra-tpl-business-split
+    what: "The split-report structure: executive summary plus focused files per entity, process, rule, integration, risk."
+    problem: "Complex domain crammed into one file; readers sink in mega-report and cannot find their slice; bloat, slice fog, cramming, navigation failure, structure absence, reader fatigue, content overflow, discovery stall, orientation loss."
+    use_when: "Domain exceeds thresholds; creating split files; structuring the executive summary."
+    avoid_when: "Compact domains — single template; the decision itself — `[ref: #ra-synthesis-single-vs-split]`."
+    expected: "Executive summary links to complete focused files."
+  - anchor: ra-tpl-business-split-guidance
+    what: "The split guidance: summary-only business.md, shared metadata header per split file."
+    problem: "Split files diverge in headers or repeat summary content verbatim; divergence, header drift, guidance absence, consistency decay, content echo, template fork, metadata chaos, duplication spiral, shape rot, copy drift, uniformity loss, split drift."
+    use_when: "Writing any split file; deciding what stays in the summary; stamping split headers."
+    avoid_when: "The file templates themselves — the split structure above."
+    expected: "Summary stays executive; every split file carries fresh identical header shape."
+  - anchor: ra-tpl-business-antipatterns
+    what: "The eight anti-patterns with bad/good pairs: card copying, vague entities, triggerless processes, missing Mermaid, unanchored rules, unanchored risks, infra plumbing, mega-subagent."
+    problem: "Business reports degrade into tech-card copies and vague inventories; business meaning vanishes and reviewers bounce reports; degradation, meaning loss, anti-pattern drift, quality erosion, shallowness, copycat decay, reviewer rejection, formlessness, focus collapse."
+    use_when: "Reviewing a business report before saving; learning what business-focused means concretely; rejecting shallow output."
+    avoid_when: "Positive templates — the single and split structures above."
+    expected: "Reports avoided all eight failure shapes."
+---
+
 # Business-Domain Report Synthesis (repo-audit)
 
 [ref: #ra-tpl-business-writer]
@@ -16,6 +57,8 @@ contradictions between them.
 
 ## Synthesis steps
 
+[ref: #ra-tpl-business-synthesis]
+
 1. Read all five subagent reports.
 2. Compare factual claims across reports. If sources conflict, apply the
    hierarchy in `[ref: #serena-contradictions]`:
@@ -29,6 +72,8 @@ contradictions between them.
 5. Write the final memory/memories with refreshed YAML frontmatter.
 
 ## Single-report template
+
+[ref: #ra-tpl-business-single]
 
 Use when the domain is compact (≤5 entities, ≤4 processes, ≤8 rules, ≤300
 lines). Save as `repos/<repo>/business.md`.
@@ -97,6 +142,8 @@ flowchart TD
 ```
 
 ## Split-report structure
+
+[ref: #ra-tpl-business-split]
 
 Use for complex domains. Save the executive summary as
 `repos/<repo>/business.md` and focused files as described below.
@@ -187,18 +234,15 @@ See `repos/<repo>/entities/*`, `repos/<repo>/processes/*`,
 
 ## Memory split guidance
 
-If the report is long, split it into focused memories:
+[ref: #ra-tpl-business-split-guidance]
 
-- `repos/<repo>/business.md` — executive summary only.
-- `repos/<repo>/entities/<business_entity>.md` — one per significant entity.
-- `repos/<repo>/processes/<process_name>.md` — one per process.
-- `repos/<repo>/rules/<topic>.md` — grouped rules.
-- `repos/<repo>/integrations/<topic>.md` — external actors/systems.
-- `repos/<repo>/risks/<topic>.md` — risks and gaps.
+If the report is long, split it per `## Split-report structure` above: `repos/<repo>/business.md` carries the executive summary only; the focused files (`entities/`, `processes/`, `rules/`, `integrations/`, `risks/` subdirs) are templated there. The single-vs-split decision itself is owned by `references/shared/synthesis.md` (`[ref: #ra-synthesis-single-vs-split]`).
 
 Each split memory must include the same metadata header with fresh git context.
 
 ## Anti-patterns
+
+[ref: #ra-tpl-business-antipatterns]
 
 ### Copying the technical repo card
 Bad:

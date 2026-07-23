@@ -1,3 +1,86 @@
+---
+subject: "Missing authentication and BFLA detection reference for SAST subagents: OWASP API2/API5 mapping, coverage scope and exclusions, CWE table, 7 vulnerability classes, prevention patterns and checklist, per-stack vulnerable/secure recipes incl. FastAPI, 10 modern bypass patterns, three-phase execution."
+index:
+  - anchor: missingauth-detection
+    what: "Focused missing-authentication and function-level authorization detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic sweep of every endpoint for authentication and role enforcement, yet unstructured hunting misses unguarded handlers and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "Missing-auth scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual knowledge is needed, not execution."
+    expected: "Verified auth and authz findings consolidated into the module report with false positives filtered."
+  - anchor: missingauth-owasp-mapping
+    what: "OWASP API2:2023 and API5:2023 risk mapping with ratings, signals, and classification boundaries."
+    problem: "Findings need correct 2023-era taxonomy, and mixing authentication failures with function-level authorization mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, risk rows, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to API2 or API5 with explicit reasoning."
+  - anchor: missingauth-scope
+    what: "Coverage contract: unauthenticated sensitive endpoints and function-level authorization gaps are in; object-level IDOR and other classes are out."
+    problem: "Reviewers confuse this scan with adjacent authorization classes without explicit coverage rules, so IDOR findings duplicate and BFLA cases scatter; scope contract, class boundaries, routing clarity, coverage definition, scan identity, overlap control, triage consistency."
+    use_when: "Deciding whether a finding belongs to this scan; separating API2/API5 work from IDOR."
+    avoid_when: "Vulnerability-class detail is needed — see the classes anchor; execution workflow wanted."
+    expected: "Every candidate routed to this scan or its sibling with no duplication."
+  - anchor: missingauth-cwe-mapping
+    what: "CWE table per weakness class: missing authentication, improper authorization, weak password policy, session and token flaws."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when authentication and authorization classes blur together; weakness taxonomy, cwe 306, cwe 862, misclassification risk, tooling accuracy, identifier precision, reporting feeds, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk framing is the question — see the OWASP anchor."
+    expected: "Each finding carries the most specific CWE identifier."
+  - anchor: missingauth-vuln-classes
+    what: "Seven vulnerability classes: unauthenticated sensitive endpoint, missing role check, bypassable authorization, weak anti-brute-force, missing re-authentication, broken token validation, weak microservice authentication."
+    problem: "Detectors under-report when failure classes stay implicit, missing role gaps, step-up gaps, and service-mesh trust paths across frameworks; inclusion rules, class inventory, missed callsites, hidden vectors, recon breadth, primitive coverage, stack blindspots."
+    use_when: "Building or checking a recon checklist; unsure whether a pattern qualifies; calibrating false negatives."
+    avoid_when: "Boundary rules are the question — see the scope anchor; prevention patterns wanted."
+    expected: "Every auth and authz failure class is recognized during recon."
+  - anchor: missingauth-prevention-patterns
+    what: "Safe enforcement constructions: framework decorators, middleware chains, policy checks, and centralized role enforcement that reliably guard endpoints."
+    problem: "Verify subagents need authoritative safe patterns to avoid flagging secured handlers, and scattered enforcement knowledge produces false positives everywhere; decorators, middleware gates, policy engines, false-positive control, secure baseline, mitigation catalog, guard patterns."
+    use_when: "Classifying a candidate as mitigated; comparing site code against known-safe forms; writing remediation notes."
+    avoid_when: "Vulnerable examples per stack are the need — see the examples anchor; checklist detail wanted."
+    expected: "Properly guarded endpoints correctly classified as not vulnerable."
+  - anchor: missingauth-prevention-guidance
+    what: "Layered prevention checklist: authentication fundamentals incl. passkeys and OAuth 2.1 rules, anti-brute-force, token management, function-level authorization, OAuth/OIDC/SAML, GraphQL surface, debug endpoints, operational checks."
+    problem: "Remediation advice scattered across guides leaves gaps that let one missed control reopen unauthenticated access; remediation checklist, control mapping, defense completeness, gap elimination, hardening steps, api2 api5, systematic mitigation, closure guarantee."
+    use_when: "Writing remediation; reviewing whether defenses are complete."
+    avoid_when: "Detection mechanics are the question — see execution anchors."
+    expected: "Every finding closes with a complete, layered control set."
+  - anchor: missingauth-examples
+    what: "Per-stack vulnerable/secure recipe pairs: Django, Flask, FastAPI, Express, Rails, Spring Boot, Go, Laravel, ASP.NET Core."
+    problem: "Enforcement idioms differ per framework, and generic auth rules miss stack-specific guards like decorators, before_action filters, policy attributes, and dependency injection; stack recipes, guard styles, middleware styles, precise detection, pattern matching, call diversity, api surface."
+    use_when: "Target uses one of the covered stacks; reviewing route registrations and handlers."
+    avoid_when: "Bypass techniques are the question — see that anchor; conceptual definitions wanted."
+    expected: "Stack-specific unguarded handlers flagged; enforced handlers verified."
+  - anchor: missingauth-bypass-patterns
+    what: "Ten modern bypass watch-outs: CORS wildcard with credentials, tokens in logs, weak sessions, OAuth PKCE and redirect_uri, SAML bypass, JWT-vs-session confusion, GraphQL anonymous access, debug endpoints, method switching, path normalization."
+    problem: "Classic-only review misses transport, protocol, and normalization tricks that bypass well-placed guards entirely during audits; cors abuse, log leakage, pkce gaps, saml tricks, graphql exposure, method tampering, path confusion, edge channels."
+    use_when: "Standard guard review came back clean but suspicion remains; OAuth/SAML/GraphQL surface present."
+    avoid_when: "Basic guard analysis unfinished — cover the examples first; stack recipes wanted."
+    expected: "Exotic bypass paths are checked before declaring enforcement sound."
+  - anchor: missingauth-execution
+    what: "Three-phase execution: endpoint-and-permission recon with a zero-candidate early-exit gate, batched verify in groups of three, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual knowledge is the need — see scope and examples anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: missingauth-important-reminders
+    what: "Closing operational reminders: phase ordering, batch discipline, auth-layer tracing, and cleanup rules."
+    problem: "Modules close with inconsistent final guidance, letting misrouted classes or weak proof slip into reports and client deliverables; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+  - anchor: missingauth-references
+    what: "External link list for authentication and authorization standards, cheat sheets, and guidance."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification is required; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, owasp pages."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — the references list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: missingauth-subagent-constraints
+    what: "Read-only investigator contract: subagents write only audit report files under `{{ REPORTS_ROOT }}/`, never project source."
+    problem: "Assessment subagents can damage audited codebases without explicit write limits, and edit requests mask findings that belong in reports; repo safety, constraint contract, source protection, sandbox rules, artifact discipline, modification ban, scope walls."
+    use_when: "Dispatching any detection subagent; reviewing subagent permissions."
+    avoid_when: "Detection content is the question — see phase anchors."
+    expected: "Subagents operate read-only with report-scoped writes only."
+---
+
 # Missing Authentication & Broken Function-Level Authorization Detection
 
 [ref: #missingauth-detection]
@@ -6,9 +89,10 @@ You are performing a focused security assessment to find missing authentication 
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## OWASP Mapping
+[ref: #missingauth-owasp-mapping]
 
 This reference implements detection guidance for two OWASP API Security Top 10 2023 risk classes.
 
@@ -45,6 +129,7 @@ This reference implements detection guidance for two OWASP API Security Top 10 2
 **Relationship to this skill**: Use the API2 checklist when evaluating authentication strength, brute-force/lockout protections, token authenticity, and microservice authentication. Use the API5 checklist when evaluating whether a privileged function requires the correct role/permission.
 
 ## What This Skill Covers
+[ref: #missingauth-scope]
 
 ### Missing Authentication
 An endpoint performs a sensitive action but requires **no login at all** — any anonymous HTTP request can trigger it.
@@ -67,6 +152,7 @@ Do not conflate missing/broken authentication and function-level authorization w
 When a finding overlaps multiple categories (for example, an admin endpoint that is both unauthenticated and returns verbose stack traces), report the missing-auth issue here and note the related category in the "Concern" or "Remediation" field.
 
 ## CWE Mapping
+[ref: #missingauth-cwe-mapping]
 
 The following CWE entries are relevant to the vulnerability classes in this skill. Cite the most specific CWE in each finding.
 
@@ -88,9 +174,10 @@ The following CWE entries are relevant to the vulnerability classes in this skil
 
 Use the primary mappings (CWE-287, CWE-306, CWE-307, CWE-798, CWE-862, CWE-285) in the final report unless a more specific entry clearly fits the observed pattern.
 
----
+***
 
 ## Vulnerability Classes
+[ref: #missingauth-vuln-classes]
 
 ### Class 1: Unauthenticated Sensitive Endpoint
 The endpoint modifies data, returns private information, or performs an administrative action — with no authentication required.
@@ -129,9 +216,10 @@ Token verification accepts unsigned/weakly signed JWTs (`{"alg":"none"}`), ignor
 ### Class 7: Missing or Weak Microservice-to-Microservice Authentication
 Internal/service-to-service endpoints require no authentication, accept predictable/static service tokens, or use insecurely managed service accounts (long-lived shared secrets, overly broad permissions, no rotation).
 
----
+***
 
 ## Authorization Patterns That PREVENT Vulnerabilities
+[ref: #missingauth-prevention-patterns]
 
 When you see these patterns, the endpoint is likely **not vulnerable**:
 
@@ -183,9 +271,10 @@ Gate::define('admin-action', fn($user) => $user->role === 'admin');
 $this->authorize('admin-action');
 ```
 
----
+***
 
 ## How to Prevent
+[ref: #missingauth-prevention-guidance]
 
 Use the following prevention checklist when evaluating code and writing remediation guidance. Items marked **(API2)** derive from OWASP API2:2023 Broken Authentication; items marked **(API5)** derive from OWASP API5:2023 Broken Function Level Authorization.
 
@@ -196,6 +285,7 @@ Use the following prevention checklist when evaluating code and writing remediat
 - Treat credential recovery / forgot-password / reset-password endpoints with the same brute-force, rate-limit, lockout, and monitoring controls as login endpoints. **(API2)**
 - Require re-authentication (current password, MFA/OTP, step-up token, or biometric confirmation) before sensitive operations: changing email address, current password, 2FA/OTP/phone number, API key regeneration, ownership transfer, or security settings. **(API2)**
 - Implement multi-factor authentication (MFA) wherever feasible, and enforce it for privileged accounts. **(API2)**
+- Prefer modern phishing-resistant mechanisms where the audience allows: passkeys/WebAuthn (baseline across major platforms since ~2024) for user-facing flows, and OAuth 2.1-style rules for API flows — PKCE mandatory for all clients, implicit and resource-owner-password grants dropped (OAuth 2.1 is still an IETF Internet-Draft as of 2026-07; FAPI 2.0 is the Final profile for high-security APIs). **(API2)**
 
 ### Brute-force and account-takeover protections
 
@@ -248,6 +338,7 @@ Use the following prevention checklist when evaluating code and writing remediat
 - Monitor for authentication/authorization anomalies: privilege-escalation attempts, method-switching, and requests to undocumented endpoints.
 
 ## Vulnerable vs. Secure Examples
+[ref: #missingauth-examples]
 
 ### Python — Django
 
@@ -300,6 +391,36 @@ def delete_user(user_id):
     db.session.commit()
     return '', 204
 ```
+
+### Python — FastAPI
+
+```python
+# VULNERABLE: no dependency guard at all
+@app.get("/admin/users")
+def list_users():
+    return User.all()
+
+# VULNERABLE: token present but no role check
+from fastapi.security import HTTPBearer
+
+@app.get("/admin/users")
+def list_users(creds=Depends(HTTPBearer())):
+    return User.all()  # any valid token reaches admin data
+
+# SECURE: role-enforcing dependency
+from fastapi import Depends, HTTPException
+
+def require_admin(payload=Depends(verify_token)):
+    if payload.get("role") != "admin":
+        raise HTTPException(status_code=403)
+    return payload
+
+@app.get("/admin/users")
+def list_users(admin=Depends(require_admin)):
+    return User.all()
+```
+
+Note: FastAPI `SecurityScopes` with OAuth2 schemes is the idiomatic role/scope mechanism; a bare `HTTPBearer()` dependency only proves a token is present, not that it is valid or sufficient.
 
 ### Node.js — Express
 
@@ -456,9 +577,10 @@ public async Task<IActionResult> DeleteUser(int id) {
 }
 ```
 
----
+***
 
 ## Modern Bypass Patterns & Watch-outs
+[ref: #missingauth-bypass-patterns]
 
 The following patterns are either in scope for this skill as bypasses or are strong signals that authentication/authorization is broken. For each pattern, verify in code and, where possible, provide a dynamic-test PoC.
 
@@ -702,6 +824,7 @@ If any variant bypasses the gateway authz layer, the origin endpoint is **Likely
 **Routing**: Path-normalization issues may overlap with sast-misconfiguration or gateway configuration reviews; still flag the authentication bypass here.
 
 ## Execution
+[ref: #missingauth-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -802,6 +925,18 @@ Launch a subagent with the following instructions:
 >
 > [Repeat for each endpoint]
 > ```
+
+### After Phase 1: Check for Candidates Before Proceeding
+
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/10_recon.md`. If the recon found **zero candidate endpoints** (the endpoint inventory is empty, or every entry already has both authentication and role checks documented), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/10_missingauth.md`, **delete** `{{ REPORTS_ROOT }}/10_recon.md`, and stop:
+
+```markdown
+# Missing Auth/Authz Analysis Results
+
+No vulnerabilities found.
+```
+
+Only proceed to Phase 2 if Phase 1 found at least one candidate endpoint.
 
 ### Phase 2: Verify — Check Authentication and Authorization (Batched)
 
@@ -973,9 +1108,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 
 5. After writing `{{ REPORTS_ROOT }}/10_missingauth.md`, **delete all intermediate files**: `{{ REPORTS_ROOT }}/10_recon.md` and `{{ REPORTS_ROOT }}/10_batch_*.md`.
 
----
+***
 
 ## Important Reminders
+[ref: #missingauth-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
@@ -993,6 +1129,7 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 - Clean up intermediate files: delete `{{ REPORTS_ROOT }}/10_recon.md` and all `{{ REPORTS_ROOT }}/10_batch_*.md` files after the final `{{ REPORTS_ROOT }}/10_missingauth.md` is written.
 
 ## References
+[ref: #missingauth-references]
 
 - OWASP API Security Top 10 2023 — [API2:2023 Broken Authentication](https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/) and [API5:2023 Broken Function Level Authorization](https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/).
 - OWASP [Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html).
@@ -1014,6 +1151,7 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 - CWE-522: Insufficiently Protected Credentials — <https://cwe.mitre.org/data/definitions/522.html>
 
 ## Subagent Constraints
+[ref: #missingauth-subagent-constraints]
 
 **Do not modify project source code.** Subagents running this skill are authorized only to read code, analyze it, and write findings to the designated report files under `{{ REPORTS_ROOT }}`. They must **not** apply patches, edit source files, run `git commit`, or change configuration files in the target repository. All remediation guidance must be written into the report; any code examples shown are illustrative only.
 

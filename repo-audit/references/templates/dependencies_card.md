@@ -1,3 +1,38 @@
+---
+subject: "Per-service dependency card template; YAML frontmatter, `repo` name, body structure, identity line, provided interface, downstream dependencies, databases integrations libraries infrastructure, notes, Mermaid dependency diagram, fill instructions, generic example, `repos/<repo>/dependencies`, type values, consumer lists."
+index:
+  - anchor: ra-tpl-deps-card
+    what: "The per-service dependency card template: exact layout for `repos/<repo>/dependencies.md`."
+    problem: "Dependency cards diverge in shape from service to service; consumers cannot compare cards and root cannot validate them; comparison failure, validation fog, layout roulette, card inconsistency, reader friction, template absence, uniformity loss."
+    use_when: "Writing or updating a service's dependency artifact; reviewing card structure; choosing sections."
+    avoid_when: "Project-level overview — `dependencies_project.md` template; extraction prompts — `generators/dependencies.md`."
+    expected: "Every service card follows one exact layout."
+  - anchor: ra-tpl-deps-card-frontmatter
+    what: "The dependency card frontmatter: tracking fields with `repo` as the source-repository name and `source` listing feeding memories."
+    problem: "Card headers guess repo values and source lists; provenance chain snaps and freshness checks mislead; metadata drift, source confusion, stamp errors, lineage doubt, tracking decay, verification noise, header fog, provenance gap."
+    use_when: "Writing card frontmatter; choosing the `repo` value; listing `source` memories."
+    avoid_when: "Field semantics — `[ref: #tracking-fields]` and `[ref: #entity-repo-field]` own them."
+    expected: "Header carries correct repo value and complete source list."
+  - anchor: ra-tpl-deps-card-body
+    what: "The card body structure: identity line, provided interface, downstream dependencies, four categories, notes, diagram."
+    problem: "Body sections appear in random order or quietly disappear; readers cannot find interface vs downstream vs infra; reader confusion, structure drift, skeleton absence, section chaos, orientation loss, navigation failure, part roulette, order decay, section roulette, map loss."
+    use_when: "Structuring the card body; reviewing section completeness."
+    avoid_when: "Column-level content — the fill instructions below."
+    expected: "All six body parts present in template order."
+  - anchor: ra-tpl-deps-card-fill
+    what: "The fill instructions: identity format, interface columns, downstream columns, category lists, notes content, diagram rules."
+    problem: "Columns filled loosely; types guessed, consumers vague, protocols fuzzy, diagram nodes dropped; fill drift, precision loss, column noise, completeness decay, diagram gaps, instruction neglect, quality erosion, specification fog, entry vagueness, exactness failure."
+    use_when: "Filling any card section; choosing Type values; writing notes; drawing the diagram."
+    avoid_when: "Mermaid syntax — `[ref: #ra-conventions-mermaid]`; extraction rules — `generators/dependencies.md`."
+    expected: "Every column precise, every category honest, diagram complete."
+  - anchor: ra-tpl-deps-card-example
+    what: "The generic example: a complete order_service dependency card with diagram."
+    problem: "Writer has layout but no concrete reference; first card invents shapes template never meant; reference absence, example hunger, abstract confusion, first-card drift, invention risk, guidance void, imitation failure, concrete famine, shape lottery."
+    use_when: "Writing your first dependency card; checking how sections look filled; calibrating column precision."
+    avoid_when: "Copying example content — it is illustrative, not a source of facts."
+    expected: "Writer sees one complete filled card as reference."
+---
+
 # Per-Service Dependency Card Template (repo-audit)
 
 [ref: #ra-tpl-deps-card]
@@ -6,6 +41,8 @@ This file defines the exact layout and fill-instructions for
 `repos/<repo>/dependencies.md`.
 
 ## YAML frontmatter
+
+[ref: #ra-tpl-deps-card-frontmatter]
 
 Use the current YAML frontmatter standard from `[ref: #serena-metadata]`;
 collect the git tracking fields per the frontmatter-protocol tracking extension
@@ -32,6 +69,8 @@ source: <repo-name>/, repos/<repo>/overview.md, repos/<repo>/business.md
   this card. Do not duplicate the full frontmatter inside the body.
 
 ## Body structure
+
+[ref: #ra-tpl-deps-card-body]
 
 ```markdown
 # <repo> dependencies
@@ -70,6 +109,8 @@ source: <repo-name>/, repos/<repo>/overview.md, repos/<repo>/business.md
 ```
 
 ## Section fill-instructions
+
+[ref: #ra-tpl-deps-card-fill]
 
 ### Identity line
 
@@ -161,6 +202,8 @@ Rules:
 - Validate Mermaid syntax before writing.
 
 ## Generic example
+
+[ref: #ra-tpl-deps-card-example]
 
 ```markdown
 # order_service dependencies

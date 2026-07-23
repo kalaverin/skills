@@ -1,3 +1,92 @@
+---
+subject: "RCE detection reference for SAST subagents: definition, three root causes, CWE-78/94/95/502, scope boundaries vs SSTI/XSS/SQLi, prevention patterns, per-stack vulnerable/secure recipes, specialized vectors incl. processor, serverless/CI, and LLM/AI agent execution, dynamic payloads, prevention checklist, three-phase execution, OWASP mapping."
+index:
+  - anchor: rce-detection
+    what: "Focused RCE detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic execution-sink sweep across every command, evaluator, and deserializer, yet unstructured hunting misses sinks and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "RCE scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual RCE knowledge is needed, not execution."
+    expected: "Verified RCE findings consolidated into the module report with false positives filtered."
+  - anchor: rce-definition
+    what: "Core definition: attacker-controlled OS commands or application code executing server-side, from command injection, eval-like constructs, or unsafe deserialization."
+    problem: "Reviewers disagree on what counts as code execution without shared root causes, so borderline sinks get classified inconsistently across engagements; concept baseline, shared vocabulary, classification consistency, definition anchor, origin taxonomy, common ground, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a code path belongs to RCE at all; teaching the detection boundary."
+    avoid_when: "Concrete stack recipes are needed — jump to the matching example anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: attacker-controlled commands or code running on the server."
+  - anchor: rce-cwe-references
+    what: "CWE mapping for RCE findings: CWE-78 command injection, CWE-94/95 code and eval injection, CWE-502 unsafe deserialization."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when eval forms and deserialization blur categories; weakness taxonomy, cwe 78, cwe 502, misclassification risk, tooling accuracy, identifier precision, reporting feeds, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk mapping is the question — see the OWASP anchor."
+    expected: "Each finding carries the most specific CWE identifier."
+  - anchor: rce-scope-in
+    what: "Positive RCE catalog: command execution with shell interpretation, eval-like constructs, unsafe deserializers, dynamic imports, expression languages, media processors, CI injection, and LLM agent tool execution."
+    problem: "Detectors under-report when execution sink catalogs stay implicit, missing evaluators, deserializers, processors, and CI primitives across frameworks; inclusion rules, inventory completeness, missed callsites, hidden vectors, recon breadth, primitive coverage, framework gaps."
+    use_when: "Building or checking a recon sink list; unsure whether a construct qualifies; calibrating false negatives."
+    avoid_when: "Exclusions and class boundaries are the question — see the scope-out anchor; prevention patterns wanted."
+    expected: "Every execution-shaped construct is recognized during recon."
+  - anchor: rce-scope-out
+    what: "Boundary rules separating RCE from SSRF, path traversal, SSTI, XSS, and SQLi — including the SSTI-to-RCE cross-flagging rule."
+    problem: "Findings get misrouted when adjacent classes blur into execution, corrupting severity and ownership across scans, with template engines crossing both classes; misrouting risk, class confusion, double reporting, ownership clarity, dedup discipline, triage errors, category overlap, fuzzy edges."
+    use_when: "A finding could belong to another scan class; triaging overlapping categories; template engines executing code."
+    avoid_when: "Positive sinks are needed — see the scope-in anchor; prevention patterns wanted."
+    expected: "Each candidate lands in exactly one class, or both with an explicit cross-reference."
+  - anchor: rce-prevention-patterns
+    what: "Three safe constructions: list-form subprocess without shell, safe deserialization formats, and strict allowlists before command construction."
+    problem: "Verify subagents need authoritative safe patterns to avoid flagging secured execution, and scattered mitigation knowledge produces false positives everywhere; list form, safe loaders, allowlist gates, false-positive control, secure baseline, mitigation catalog, guard patterns."
+    use_when: "Classifying a candidate as mitigated; comparing site code against known-safe forms; writing remediation notes."
+    avoid_when: "Vulnerable examples per stack are the need — see the examples anchor; checklist detail wanted."
+    expected: "List-form, safe-format, or allowlist-guarded execution correctly classified as not vulnerable."
+  - anchor: rce-examples
+    what: "Per-stack vulnerable/secure recipe pairs: command execution, eval-style injection, and unsafe deserialization across Python (incl. FastAPI and asyncio), Node.js, PHP, Ruby, Go, Java, and .NET."
+    problem: "Sink shapes differ per language and runtime, and generic command-injection rules miss stack-specific APIs like ProcessStartInfo, backticks, and spawn variants; stack recipes, language specifics, framework calls, precise detection, pattern matching, api surface, call diversity."
+    use_when: "Target uses one of the covered stacks; reviewing command-execution call sites."
+    avoid_when: "Specialized vectors are the question — see that anchor; conceptual definitions wanted."
+    expected: "Stack-specific dangerous calls flagged; safe list-form calls verified."
+  - anchor: rce-specialized-vectors
+    what: "Advanced vector coverage: shell metachar chaining, polyglot payloads, processor RCE (ImageMagick, FFmpeg, LaTeX, PDF, Office), serverless/CI environment injection, and LLM-driven agent execution sinks."
+    problem: "Classic-only review misses metachar variants, polyglot bridges, processor sinks, CI injection paths, and agent-driven code execution that bypass naive command filters entirely; polyglot files, imagemagick, ffmpeg, latex write18, github actions, cloud init, prompt injection, mcp server, code interpreter, exotic paths, sanitizer escape."
+    use_when: "Media processors, CI/CD, or LLM agent integrations are present; standard patterns came back clean but suspicion remains."
+    avoid_when: "Basic sink analysis unfinished — cover the examples first; stack recipes wanted."
+    expected: "Exotic vectors are checked before declaring an execution path safe."
+  - anchor: rce-dynamic-payloads
+    what: "Dynamic test payload catalog: PoC curl examples per sink type and platform for Phase 2 confirmation."
+    problem: "Suspected sinks stay unconfirmed without concrete payloads, and generic injection strings fail against specific platforms and encodings; confirmation testing, platform variants, encoded forms, verification evidence, dynamic proof, sink matching, proof strings."
+    use_when: "Confirming a suspected sink during verify; choosing payload forms per platform."
+    avoid_when: "Static analysis is sufficient for the finding; recon stage not done."
+    expected: "Each suspected sink gets a matching confirmation payload."
+  - anchor: rce-prevention-checklist
+    what: "OWASP-mapped prevention checklist: eliminate eval forms, list-form subprocess, allowlists, safe serializers, processor sandboxing, CI input sanitization, least privilege."
+    problem: "Remediation advice scattered across classes leaves gaps that let one missed control reopen execution; remediation checklist, control mapping, defense completeness, gap elimination, hardening steps, api8, api10, systematic mitigation, control coverage, closure guarantee."
+    use_when: "Writing remediation; reviewing whether defenses are complete."
+    avoid_when: "Detection mechanics are the question — see execution anchors."
+    expected: "Every finding closes with a complete, mapped control set."
+  - anchor: rce-subagent-constraints
+    what: "Subagent operating constraints: read-only source access, writes only under `{{ REPORTS_ROOT }}/`, never modify project files, payloads to /tmp or reports."
+    problem: "Assessment subagents can damage audited codebases without explicit write limits, and left-behind payloads pollute repositories; repo safety, payload hygiene, constraint contract, source protection, sandbox rules, artifact discipline, modification ban, scope walls."
+    use_when: "Dispatching any detection subagent; reviewing subagent permissions."
+    avoid_when: "Detection content is the question — see phase anchors."
+    expected: "Subagents operate read-only with report-scoped writes only."
+  - anchor: rce-execution
+    what: "Three-phase execution: recon for execution sinks, batched verify in groups of three with taint tracing, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the RCE scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual RCE knowledge is the need — see definition and examples anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: rce-owasp-mapping
+    what: "Mapping of RCE findings to OWASP API 2023 risks, routed primarily via API8 and API10."
+    problem: "Findings need correct 2023-era taxonomy, and assuming dedicated injection categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, compliance notes, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to the correct risks with explicit reasoning."
+  - anchor: rce-important-reminders
+    what: "Closing operational reminders for the RCE module: final severity and reporting rules."
+    problem: "Modules close with inconsistent final guidance, letting inflated ratings or weak proof slip into reports; closing rules, quality floor, consistency, final reminders, rating inflation, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+---
+
 # Remote Code Execution (RCE) Detection
 
 [ref: #rce-detection]
@@ -6,9 +95,10 @@ You are performing a focused security assessment to find Remote Code Execution v
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## What is Remote Code Execution
+[ref: #rce-definition]
 
 Remote Code Execution (RCE) occurs when an attacker can cause the application to execute arbitrary OS commands or application-level code that they control. This is typically the highest-severity vulnerability class, often resulting in complete server compromise.
 
@@ -19,6 +109,7 @@ RCE arises from three primary root causes:
 3. **Unsafe Deserialization**: User-supplied serialized data is deserialized using a gadget-prone deserializer, triggering arbitrary code execution via crafted payloads.
 
 ### CWE References
+[ref: #rce-cwe-references]
 
 Map findings to the following CWE entries in reports and cross-references:
 
@@ -32,6 +123,7 @@ Map findings to the following CWE entries in reports and cross-references:
 When writing findings, include the most specific CWE identifier in the issue description or remediation notes.
 
 ### What RCE IS
+[ref: #rce-scope-in]
 
 - Passing user input directly or indirectly into OS command execution functions with shell interpretation enabled
 - Using `eval()`, `exec()`, `Function()`, or equivalent constructs with user-controlled strings
@@ -42,8 +134,10 @@ When writing findings, include the most specific CWE identifier in the issue des
 - Passing attacker-controlled data to expression-language evaluators (Spring SpEL, Struts OGNL, Apache JEXL, etc.)
 - Feeding user-controlled filenames, URLs, or conversion options to document/media processors that execute embedded scripts or shell out (ImageMagick, FFmpeg, LaTeX, PDF generators, Office converters)
 - Allowing untrusted input to influence build scripts, CI/CD expressions, Lambda layers, or cloud-init user data
+- Exposing LLM/AI agent tools that execute model-generated code or commands (code interpreters, Python REPL tools, MCP servers with shell/file tools) to prompt-injection-driven input
 
 ### What RCE is Not
+[ref: #rce-scope-out]
 
 Do not flag these as RCE:
 
@@ -56,6 +150,7 @@ Do not flag these as RCE:
 - **Safe deserialization**: `json.loads()`, `yaml.safe_load()`, `xml.etree.ElementTree.parse()` — these formats have no code execution semantics
 
 ### Patterns That Prevent RCE
+[ref: #rce-prevention-patterns]
 
 When you see these patterns, the code is likely **not vulnerable**:
 
@@ -104,9 +199,10 @@ if (!ALLOWED_COMMANDS.includes(cmd)) return res.status(400).end();
 spawn(cmd, []);
 ```
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #rce-examples]
 
 ### OS Command Injection — Python
 
@@ -130,6 +226,26 @@ def ping():
     host = request.args.get('host')
     result = subprocess.run(["ping", "-c", "1", host], capture_output=True, text=True, timeout=5)
     return result.stdout
+
+# VULNERABLE (FastAPI): shell=True with f-string
+@app.get("/ping")
+def ping(host: str):
+    result = subprocess.run(f"ping -c 1 {host}", shell=True, capture_output=True, text=True)
+    return result.stdout
+
+# VULNERABLE (FastAPI, async): asyncio shell wrapper with f-string
+@app.get("/ping-async")
+async def ping_async(host: str):
+    proc = await asyncio.create_subprocess_shell(f"ping -c 1 {host}", stdout=asyncio.subprocess.PIPE)
+    stdout, _ = await proc.communicate()
+    return stdout.decode()
+
+# SECURE (FastAPI, async): asyncio exec form, argument list, no shell
+@app.get("/ping-async")
+async def ping_async(host: str):
+    proc = await asyncio.create_subprocess_exec("ping", "-c", "1", host, stdout=asyncio.subprocess.PIPE)
+    stdout, _ = await proc.communicate()
+    return stdout.decode()
 ```
 
 ### OS Command Injection — Node.js
@@ -390,6 +506,14 @@ MyData data = mapper.readValue(userJson, MyData.class);
 // SECURE: Jackson with concrete type, no enableDefaultTyping
 ObjectMapper mapper = new ObjectMapper();
 MyData data = mapper.readValue(userJson, MyData.class);  // safe with concrete target type
+
+// VULNERABLE: SnakeYAML with unrestricted Constructor (CVE-2022-1471)
+Yaml yaml = new Yaml();
+Object obj = yaml.load(userControlledYaml);  // arbitrary class instantiation → RCE
+
+// SECURE: SnakeYAML SafeConstructor (or SnakeYAML 2.0+ with an explicit safe loader)
+Yaml yaml = new Yaml(new SafeConstructor());
+Object obj = yaml.load(userControlledYaml);
 ```
 
 ### Unsafe Deserialization — PHP
@@ -412,6 +536,8 @@ function loadProfile() {
     return $user;
 }
 ```
+
+**PHAR deserialization:** PHP file-operation functions (`file_exists`, `is_file`, `file_get_contents`, `file`, etc.) on a `phar://` path trigger `unserialize()` on the archive's metadata — PHP object injection without any explicit `unserialize()` call. Flag any user-controlled filesystem path that can begin with `phar://`.
 
 ### Unsafe Deserialization — Ruby Marshal
 
@@ -473,6 +599,8 @@ var obj = los.Deserialize(userInput);
 // SECURE: JSON with concrete type and no type-name handling
 var obj = JsonConvert.DeserializeObject<UserData>(json);  // default TypeNameHandling.None
 ```
+
+**Framework status:** `BinaryFormatter` is obsolete-as-error (SYSLIB0011) since .NET 8, and its implementation was removed from the runtime in .NET 9. The unsupported `System.Runtime.Serialization.Formatters` NuGet package and the `EnableUnsafeBinaryFormatterSerialization` compat switch restore the unsafe legacy behavior — flag any project that references the package or sets the switch: the gadget-chain RCE surface is fully re-enabled.
 
 ### Unsafe Deserialization — Go
 
@@ -561,9 +689,10 @@ public object Eval(string userExpr)
 // (e.g., NCalc with no external function access, or Microsoft Rules Engine)
 ```
 
----
+***
 
 ## Specialized RCE Vectors
+[ref: #rce-specialized-vectors]
 
 Beyond the common sink categories, scan for the following specialized vectors and mention them in findings when applicable.
 
@@ -625,9 +754,20 @@ In serverless and CI/CD contexts, RCE can arise from attacker-controlled data re
 
 When auditing these environments, trace CI variables, event payloads, and infrastructure-as-code templates as potential user-controlled sources.
 
----
+### 5. LLM/AI Agent Code Execution
+
+LLM-powered agents and MCP (Model Context Protocol) integrations introduce execution sinks driven by model output — which is attacker-influenced through prompt injection:
+
+- **Code interpreter / REPL tools**: agent frameworks that feed LLM-generated code into `exec`, `eval`, a Python REPL, or a notebook kernel (e.g., LangChain `PythonREPLTool`, code-interpreter plugins). Prompt injection embedded in any consumed content (web pages, documents, emails, tool outputs) becomes arbitrary code execution.
+- **MCP servers with shell/file tools**: MCP servers exposing command execution, file write, or fetch tools. Systemic command-injection flaws have been reported across the MCP ecosystem, and a malicious or compromised MCP server is itself an RCE primitive.
+- **Unsafe tool-call dispatch**: tool names or arguments built from model output passed to dynamic dispatch (`getattr(tool_registry, name)`, `call_user_func`, reflection) without a strict allowlist.
+
+Mitigations to verify: sandboxed execution (an isolated container or VM per session with network egress disabled), strict tool allowlists, human-in-the-loop approval for code-executing tools, and treating all LLM-consumed content as untrusted input. See the OWASP MCP Security Cheat Sheet for deployment hardening guidance.
+
+***
 
 ## Dynamic Test Payloads and PoC curl Examples
+[ref: #rce-dynamic-payloads]
 
 Use the payloads below to confirm suspected RCE sinks during Phase 2. Select payloads that match the sink type and platform.
 
@@ -718,9 +858,10 @@ curl -X POST https://api.github.com/repos/org/repo/dispatches \
 # If a workflow interpolates event_type into run:, the backtick command executes.
 ```
 
----
+***
 
 ## Prevention Checklist
+[ref: #rce-prevention-checklist]
 
 Apply the following controls to eliminate or reduce RCE risk. Map them to OWASP API8:2023 (Security Misconfiguration) and API10:2023 (Unsafe Consumption of APIs) as noted.
 
@@ -729,18 +870,20 @@ Apply the following controls to eliminate or reduce RCE risk. Map them to OWASP 
 - **Apply strict allowlists** for command names, arguments, file extensions, and format identifiers before passing them to any execution sink. *(API8 / API10)*
 - **Disable dangerous defaults** in serializers and processors:
   - Turn off `enableDefaultTyping` / `activateDefaultTyping` in Jackson; use concrete target types. *(API8)*
-  - Use JSON, `yaml.safe_load`, or `ast.literal_eval` instead of pickle, PHP `unserialize`, Java native serialization, Ruby `Marshal`, .NET `BinaryFormatter`, or `LosFormatter`. *(API8)*
+  - Use JSON, `yaml.safe_load`, or `ast.literal_eval` instead of pickle, PHP `unserialize`, Java native serialization or unrestricted SnakeYAML `Constructor`, Ruby `Marshal`, .NET `BinaryFormatter` (removed from the runtime in .NET 9), or `LosFormatter`. *(API8)*
   - Disable ImageMagick delegates, FFmpeg custom protocols, LaTeX `\write18`, and PDF JavaScript when processing user content. *(API8)*
 - **Validate and sandbox processor inputs**. Run media/document converters in isolated, least-privilege containers with network egress disabled. Keep processors updated. *(API8 / API10)*
 - **Never deserialize untrusted data** from HTTP bodies, cookies, file uploads, WebSocket frames, queue messages, or third-party API responses with unsafe deserializers. *(API10)*
 - **Restrict dynamic imports / requires** to a fixed allowlist of module names; avoid user-controlled module paths. *(API10)*
 - **Sanitize CI/CD inputs** and avoid interpolating event payloads (`github.event.*`, `env` from untrusted sources) directly into shell scripts. Use intermediate environment variables and hardened runner images. *(API8 / API10)*
+- **Sandbox LLM/AI agent tools**. Run code interpreters, REPL tools, and MCP tool servers in isolated, least-privilege containers with network egress disabled; gate code-executing tools behind strict allowlists and human-in-the-loop approval; treat all LLM-consumed content as untrusted input. *(API8 / API10)*
 - **Run with least privilege**. Avoid root or service accounts with broad permissions; use dedicated service accounts with minimal filesystem and network access. *(API8)*
 - **Keep dependency inventories** and remove unnecessary serialization libraries, command utilities, and language features from production images. *(API8)*
 
----
+***
 
 ## Subagent Constraint Reminder
+[ref: #rce-subagent-constraints]
 
 Subagents performing this RCE assessment MUST:
 
@@ -749,9 +892,10 @@ Subagents performing this RCE assessment MUST:
 - **Never modify, patch, delete, or commit any project source file**, test file, CI configuration, or infrastructure definition.
 - If a proof-of-concept requires generating a test payload, write it to a temporary file under `/tmp/` or describe it in the report; do not leave it inside the project repository.
 
----
+***
 
 ## Execution
+[ref: #rce-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -774,7 +918,8 @@ Launch a subagent with the following instructions:
 > - `os.popen(var)` — always flag if any variable
 > - `subprocess.run(var, shell=True)`, `subprocess.call(var, shell=True)`, `subprocess.Popen(var, shell=True)`, `subprocess.check_output(var, shell=True)` — flag if `shell=True` AND a variable appears in the command string, OR if the command is a string (not a list) with any variable
 > - `subprocess.run(f"cmd {var}")` without `shell=True` — flag: passing a string (not list) to subprocess can still be unsafe
-> - `commands.getoutput(var)`, `commands.getstatusoutput(var)` — always flag
+> - `commands.getoutput(var)`, `commands.getstatusoutput(var)` — always flag (Python 2 only; the module was removed in Python 3 — legacy marker)
+> - `asyncio.create_subprocess_shell(var)` — flag if any variable in the command string (shell interpretation equivalent to `shell=True`); `asyncio.create_subprocess_exec("cmd", var)` with separate args is the safe form
 >
 > **Node.js / JavaScript:**
 > - `child_process.exec(var)`, `child_process.execSync(var)` — flag if any variable in command string
@@ -833,7 +978,7 @@ Launch a subagent with the following instructions:
 > - `eval(var)` — always flag if variable in argument
 > - `preg_replace(pattern, replacement, subject)` with `/e` modifier in pattern — always flag
 > - `assert(var)` with string argument — flag if variable
-> - `create_function('', var)` — flag if body is variable
+> - `create_function('', var)` — flag if body is variable (deprecated in PHP 7.2, removed in PHP 8.0 — legacy marker for pre-8.0 codebases)
 > - `call_user_func(var)`, `call_user_func_array(var, ...)` — flag if function name is a variable
 >
 > **Ruby:**
@@ -869,6 +1014,7 @@ Launch a subagent with the following instructions:
 > - `XMLDecoder.readObject()` — flag always
 > - `XStream.fromXML(var)` — flag always (unless XStream security filters are explicitly configured)
 > - `ObjectMapper` with `.enableDefaultTyping()` or `.activateDefaultTyping(...)` configured on it — flag the readValue call
+> - `new Yaml().load(var)` (SnakeYAML) without `SafeConstructor` / a safe loader — flag always (CVE-2022-1471)
 > - `Kryo.readObject(var, ...)`, `Kryo.readClassAndObject(var)` — flag if input stream comes from external source
 >
 > **PHP:**
@@ -883,7 +1029,7 @@ Launch a subagent with the following instructions:
 > - `yaml.load(var)` (js-yaml v3 default unsafe load) — flag
 >
 > **.NET:**
-> - `BinaryFormatter.Deserialize(var)` — flag always
+> - `BinaryFormatter.Deserialize(var)` — flag always, including projects that re-enable it on .NET 8/9 via the `System.Runtime.Serialization.Formatters` package or `EnableUnsafeBinaryFormatterSerialization`
 > - `SoapFormatter.Deserialize(var)` — flag always
 > - `NetDataContractSerializer.ReadObject(var)` — flag
 > - `JavaScriptSerializer.Deserialize(var)` — flag if TypeNameHandling is enabled or argument is variable
@@ -902,6 +1048,7 @@ Launch a subagent with the following instructions:
 > - cloud-init `runcmd` / `write_files` content built from user input
 > - Lambda / function handler code that passes event fields to `eval`, `exec`, `os.system`, or deserialization
 > - Terraform / Helm / Kustomize template values rendered into shell snippets or command args
+> - LLM agent tool dispatch — `exec`/`eval`/REPL invocation of model-generated code, or tool names/arguments from model output reaching dynamic dispatch (`getattr`, `call_user_func`, reflection) without an allowlist
 >
 > ---
 >
@@ -1120,18 +1267,20 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/0
 
 5. After writing `{{ REPORTS_ROOT }}/05_rce.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/05_batch_*.md`) and **delete** `{{ REPORTS_ROOT }}/05_recon.md`.
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #rce-owasp-mapping]
 
 This scan supports the following OWASP API Security Top 10 2023 risks:
 
 - **API8:2023 Security Misconfiguration** — Dangerous OS command, eval-like, expression-language, and deserialization functions are enabled or used with insecure default configurations. Insecure defaults in processors/deserializers, verbose errors, and unnecessary features increase exploitability.
 - **API10:2023 Unsafe Consumption of APIs** — User-controlled or third-party data is passed to command shells, eval-like engines, expression-language evaluators, processor command lines, CI expressions, or unsafe deserializers without validation or sanitization.
 
----
+***
 
 ## Important Reminders
+[ref: #rce-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.

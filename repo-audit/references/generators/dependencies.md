@@ -1,6 +1,37 @@
+---
+subject: "Dependency subagent prompts; dependency goal, completeness contract, coupling taxonomy, interface extractor, public surfaces, consumers, downstream mapper, protocols, infra libs catalog, lockfile versions, `preanalysis_reports`, edge types, build-time runtime, targeted verification, exact names, None entries."
+index:
+  - anchor: ra-deps-goal
+    what: "The shared goal contract for the three dependency extractors: six questions, completeness contract, and the coupling taxonomy."
+    problem: "Dependency subagents launch without shared goal; surfaces, consumers, or downstreams get skipped and card pretends completeness; goal absence, false completeness, slice confusion, contract blindness, coverage holes, skip decay, ownership fog, question drift."
+    use_when: "Launching any dependency-wave subagent; reviewing card completeness; classifying edges."
+    avoid_when: "Extractor-specific extraction details — the three prompt anchors below."
+    expected: "All six questions answered with zero omitted surfaces, consumers, or downstreams."
+  - anchor: ra-deps-interface
+    what: "The interface extractor prompt: every public surface per `repo_type` plus exact consumers."
+    problem: "Exported interface hides across routers, protos, and workers; consumers stay unknown and breaking changes ship blind; hidden surfaces, caller fog, interface fog, exposure blindness, breakage risk, ship roulette, consumer vacuum, change hazard."
+    use_when: "Extracting the exported interface for the determined `repo_type`; identifying upstream callers; marking unused surfaces."
+    avoid_when: "Re-deriving the type — it arrives as input per `[ref: #repo-type-detection]`; downstream calls — sibling mapper."
+    expected: "Complete surface table with exact names and consumers."
+  - anchor: ra-deps-downstream
+    what: "The downstream mapper prompt: every outbound call with exact names, transport, and rationale."
+    problem: "Outbound couplings hide in client wrappers; nobody knows what breaks when downstream fails; concealed couplings, failure blindness, wrapper fog, downstream ignorance, outage surprise, protocol guessing, call opacity, resilience gap, mapping failure."
+    use_when: "Mapping outbound dependencies; documenting protocols and purposes; covering obvious targets like DB, cache, identity, secrets."
+    avoid_when: "Interface surfaces — sibling extractor; infra and library versions — sibling catalog."
+    expected: "Complete downstream table with direction, exact calls, and stated purpose."
+  - anchor: ra-deps-infra
+    what: "The infra and libs catalog prompt: databases, external integrations, libraries, infrastructure with lockfile-exact versions."
+    problem: "Infra and library facts scatter across manifests; versions get guessed and card teaches wrong facts; fact dispersion, version roulette, manifest blindness, staleness drift, catalog absence, lockfile neglect, teaching errors, precision loss."
+    use_when: "Cataloging storage, SaaS couplings, SDK consumption, platform services; reading lockfiles for versions; stating None categories."
+    avoid_when: "Test/CI/observability-only tools — excluded unless runtime dependencies."
+    expected: "Complete catalog with lockfile-exact versions and honest None entries."
+---
+
 # Dependency Subagent Prompts (repo-audit)
 
 ## Goal of the dependency analysis
+
+[ref: #ra-deps-goal]
 
 Produce an exhaustive, evidence-based dependency card for the repo. The combined output of the three extractors in this file MUST answer:
 
@@ -12,6 +43,8 @@ Produce an exhaustive, evidence-based dependency card for the repo. The combined
 6. What architectural observations, gaps, or TODOs are relevant?
 
 Completeness is the contract: an omitted surface, consumer, or downstream is a defect of the card, not a stylistic choice. Each extractor answers ONLY its slice; anything outside it goes to `## Uncertainties and open questions`.
+
+Classify every edge by its coupling: synchronous blocking (REST/gRPC — critical availability paths), asynchronous non-blocking (queues, events — decoupled but eventually consistent), and data/contract coupling (shared schemas, API contracts). Keep build-time dependencies (libraries, SDKs — lockfile-exact versions) distinct from runtime dependencies (network calls, event streams): they age differently and break differently.
 
 ## Interface extractor
 

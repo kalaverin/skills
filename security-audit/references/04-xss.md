@@ -1,3 +1,224 @@
+---
+subject: "XSS detection reference for SAST subagents: definition, types, scope boundaries, API-specific contexts, prevention patterns incl. Trusted Types and Sanitizer API, context-aware output encoding, advanced variants, per-stack vulnerable/secure recipes across web frameworks and frontend stacks, three-phase execution prompts, OWASP mapping, CSP guidance, CWE."
+index:
+  - anchor: xss-detection
+    what: "Focused XSS detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic script-injection sweep across every rendering path, yet unstructured hunting misses dangerous sinks and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "XSS scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual XSS knowledge is needed, not execution."
+    expected: "Verified XSS findings consolidated into the module report with false positives filtered."
+  - anchor: xss-definition
+    what: "Core definition: unescaped, unsanitized input reaching an HTML, JavaScript, or DOM sink, enabling script execution in victim browsers."
+    problem: "Reviewers disagree on what counts as script injection without shared definition, so borderline rendering paths get classified inconsistently across engagements; concept baseline, shared vocabulary, classification consistency, definition anchor, scope clarity, common ground, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a rendering path belongs to XSS at all; teaching the detection boundary."
+    avoid_when: "Concrete stack recipes are needed — jump to the matching example anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: unescaped input reaching a rendering sink."
+  - anchor: xss-types
+    what: "The three XSS types — reflected, stored, DOM-based — with their distinct taint paths."
+    problem: "Detection strategy differs per type, and conflating reflected with stored or DOM flows produces incomplete taint tracing during verification; type taxonomy, reflected echo, stored persistence, trace strategy, classification basis, taint direction, client side."
+    use_when: "Planning taint traces; deciding whether client-side only analysis suffices; classifying a confirmed finding."
+    avoid_when: "Sink catalogs are the question — see the scope-in anchor; stack recipes wanted."
+    expected: "Each finding is typed correctly, driving the right trace path."
+  - anchor: xss-scope-in
+    what: "Positive sink/source catalogs: server-side template sinks, DOM sinks, script-execution sinks, and DOM sources."
+    problem: "Detectors under-report when sink catalogs stay implicit, missing modern DOM properties, execution sinks, and indirect sources across frameworks; inclusion rules, source inventory, dom apis, coverage completeness, missed sinks, hidden vectors, recon breadth."
+    use_when: "Building or checking a recon sink list; unsure whether a property qualifies; calibrating false negatives."
+    avoid_when: "Exclusions are the question — see the scope-out anchor; encoding rules wanted."
+    expected: "Every dangerous sink and source is recognized during recon."
+  - anchor: xss-api-contexts
+    what: "API-specific XSS contexts: JSON rendered by frontends, error responses, file downloads, webhooks, and admin panels consuming API data."
+    problem: "API-only codebases get wrongly cleared when reviewers ignore downstream rendering of API responses in browsers and dashboards; json rendering, downstream clients, error pages, hidden consumers, blind spots, dashboard views, doc uis, backoffice views."
+    use_when: "Target is an API without server-rendered pages; assessing whether XSS applies."
+    avoid_when: "Classic server-rendered stack — sink catalogs matter more; stack recipes wanted."
+    expected: "API-driven rendering paths identified as in-scope."
+  - anchor: xss-scope-out
+    what: "Boundary rules separating XSS from CSRF, clickjacking, header injection, and safe `textContent`-style writes."
+    problem: "Findings get misrouted when injection-adjacent classes blur into scripting, corrupting severity and ownership across scans; misrouting risk, class confusion, double reporting, ownership clarity, dedup discipline, triage errors, category overlap, fuzzy edges."
+    use_when: "A finding could belong to another scan class; triaging overlapping categories; writing routing notes."
+    avoid_when: "Positive sinks are needed — see scope-in; prevention patterns wanted."
+    expected: "Each candidate lands in exactly one vulnerability class."
+  - anchor: xss-prevention-patterns
+    what: "Six constructions that prevent XSS: auto-escaping templates, explicit escaping, safe DOM properties, allowlist sanitizers, framework escaping, and browser-enforced policies with the Sanitizer API."
+    problem: "Verify subagents need authoritative safe patterns to avoid flagging secured rendering, and scattered mitigation knowledge produces false positives everywhere; safe construction, escaping forms, sanitizer libraries, policy enforcement, false-positive control, secure baseline, mitigation catalog."
+    use_when: "Classifying a candidate as mitigated; comparing site code against known-safe forms; writing remediation notes."
+    avoid_when: "Vulnerable examples per stack are the need — see recipe anchors; CSP detail wanted."
+    expected: "Escaped, sanitized, or policy-guarded rendering is correctly classified as not vulnerable."
+  - anchor: xss-output-encoding
+    what: "Context-aware output encoding rules: HTML body, attribute, JavaScript, URL, and CSS contexts each need their own encoder."
+    problem: "Single-encoder habits fail when identical values land in script, attribute, or URL contexts, leaving bypassable sanitization behind; encoding contexts, per-context rules, attribute quoting, js strings, url encoding, css values, context mismatch, encoder choice."
+    use_when: "Judging whether an encoder matches the actual output context; reviewing custom sanitizers."
+    avoid_when: "Whole-framework defenses are the question — see prevention patterns; payload strings wanted."
+    expected: "Encoding is validated per output context, not per blanket assumption."
+  - anchor: xss-advanced-variants
+    what: "Advanced variant table: mutation XSS, DOM clobbering, prototype pollution, upload/PDF XSS, SSTI-to-XSS chains, and redirect-to-XSS."
+    problem: "Classic-only review misses mutation, clobbering, and chained vectors that bypass naive sanitizers and filters entirely; mxss, parser differentials, upload flows, variant coverage, exotic paths, sanitizer escape, chain attacks, edge renderers."
+    use_when: "Sanitizers or unusual renderers are present; standard patterns came back clean but suspicion remains."
+    avoid_when: "Basic sink analysis unfinished — cover scope-in first; stack recipes wanted."
+    expected: "Exotic variants are checked before declaring a rendering path safe."
+  - anchor: xss-cwe-references
+    what: "CWE mapping guidance for XSS findings, CWE-79 primary with context-specific relatives."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when output contexts blur categories; weakness taxonomy, cwe 79, misclassification risk, tooling accuracy, reference lookup, identifier precision, reporting feeds, consistency, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk mapping is the question — see the OWASP anchor."
+    expected: "Each finding carries the correct CWE identifier."
+  - anchor: xss-ex-flask-jinja2
+    what: "Flask/Jinja2 recipe contrasting `|safe` and `Markup()` misuse with default auto-escaping."
+    problem: "Jinja templates render user content through safe-filter pipes or Markup wrapping, silently disabling auto-escaping; flask jinja, pipe syntax, escape bypass, python web, template inheritance, view functions, macro calls, jinja env, string concat."
+    use_when: "Target uses Flask with Jinja2; reviewing template rendering paths."
+    avoid_when: "Django stack — see its recipe; API-only JSON responses — see the JSON recipe."
+    expected: "Escaping-disabled template constructs flagged; auto-escaped output verified."
+  - anchor: xss-ex-django
+    what: "Django recipe covering `|safe`, `mark_safe`, and `format_html` usage."
+    problem: "Django helpers like mark_safe and format_html bypass template escaping for convenience in admin and view code; mark safe, format html, escape controls, python framework, staff panels, template tags, concat helpers, widget rendering."
+    use_when: "Target uses Django templates; reviewing rendering helpers."
+    avoid_when: "Flask/Jinja2 — see its recipe; non-Python stacks."
+    expected: "Explicit escape-bypass helpers flagged; default escaping verified elsewhere."
+  - anchor: xss-ex-php
+    what: "PHP recipe contrasting raw `echo` with `htmlspecialchars` encoding."
+    problem: "PHP pages echo request data directly into markup, and correct htmlspecialchars usage with ENT_QUOTES gets applied inconsistently; ent quotes, lamp stack, legacy templates, output buffering, raw output, page scripts, form echoes."
+    use_when: "Target uses PHP templates; reviewing legacy rendering."
+    avoid_when: "Template-engine stacks — see their recipes; non-PHP targets."
+    expected: "Raw echoes flagged; properly flagged encoding verified."
+  - anchor: xss-ex-express-concat
+    what: "Express recipe for string-concatenated HTML responses without any template engine."
+    problem: "Handlers build HTML by concatenation, skipping every escaping layer that template engines provide by default; express concat, res send, manual html, node backend, no engine, adhoc pages, join calls, template literals, router funcs."
+    use_when: "Target renders HTML via string building in Express."
+    avoid_when: "Template-engine rendering — see EJS or Handlebars recipes; non-JS stacks."
+    expected: "Concatenated responses flagged; escaped or engine-rendered output verified."
+  - anchor: xss-ex-ejs
+    what: "EJS recipe contrasting escaped `<%= %>` with raw `<%- %>` output."
+    problem: "EJS raw tags look nearly identical to escaped ones, so bypasses hide in plain sight during template review; tag confusion, node rendering, view layer, percent syntax, output modes, partial includes, ejs pages, include chains."
+    use_when: "Target uses EJS; reviewing template tags."
+    avoid_when: "Handlebars or other engines — see their recipes; non-JS stacks."
+    expected: "Raw EJS tags flagged; escaped tags verified."
+  - anchor: xss-ex-handlebars
+    what: "Handlebars recipe contrasting double-brace escaping with triple-brace insertion and SafeString."
+    problem: "Triple braces and SafeString quietly disable escaping in Handlebars views and custom helpers; safestring, node templates, brace syntax, helper misuse, view rendering, partial output, string marking, compile paths, block helpers, layout engines."
+    use_when: "Target uses Handlebars; reviewing views and helpers."
+    avoid_when: "EJS — see its recipe; non-JS stacks."
+    expected: "Raw-output constructs flagged; escaped bindings verified."
+  - anchor: xss-ex-dom-sinks
+    what: "Client-side recipe: `innerHTML`, `document.write`, `eval`, `location` assignment, and `postMessage` handlers fed by DOM sources."
+    problem: "Client-side scripts route location data into dangerous properties without any server round trip, evading backend-focused review entirely; innerhtml, document write, location hash, postmessage, client taint, browser flows, fragment input, url params."
+    use_when: "Target has significant client-side JavaScript; reviewing browser code."
+    avoid_when: "Server-rendered stacks — see their recipes; framework components — see React or Angular."
+    expected: "Source-to-sink DOM flows traced and flagged."
+  - anchor: xss-ex-react
+    what: "React recipe covering `dangerouslySetInnerHTML`, raw `href` URLs, and the javascript-scheme caveat."
+    problem: "React's escaping lulls reviewers, yet dangerouslySetInnerHTML and unvalidated URL props reopen injection inside components; react jsx, dangerously set, href schemes, jsx props, render output, scheme checks, jsx expressions, prop drilling, dom output."
+    use_when: "Target uses React; reviewing components rendering user content."
+    avoid_when: "Angular or Vue — see their recipes; server-side stacks."
+    expected: "Explicit hatches flagged; default JSX escaping verified."
+  - anchor: xss-ex-angular
+    what: "Angular recipe: `bypassSecurityTrust*` calls are the real danger, while `[innerHTML]` binding is sanitized by default."
+    problem: "Angular reviews false-positive on sanitized bindings while missing explicit sanitizer bypass calls in components; trust apis, framework defaults, binding contexts, template syntax, component code, security bypass, explicit trust, pipe usage, trust bypasses, directive use."
+    use_when: "Target uses Angular; reviewing components with HTML binding."
+    avoid_when: "React — see its recipe; server-side stacks."
+    expected: "Bypass calls flagged; default-sanitized bindings not misreported."
+  - anchor: xss-ex-modern-frontend
+    what: "Modern frontend recipe: Svelte `{@html}`, Alpine `x-html`, HTMX content swaps, and Vue `v-html` raw directives."
+    problem: "Newer frameworks render raw HTML through dedicated directives that escape checklist-style review focused on older libraries; svelte html, alpine x-html, vue v-html, raw insertion, modern stacks, spa bundles, template files, client apps."
+    use_when: "Target uses Svelte, Alpine, HTMX, or Vue; reviewing component templates."
+    avoid_when: "React or Angular — see their recipes; server-side stacks."
+    expected: "Raw-HTML directives flagged unless fed by sanitized content."
+  - anchor: xss-ex-rails
+    what: "Rails recipe covering `html_safe`, `raw()`, and `content_tag` with interpolation."
+    problem: "Rails helpers like html_safe and raw mark strings as trusted, disabling escaping across view layers; content tag, erb views, helper modules, string freezing, output safety, concatenated html, safe buffers, render calls."
+    use_when: "Target uses Rails views; reviewing helpers and templates."
+    avoid_when: "Non-Ruby codebases; API-only Rails in JSON mode."
+    expected: "Trust-marking helpers flagged; default ERB escaping verified."
+  - anchor: xss-ex-jsp
+    what: "JSP recipe covering scriptlet output, `<%= %>`, and JSTL escaping via `c:out`."
+    problem: "JSP pages mix scriptlets with EL output, and only c:out provides consistent escaping across templates; jstl c out, java views, escape functions, legacy java, page directives, expression language, tag files, servlet containers."
+    use_when: "Target uses JSP; reviewing view templates."
+    avoid_when: "Thymeleaf — see its recipe; non-Java stacks."
+    expected: "Scriptlet output flagged; JSTL escaping verified."
+  - anchor: xss-ex-thymeleaf
+    what: "Thymeleaf recipe contrasting `th:text` with `th:utext` and script-inlining mode."
+    problem: "Thymeleaf's utext attribute and inlined scripts bypass escaping applied to standard text binding; escape modes, spring mvc, template engines, view resolvers, model attributes, dialect features, fragment usage, layout, th attributes, processor chains."
+    use_when: "Target uses Thymeleaf; reviewing Spring views."
+    avoid_when: "JSP — see its recipe; non-Java stacks."
+    expected: "Unescaped attributes flagged; default escaping verified."
+  - anchor: xss-ex-go-templates
+    what: "Go recipe contrasting auto-escaping `html/template` with non-escaping `text/template` and `template.HTML` casts."
+    problem: "Go services render user content through text/template or HTML type casts, bypassing contextual auto-escaping entirely; golang rendering, cast misuse, context escaping, template packages, buffer writes, execute calls, parse files, handler output, writer output."
+    use_when: "Target uses Go templates; reviewing rendering code."
+    avoid_when: "Non-Go stacks; JSON-only services."
+    expected: "Non-escaping renderers and casts flagged; html/template usage verified."
+  - anchor: xss-ex-razor
+    what: "Razor recipe covering `@Html.Raw`, `MvcHtmlString`, and default `@var` encoding."
+    problem: "Razor's Html.Raw and MvcHtmlString bypass encoding applied to normal expressions in views; aspnet views, dotnet rendering, encode helpers, page models, tag helpers, cshtml files, view components, partial renders, raw strings, mvc apps."
+    use_when: "Target uses ASP.NET Razor views; reviewing cshtml."
+    avoid_when: "Non-.NET stacks; Web API JSON-only endpoints."
+    expected: "Raw-output helpers flagged; default encoding verified."
+  - anchor: xss-ex-markdown
+    what: "Markdown pipeline recipe: user markdown converted to HTML without sanitization."
+    problem: "Markdown renderers pass through raw HTML unless sanitized, turning comment and wiki features into stored injection; wiki pages, sanitization gap, md libraries, rich text, html blocks, preview panes, comment forms, inline html."
+    use_when: "Target renders user-supplied Markdown; reviewing comment or doc features."
+    avoid_when: "Plain-text rendering — out of scope; template injection wanted instead."
+    expected: "Unsanitized Markdown pipelines flagged; render-then-sanitize verified."
+  - anchor: xss-ex-json-frontend
+    what: "JSON-response recipe: API data later rendered by a frontend without escaping."
+    problem: "APIs return user content in JSON assuming clients escape it, but downstream rendering sits outside API control entirely; frontend rendering, client escaping, contract assumptions, downstream risk, spa consumers, browser clients, data binding."
+    use_when: "Target is a JSON API consumed by browsers; assessing shared responsibility."
+    avoid_when: "Server-rendered stacks — see their recipes; clients known to escape."
+    expected: "Unescaped-content responses documented with downstream rendering assessed."
+  - anchor: xss-execution-intro
+    what: "Execution overview: three phases run by subagents with the architecture report passed as context to each."
+    problem: "Detection work without orchestration structure duplicates effort and loses batch boundaries across phases; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, coordination, uniform."
+    use_when: "Starting the XSS scan execution; deciding how to dispatch subagents."
+    avoid_when: "Specific phase prompts are needed — jump to phase anchors."
+    expected: "All three phases dispatched with shared architecture context."
+  - anchor: xss-phase1-recon
+    what: "Recon prompt instructing the subagent to find every sink site with per-engine patterns and skip lists."
+    problem: "Unstructured searching misses sinks or floods candidates with auto-escaped code, so recon needs explicit patterns and exclusions; site discovery, skip rules, candidate quality, coverage discipline, grep scope, noise control, thorough sweep, broad net."
+    use_when: "Launching the recon subagent; reviewing recon completeness."
+    avoid_when: "Candidates already gathered — proceed to verify; conceptual knowledge wanted."
+    expected: "Complete, de-duplicated candidate list of sink sites."
+  - anchor: xss-phase1-gate
+    what: "Zero-candidate short-circuit: emit a clean no-findings stub and stop when recon finds nothing."
+    problem: "Pipeline without early exit wastes verify batches on empty candidate sets and leaves missing artifacts; empty recon, pipeline efficiency, artifact completeness, stop rule, graceful halt, zero results, skipped verify, idle batches."
+    use_when: "Recon returned zero candidates."
+    avoid_when: "Candidates exist — proceed to batched verification."
+    expected: "No-findings stub written and the scan stops gracefully."
+  - anchor: xss-phase2-verify
+    what: "Batched taint-tracing prompt linking user input to sinks, with the mitigation decision list and classification labels."
+    problem: "Unverified candidates are noise, and defenses from escaping to CSP differ in strength, so decision-list verification is required; taint tracing, batch processing, parallel analysis, evidence demand, defense tiers, label assignment, trace completeness, site verdicts."
+    use_when: "Candidates confirmed present; dispatching verify subagents in batches of three."
+    avoid_when: "Recon incomplete; merge stage is the need."
+    expected: "Every candidate classified against its mitigation with traced evidence."
+  - anchor: xss-phase3-merge
+    what: "Merge procedure consolidating batch reports into the final module report with dedup and the output template."
+    problem: "Parallel batch outputs overlap and diverge, and without merge discipline final reports duplicate or lose findings; result merging, dedup, consolidation, final template, partial results, report integrity, clean handoff, overlap removal, single output."
+    use_when: "All verify batches finished; producing `04_xss.md`."
+    avoid_when: "Batches still running; recon stage not done."
+    expected: "Single consolidated module report with unique, classified findings."
+  - anchor: xss-owasp-mapping
+    what: "Mapping of XSS findings to OWASP API 2023 risks, routed via API8 and API10 since 2023 has no XSS category."
+    problem: "Findings need correct 2023-era taxonomy, and assuming dedicated injection categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, compliance notes, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to the correct risks with explicit reasoning."
+  - anchor: xss-csp-best-practices
+    what: "CSP guidance for APIs: JSON content types, restrictive default-src for responses, nonce/hash script-src with strict-dynamic for docs UIs, nosniff, frame-ancestors, and require-trusted-types-for."
+    problem: "API teams skip browser defenses assuming no rendering, leaving docs UIs and browser-opened responses unprotected; csp headers, defense in depth, docs hardening, nonce hashes, strict dynamic, browser clients, header hygiene, policy audit."
+    use_when: "Writing remediation; reviewing headers on API responses and documentation interfaces."
+    avoid_when: "CSP already audited as sufficient; detection mechanics are the question."
+    expected: "Response and docs headers hardened with modern CSP directives."
+  - anchor: xss-references
+    what: "External link list for XSS concepts, guidance documents, and browser security APIs."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, mdn pages, owasp guides."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — the references list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: xss-reminders
+    what: "Operational guardrails: CSP alone is not a fix, bypass calls are always suspicious, evidence requirements."
+    problem: "Under pressure, agents accept CSP as mitigation, miss sanitizer bypasses, or overstate severity, corrupting report quality; mitigation rigor, evidence demand, severity honesty, quality guardrails, review discipline, trap avoidance, false comfort, checklist, final pass."
+    use_when: "Reviewing draft findings before merge; calibrating classifications."
+    avoid_when: "Specific sink contexts or payload syntax are the question — see the sink and payload anchors; this card only guards finding quality."
+    expected: "Merged findings carry proof for every claim, CSP never counted as a standalone fix, and severity matches demonstrated impact."
+---
+
 # Cross-Site Scripting (XSS) Detection
 
 [ref: #xss-detection]
@@ -8,21 +229,24 @@ You are performing a focused security assessment to find Cross-Site Scripting vu
 
 **Subagent constraint for this reference**: This is a detection reference. Subagents perform scanning, tracing, and reporting only. They must **not modify any project source file** unless a separate remediation task is explicitly authorized.
 
----
+***
 
 ## What is XSS
+[ref: #xss-definition]
 
 XSS occurs when user-supplied input is incorporated into a web page's HTML, JavaScript, or DOM without proper escaping or sanitization. This allows attackers to inject and execute arbitrary scripts in victims' browsers, leading to session hijacking, credential theft, defacement, and malware distribution.
 
 The core pattern: *unescaped, unsanitized user input reaches an HTML/JS/DOM output sink.*
 
 ### XSS Types
+[ref: #xss-types]
 
 - **Reflected XSS**: User input is immediately echoed back in the HTTP response (e.g., a search term rendered directly into the page HTML).
 - **Stored XSS**: User input is saved to persistent storage (database, file) and later rendered in HTML for other users.
 - **DOM-based XSS**: Client-side JavaScript reads from an attacker-controlled source (`location.search`, `location.hash`, `document.cookie`) and writes to a dangerous DOM sink (`innerHTML`, `eval`, `document.write`) without server involvement.
 
 ### What XSS IS
+[ref: #xss-scope-in]
 
 **Server-side HTML sinks** — rendering user data into HTML responses without escaping:
 - Python/Jinja2: `{{ var | safe }}`, `{% autoescape off %}...{{ var }}...{% endautoescape %}`
@@ -70,6 +294,7 @@ The core pattern: *unescaped, unsanitized user input reaches an HTML/JS/DOM outp
 - `localStorage.getItem(...)`, `sessionStorage.getItem(...)` (if populated from URL or postMessage)
 
 ### API-Specific XSS Contexts
+[ref: #xss-api-contexts]
 
 API-first codebases expose additional XSS vectors that do not fit the traditional server-rendered page model. Flag these when the API response or documentation interface is rendered by a browser.
 
@@ -84,6 +309,7 @@ API-first codebases expose additional XSS vectors that do not fit the traditiona
 | API docs/static pages | Custom API documentation pages that echo query parameters or paths | Same detection signals as reflected XSS, but on docs/playground endpoints. |
 
 ### What XSS is NOT
+[ref: #xss-scope-out]
 
 Do not flag these as XSS:
 
@@ -95,6 +321,7 @@ Do not flag these as XSS:
 - **`textContent` / `innerText`**: These write plain text only; no HTML parsing occurs — safe
 
 ### Patterns That Prevent XSS
+[ref: #xss-prevention-patterns]
 
 When you see these patterns, the code is likely **not vulnerable**:
 
@@ -156,6 +383,10 @@ const clean = sanitizeHtml(userInput, { allowedTags: [], allowedAttributes: {} }
 ```
 
 **5. React / Angular / Vue auto-escaping**
+Framework JSX/templates escape interpolated values by default; only explicit escape hatches (`dangerouslySetInnerHTML`, `bypassSecurityTrust*`, `v-html`) are dangerous.
+
+**6. Trusted Types (Baseline since 2026) and the Sanitizer API (standardized, limited availability)**
+Trusted Types (`require-trusted-types-for 'script'` CSP directive + a `trustedTypes` policy) blocks DOM-XSS at the sink: assignments to `innerHTML`/`eval`-family properties throw unless the value comes from a sanitizing policy. Baseline across all major engines since early 2026 (Chrome/Edge 83+, Safari 26+, Firefox 148+). The Sanitizer API's `Element.setHTML(input)` sanitizes markup natively before insertion — prefer it over `innerHTML` for user-influenced HTML. Caveat: as of 2026-07 the Sanitizer API is standardized but shipped only in Firefox 148+ (2026-02) — MDN classes it as limited availability, not Baseline; other engines still need an allowlist library (DOMPurify, `sanitize-html`), so do not treat `setHTML` alone as a portable mitigation yet.
 ```jsx
 // React JSX — auto-escaped
 return <div>{userInput}</div>;
@@ -168,6 +399,7 @@ return <div>{userInput}</div>;
 ```
 
 ### Context-Aware Output Encoding
+[ref: #xss-output-encoding]
 
 XSS prevention depends on the exact output context. The same variable may be safe in an HTML body with HTML-encoding, but dangerous in a JavaScript string literal, URL attribute, or CSS context. Subagents must classify sinks according to the context in which the variable is rendered.
 
@@ -188,6 +420,7 @@ Important context rules:
 - **JSONP endpoints** that wrap user-controlled input in a JavaScript callback are inherently XSS-prone.
 
 ### Advanced XSS Variant Patterns
+[ref: #xss-advanced-variants]
 
 Subagents must also watch for these non-obvious XSS variants:
 
@@ -202,6 +435,7 @@ Subagents must also watch for these non-obvious XSS variants:
 | **Open redirect → XSS** | User-controlled redirect target is a `javascript:` URI or data URI. | `location.href = redirectUrl` where `redirectUrl` is attacker-controlled. |
 
 ### CWE References
+[ref: #xss-cwe-references]
 
 Map XSS findings to the appropriate CWE entries:
 
@@ -212,11 +446,12 @@ Map XSS findings to the appropriate CWE entries:
 - **CWE-116**: Improper Encoding or Escaping of Output.
 - **CWE-692**: Incomplete Denylist to Cross-Site Scripting — flag when custom regex blacklisting or incomplete sanitization is used.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
 
 ### Python — Flask / Jinja2
+[ref: #xss-ex-flask-jinja2]
 
 ```python
 # VULNERABLE: Markup() bypasses Jinja2 auto-escaping
@@ -239,6 +474,7 @@ def greet():
 ```
 
 ### Python — Django
+[ref: #xss-ex-django]
 
 ```python
 # VULNERABLE: mark_safe() with user input
@@ -254,6 +490,7 @@ def user_bio(request):
 ```
 
 ### PHP
+[ref: #xss-ex-php]
 
 ```php
 // VULNERABLE: echo without escaping
@@ -268,6 +505,7 @@ function showUsername($username) {
 ```
 
 ### Node.js — Express (string concatenation)
+[ref: #xss-ex-express-concat]
 
 ```javascript
 // VULNERABLE: user input concatenated into HTML response
@@ -285,6 +523,7 @@ app.get('/search', (req, res) => {
 ```
 
 ### Node.js / EJS
+[ref: #xss-ex-ejs]
 
 ```html
 <!-- VULNERABLE: unescaped output -->
@@ -295,6 +534,7 @@ app.get('/search', (req, res) => {
 ```
 
 ### Node.js / Handlebars
+[ref: #xss-ex-handlebars]
 
 ```html
 <!-- VULNERABLE: triple-brace, unescaped -->
@@ -305,6 +545,7 @@ app.get('/search', (req, res) => {
 ```
 
 ### JavaScript — DOM Sinks
+[ref: #xss-ex-dom-sinks]
 
 ```javascript
 // VULNERABLE: innerHTML with URL fragment
@@ -330,6 +571,7 @@ window.addEventListener('message', (event) => {
 ```
 
 ### React
+[ref: #xss-ex-react]
 
 ```jsx
 // VULNERABLE: dangerouslySetInnerHTML with user input
@@ -343,7 +585,10 @@ function Comment({ content }) {
 }
 ```
 
+Also check URL props: `href={userUrl}` accepts `javascript:` URLs in older React versions (≥16.9 only warns) — validate the scheme (`https?:` allowlist) before rendering user-controlled links.
+
 ### Angular
+[ref: #xss-ex-angular]
 
 ```typescript
 // VULNERABLE: bypassing Angular's DomSanitizer
@@ -354,14 +599,42 @@ getUserHtml(input: string): SafeHtml {
 ```
 
 ```html
-<!-- VULNERABLE: [innerHTML] with unsanitized value -->
+<!-- NOT vulnerable by itself: Angular sanitizes [innerHTML] bindings via DomSanitizer by default (scripts/handlers stripped) -->
 <div [innerHTML]="userInput"></div>
+
+<!-- VULNERABLE: explicitly bypassing the sanitizer -->
+<div [innerHTML]="sanitizer.bypassSecurityTrustHtml(userInput)"></div>
 
 <!-- SECURE: use interpolation (auto-escaped) -->
 <div>{{ userInput }}</div>
 ```
 
+### Modern frontend — Svelte / Alpine.js / HTMX / Vue
+[ref: #xss-ex-modern-frontend]
+
+```svelte
+<!-- VULNERABLE: Svelte {@html} renders raw HTML with NO sanitization -->
+<p>{@html userComment}</p>
+
+<!-- SECURE: plain interpolation escapes by default -->
+<p>{userComment}</p>
+```
+
+```html
+<!-- VULNERABLE: Alpine.js x-html sets innerHTML directly (docs warn: trusted content only) -->
+<div x-data="{ comment: userInput }" x-html="comment"></div>
+
+<!-- VULNERABLE: HTMX swaps use innerHTML semantics — a server response built from user input executes -->
+<div hx-get="/comment/123" hx-trigger="load"></div>
+
+<!-- VULNERABLE: Vue v-html bypasses escaping (Vue 3 same rule) -->
+<div v-html="userComment"></div>
+```
+
+Detection rule for all four: raw-HTML directives (`{@html}`, `x-html`, `v-html`, `hx-*` with server-rendered fragments) are safe only when the injected HTML is built from trusted, already-sanitized content.
+
 ### Ruby on Rails
+[ref: #xss-ex-rails]
 
 ```erb
 <%# VULNERABLE: raw() or html_safe with user input %>
@@ -373,6 +646,7 @@ getUserHtml(input: string): SafeHtml {
 ```
 
 ### Java — JSP
+[ref: #xss-ex-jsp]
 
 ```jsp
 <%-- VULNERABLE: scriptlet echo --%>
@@ -386,6 +660,7 @@ getUserHtml(input: string): SafeHtml {
 ```
 
 ### Java — Thymeleaf
+[ref: #xss-ex-thymeleaf]
 
 ```html
 <!-- VULNERABLE: unescaped th:utext -->
@@ -399,6 +674,7 @@ getUserHtml(input: string): SafeHtml {
 ```
 
 ### Go — html/template vs. text/template
+[ref: #xss-ex-go-templates]
 
 ```go
 // VULNERABLE: using text/template (no HTML escaping)
@@ -417,6 +693,7 @@ tmpl.Execute(w, data)   // .Name is a plain string — auto-escaped
 ```
 
 ### C# — Razor / ASP.NET MVC
+[ref: #xss-ex-razor]
 
 ```html
 <!-- VULNERABLE: Html.Raw with user-controlled input -->
@@ -436,6 +713,7 @@ tmpl.Execute(w, data)   // .Name is a plain string — auto-escaped
 ```
 
 ### Markdown Rendering
+[ref: #xss-ex-markdown]
 
 ```python
 # VULNERABLE: rendering user markdown with HTML enabled
@@ -448,6 +726,7 @@ html = markdown.markdown(user_markdown, extensions=['mdx_bleach'])   # or saniti
 ```
 
 ### JSON Response Rendered by Frontend
+[ref: #xss-ex-json-frontend]
 
 ```javascript
 // VULNERABLE: API returns JSON with HTML-like string, SPA renders it as HTML
@@ -463,13 +742,15 @@ element.innerHTML = data.message;
 element.textContent = data.message;
 ```
 
----
+***
 
 ## Execution
+[ref: #xss-execution-intro]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
 ### Phase 1: Find XSS Sink Sites
+[ref: #xss-phase1-recon]
 
 Launch a subagent with the following instructions:
 
@@ -564,6 +845,7 @@ Launch a subagent with the following instructions:
 > ```
 
 ### After Phase 1: Check for Candidates Before Proceeding
+[ref: #xss-phase1-gate]
 
 After Phase 1 completes, read `{{ REPORTS_ROOT }}/04_recon.md`. If the recon found **zero sink sites** (the summary reports "Found 0" or the "Sink Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/04_xss.md` and stop (you may delete `{{ REPORTS_ROOT }}/04_recon.md` after writing):
 
@@ -576,6 +858,7 @@ No vulnerabilities found.
 Only proceed to Phase 2 if Phase 1 found at least one sink site.
 
 ### Phase 2: Verify — Trace User Input to Sinks (Batched)
+[ref: #xss-phase2-verify]
 
 After Phase 1 completes, read `{{ REPORTS_ROOT }}/04_recon.md` and split the sink sites into **batches of up to 3 sink sites each**. Launch **one subagent per batch in parallel**. Each subagent traces taint only for its assigned sinks and writes results to its own batch file.
 
@@ -699,6 +982,7 @@ Give each batch subagent the following instructions (substitute the batch-specif
 > ```
 
 ### Phase 3: Merge — Consolidate Batch Results
+[ref: #xss-phase3-merge]
 
 After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/04_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/04_xss.md`. You (the orchestrator) do this directly — no subagent needed.
 
@@ -728,9 +1012,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/0
 
 5. After writing `{{ REPORTS_ROOT }}/04_xss.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/04_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #xss-owasp-mapping]
 
 This scan supports the following OWASP API Security Top 10 2023 risks:
 
@@ -745,23 +1030,35 @@ Cross-mapping guidance:
 | API returns unsanitized data from a third-party API | API10:2023 Unsafe Consumption of APIs | Third-party content forwarded to clients without sanitization. |
 | Swagger UI / GraphQL Playground reflects user input | API8:2023 Security Misconfiguration | Debug/spec interfaces enabled in production. |
 
----
+***
 
 ## Content Security Policy Best Practices for APIs
+[ref: #xss-csp-best-practices]
 
 Even APIs that are not directly rendered as HTML should ship defensive headers for browser clients and documentation interfaces:
 
 - Use `Content-Type: application/json` for JSON responses so browsers do not sniff HTML.
 - For pure API responses that might be opened in a browser, set `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`.
-- For Swagger UI / GraphQL Playground / API docs, enforce a restrictive `script-src` and `style-src`; avoid `unsafe-inline` and `unsafe-eval`.
+- For Swagger UI / GraphQL Playground / API docs, enforce a restrictive `script-src` and `style-src`; avoid `unsafe-inline` and `unsafe-eval` — prefer nonces or hashes (`'nonce-…'`, `'sha256-…'`) with `'strict-dynamic'` over host allowlists.
+- Add `require-trusted-types-for 'script'` where DOM clients render API-driven content (Trusted Types is Baseline since 2026).
 - Use `X-Content-Type-Options: nosniff` to prevent MIME-type sniffing.
 - Use `frame-ancestors 'none'` (or equivalent X-Frame-Options) to prevent clickjacking of API docs and playgrounds.
 
 CSP is a defense-in-depth measure, not a substitute for proper encoding or sanitization.
 
----
+***
+
+## References
+[ref: #xss-references]
+
+- OWASP XSS Prevention Cheat Sheet — output-encoding rules per context.
+- OWASP DOM based XSS Prevention Cheat Sheet — safe sink/source guidance.
+- PortSwigger Web Security Academy — XSS labs and context taxonomy.
+- MDN — Trusted Types API, HTML Sanitizer API (`Element.setHTML()`), CSP `script-src` directives.
+- CWE-79: Improper Neutralization of Input During Web Page Generation.
 
 ## Important Reminders
+[ref: #xss-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.

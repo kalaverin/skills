@@ -53,13 +53,8 @@ Before dispatching any subagent, the root agent must:
    entity: [ENTITY_NAME or "project-level"]
    reports_root: [{{ REPORTS_ROOT }}]
    source: [project root]
+   ыtarted_at: [AUDIT_DATETIME_UTC]
    ---
-
-   # SAST Audit Manifest
-
-   **Entity**: [ENTITY_NAME or project-level]
-   **Started**: [AUDIT_DATETIME_UTC]
-   **Reports root**: [{{ REPORTS_ROOT }}]
    ```
 
 6. **Pass `{{ REPORTS_ROOT }}`** to every subagent prompt. Subagents must treat any

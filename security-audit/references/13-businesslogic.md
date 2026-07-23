@@ -1,3 +1,74 @@
+---
+subject: "Business logic vulnerability detection reference for SAST subagents: OWASP API6 mapping, CWE table, definition and exclusions, 13 attack categories, dynamic scenario generation, per-stack vulnerable/secure recipes incl. FastAPI, prevention guidance, compensating-controls detection, three-phase execution."
+index:
+  - anchor: businesslogic-detection
+    what: "Focused business-logic detection role using the three-phase subagent approach — domain recon, batched scenario verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic sweep of every money, entitlement, and state flow for rule enforcement, yet unstructured hunting misses logic gaps and drowns reviewers in unverified scenarios; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "Business-logic scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual knowledge is needed, not execution."
+    expected: "Verified logic findings consolidated into the module report with false positives filtered."
+  - anchor: businesslogic-owasp-mapping
+    what: "OWASP API6:2023 Unrestricted Access to Sensitive Business Flows mapping with ratings, flow examples, and anti-automation context."
+    problem: "Findings need correct 2023-era taxonomy for reporting, and confusing logic abuse with implementation bugs mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, api6, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to API6 with explicit flow-abuse reasoning."
+  - anchor: businesslogic-cwe-mapping
+    what: "CWE table per logic weakness: improper enforcement of business rules, race conditions, insufficient verification, price manipulation."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when concurrency and workflow classes blur together; weakness taxonomy, cwe 840, cwe 367, misclassification risk, tooling accuracy, identifier precision, reporting feeds, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk framing is the question — see the OWASP anchor."
+    expected: "Each finding carries the most specific CWE identifier."
+  - anchor: businesslogic-definition
+    what: "Core definition: attackers abusing legitimate functionality — valid requests that violate business rules the code never enforces."
+    problem: "Reviewers disagree on what counts as logic vulnerability without shared frame, so design-intended flows get flagged while real rule gaps slip; concept baseline, shared vocabulary, classification consistency, definition anchor, rule enforcement, intended use, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a behavior belongs to logic findings at all."
+    avoid_when: "Attack categories are needed — jump to the categories anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: valid requests breaking unenforced business rules."
+  - anchor: businesslogic-attack-categories
+    what: "Thirteen attack categories: price/payment, quantity limits, workflow bypass, coupon abuse, race conditions, refunds, referrals, entitlements, auctions, inventory, time logic, transfers, automated flow abuse."
+    problem: "Detectors under-report when abuse categories stay implicit, missing concurrency, entitlement, and automation paths across domains and stacks; inclusion rules, category inventory, missed flows, hidden vectors, recon breadth, scenario coverage, domain gaps."
+    use_when: "Generating attack scenarios in recon; checking whether a flow type was considered."
+    avoid_when: "Boundary rules are the question — see the definition anchor; prevention guidance wanted."
+    expected: "Every relevant abuse category yields at least one evaluated scenario."
+  - anchor: businesslogic-examples
+    what: "Per-stack vulnerable/secure recipe pairs: Django, FastAPI, Express, Spring, Go — covering price trust, coupon races, TOCTOU, workflow skipping, and entitlement caching."
+    problem: "Enforcement idioms differ per framework, and generic logic rules miss stack-specific atomicity and validation tools like SELECT FOR UPDATE, compare-and-swap, and dependency injection; stack recipes, atomicity patterns, validation styles, precise detection, pattern matching, call diversity, orm features."
+    use_when: "Target uses one of the covered stacks; reviewing flow-critical handlers."
+    avoid_when: "Attack categories are the question — see that anchor; conceptual definitions wanted."
+    expected: "Stack-specific unenforced rules flagged; atomic or validated flows verified."
+  - anchor: businesslogic-prevention-guidance
+    what: "Layered defense checklist: server-side validation, atomic operations, idempotency keys, state machines, locking, rate limits, monitoring, fingerprinting, CAPTCHA, proxy blocking, M2M limits."
+    problem: "Remediation advice scattered across guides leaves gaps that let one missed control reopen flow abuse; remediation checklist, control mapping, defense completeness, gap elimination, hardening steps, anti automation, systematic mitigation, closure guarantee."
+    use_when: "Writing remediation; reviewing whether defenses are complete."
+    avoid_when: "Detection mechanics are the question — see execution anchors."
+    expected: "Every finding closes with a complete, layered control set."
+  - anchor: businesslogic-compensating-controls
+    what: "Detection guide for compensating controls — evidence that a seemingly vulnerable flow is actually guarded by monitoring, limits, or downstream reconciliation."
+    problem: "Verify subagents flag flows as exploitable when unseen compensating controls already neutralize abuse, inflating false positives across batches; control discovery, guard evidence, reconciliation checks, monitoring signals, downgrade discipline, verification rigor, defense in depth."
+    use_when: "A scenario looks vulnerable; before confirming, hidden mitigations must be ruled out."
+    avoid_when: "No control evidence exists at all — classify directly; prevention checklist wanted."
+    expected: "Findings confirmed only after compensating controls are searched and excluded."
+  - anchor: businesslogic-execution
+    what: "Three-phase execution: domain recon generating attack scenarios with a zero-scenario early-exit gate, batched verify in groups of three, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the logic scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual knowledge is the need — see definition and categories anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: businesslogic-references
+    what: "External link list for business-logic abuse concepts, OWASP material, and case studies."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification is required; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, owasp pages."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — the references list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: businesslogic-important-reminders
+    what: "Closing operational reminders: phase ordering, batch discipline, domain-first thinking, and cleanup rules."
+    problem: "Modules close with inconsistent final guidance, letting unverified scenarios or weak proof slip into reports and client deliverables; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+---
+
 # Business Logic Vulnerability Detection
 
 [ref: #businesslogic-detection]
@@ -6,9 +77,10 @@ You are performing a focused security assessment to find business logic vulnerab
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## OWASP API6:2023 Mapping
+[ref: #businesslogic-owasp-mapping]
 
 This reference implements the detection guidance for **API6:2023 — Unrestricted Access to Sensitive Business Flows**.
 
@@ -62,9 +134,10 @@ The engineering controls emphasized by OWASP are:
 
 These controls are evaluated in the **Compensating Controls Detection** section below.
 
----
+***
 
 ## CWE Mapping
+[ref: #businesslogic-cwe-mapping]
 
 Business logic flaws map to multiple CWE entries. Use these mappings when classifying findings, writing reports, or correlating with other tooling.
 
@@ -79,9 +152,10 @@ Business logic flaws map to multiple CWE entries. Use these mappings when classi
 | CWE-1339 | Insufficient Precision or Accuracy of a Real Number | Floating-point precision abuse in monetary arithmetic, rounding exploits across micro-transactions. |
 | CWE-837 | Improper Enforcement of a Single, Unique Action | Reusing single-use coupons/vouchers/idempotency keys, duplicate redemption, duplicate submission. |
 
----
+***
 
 ## What are Business Logic Vulnerabilities
+[ref: #businesslogic-definition]
 
 Business logic vulnerabilities arise when an application's intended workflow, rules, or constraints can be manipulated to produce unintended outcomes — without exploiting technical flaws like injection or memory corruption. The attacker operates within the application's own features but uses them in ways the developers did not anticipate.
 
@@ -109,9 +183,10 @@ Do not flag these as business logic issues:
 - **IDOR**: Accessing another user's resource by changing an ID → that's a separate access-control class
 - **Brute-force / rate limiting**: Generic rate-limit bypass on login → that's not a business logic flaw unless it enables specific business rule circumvention
 
----
+***
 
 ## Business Logic Attack Categories
+[ref: #businesslogic-attack-categories]
 
 Use these categories to guide threat modeling. Not all categories apply to every application — identify which ones are relevant based on the architecture summary.
 
@@ -195,9 +270,10 @@ Use these categories to guide threat modeling. Not all categories apply to every
 - Content scraping or data harvesting at scale against endpoints meant for individual users
 - Credential stuffing or account takeover against business flows (login, checkout, transfer) to monetize accounts
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #businesslogic-examples]
 
 The examples below show common business logic flaws in four major stacks. Use them as patterns when reviewing code. In every case, the secure version enforces the rule server-side, atomically, and at the point of use.
 
@@ -330,6 +406,44 @@ def premium_feature(request):
     if not subscription or subscription.plan != "premium" or subscription.is_expired():
         raise PermissionDenied("Premium subscription required.")
     return premium_content()
+```
+
+### Python / FastAPI
+
+```python
+# VULNERABLE: client-controlled price accepted via Pydantic model
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class OrderIn(BaseModel):
+    product_id: int
+    price: float  # attacker sets the price
+    quantity: int
+
+@app.post("/api/orders")
+def create_order(order: OrderIn):
+    total = order.price * order.quantity
+    charge_card(total)
+    return {"total": total}
+
+# SECURE: price comes from the product record; quantity bounded; Decimal arithmetic
+from decimal import Decimal
+from fastapi import HTTPException
+
+class OrderIn(BaseModel):
+    product_id: int
+    quantity: int
+
+@app.post("/api/orders")
+def create_order(order: OrderIn):
+    if not 1 <= order.quantity <= 100:
+        raise HTTPException(status_code=400)
+    product = db.get_product(order.product_id)
+    total = product.price * Decimal(order.quantity)  # server-side price only
+    charge_card(total)
+    return {"total": str(total)}
 ```
 
 ### Node.js / Express
@@ -841,9 +955,10 @@ func PremiumFeature(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
----
+***
 
 ## How to Prevent
+[ref: #businesslogic-prevention-guidance]
 
 Preventing business logic flaws requires enforcing rules on the server, atomically, and at the point of use. The following controls are mandatory for any sensitive business flow.
 
@@ -951,9 +1066,10 @@ B2B and developer APIs are frequent targets:
 - Scope M2M credentials to the minimum business flows required; avoid all-or-nothing access.
 - Audit M2M usage regularly for unusual patterns.
 
----
+***
 
 ## Compensating Controls Detection
+[ref: #businesslogic-compensating-controls]
 
 When reviewing sensitive business flows, also flag missing compensating controls that mitigate automated or excessive abuse. These are especially relevant for API6:2023. A flow is at higher risk when several of the following are absent:
 
@@ -970,9 +1086,10 @@ Classify compensating-control gaps using the same labels:
 - **[NOT VULNERABLE]** when adequate controls are present and enforced
 - **[NEEDS MANUAL REVIEW]** when the control status cannot be determined from code alone
 
----
+***
 
 ## Execution
+[ref: #businesslogic-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -1056,6 +1173,18 @@ Launch a subagent with the following instructions:
 > ## Categories Not Applicable
 > [List any categories from the checklist that are not relevant to this application and why]
 > ```
+
+### After Phase 1: Check for Scenarios Before Proceeding
+
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/13_recon.md`. If the recon produced **zero attack scenarios** (the scenario list is empty and every category is listed as not applicable), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/13_businesslogic.md`, **delete** `{{ REPORTS_ROOT }}/13_recon.md`, and stop:
+
+```markdown
+# Business Logic Analysis Results
+
+No vulnerabilities found.
+```
+
+Only proceed to Phase 2 if Phase 1 produced at least one attack scenario.
 
 ### Phase 2: Verify — Check Whether Scenarios Are Vulnerable (Batched)
 
@@ -1209,9 +1338,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 
 5. After writing `{{ REPORTS_ROOT }}/13_businesslogic.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/13_batch_*.md`).
 
----
+***
 
 ## References
+[ref: #businesslogic-references]
 
 - OWASP API Security Top 10 2023 — API6:2023 Unrestricted Access to Sensitive Business Flows: https://owasp.org/API-Security/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/
 - OWASP Business Logic Security Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Business_Logic_Security_Cheat_Sheet.html
@@ -1225,9 +1355,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 - CWE-1339: Insufficient Precision or Accuracy of a Real Number: https://cwe.mitre.org/data/definitions/1339.html
 - CWE-837: Improper Enforcement of a Single, Unique Action: https://cwe.mitre.org/data/definitions/837.html
 
----
+***
 
 ## Important Reminders
+[ref: #businesslogic-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run **after** Phase 1 completes — it depends on the threat model output.

@@ -1,3 +1,86 @@
+---
+subject: "XXE detection reference for SAST subagents: definition, scope boundaries, CWE-611/776/827, attack surface beyond REST XML (SOAP, SAML, SVG, Office), per-stack vulnerable/secure parser recipes, prevention patterns and guidance, dynamic payloads incl. blind OOB, three-phase execution, OWASP mapping."
+index:
+  - anchor: xxe-detection
+    what: "Focused XXE detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic sweep of every XML parser for entity-resolution hardening, yet unstructured hunting misses parsing sites and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "XXE scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual XXE knowledge is needed, not execution."
+    expected: "Verified XXE findings consolidated into the module report with false positives filtered."
+  - anchor: xxe-definition
+    what: "Core definition: parser resolving external entities from attacker XML, enabling file read, SSRF, entity-expansion DoS, and occasional command execution."
+    problem: "Reviewers disagree on what counts as external-entity injection without shared root cause, so hardened parsers get flagged while default configurations slip; concept baseline, shared vocabulary, classification consistency, definition anchor, dtd processing, entity resolution, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a parsing path belongs to XXE at all; teaching the DTD-vs-content boundary."
+    avoid_when: "Concrete stack recipes are needed — jump to the matching example anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: untrusted documents parsed with external-reference resolution switched on."
+  - anchor: xxe-scope-in
+    what: "Positive XXE catalog: default-enabled resolvers, SYSTEM file/http entities, parameter-entity DTD injection, XInclude, SSRF chaining, error-based and blind variants."
+    problem: "Detectors under-report when vulnerable parser defaults stay implicit, missing parameter entities, XInclude paths, and out-of-band exfiltration across frameworks; inclusion rules, sink inventory, coverage completeness, missed callsites, hidden vectors, recon breadth, primitive coverage."
+    use_when: "Building or checking a recon site list; unsure whether a construct qualifies; calibrating false negatives."
+    avoid_when: "Exclusions and class boundaries are the question — see the scope-out anchor; prevention patterns wanted."
+    expected: "Every entity-capable construct is recognized during recon."
+  - anchor: xxe-scope-out
+    what: "Boundary rules separating XXE from XSS, generic SSRF, server-controlled config parsing, and default-safe parsers like defusedxml."
+    problem: "Findings get misrouted when adjacent classes blur into entity injection, corrupting severity and ownership across scans, with safe defaults wrongly flagged; misrouting risk, class confusion, double reporting, ownership clarity, dedup discipline, triage errors, category overlap, fuzzy edges."
+    use_when: "A finding could belong to another scan class; triaging overlapping categories; judging parser defaults."
+    avoid_when: "Positive sinks are needed — see the scope-in anchor; prevention patterns wanted."
+    expected: "Each candidate lands in exactly one class, with safe-default parsers correctly cleared."
+  - anchor: xxe-cwe-references
+    what: "CWE mapping for XXE findings: CWE-611 primary, CWE-776 expansion, CWE-827 DTD control, CWE-20, CWE-502, CWE-918."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when expansion attacks and SSRF chaining blur categories; weakness taxonomy, cwe 611, misclassification risk, tooling accuracy, identifier precision, reporting feeds, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk mapping is the question — see the OWASP anchor."
+    expected: "Each finding carries the most specific CWE identifier."
+  - anchor: xxe-attack-surface
+    what: "Parsing-entry catalog beyond REST XML: SOAP/WSDL, SAML, RSS, SVG, Office documents, config files, and dependency-mediated XML."
+    problem: "Teams hunt only explicit application/xml endpoints and miss document uploads, federation payloads, and transitive parsing that widen exposure invisibly; surface inventory, soap services, saml flows, office ingest, hidden consumers, transitive reach, endpoint blindness."
+    use_when: "Scoping recon; enumerating every place XML enters the system."
+    avoid_when: "Per-stack parser flags are the question — see the examples anchor; execution workflow wanted."
+    expected: "Recon covers every XML entry path, not just obvious REST bodies."
+  - anchor: xxe-prevention-patterns
+    what: "Safe parser constructions per stack: Java DOM/SAX/StAX feature flags, defusedxml, lxml hardened, PHP libxml rules incl. PHP 8 defaults, .NET Prohibit, safe Node libraries."
+    problem: "Verify subagents need authoritative hardened configurations to avoid flagging secured parsers, and scattered flag knowledge produces false positives everywhere; flag syntax, hardened factories, secure defaults, false-positive control, mitigation catalog, guard patterns, baseline configs."
+    use_when: "Classifying a candidate as mitigated; comparing site code against known-safe configurations; writing remediation notes."
+    avoid_when: "Vulnerable examples per stack are the need — see the examples anchor; guidance checklist detail wanted."
+    expected: "Feature-disabled or default-safe parsers correctly classified as not vulnerable."
+  - anchor: xxe-examples
+    what: "Per-stack vulnerable/secure parser pairs: Python stdlib and lxml, Java DOM/SAX/StAX, PHP, .NET, Node.js, Ruby, Go."
+    problem: "Parser defaults differ per library and runtime, and generic entity rules miss stack-specific flags like LIBXML_NOENT, resolve_entities, and DtdProcessing; stack recipes, library specifics, api surface, precise detection, pattern matching, flag diversity, call variants."
+    use_when: "Target uses one of the covered stacks; reviewing XML parse call sites."
+    avoid_when: "Attack-surface enumeration is the question — see that anchor; conceptual definitions wanted."
+    expected: "Stack-specific dangerous calls flagged; hardened configurations verified."
+  - anchor: xxe-execution
+    what: "Three-phase execution: structural recon for unhardened parsers, batched taint verify in groups of three, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the XXE scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual XXE knowledge is the need — see definition and examples anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: xxe-owasp-mapping
+    what: "Mapping of XXE findings to OWASP API 2023 risks, routed via API8 and API10 with upload cross-mapping."
+    problem: "Findings need correct 2023-era taxonomy for reporting, and assuming dedicated injection categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to the correct risks with explicit reasoning."
+  - anchor: xxe-prevention-guidance
+    what: "Seven-step hardening checklist: prefer JSON, patch parsers, disable DTD, validate input, check XSD side effects, limit egress, sanitize error output."
+    problem: "Remediation advice scattered across parser docs leaves gaps that let one missed control reopen entity resolution; remediation checklist, control mapping, defense completeness, gap elimination, hardening steps, cheat sheet, systematic mitigation, closure guarantee."
+    use_when: "Writing remediation; reviewing whether defenses are complete."
+    avoid_when: "Per-stack flag syntax is the question — see prevention patterns; detection mechanics wanted."
+    expected: "Every finding closes with a complete, layered control set."
+  - anchor: xxe-dynamic-payloads
+    what: "Payload catalog: in-band file read, HTTP entity PoC, error-based extraction, and blind out-of-band DTD exfiltration."
+    problem: "Suspected parsers stay unconfirmed without concrete entity payloads, and generic doctype strings fail against specific stacks and filters; confirmation testing, platform variants, exfil channels, verification evidence, dynamic proof, sink matching, proof strings."
+    use_when: "Confirming a suspected parser during verify; choosing payload forms per stack."
+    avoid_when: "Static analysis is sufficient for the finding; recon stage not done."
+    expected: "Each suspected parser gets a matching confirmation payload."
+  - anchor: xxe-important-reminders
+    what: "Closing operational reminders: phase ordering, batch discipline, parser-default knowledge, LIBXML_NOENT trap, XInclude separation, and cleanup rules."
+    problem: "Modules close with inconsistent final guidance, letting dismissed blind findings or wrong flag assumptions slip into reports; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+---
+
 # XML External Entity (XXE) Detection
 
 [ref: #xxe-detection]
@@ -8,15 +91,17 @@ You are performing a focused security assessment to find XXE vulnerabilities in 
 
 **Subagent constraint**: Subagents MUST NOT modify project source code. They are authorized only to read code and write findings to the designated report files.
 
----
+***
 
 ## What is XXE
+[ref: #xxe-definition]
 
 XXE occurs when an XML parser processes a document containing a reference to an external entity and the parser has external entity resolution enabled. An attacker who can supply XML input can use this to read arbitrary local files, perform server-side request forgery (internal network probing), trigger denial-of-service via entity expansion (Billion Laughs), or in some stacks execute OS commands.
 
 The core pattern: *user-controlled XML reaches an XML parser that has not disabled DTD processing or external entity resolution.*
 
 ### What XXE IS
+[ref: #xxe-scope-in]
 
 - XML parsed with external entity resolution **enabled by default** and no explicit hardening applied
 - `SYSTEM` entity declarations that reference `file://` or `http://` URIs: `<!ENTITY xxe SYSTEM "file:///etc/passwd">`
@@ -28,6 +113,7 @@ The core pattern: *user-controlled XML reaches an XML parser that has not disabl
 - Blind XXE via out-of-band exfiltration (DNS, HTTP callback to attacker-controlled servers) when the response does not contain entity output
 
 ### What XXE is NOT
+[ref: #xxe-scope-out]
 
 Do not flag these as XXE:
 
@@ -37,6 +123,7 @@ Do not flag these as XXE:
 - **Safe parsers**: Libraries that disable external entities by default and provide no way to re-enable them (e.g. `defusedxml` in Python, `nokogiri` with default settings in Ruby for untrusted input)
 
 ### CWE References
+[ref: #xxe-cwe-references]
 
 Map findings to the most specific applicable CWE:
 
@@ -50,6 +137,7 @@ Map findings to the most specific applicable CWE:
 | **CWE-918** | Server-Side Request Forgery | XXE used to make the parser issue outbound `http://`/`https://` requests to internal or attacker-controlled hosts. |
 
 ### Attack Surface Coverage
+[ref: #xxe-attack-surface]
 
 XXE is not limited to REST endpoints that accept `application/xml`. Review every path where user-supplied XML or XML-based content is parsed.
 
@@ -105,9 +193,10 @@ The response does not contain entity output. The attacker declares a parameter e
 
 - Detection signal: outbound DNS/HTTP requests from the parser to attacker infrastructure; web logs showing requests with file content in query parameters.
 
----
+***
 
 ## Patterns That Prevent XXE
+[ref: #xxe-prevention-patterns]
 
 When you see these patterns, the parser is likely **not vulnerable**:
 
@@ -157,6 +246,8 @@ $doc->loadXML($xml, LIBXML_NOENT | LIBXML_NONET);  // LIBXML_NONET blocks networ
 // Note: LIBXML_NOENT alone EXPANDS entities — it does NOT disable them
 ```
 
+**PHP 8.0+:** `libxml_disable_entity_loader()` is deprecated — libxml ≥ 2.9 is required and external entity loading is disabled by default, so a stock PHP 8 parser is safe **unless** the code opts back into expansion with `LIBXML_NOENT`, `LIBXML_DTDVALID`, or a custom `libxml_set_external_entity_loader()`. On libxml ≥ 2.13 (PHP 8.4+) the `LIBXML_NO_XXE` parse flag blocks XXE explicitly. Flag any PHP 8 code that re-enables entity expansion.
+
 **7. .NET — XmlReaderSettings with DtdProcessing.Prohibit**
 ```csharp
 XmlReaderSettings settings = new XmlReaderSettings();
@@ -178,9 +269,10 @@ xml2js.parseString(xmlInput, callback);
 // Do not use it for untrusted input. Prefer xml2js or fast-xml-parser with security flags.
 ```
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #xxe-examples]
 
 ### Python — stdlib xml.etree.ElementTree (vulnerable by default in CPython < 3.8 / expat quirks)
 
@@ -380,9 +472,10 @@ func parseXML(data []byte) {
 // Flag only if a third-party XML library with entity support is used.
 ```
 
----
+***
 
 ## Execution
+[ref: #xxe-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -646,9 +739,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/0
 
 5. After writing `{{ REPORTS_ROOT }}/07_xxe.md`, **delete all intermediate files**: `{{ REPORTS_ROOT }}/07_recon.md` and `{{ REPORTS_ROOT }}/07_batch_*.md`.
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #xxe-owasp-mapping]
 
 This scan supports the following OWASP API Security Top 10 2023 risks:
 
@@ -661,23 +755,25 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 - **API8:2023 Security Misconfiguration** — XML parsers are left with default settings that allow DTD processing and external entity resolution.
 - **API10:2023 Unsafe Consumption of APIs** — User-supplied or third-party XML documents are parsed without disabling external entities or validating the source.
 
----
+***
 
 ## Prevention Guidance
+[ref: #xxe-prevention-guidance]
 
 Apply the OWASP XXE Prevention Cheat Sheet, adapted for APIs:
 
 1. **Prefer JSON or other non-XML formats** when the business requirement allows it. Removing XML from the attack surface eliminates XXE entirely.
-2. **Upgrade and patch all XML processors and libraries** in use. Vulnerabilities in underlying parsers (libxml2, Xerces, expat) are regularly discovered and patched.
+2. **Upgrade and patch all XML processors and libraries** in use. Vulnerabilities in underlying parsers (libxml2, Xerces, expat) are regularly discovered and patched — e.g., the libxml2 SAX parser could emit external-entity events even when a custom handler set the `checked` flag (CVE-2024-40896), and expat needed input-validation fixes up to 2.6.3 (CVE-2024-45490).
 3. **Disable XML external entity and DTD processing** in every parser configuration. Do not rely on defaults.
 4. **Implement positive server-side input validation**, filtering, or sanitization before parsing. Reject unexpected `DOCTYPE` declarations, DTDs, or `xi:include` elements when possible.
 5. **Verify that XSD validation does not enable entity resolution**. Schema validation can re-enable DTD processing; ensure validators run with the same hardening flags as the parser.
 6. **Limit outbound connectivity from XML-processing services**. Use firewall rules, egress proxies, or network policies so that a compromised parser cannot reach internal infrastructure or attacker servers.
 7. **Log XML parsing errors without returning file contents to clients**. Verbose error messages can turn a blind XXE into an error-based data exfiltration channel.
 
----
+***
 
 ## Dynamic Test Payloads
+[ref: #xxe-dynamic-payloads]
 
 Use these payloads during manual verification or to illustrate exploitability in findings.
 
@@ -750,9 +846,10 @@ Then send:
 
 The parser fetches `evil.dtd`, reads `/etc/passwd`, and issues an HTTP request to `http://attacker.com/?x=<file contents>`.
 
----
+***
 
 ## Important Reminders
+[ref: #xxe-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Subagents MUST NOT modify project source code.** They may only read code and write report files.
@@ -764,7 +861,7 @@ The parser fetches `evil.dtd`, reads `/etc/passwd`, and issues an HTTP request t
 - **Phase 1 is purely structural**: flag any XML parsing call that lacks explicit external entity hardening, regardless of where the input comes from. Do not attempt to trace user input in Phase 1 — that is Phase 2's job.
 - **Phase 2 is purely taint analysis**: for each site found in Phase 1, trace the XML input back to its origin. If it comes from a user-controlled source, the site is a real vulnerability.
 - **Parser defaults matter**: Java DOM/SAX, PHP SimpleXML/DOMDocument, and lxml all resolve external entities by default — they require explicit hardening. Python's `defusedxml` and Go's `encoding/xml` are safe by default.
-- **Do not confuse `LIBXML_NOENT` with protection**: in PHP, `LIBXML_NOENT` **expands** entities into their values — it does NOT disable entity loading. Only `libxml_disable_entity_loader(true)` or `LIBXML_NONET` provides network-entity protection.
+- **Do not confuse `LIBXML_NOENT` with protection**: in PHP, `LIBXML_NOENT` **expands** entities into their values — it does NOT disable entity loading. Only `libxml_disable_entity_loader(true)` (PHP 7.x; deprecated in PHP 8.0) or `LIBXML_NONET` provides network-entity protection; on PHP 8.0+ external entity loading is off by default unless `LIBXML_NOENT` or a custom loader opts back in.
 - **XInclude is a separate vector**: if `XIncludeAware` processing is enabled on Java parsers or `xi:include` is processed elsewhere, flag it separately — it can read local files without a classic `ENTITY` declaration.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
 - Taint can flow indirectly: a file upload may be saved to disk in one handler, then parsed in another background job. Trace the full chain including asynchronous processing paths.

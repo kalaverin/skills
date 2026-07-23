@@ -1,3 +1,74 @@
+---
+subject: "Insecure file upload detection reference for SAST subagents: definition and exclusions, prevention patterns, per-stack vulnerable/secure recipes incl. FastAPI, 22-vector bypass catalog, prevention guidance, 8 modern watch-outs incl. multipart parser differentials, three-phase execution, OWASP and CWE mapping."
+index:
+  - anchor: fileupload-detection
+    what: "Focused upload-security detection role using the three-phase subagent approach — recon, batched bypass verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic sweep of every upload and file-processing endpoint, yet unstructured hunting misses validation gaps and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "Upload scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual upload knowledge is needed, not execution."
+    expected: "Verified upload findings consolidated into the module report with false positives filtered."
+  - anchor: fileupload-definition
+    what: "Core definition: attacker-controlled file content, name, or type reaching storage or processing without validation, enabling webshells, traversal, and processor abuse; includes prevention-pattern overview."
+    problem: "Reviewers disagree on what counts as upload insecurity without shared root causes, so content-type-only checks pass as safe while real validation gaps slip; concept baseline, shared vocabulary, classification consistency, definition anchor, validation layers, storage risk, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a file-handling path belongs to upload findings at all."
+    avoid_when: "Concrete stack recipes are needed — jump to the examples anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: unvalidated files reaching storage or processors."
+  - anchor: fileupload-examples
+    what: "Per-stack vulnerable/secure recipe pairs: Flask, FastAPI, Django, Multer, PHP, Spring, Go, Rails, ASP.NET Core."
+    problem: "Upload idioms differ per framework, and generic validation rules miss stack-specific traps like spooled temp files, multipart abstractions, and storage backends; stack recipes, framework handlers, storage apis, precise detection, pattern matching, call diversity, upload surface."
+    use_when: "Target uses one of the covered stacks; reviewing upload handlers."
+    avoid_when: "Bypass techniques are the question — see the catalog anchor; conceptual definitions wanted."
+    expected: "Stack-specific unvalidated saves flagged; allowlist-guarded handlers verified."
+  - anchor: fileupload-bypass-catalog
+    what: "Twenty-two bypass vectors: extension gaps, MIME-only checks, blocklist holes, case tricks, double extensions, traversal, null bytes, polyglots, archive attacks, predictable names, processor SSRF, EXIF, client-side-only, CGI dirs, symlinks, object ACLs, metadata injection, CSV injection, relay abuse, and more."
+    problem: "Classic-only review misses validation-bypass tricks that defeat well-placed checks entirely, from parser quirks to storage misconfiguration; vector inventory, filter evasion, polyglot files, zipslip, symlink tricks, metadata abuse, exotic paths, chain attacks."
+    use_when: "A validation mechanism exists and its bypass surface needs enumeration; verify phase needs attack angles."
+    avoid_when: "Basic upload analysis unfinished — cover the examples first; prevention guidance wanted."
+    expected: "Every applicable bypass vector is tried before calling a validation scheme sound."
+  - anchor: fileupload-prevention-guidance
+    what: "Layered defense checklist: allowlists, magic-byte verification, generated filenames, outside-webroot storage, size limits, processing sandboxing, and access control on served files."
+    problem: "Remediation advice scattered across guides leaves gaps that let one missed layer reopen webshell or traversal paths; remediation checklist, control mapping, defense completeness, gap elimination, hardening steps, storage isolation, systematic mitigation, closure guarantee."
+    use_when: "Writing remediation; reviewing whether defenses are complete."
+    avoid_when: "Detection mechanics are the question — see execution anchors."
+    expected: "Every finding closes with a complete, layered control set."
+  - anchor: fileupload-modern-bypasses
+    what: "Eight modern watch-outs: presigned-URL abuse, GraphQL multipart, serverless handlers, image pipelines, WAF overtrust, filename injection, resumable uploads, multipart parser differentials."
+    problem: "Classic-only review misses cloud-era and parser-differential tricks that bypass framework validation entirely during audits; presigned flows, graphql uploads, lambda handlers, waf gaps, chunked sessions, parser confusion, proxy chains, edge channels."
+    use_when: "Standard validation review came back clean but suspicion remains; cloud storage or gateway chains present."
+    avoid_when: "Basic upload analysis unfinished — cover the examples first; vector catalog wanted."
+    expected: "Modern bypass paths are checked before declaring validation sound."
+  - anchor: fileupload-execution
+    what: "Three-phase execution: upload-site recon with a zero-candidate early-exit gate, batched bypass verify in groups of three, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the upload scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual upload knowledge is the need — see definition and examples anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: fileupload-owasp-mapping
+    what: "Mapping of upload findings to OWASP API 2023 risks, routed via API8 and API10."
+    problem: "Findings need correct 2023-era taxonomy for reporting, and assuming dedicated upload categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to the correct risks with explicit reasoning."
+  - anchor: fileupload-cwe-mapping
+    what: "CWE table per upload weakness: unrestricted upload of dangerous type, path traversal, external control of filename, improper input validation."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when storage and processing classes blur together across scanners; weakness taxonomy, cwe 434, misclassification risk, tooling accuracy, identifier precision, reporting feeds, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk framing is the question — see the OWASP anchor."
+    expected: "Each finding carries the most specific CWE identifier."
+  - anchor: fileupload-important-reminders
+    what: "Closing operational reminders: phase ordering, batch discipline, validation-layer skepticism, and cleanup rules."
+    problem: "Modules close with inconsistent final guidance, letting bypassable validations or weak proof slip into reports and client deliverables; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+  - anchor: fileupload-references
+    what: "External link list for upload security concepts, cheat sheets, and tooling."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification is required; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, owasp pages."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — the references list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+---
+
 # Insecure File Upload Detection
 
 [ref: #fileupload-detection]
@@ -8,9 +79,10 @@ You are performing a focused security assessment to find insecure file upload vu
 
 **Subagent constraint**: Subagents must **read-only** the codebase. They must **NEVER modify project source code**, configuration files, tests, or documentation. All findings are written only to the designated report files under `{{ REPORTS_ROOT }}/`.
 
----
+***
 
 ## What is an Insecure File Upload
+[ref: #fileupload-definition]
 
 Insecure file upload occurs when an application accepts files from users without properly validating or restricting what can be uploaded, allowing an attacker to upload executable or malicious files. The most critical outcome is **Remote Code Execution (RCE)**: an attacker uploads a web shell (e.g., a `.php` file) and the server executes it when accessed via a direct URL.
 
@@ -84,9 +156,10 @@ import uuid
 stored_name = str(uuid.uuid4()) + '.jpg'  # extension is server-controlled, not user-controlled
 ```
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #fileupload-examples]
 
 ### Python — Flask
 
@@ -132,6 +205,43 @@ def upload():
     f.save(os.path.join(UPLOAD_FOLDER, filename))
     return 'uploaded'
 ```
+
+### Python — FastAPI
+
+```python
+# VULNERABLE: UploadFile saved with no validation
+from fastapi import FastAPI, UploadFile
+
+app = FastAPI()
+
+@app.post("/upload")
+async def upload(file: UploadFile):
+    with open(f"uploads/{file.filename}", "wb") as f:  # attacker-controlled name, type, content
+        f.write(await file.read())
+    return {"ok": True}
+
+# SECURE: allowlist + magic-byte check + generated name + outside web root
+import os
+import uuid
+from fastapi import HTTPException
+
+ALLOWED = {".png", ".jpg", ".pdf"}
+MAGIC = (b"\x89PNG", b"\xff\xd8\xff", b"%PDF")
+
+@app.post("/upload")
+async def upload(file: UploadFile):
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    head = await file.read(8)
+    if ext not in ALLOWED or not any(head.startswith(m) for m in MAGIC):
+        raise HTTPException(status_code=400)
+    await file.seek(0)
+    dest = f"/var/uploads/{uuid.uuid4()}{ext}"  # generated name, outside web root
+    with open(dest, "wb") as f:
+        f.write(await file.read())
+    return {"ok": True}
+```
+
+Note: `file.content_type` is client-supplied and proves nothing; enforce size limits at the server/proxy layer because `UploadFile` spools large bodies to disk.
 
 ### Python — Django
 
@@ -338,9 +448,10 @@ public async Task<IActionResult> Upload(IFormFile file) {
 }
 ```
 
----
+***
 
 ## Bypass Vector Catalog
+[ref: #fileupload-bypass-catalog]
 
 Use this catalog during Phase 2 to evaluate every upload site. Each vector includes detection guidance, a concrete code/logic example, and a dynamic-test PoC. These vectors apply regardless of language or framework.
 
@@ -688,9 +799,10 @@ if validate(f):
 
 **Classification**: **Vulnerable** when arbitrary write locations are reachable.
 
----
+***
 
 ## How to Prevent
+[ref: #fileupload-prevention-guidance]
 
 Apply the following controls together. No single control is sufficient.
 
@@ -783,9 +895,10 @@ return send_from_directory(UPLOAD_FOLDER, stored_name,
 - Alert on repeated failed uploads, oversized files, or uploads of executable extensions.
 - Monitor downstream systems (queues, processors) for anomalies.
 
----
+***
 
 ## Modern Bypass Patterns & Watch-outs
+[ref: #fileupload-modern-bypasses]
 
 Beyond the classic catalog, assess these modern patterns in cloud-native, containerized, and API-first applications.
 
@@ -831,9 +944,21 @@ Resumable uploads (tus, S3 multipart) may allow the client to set the final obje
 
 **Watch-out**: Check the completion/callback endpoint with the same strictness as a synchronous upload.
 
----
+### H. Multipart Parser Differentials
+
+Framework and proxy multipart parsers disagree on parameter handling, boundary recognition, and encoding — a request crafted for that gap passes one layer's validation and reaches the next layer parsed differently (PortSwigger top-10 technique, 2024–2025).
+
+- Duplicated `filename` / `Content-Disposition` parameters — one parser takes the first occurrence, another takes the last.
+- Boundary tricks: extra dashes, a missing final delimiter, or boundary strings one parser tolerates and another rejects.
+- Alternate encodings or charset quirks in parameter values that change how the filename is extracted.
+- Differentials between the WAF/gateway parser and the application parser — the WAF sees a benign part while the app sees the shell.
+
+**Watch-out**: test the exact proxy+framework chain, not the framework alone; prefer framework-native upload handling over hand-rolled multipart parsing; never parse multipart bodies with regex or string splitting.
+
+***
 
 ## Execution
+[ref: #fileupload-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -1090,9 +1215,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 
 5. After writing `{{ REPORTS_ROOT }}/11_fileupload.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/11_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #fileupload-owasp-mapping]
 
 This scan supports the following OWASP API Security Top 10 2023 risks:
 
@@ -1107,9 +1233,10 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 - API8:2023 states that an API is vulnerable when "security hardening is missing across any part of the API stack" or when there are "improperly configured permissions on cloud services". It calls out restricting incoming content types to those that meet business requirements. [ref: owasp/0xa8-security-misconfiguration.md]
 - API10:2023 warns that developers "tend to trust data received from third-party APIs more than user input" and that APIs are vulnerable when they "do not properly validate and sanitize data gathered from other APIs prior to processing it". Uploads feeding external processors fit this pattern exactly. [ref: owasp/0xaa-unsafe-consumption-of-apis.md]
 
----
+***
 
 ## CWE mapping
+[ref: #fileupload-cwe-mapping]
 
 The following CWE entries are directly relevant when assessing and reporting insecure file upload findings:
 
@@ -1131,9 +1258,10 @@ The following CWE entries are directly relevant when assessing and reporting ins
 
 Use these CWE identifiers in findings to improve traceability and remediation guidance.
 
----
+***
 
 ## Important Reminders
+[ref: #fileupload-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
@@ -1154,9 +1282,10 @@ Use these CWE identifiers in findings to improve traceability and remediation gu
 - Clean up intermediate files: delete `{{ REPORTS_ROOT }}/11_recon.md` and all `{{ REPORTS_ROOT }}/11_batch_*.md` files after the final `{{ REPORTS_ROOT }}/11_fileupload.md` is written.
 - **Subagents must not modify project source code, configuration, tests, or documentation.** All output goes to the report files under `{{ REPORTS_ROOT }}/`.
 
----
+***
 
 ## References
+[ref: #fileupload-references]
 
 ### OWASP
 

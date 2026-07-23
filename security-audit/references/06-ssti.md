@@ -1,3 +1,86 @@
+---
+subject: "SSTI detection reference for SAST subagents: definition, engine probe matrix, scope boundaries vs XSS/RCE/SQLi, prevention patterns, per-engine vulnerable/secure recipes, specialized contexts incl. PDF LaTeX serverless nested and LLM chat templates, engine hardening, three-phase execution, OWASP mapping, second-order variants."
+index:
+  - anchor: ssti-detection
+    what: "Focused SSTI detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic template-injection sweep across every rendering engine, yet unstructured hunting misses dynamic template strings and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "SSTI scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual SSTI knowledge is needed, not execution."
+    expected: "Verified SSTI findings consolidated into the module report with false positives filtered."
+  - anchor: ssti-definition
+    what: "Core definition: untrusted input used as the template string itself, evaluating attacker-controlled template code server-side."
+    problem: "Reviewers confuse template-string injection with context injection without shared definition, so safe context-passing gets flagged while real evaluation sinks slip; concept baseline, shared vocabulary, classification consistency, definition anchor, string versus context, common ground, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a rendering path belongs to SSTI at all; teaching the string-vs-context boundary."
+    avoid_when: "Concrete engine recipes are needed — jump to the matching example anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: user input as the template source, not the template context."
+  - anchor: ssti-cwe-references
+    what: "CWE mapping for SSTI findings, CWE-94 primary with engine-adjacent relatives."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when engines blur into XSS or RCE categories; weakness taxonomy, cwe 94, misclassification risk, tooling accuracy, reference lookup, identifier precision, reporting feeds, consistency, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk mapping is the question — see the OWASP anchor."
+    expected: "Each finding carries the correct CWE identifier."
+  - anchor: ssti-probe-matrix
+    what: "Engine probe payload matrix: math-expression probes per template engine for confirming evaluation."
+    problem: "Detection stalls without engine-correct probes, because wrong-syntax payloads silently pass over real sinks and evaluation stays unconfirmed for every engine dialect; probe selection, math payloads, engine syntax, confirmation speed, payload fit, evaluation proof, syntax matching, dialect guesswork."
+    use_when: "Confirming evaluation at a suspected sink; choosing probes per detected engine."
+    avoid_when: "Static analysis already proves the sink; recon stage not done."
+    expected: "Each suspected sink gets an engine-correct confirmation probe."
+  - anchor: ssti-scope-in
+    what: "Positive SSTI catalog: user input as template string in engines, preprocessors, config templating, and nested evaluation."
+    problem: "Detectors under-report when template-string sites stay implicit, missing preprocessing, config rendering, and double-evaluation paths across frameworks; inclusion rules, sink inventory, dynamic sources, coverage completeness, missed sinks, hidden vectors, recon breadth."
+    use_when: "Building or checking a recon sink list; unsure whether a rendering path qualifies; calibrating false negatives."
+    avoid_when: "Exclusions and class boundaries are the question — see the scope-out anchor; prevention patterns wanted."
+    expected: "Every template-string construct is recognized during recon."
+  - anchor: ssti-scope-out
+    what: "Boundary rules separating SSTI from XSS, RCE, SQLi, and safe context passing — including the critical string-vs-context distinction."
+    problem: "Findings get misrouted when template-adjacent classes blur, and safe context variables get flagged while real template compilation slips; misrouting risk, class confusion, boundary clarity, ownership clarity, dedup discipline, triage errors, category overlap, fuzzy edges."
+    use_when: "A finding could belong to another scan class; triaging overlapping categories; judging context passing."
+    avoid_when: "Positive sinks are needed — see the scope-in anchor; prevention patterns wanted."
+    expected: "Each candidate lands in exactly one class, with context passing correctly cleared."
+  - anchor: ssti-prevention-patterns
+    what: "Safe constructions: static templates with user data as context, strict name allowlists, and never rendering untrusted strings."
+    problem: "Verify subagents need authoritative safe patterns to avoid flagging secured rendering, and scattered mitigation knowledge produces false positives everywhere; guard patterns, fixed sources, context passing, allowlist gates, false-positive control, secure baseline, mitigation catalog."
+    use_when: "Classifying a candidate as mitigated; comparing site code against known-safe forms; writing remediation notes."
+    avoid_when: "Vulnerable examples per engine are the need — see the examples anchor; hardening detail wanted."
+    expected: "Context-passed, allowlisted, or static-template rendering correctly classified as not vulnerable."
+  - anchor: ssti-examples
+    what: "Per-stack vulnerable/secure recipe pairs: Flask/Jinja2, FastAPI, Django, EJS, Nunjucks, Handlebars, ERB, FreeMarker, Velocity, Thymeleaf, JSP, Razor, Twig, Smarty, and Go templates."
+    problem: "Sink shapes differ per engine, and generic template rules miss engine-specific constructs like from_string, SafeString, and render variants; stack recipes, api variants, engine specifics, call diversity, variant coverage, framework calls, precise detection, pattern matching."
+    use_when: "Target uses one of the covered engines; reviewing template call sites."
+    avoid_when: "Specialized contexts are the question — see that anchor; conceptual definitions wanted."
+    expected: "Engine-specific dangerous calls flagged; static-template usage verified."
+  - anchor: ssti-specialized-contexts
+    what: "Advanced context coverage: PDF generators, LaTeX processors, Markdown templating, JSON/YAML config rendering, serverless infrastructure templates, LLM chat templates, and nested evaluation."
+    problem: "Classic-only review misses processor templating, config rendering, and double-evaluation vectors that bypass engine-focused filters entirely; pdf templates, latex input, cloudformation, nested contexts, exotic paths, sanitizer escape, chain attacks, infra templating."
+    use_when: "Processors or infrastructure templating are present; standard engine patterns came back clean but suspicion remains."
+    avoid_when: "Basic engine analysis unfinished — cover the examples first; stack recipes wanted."
+    expected: "Exotic contexts are checked before declaring a rendering path safe."
+  - anchor: ssti-engine-hardening
+    what: "Engine-specific hardening table: FreeMarker, Velocity, Thymeleaf, Jinja2, Django, Handlebars, Twig, Smarty, Go templates, Razor, and JSP with safe configurations."
+    problem: "Remediation advice without per-engine configuration leaves dangerous features enabled even when templates are static; engine hardening, hardened configs, feature disabling, sandbox setup, remediation precision, config mapping, defense depth, resolver restriction."
+    use_when: "Writing remediation; configuring engines defensively; reviewing engine settings."
+    avoid_when: "Detection mechanics are the question — see execution anchors."
+    expected: "Each engine gets its exact hardened setup."
+  - anchor: ssti-execution
+    what: "Three-phase execution: structural recon for template-string sites, batched taint verify in groups of three, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the SSTI scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual SSTI knowledge is the need — see definition and examples anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: ssti-owasp-mapping
+    what: "Mapping of SSTI findings to OWASP API 2023 risks, routed via API8 and API10 with a cross-mapping table."
+    problem: "Findings need correct 2023-era taxonomy, and assuming dedicated injection categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, compliance notes, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to the correct risks with explicit reasoning."
+  - anchor: ssti-important-reminders
+    what: "Closing operational reminders: string-vs-context rule, second-order SSTI, engine probes, blocklist-futile warning, and cleanup discipline."
+    problem: "Modules close with inconsistent final guidance, letting filtering-as-mitigation and missed second-order sinks slip into reports; closing rules, quality floor, consistency, final reminders, filter futility, second order, uniform endings, wrap discipline."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+---
+
 # Server-Side Template Injection (SSTI) Detection
 
 [ref: #ssti-detection]
@@ -6,15 +89,17 @@ You are performing a focused security assessment to find Server-Side Template In
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## What is SSTI
+[ref: #ssti-definition]
 
 Server-Side Template Injection occurs when user-supplied input is embedded directly into a template string that is then evaluated by a template engine. Unlike passing user data as *context variables* to a static template, SSTI means the user can write template syntax that the engine will execute — leading to arbitrary code execution, file read, or full server compromise.
 
 The core pattern: *unvalidated user input is used as the template string passed to a template engine's render/compile/evaluate function.*
 
 ### CWE References
+[ref: #ssti-cwe-references]
 
 SSTI findings should be cross-referenced with the following CWE entries:
 
@@ -25,6 +110,7 @@ SSTI findings should be cross-referenced with the following CWE entries:
 - **CWE-20 (additional): Improper Input Validation** — when user input reaches templates without validation or allowlisting.
 
 ### Engine Probe Payload Matrix
+[ref: #ssti-probe-matrix]
 
 Use the matrix below to quickly identify an unknown template engine during verification. Subagents should start with a harmless math probe; if the output matches the expected result, the engine is confirmed and an RCE payload can be selected from the examples later in this reference.
 
@@ -51,6 +137,7 @@ Use the matrix below to quickly identify an unknown template engine during verif
 | Mustache | `{{value}}` | Context-dependent (logic-less, no execution) |
 
 ### What SSTI IS
+[ref: #ssti-scope-in]
 
 - Passing user input as the template string to be compiled or rendered:
   - `Template(user_input).render()` — Jinja2
@@ -84,6 +171,7 @@ Use the matrix below to quickly identify an unknown template engine during verif
   - `View(user_input, model)` (ASP.NET MVC) where the view name is user-controlled
 
 ### What SSTI is NOT
+[ref: #ssti-scope-out]
 
 Do not flag these patterns:
 
@@ -98,6 +186,7 @@ Do not flag these patterns:
 - **Sandboxed template engines configured with a restricted environment**: Liquid, Mustache, and similar logic-less engines cannot execute arbitrary code even if the template string comes from user input — but still flag them as "Needs Manual Review" unless you can confirm the engine is logic-less
 
 ### Patterns That Prevent SSTI
+[ref: #ssti-prevention-patterns]
 
 When you see these patterns, the code is likely **not vulnerable**:
 
@@ -125,9 +214,10 @@ return render_template(template_name)
 const output = Mustache.render(userTemplate, ctx);  // lower risk, but still flag for review
 ```
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #ssti-examples]
 
 ### Python — Flask / Jinja2
 
@@ -161,6 +251,35 @@ def preview():
     data = request.form.get('data')
     return env.get_template("preview.html").render(data=data)
 ```
+
+### Python — FastAPI (Starlette / Jinja2)
+
+```python
+# VULNERABLE: user input rendered as the template string
+from fastapi import FastAPI
+from jinja2 import Environment
+
+app = FastAPI()
+env = Environment()
+
+@app.get("/greet")
+def greet(name: str = ""):
+    template = env.from_string(f"<h1>Hello {name}!</h1>")  # name becomes template syntax
+    return template.render()
+# Payload: ?name={{7*7}} → "49"; RCE via {{cycler.__init__.__globals__}}
+
+# SECURE: static template file, user input passed as context
+from fastapi import Request
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/greet")
+def greet(request: Request, name: str = ""):
+    return templates.TemplateResponse(request=request, name="greet.html", context={"name": name})
+```
+
+Note: a user-controlled template NAME in `TemplateResponse` (e.g., `templates.TemplateResponse(request, name=user_supplied)`) is a file-read / path-traversal vector, not SSTI — flag it under path traversal, and validate names against an allowlist.
 
 ### Python — Django Templates
 
@@ -435,9 +554,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 // Even html/template is vulnerable to SSTI if user input reaches .Parse().
 ```
 
----
+***
 
 ## Specialized SSTI Contexts
+[ref: #ssti-specialized-contexts]
 
 Template-like evaluation happens outside traditional view engines. Treat the following contexts as SSTI when untrusted data reaches the processing function.
 
@@ -535,6 +655,26 @@ Resources:
 
 Treat any API that accepts values later inserted into CloudFormation, SAM, ARM, Terraform, or Pulumi templates as a potential template-injection surface. The impact is not RCE on the application server but privilege escalation, resource creation, or data exfiltration through the infrastructure provider.
 
+### LLM Chat Templates
+
+Model-serving stacks render **Jinja2 chat templates** server-side: Hugging Face `transformers` (`tokenizer.apply_chat_template`), vLLM, TGI, and llama.cpp all evaluate the template bundled with model artifacts or supplied per request. An SSTI payload inside a chat template executes on the inference host — a supply-chain path from untrusted model repositories (GGUF/HF metadata) and a direct path wherever an API lets callers select or submit a custom `chat_template`.
+
+```python
+# VULNERABLE: caller-supplied chat template rendered by the serving stack
+@app.post("/v1/chat/completions")
+def chat(req: ChatRequest):
+    rendered = tokenizer.apply_chat_template(
+        req.messages,
+        chat_template=req.chat_template,  # attacker-controlled template string → SSTI on the inference server
+        tokenize=False,
+    )
+
+# SECURE: ignore client-supplied templates; pin the model's bundled default
+rendered = tokenizer.apply_chat_template(req.messages, tokenize=False)
+```
+
+Flag any code path that passes user- or model-supplied template strings to `apply_chat_template`, `from_string`, or a serving engine's template loader.
+
 ### Nested Template Evaluation
 
 ```python
@@ -545,9 +685,10 @@ second = Template(first).render()  # second evaluation executes payloads from th
 # SECURE: render once; escape output before any secondary use
 ```
 
----
+***
 
 ## Engine-Specific Prevention / Hardening
+[ref: #ssti-engine-hardening]
 
 The most reliable prevention is to **never use untrusted input as a template string**. When dynamic templates are unavoidable, apply engine-specific hardening.
 
@@ -556,7 +697,7 @@ The most reliable prevention is to **never use untrusted input as a template str
 | **FreeMarker** | `?new` built-in, `freemarker.template.utility.Execute` | Disable `?new` (`Configuration.setNewBuiltinClassResolver(TemplateClassResolver.SAFER_RESOLVER)` or disallow); restrict class loader; avoid `Configuration.setAPIBuiltinEnabled(true)` unnecessarily. |
 | **Velocity** | Class loading via `ClassTool`, `ApplicationAttribute`, event handlers | Use `org.apache.velocity.runtime.resource.util.StringResourceRepository` only; sandbox context objects; avoid `Velocity.evaluate` on untrusted strings; configure `runtime.references.strict` and disable dangerous introspection. |
 | **Thymeleaf** | Expression access to `T(...)` (Spring EL type references) | Use `StandardDialect` without unrestricted expression execution; disable preprocessing expressions (`thymeleaf.expression.preprocessor`); validate controller view names against an allowlist. |
-| **Jinja2** | `\|attr`, `__class__`, `__subclasses__`, `{% import %}` of arbitrary modules | Use `jinja2.sandbox.SandboxedEnvironment`; enable auto-escaping; restrict `Environment.globals`; avoid `from_string` on user input. |
+| **Jinja2** | `\|attr`, `__class__`, `__subclasses__`, `{% import %}` of arbitrary modules | Use `jinja2.sandbox.SandboxedEnvironment`; enable auto-escaping; restrict `Environment.globals`; avoid `from_string` on user input. Keep Jinja2 ≥ 3.1.6: the sandbox had escapes via indirect `str.format` calls (CVE-2024-56326, fixed in 3.1.5) and via the `\|attr` filter (CVE-2025-27516, fixed in 3.1.6) — a sandbox on an older version is not a complete mitigation. |
 | **Django** | `\|safe`, `{% autoescape off %}`, `mark_safe` on user data | Keep auto-escaping enabled; validate template names against an allowlist; never pass user input to `Template()`. |
 | **Handlebars** (server-side) | `Handlebars.create()` with helpers exposing `process`/`require` | Run in a VM or sandbox with `console`/`process`/`require` disabled; do not compile user templates server-side; use a restricted helper allowlist. |
 | **Twig** | `sandbox` disabled, `include` from arbitrary paths | Enable the sandbox extension with a strict policy; disable `raw` filter for user data; validate template names. |
@@ -565,9 +706,10 @@ The most reliable prevention is to **never use untrusted input as a template str
 | **ASP.NET Razor** | `@Html.Raw`, dynamic view names | Avoid `@Html.Raw` on untrusted data; allowlist view names; do not compile user strings with RazorLight/RazorEngine unless fully sandboxed. |
 | **JSP / JSTL** | EL expression evaluation, scriptlets | Escape output with `<c:out>`; disable scriptlets in `web.xml`; use a strict EL resolver; validate view names. |
 
----
+***
 
 ## Execution
+[ref: #ssti-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -878,9 +1020,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/0
 
 5. After writing `{{ REPORTS_ROOT }}/06_ssti.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/06_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #ssti-owasp-mapping]
 
 This scan supports the following OWASP API Security Top 10 2023 risks:
 
@@ -895,9 +1038,10 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 | Data from a third-party API rendered through a template | API10:2023 Unsafe Consumption of APIs | Upstream data is trusted and passed to a template without sanitization. |
 | PDF/LaTeX/markdown processor uses template syntax on user data | API8/API10 | Processor configuration allows embedded expressions. |
 
----
+***
 
 ## Important Reminders
+[ref: #ssti-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Subagents must not modify project source code**. This skill is read-only. Subagents may only write analysis reports under `{{ REPORTS_ROOT }}/`.

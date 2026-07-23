@@ -2,7 +2,6 @@
 name: repo-audit
 description: "MANDATORY skill for full repository audits: creates and maintains repo cards (`repos/<repo>/overview`), business-domain reports (`repos/<repo>/business`), dependency cards (`repos/<repo>/dependencies`), and the project-level index (`project/dependencies`). Three run modes: FULL (wave pipeline of parallel subagents), PARTIAL (single artifact from fresh memory), REFRESH (diff-driven update of stale artifacts). Use when the user asks to: create or study an entity card / repo card, explore or study a project/service/repository, run business or domain analysis, extract business rules, build a dependency card or dependency map, audit a repo, or refresh stale cards. Triggers on 'entity card', 'repo card', 'изучи проект/сервис/репозиторий', 'бизнес-анализ', 'доменная модель', 'карточка зависимостей', 'карта зависимостей', 'аудит репо'."
 version: 0.1.0
-draft: true
 triggers:
   request: "create entity card, create project card, create service card, create repository card, entity card, project card, service card, repository card, repo card, explore project, explore service, explore repository, study project, study service, study repository, изучи проект, изучи сервис, изучи репозиторий, создай карточку проекта, создай карточку сервиса, создай карточку репозитория, карточка репо, business entities, business expertise, domain analysis, domain events, бизнес-сущности, анализ бизнеса, business analysis, business domain analysis, analyze business domain, business logic analysis, business rules analysis, what business does, business purpose, business meaning, domain model analysis, бизнес-анализ, бизнес-логика, бизнес-смысл, доменная модель, бизнес-правила, зачем нужно приложение, бизнес-цель, dependency card, create dependency card, dependency map, create dependency map, architecture dependencies, service dependencies, what does it depend on, карточка зависимостей, создай карточку зависимостей, карта зависимостей, изучи зависимости, repo audit, аудит репо, аудит репозитория, полный аудит, обнови карточки, refresh cards, update stale cards"
 requires:
@@ -70,7 +69,7 @@ Staleness detector per artifact → present metrics and ALWAYS ask the user (rec
 
 ## Lazy-Load Routing Index
 
-Do not read every reference file. Extract only the anchors needed, per the frontmatter-protocol lazy-load mechanics.
+Do not read every reference file. Extract only the anchors needed, per the frontmatter-protocol lazy-load mechanics. This corpus uses the `separate` marker placement form (markdown-protocol `marker_style`): exactly one blank line above and below every `[ref:]` marker.
 
 | Trigger / situation | File | Anchor |
 |---|---|---|

@@ -1,3 +1,74 @@
+---
+subject: "Path traversal detection reference for SAST subagents: definition and exclusions, prevention patterns, per-stack vulnerable/secure recipes incl. FastAPI, 15 attack variants (encoding, UNC, ZipSlip, TOCTOU, normalization, template paths), dynamic payloads, prevention guidance, three-phase execution, OWASP and CWE mapping."
+index:
+  - anchor: pathtraversal-detection
+    what: "Focused path-traversal detection role using the three-phase subagent approach — recon, batched taint verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic sweep of every file-loading sink with dynamic paths, yet unstructured hunting misses traversal-prone reads and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "Path-traversal scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual traversal knowledge is needed, not execution."
+    expected: "Verified traversal findings consolidated into the module report with false positives filtered."
+  - anchor: pathtraversal-definition
+    what: "Core definition: user-controlled input reaching filesystem paths without normalization checks, enabling reads or writes outside the intended directory; includes prevention-pattern overview."
+    problem: "Reviewers disagree on what counts as traversal without shared root cause, so basename-only fixes pass as safe while real canonicalization gaps slip; concept baseline, shared vocabulary, classification consistency, definition anchor, canonicalization, directory escape, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a file path belongs to traversal findings at all."
+    avoid_when: "Concrete stack recipes are needed — jump to the examples anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: untrusted input escaping the intended base directory."
+  - anchor: pathtraversal-examples
+    what: "Per-stack vulnerable/secure recipe pairs: Python incl. FastAPI, Node.js, Rails, PHP, Java, Go, ASP.NET Core, plus archive extraction."
+    problem: "Path idioms differ per framework, and generic traversal rules miss stack-specific helpers like send_from_directory, realpath checks, and safe join utilities; stack recipes, helper libraries, path apis, precise detection, pattern matching, call diversity, file surface."
+    use_when: "Target uses one of the covered stacks; reviewing file-read and file-serve call sites."
+    avoid_when: "Bypass variants are the question — see the variants anchor; conceptual definitions wanted."
+    expected: "Stack-specific unsafe joins flagged; canonicalized or helper-guarded reads verified."
+  - anchor: pathtraversal-execution
+    what: "Three-phase execution: file-sink recon with a zero-candidate early-exit gate, batched taint verify in groups of three, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the traversal scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual traversal knowledge is the need — see definition and examples anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: pathtraversal-owasp-mapping
+    what: "Mapping of traversal findings to OWASP API 2023 risks: API1 for object-file access, API8 for misconfiguration, API10 for third-party-driven paths."
+    problem: "Findings need correct 2023-era taxonomy for reporting, and assuming dedicated traversal categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to the correct risks with explicit reasoning."
+  - anchor: pathtraversal-cwe-mapping
+    what: "CWE table per traversal weakness: CWE-22 path traversal, CWE-23 relative traversal, CWE-36 absolute traversal, CWE-73 external control of path."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially when read and write classes blur together across scanners; weakness taxonomy, cwe 22, misclassification risk, tooling accuracy, identifier precision, reporting feeds, scanner alignment."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk framing is the question — see the OWASP anchor."
+    expected: "Each finding carries the most specific CWE identifier."
+  - anchor: pathtraversal-attack-variants
+    what: "Fifteen attack variants: encoded traversal, absolute paths, file:// confusion, open redirect, S3 key traversal, ZipSlip, command-injection filenames, RFI/LFI, null bytes, Unicode overlong, double encoding, predictable temp paths, TOCTOU, normalization differences, template paths."
+    problem: "Classic-only review misses encoding, timing, and platform tricks that bypass naive dot-dot filters entirely; variant inventory, filter evasion, unicode quirks, race windows, archive paths, template inclusion, exotic channels, chain attacks."
+    use_when: "A path filter exists and its bypass surface needs enumeration; verify phase needs attack angles."
+    avoid_when: "Basic traversal analysis unfinished — cover the examples first; prevention guidance wanted."
+    expected: "Every applicable variant is tried before calling a path filter sound."
+  - anchor: pathtraversal-dynamic-payloads
+    what: "Payload catalog: basic, encoded, double-encoded, absolute, null-byte, file://, and archive-traversal probes with verification steps."
+    problem: "Suspected sinks stay unconfirmed without concrete traversal payloads, and generic dot-dot strings fail against specific platforms and filters; confirmation testing, platform variants, encoded forms, verification evidence, dynamic proof, sink matching, proof strings."
+    use_when: "Confirming a suspected sink during verify; choosing payload forms per platform."
+    avoid_when: "Static analysis is sufficient for the finding; recon stage not done."
+    expected: "Each suspected sink gets a matching confirmation payload."
+  - anchor: pathtraversal-prevention-guidance
+    what: "Layered defense checklist: canonicalization with base-directory verification, allowlists, safe-join helpers, chroot/container isolation, and archive-entry validation."
+    problem: "Remediation advice scattered across guides leaves gaps that let one missed layer reopen directory escape; remediation checklist, control mapping, defense completeness, gap elimination, hardening steps, storage isolation, systematic mitigation, closure guarantee."
+    use_when: "Writing remediation; reviewing whether defenses are complete."
+    avoid_when: "Detection mechanics are the question — see execution anchors."
+    expected: "Every finding closes with a complete, layered control set."
+  - anchor: pathtraversal-references
+    what: "External link list for traversal concepts, cheat sheets, and payload collections."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification is required; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, owasp pages."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — the references list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: pathtraversal-important-reminders
+    what: "Closing operational reminders: phase ordering, batch discipline, normalization skepticism, and cleanup rules."
+    problem: "Modules close with inconsistent final guidance, letting bypassable filters or weak proof slip into reports and client deliverables; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+---
+
 # Path Traversal Detection
 
 [ref: #pathtraversal-detection]
@@ -6,9 +77,10 @@ You are performing a focused security assessment to find path traversal vulnerab
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## What is Path Traversal
+[ref: #pathtraversal-definition]
 
 Path traversal (also called directory traversal) occurs when user-supplied input is incorporated into a file path that is then used to read, write, or serve files from the filesystem — without properly constraining the resulting path to an intended base directory. An attacker can supply sequences like `../` or encoded variants (`%2e%2e%2f`, `..%2f`, `%2e%2e/`) to escape the intended directory and access arbitrary files such as `/etc/passwd`, application source code, credentials, or private keys.
 
@@ -103,9 +175,10 @@ return send_from_directory('/var/www/files', filename)
 # Django — FileResponse with a path that was never user-controlled
 ```
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #pathtraversal-examples]
 
 ### Python — Flask
 
@@ -295,9 +368,10 @@ with zipfile.ZipFile(user_zip) as zf:
     zf.extractall(base)
 ```
 
----
+***
 
 ## Execution
+[ref: #pathtraversal-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -538,9 +612,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 
 5. After writing `{{ REPORTS_ROOT }}/12_pathtraversal.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/12_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #pathtraversal-owasp-mapping]
 
 Path traversal is not a standalone OWASP API Security Top 10 2023 category, but it enables or strongly overlaps with several API risks. This scan supports the following mappings:
 
@@ -571,9 +646,10 @@ Path traversal is not a standalone OWASP API Security Top 10 2023 category, but 
 | **How this scan detects it** | The verify phase traces the dynamic path variable backward through HTTP clients, webhooks, message queues, and database records to determine whether the value originated from an external API and whether it was sanitized before use. |
 | **Risk table** | Threat agents: API specific, exploitability **Easy**; Weakness prevalence **Common**, detectability **Average**; Impact: technical **Severe**, business specific. |
 
----
+***
 
 ## CWE Mapping
+[ref: #pathtraversal-cwe-mapping]
 
 Path traversal findings should be tagged with the most specific CWE that applies. Use the parent CWE-22 when the exact variant is unknown, and add the child CWE when the bypass mechanism is identifiable.
 
@@ -596,9 +672,10 @@ Path traversal findings should be tagged with the most specific CWE that applies
 | [CWE-641](https://cwe.mitre.org/data/definitions/641.html) | Improper Restriction of Names for Files and Other Resources | Archive entry names or multipart filenames are not restricted before use. |
 | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | Allocation of Resources Without Limits or Throttling | Unbounded file reads or archive extraction causing DoS; note in finding impact. |
 
----
+***
 
 ## Attack Variants & Bypass Patterns
+[ref: #pathtraversal-attack-variants]
 
 Path traversal is not limited to `../` in a URL parameter. Subagents must recognize the following variants and bypass patterns, and must classify each finding with the appropriate CWE.
 
@@ -803,9 +880,10 @@ Flag when:
 - The include path is built from user input.
 - The framework does not restrict template lookup to the configured directory.
 
----
+***
 
 ## Dynamic-Test Payloads
+[ref: #pathtraversal-dynamic-payloads]
 
 Use the following payloads during dynamic confirmation. Replace `../../../etc/passwd` with the target file for the platform (`C:\Windows\win.ini` on Windows, `/proc/self/environ` on Linux containers, `web.config` for .NET).
 
@@ -875,9 +953,10 @@ curl -i "https://target.example/s3-proxy?key=uploads/123/../../private-object"
 
 When testing, prefer starting with a small number of `../` sequences and increase until the response length or status changes. Record every payload and response in the finding's dynamic-test block.
 
----
+***
 
 ## How to Prevent
+[ref: #pathtraversal-prevention-guidance]
 
 Defenses must be applied **before** the file operation and must operate on the fully resolved path. A single layer is rarely enough; combine multiple controls.
 
@@ -998,9 +1077,10 @@ Log every file operation that uses user input:
 - Alert on path-escape attempts, repeated `../` sequences, encoded traversal, or access to sensitive files.
 - Keep logs on a separate, append-only storage to prevent tampering.
 
----
+***
 
 ## References
+[ref: #pathtraversal-references]
 
 ### OWASP
 
@@ -1030,9 +1110,10 @@ Log every file operation that uses user input:
 - [Snyk ZipSlip](https://res.cloudinary.com/snyk/image/upload/v1528192501/ZipSlip.pdf)
 - [PortSwigger Path Traversal](https://portswigger.net/web-security/file-path-traversal)
 
----
+***
 
 ## Important Reminders
+[ref: #pathtraversal-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Do not modify project source code.** This reference is for detection and reporting only. Subagents must not apply patches, create pull requests, or change files in the codebase. Findings are written to `{{ REPORTS_ROOT }}/12_pathtraversal.md`.

@@ -1,3 +1,92 @@
+---
+subject: "GraphQL injection detection reference for SAST subagents: document-assembly definition with scope exclusions, surface-issues table, per-stack vulnerable/secure recipes incl. FastAPI, prevention patterns and guidance, CWE list, three-phase execution with early-exit gates, advanced patterns incl. MCP/AI exposure, OWASP API mapping."
+index:
+  - anchor: graphql-detection
+    what: "Focused GraphQL-injection detection role using the three-phase subagent approach — technology recon, batched taint verify, merge — gated on the architecture report."
+    problem: "Codebase may assemble GraphQL operation documents from user input anywhere across servers, gateways, and BFF proxies, and unstructured hunting misses assembly sites while flooding reviewers with unverified candidates; detection orchestration, phase pipeline, document taint, audit rigor, coverage goal, methodical triage, reviewer fatigue."
+    use_when: "GraphQL scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture summary absent — run the analysis module first; only conceptual knowledge is needed, not execution."
+    expected: "Verified injection findings consolidated into the module report with false positives filtered."
+  - anchor: graphql-definition
+    what: "Core definition: user-controlled data embedded into the GraphQL operation document text itself, letting attacker syntax reach the parser instead of staying inside the variables map."
+    problem: "Reviewers disagree on what counts as document injection versus ordinary argument passing, so resolver SQLi and variable binding get flagged while real text-assembly flaws slip; concept baseline, shared vocabulary, parser trust boundary, classification consistency, definition anchor, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a behavior belongs to this vulnerability class at all."
+    avoid_when: "Concrete code recipes are needed — jump to the examples anchor; execution workflow is the question."
+    expected: "Everyone applies one test: user input must never alter operation text, only variable values."
+  - anchor: graphql-scope-in
+    what: "Positive scope: construction patterns that count as injection — concatenation or interpolation into operation strings, dynamic `gql` template literals, forwarded bodies re-wrapped, persisted-query maps without allowlisting."
+    problem: "Detectors under-report when inclusion rules stay implicit, missing string-built documents across HTTP proxies, server wrappers, and downstream gateway clients; assembly patterns, missed sites, hidden vectors, recon breadth, forwarding paths, template misuse, candidate recall, coverage gaps."
+    use_when: "Running recon for candidate assembly sites; judging whether a found code shape qualifies."
+    avoid_when: "Exclusion boundaries are the question — see the scope-out anchor; prevention design wanted."
+    expected: "Every unsafe document-assembly pattern is captured during recon."
+  - anchor: graphql-scope-out
+    what: "Negative scope: patterns explicitly not flagged here — resolver SQL/NoSQL injection, IDOR through variables on static documents, normal variable binding, introspection exposure, depth and complexity denial of service."
+    problem: "Verify batches drown in false positives when boundary rules stay unwritten, burning taint-tracing effort on authorization gaps and resolver bugs owned by other modules; misrouted findings, wasted tracing, scope discipline, class confusion, triage accuracy, batch noise, ownership boundaries."
+    use_when: "A candidate looks like injection but might be authorization or resolver-layer; classifying borderline patterns."
+    avoid_when: "Inclusion patterns are the question — see the scope-in anchor; surface-hardening issues are wanted."
+    expected: "Borderline candidates route to the correct module instead of inflating injection findings."
+  - anchor: graphql-surface-issues
+    what: "Twelve-row surface-issue table: introspection, field suggestions, debug UIs, depth and complexity abuse, batching, resolver and subscription auth gaps, directive injection, CSRF, uploads, federation trust, cache poisoning, MCP/AI exposure — each with detection focus and OWASP mapping."
+    problem: "Recon focused only on document assembly misses hardening gaps that let attackers map schemas, bypass rate limits, or reach resolvers sideways, leaving reports blind to non-injection GraphQL risk; schema mapping, sideways access, visibility gaps, exposure inventory, adjacent risk, recon breadth, limit evasion."
+    use_when: "Phase 1 recon must record GraphQL-specific surface findings; reviewing whether a hardening gap belongs in the report."
+    avoid_when: "Injection candidate hunting is the current step — see scope anchors; remediation checklist wanted."
+    expected: "Recon records every applicable surface issue with classification and evidence."
+  - anchor: graphql-prevention-patterns
+    what: "Seven numbered prevention patterns with code: static documents plus variables, single-parse server handlers, persisted-query allowlists, `Source` with `variableValues`, introspection disabled, depth and cost limits, per-resolver authorization."
+    problem: "Remediation advice without canonical safe shapes leaves implementers guessing which construction idiom is actually acceptable, so fixes reintroduce string assembly under new wrappers; reference idioms, fix guidance, wrapper drift, secure defaults, implementation clarity, remediation patterns, hardening baseline."
+    use_when: "Designing or reviewing fix patterns for flagged assembly sites; onboarding to secure GraphQL construction."
+    avoid_when: "Vulnerable counterparts are needed for comparison — see the examples anchor; the checklist form is wanted."
+    expected: "Fixes adopt variable-bound idioms instead of rewrapped string building."
+  - anchor: graphql-examples
+    what: "Per-stack vulnerable/secure recipe pairs: Node.js proxy, Python format-into-`execute`, Apollo Server, graphql-js, Strawberry, Graphene, FastAPI, graphql-java, Sangria — each pairing string assembly with the variable-bound fix."
+    problem: "Framework execution idioms differ wildly, and generic injection rules miss how each stack actually feeds document text into parsers, executors, and HTTP bodies; executor diversity, precise detection, pattern matching, call shapes, binding styles, parser entry, taint anchors."
+    use_when: "Target uses one of the covered stacks; reviewing resolvers, proxy endpoints, or gateway clients."
+    avoid_when: "Conceptual scope is the question — see definition anchors; prevention checklist wanted."
+    expected: "Stack-specific assembly sites flagged; variable-bound forms verified safe."
+  - anchor: graphql-prevention-guidance
+    what: "Layered hardening checklist: static documents with variables, fragment allowlists, introspection off, depth and complexity limits, complexity-based rate limiting, per-field authorization, subscription auth, persisted queries, upstream response validation, debug UIs removed, CSRF controls, upload limits, federation hardening, MCP endpoint authentication."
+    problem: "Remediation scattered across framework docs leaves gaps that let one missing control reopen document injection or adjacent abuse; control mapping, defense completeness, gap elimination, hardening steps, systematic mitigation, closure guarantee, audit-ready fixes."
+    use_when: "Writing remediation for confirmed findings; auditing whether deployed defenses are complete."
+    avoid_when: "Detection mechanics are the question — see execution anchors; canonical code shapes wanted."
+    expected: "Every finding closes with a complete, layered control set."
+  - anchor: graphql-cwe-mapping
+    what: "CWE list per GraphQL weakness: input validation, injection, SQL downstream, information exposure, authorization, CSRF, resource consumption, user-controlled key bypass, allocation limits, dynamic attribute modification, SSRF."
+    problem: "Wrong weakness identifiers break downstream tooling and metrics, especially when injection, authorization, and resource classes blur across one finding; weakness taxonomy, misclassification risk, tooling accuracy, identifier precision, reporting feeds, scanner alignment, cwe tagging."
+    use_when: "Assigning CWE identifiers to GraphQL findings."
+    avoid_when: "OWASP risk framing is the question — see the OWASP anchor."
+    expected: "Each finding carries the most specific applicable CWE."
+  - anchor: graphql-execution
+    what: "Three-phase execution: technology recon with dual early-exit gates (no GraphQL, zero candidates), batched taint verify in groups of three sites, orchestrator merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges findings inconsistently; execution model, phase overview, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity, gate logic."
+    use_when: "Starting the GraphQL scan execution; dispatching or reviewing any phase or gate."
+    avoid_when: "Conceptual knowledge is the need — see definition and scope anchors."
+    expected: "All phases run with shared architecture context into one consolidated report."
+  - anchor: graphql-advanced-patterns
+    what: "Less-obvious attack patterns: cost-analysis abuse, live query and subscription leaks, federation stitching trust, GET-based CSRF, multipart uploads, cache poisoning, directive injection, alias overloading, MCP/AI tool exposure, engine-level CVEs."
+    problem: "Standard sweeps catch obvious string assembly yet miss quiet vectors where expensive resolvers, trusted gateways, or AI tool bridges expose data without any injected syntax; second-order abuse, federation risks, cost evasion, cache risks, exotic paths, resolver strain."
+    use_when: "Recon needs depth beyond textbook injection; manual review of odd architectures, gateways, subscriptions, or AI integrations."
+    avoid_when: "Basic candidate hunting is unfinished — finish recon first; remediation checklist wanted."
+    expected: "Non-obvious exposure paths surface alongside classic injection candidates."
+  - anchor: graphql-owasp-mapping
+    what: "OWASP API 2023 mapping table: API1 BOLA, API2 authentication, API4 resource consumption, API5 function authorization, API8 misconfiguration, API10 unsafe consumption — with GraphQL manifestations and source-file citations."
+    problem: "Findings need correct 2023-era taxonomy for reporting, and mislabeling GraphQL-specific manifestations misroutes everything downstream into wrong risk buckets; risk routing, classification accuracy, edition awareness, correct tagging, traceability, risk labels, label drift."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to correct API risks with explicit GraphQL reasoning."
+  - anchor: graphql-important-reminders
+    what: "Closing operational constraints: read-only subagents, phase ordering, gate behavior, batch size of three, parallel dispatch, per-batch context slicing, taint only in verify, resolver issues routed out, conservative classification, intermediate cleanup."
+    problem: "Modules close with inconsistent final guidance, letting unverified traces, giant contexts, or premature deletion slip into audit runs and client deliverables; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing operational constraints before dispatch."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Runs close with uniform operational rules applied."
+  - anchor: graphql-references
+    what: "External link list: OWASP cheat sheets, Apollo MCP Server documentation, Apollo Server migration guide, and the OWASP API 2023 source files this reference cites."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification or version details are required; further reading, external canon, deep dives, vendor documentation, primary material, cited works, owasp pages."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — this list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+---
+
 # GraphQL Injection Detection
 
 [ref: #graphql-detection]
@@ -6,15 +95,17 @@ You are performing a focused security assessment to find GraphQL injection vulne
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## What is GraphQL Injection
+[ref: #graphql-definition]
 
 GraphQL injection occurs when user-controlled data is embedded into the **GraphQL document** (the query, mutation, or subscription string) rather than passed only through the **variables** map. The parser then interprets attacker-controlled syntax — new fields, aliases, directives, fragments, or entire operations — which can bypass intent, reach unauthorized resolvers, or change server-side behavior when that document is executed or forwarded.
 
 The core pattern: *unvalidated user input alters the structure or text of the GraphQL operation string passed to `execute`, `graphql`, a gateway client, or an HTTP body `query` field built from string operations.*
 
 ### What GraphQL Injection IS
+[ref: #graphql-scope-in]
 
 - Concatenating or interpolating user input into an operation string: `` `query { user(id: "${id}") { name } }` ``, `"query { user(id: \"" + id + "\") { name } }"`
 - Building the JSON `query` field for a downstream GraphQL HTTP request with string concat from request body or params
@@ -25,6 +116,7 @@ The core pattern: *unvalidated user input alters the structure or text of the Gr
 - Injecting attacker-controlled fragments, aliases, directives, or operation names that change which resolvers run or how results are shaped
 
 ### What GraphQL Injection is Not
+[ref: #graphql-scope-out]
 
 Do not flag these as GraphQL injection:
 
@@ -36,6 +128,7 @@ Do not flag these as GraphQL injection:
 - **Query depth / complexity DoS**: Rate limiting and cost analysis — different class, but record it as a GraphQL-specific surface finding
 
 ### GraphQL-Specific Security Issues to Consider
+[ref: #graphql-surface-issues]
 
 GraphQL is not a standalone OWASP API Top 10 2023 category, but it amplifies several risks because clients can shape queries and mutations. During recon, record these issues as **surface findings** even when they are not document-injection flaws. Use the same classification labels (`Vulnerable`, `Likely Vulnerable`, `Not Vulnerable`, `Needs Manual Review`).
 
@@ -53,8 +146,10 @@ GraphQL is not a standalone OWASP API Top 10 2023 category, but it amplifies sev
 | **File upload via multipart spec** | GraphQL multipart requests are accepted without file-size, type, or count limits; uploads stored under web root or executed | API8:2023 Security Misconfiguration / API10:2023 Unsafe Consumption of APIs |
 | **Federation / gateway auth and stitching** | Gateway forwards client operations to subgraphs without propagating identity, or subgraphs trust gateway headers blindly | API10:2023 Unsafe Consumption of APIs |
 | **Cache poisoning** | Cache keys depend on user-controlled query shape/variables and upstream responses are cached without validation | API8:2023 Security Misconfiguration / API10:2023 Unsafe Consumption of APIs |
+| **MCP / AI agent exposure** | GraphQL operations are exposed to AI agents as MCP tools (e.g. Apollo MCP Server) through an unauthenticated MCP endpoint, introspection-driven dynamic tool generation, or an over-broad persisted-query manifest | API2:2023 Broken Authentication / API8:2023 Security Misconfiguration |
 
 ### Patterns That Prevent GraphQL Injection
+[ref: #graphql-prevention-patterns]
 
 **1. Static operation documents with variables**
 
@@ -93,9 +188,10 @@ Add validation rules / instrumentation so a single operation cannot exhaust reso
 
 Every resolver that returns or mutates an object or a property must enforce object-level and function-level authorization checks.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #graphql-examples]
 
 ### Node.js — dynamic document for downstream API
 
@@ -164,6 +260,8 @@ app.post('/profile', async (req, res) => {
 });
 ```
 
+> **Version note (verified 2026-07):** Apollo Server 5 is current — Apollo Server 4 is EOL since 2026-01-26, and v3 (`apollo-server-express`) since 2024-10-22. In v5 the Express integration moved out of `@apollo/server`: `expressMiddleware` is imported from `@as-integrations/express4` (or `@as-integrations/express5`), and `status400ForVariableCoercionErrors` now defaults to `true`. The `introspection: false` + `ApolloServerPluginLandingPageDisabled` hardening shown above is unchanged in v5.
+
 ### graphql-js
 
 ```javascript
@@ -212,6 +310,30 @@ result = schema.execute(
 )
 ```
 
+### FastAPI (Python)
+
+```python
+# VULNERABLE: document text built from the JSON request body
+from fastapi import FastAPI, Request
+from graphql import graphql_sync
+
+app = FastAPI()
+
+@app.post("/report")
+async def report(request: Request):
+    body = await request.json()
+    document = f'query {{ user(id: "{body["user_id"]}") {{ name }} }}'
+    result = graphql_sync(schema, document)
+    return result.formatted
+
+# SECURE: static document with bound variables; Strawberry router serves /graphql
+import strawberry
+from strawberry.fastapi import GraphQLRouter
+
+schema = strawberry.Schema(query=Query)
+app.include_router(GraphQLRouter(schema), prefix="/graphql")
+```
+
 ### graphql-java
 
 ```java
@@ -243,9 +365,10 @@ val result = Executor.execute(
 )
 ```
 
----
+***
 
 ## Prevention Guidance
+[ref: #graphql-prevention-guidance]
 
 - **Static documents + variables**: Never build operation text from user input. Pass user data only in the `variables` / `variableValues` map.
 - **Allowlist dynamic fragments**: If the client must select fields, validate against a server-side allowlist before assembling any text.
@@ -260,10 +383,12 @@ val result = Executor.execute(
 - **CSRF protections**: Reject state-changing mutations over `GET`; require non-simple content types or CSRF tokens; use `SameSite` cookies.
 - **File upload limits**: For GraphQL multipart uploads, enforce max file size, count, and allowed MIME types; store uploads outside the web root and never execute them.
 - **Federation / gateway hardening**: Propagate authentication context to subgraphs, validate subgraph responses, and do not trust internal headers blindly.
+- **MCP / AI agent endpoints**: Authenticate the MCP endpoint (OAuth 2.1 with PKCE, RFC 9728), generate tools from operation files or persisted-query manifests rather than live introspection, and scope manifests to the minimum operations the agent needs.
 
----
+***
 
 ## CWE References
+[ref: #graphql-cwe-mapping]
 
 - **CWE-20**: Improper Input Validation
 - **CWE-74**: Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')
@@ -277,9 +402,10 @@ val result = Executor.execute(
 - **CWE-915**: Improperly Controlled Modification of Dynamically-Determined Object Attributes
 - **CWE-918**: Server-Side Request Forgery (SSRF)
 
----
+***
 
 ## Execution
+[ref: #graphql-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -296,7 +422,7 @@ Launch a subagent with the following instructions:
 > **Part A — Is GraphQL used?**
 >
 > Search for:
-> - Dependencies: `graphql`, `@apollo/server`, `apollo-server-express`, `@nestjs/graphql`, `graphql-yoga`, `@graphql-yoga/node`, `mercurius`, `strawberry-graphql`, `graphene`, `sangria`, `gqlgen`, `async-graphql`, `juniper`, `graphql-ruby`, Hot Chocolate / `GraphQL.Server`, etc.
+> - Dependencies: `graphql` (graphql-js; v17 released 2026-06, v16 still widespread), `@apollo/server` (v5 current; v4 EOL 2026-01-26), `@as-integrations/express4` / `@as-integrations/express5`, `apollo-server-express` (legacy, EOL 2024-10-22), `@nestjs/graphql`, `graphql-yoga`, `@graphql-yoga/node`, `mercurius`, `strawberry-graphql`, `graphene`, `ariadne`, `sangria`, `gqlgen`, `async-graphql`, `juniper`, `graphql-ruby`, Hot Chocolate / `GraphQL.Server`, Spring for GraphQL (`spring-boot-starter-graphql`), Apollo MCP Server, etc.
 > - Schema artifacts: `*.graphql`, `*.graphqls`, codegen config (e.g. GraphQL Code Generator)
 > - Server routes or plugins mounting `/graphql` or similar
 >
@@ -345,6 +471,7 @@ Launch a subagent with the following instructions:
 > - File upload via multipart without limits
 > - Federation / gateway trust issues
 > - Cache poisoning risk from query-shape cache keys
+> - MCP / AI agent exposure (unauthenticated MCP endpoint, introspection-driven tool generation, over-broad persisted-query manifest)
 >
 > **Output format** — write to `{{ REPORTS_ROOT }}/14_recon.md`:
 >
@@ -550,9 +677,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 
 6. After writing `{{ REPORTS_ROOT }}/14_graphql.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/14_batch_*.md`).
 
----
+***
 
 ## Advanced Patterns
+[ref: #graphql-advanced-patterns]
 
 Look for these less-obvious GraphQL security issues during recon and manual review:
 
@@ -564,10 +692,13 @@ Look for these less-obvious GraphQL security issues during recon and manual revi
 - **Cache poisoning**: Shared caches key responses by `query` + `variables`; attacker injects a field or alias that pollutes the cache for other users.
 - **Directive injection**: Custom directives evaluate arguments in unsafe contexts (e.g., `@exec(cmd: ...)`) or directives override authorization decisions.
 - **Alias overloading / batching**: JSON arrays of operations or many aliased fields in one request bypass per-request rate limits and amplify brute force or resource exhaustion.
+- **MCP / AI agent access**: Apollo MCP Server and similar bridges turn GraphQL operations into MCP tools for AI agents; an unauthenticated MCP endpoint, introspection-driven dynamic tool generation, or an over-broad persisted-query manifest lets an agent (or a prompt-injected user) reach resolvers the HTTP API never meant to expose. Require OAuth 2.1 with PKCE on the MCP endpoint (RFC 9728 Protected Resource Metadata) and generate tools from operation files or manifests, not live introspection.
+- **Engine-level CVEs**: track parser/library bugs in addition to application flaws — graphql-ruby schema-from-JSON deserialization RCE (CVE-2025-27407; patched in 1.11.8, 1.12.25, 1.13.24, 2.0.32, 2.1.14, 2.2.17, 2.3.21) and Spring for GraphQL unsafe deserialization in paginated queries (CVE-2026-41699, RCE).
 
----
+***
 
 ## OWASP API Security Top 10 2023 Mapping
+[ref: #graphql-owasp-mapping]
 
 This scan supports the following OWASP API Security Top 10 2023 risks:
 
@@ -582,9 +713,10 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 
 **Additional cross-reference**: `0xa3-broken-object-property-level-authorization.md` contains a GraphQL example of excessive data exposure / mass assignment and should be considered when reviewing resolver-level property authorization.
 
----
+***
 
 ## Subagent Constraints and Important Reminders
+[ref: #graphql-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Subagents are read-only**. They must not modify project source code, configuration files, tests, or dependencies. They must not run `git commit`, `git push`, package installs, or any destructive commands.
@@ -600,9 +732,10 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable".
 - Clean up intermediate files: delete `{{ REPORTS_ROOT }}/14_recon.md` and all `{{ REPORTS_ROOT }}/14_batch_*.md` files after the final `{{ REPORTS_ROOT }}/14_graphql.md` is written.
 
----
+***
 
 ## References
+[ref: #graphql-references]
 
 - OWASP GraphQL Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/GraphQL_Cheat_Sheet.html
 - OWASP Authorization Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
@@ -610,6 +743,8 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 - OWASP Authentication Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
 - OWASP Mass Assignment Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
 - OWASP Server-Side Request Forgery Prevention Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/Server-Side_Request_Forgery_Prevention_Cheat_Sheet.html
+- Apollo MCP Server documentation — https://www.apollographql.com/docs/apollo-mcp-server
+- Migrating from Apollo Server 4 to 5 — https://www.apollographql.com/docs/apollo-server/migration
 - OWASP API Security Top 10 2023 source files used in this reference:
   - `0xa1-broken-object-level-authorization.md`
   - `0xa2-broken-authentication.md`

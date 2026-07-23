@@ -1,3 +1,104 @@
+---
+subject: "IDOR/BOLA detection reference for SAST subagents: terminology vs BFLA, BOLA rule, scope boundaries, authorization prevention patterns and anti-patterns, advanced detection angles, per-stack vulnerable/secure recipes, three-phase execution, OWASP API1 mapping, dynamic tests, references."
+index:
+  - anchor: idor-detection
+    what: "Focused IDOR/BOLA detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic sweep of every endpoint accepting object identifiers, yet unstructured hunting misses ownership gaps and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
+    use_when: "IDOR scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual IDOR knowledge is needed, not execution."
+    expected: "Verified IDOR findings consolidated into the module report with false positives filtered."
+  - anchor: idor-subagent-constraints
+    what: "Read-only investigator contract: subagents write only audit report files under `{{ REPORTS_ROOT }}/`, never project source."
+    problem: "Assessment subagents can damage audited codebases without explicit write limits, and edit requests mask findings that belong in reports; repo safety, constraint contract, source protection, sandbox rules, artifact discipline, modification ban, scope walls."
+    use_when: "Dispatching any detection subagent; reviewing subagent permissions."
+    avoid_when: "Detection content is the question — see phase anchors."
+    expected: "Subagents operate read-only with report-scoped writes only."
+  - anchor: idor-terminology
+    what: "Term mapping: IDOR equals BOLA (API1:2023, object-level), distinct from BFLA (function-level, vertical), with the scan-10 routing rule."
+    problem: "Findings get misclassified when object-level and function-level authorization failures share vocabulary, sending vertical escalation into horizontal-scan reports; term alignment, class separation, routing discipline, bola bfla, escalation classes, naming drift, category clarity."
+    use_when: "Classifying an authorization finding by level; deciding whether it belongs to this scan or scan 10."
+    avoid_when: "The BOLA rule itself or prevention patterns are the question — see those anchors."
+    expected: "Every authorization finding lands in the object-level or function-level bucket with a route."
+  - anchor: idor-bola-rule
+    what: "The core rule: every function using a client-supplied ID must check object-level authorization; authentication alone never suffices."
+    problem: "Teams assume authenticated callers are authorized for any record, so ownership checks never get written into handlers and data access trusts every supplied identifier; ownership verification, per-record gate, authorization gap, core invariant, authn authz confusion, baseline rule."
+    use_when: "Judging whether an endpoint needs an ownership check; teaching the scan's central invariant."
+    avoid_when: "Concrete safe patterns are needed — see prevention anchors; terminology mapping wanted."
+    expected: "Reviewers require a per-record check everywhere a client ID reaches data access."
+  - anchor: idor-definition
+    what: "Core definition: authenticated user accesses another user's object by changing an identifier, because ownership is never verified."
+    problem: "Reviewers disagree on what counts as object-reference insecurity without shared pattern, so public resources get flagged while real ownership gaps slip; concept baseline, shared vocabulary, classification consistency, definition anchor, horizontal access, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a finding belongs to IDOR at all."
+    avoid_when: "Stack recipes are needed — jump to the examples anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: identifier swap yielding foreign-record access."
+  - anchor: idor-scope-in
+    what: "Positive IDOR catalog: object IDs in path/query/body, predictable identifiers, bulk operations, file storage keys, and subscription channels."
+    problem: "Detectors under-report when identifier-accepting endpoints stay implicit, missing bulk, export, storage, and realtime paths across frameworks; inclusion rules, endpoint inventory, missed callsites, hidden vectors, recon breadth, primitive coverage, channel diversity."
+    use_when: "Building or checking a recon candidate list; unsure whether an endpoint qualifies."
+    avoid_when: "Exclusions and class boundaries are the question — see the scope-out anchor; prevention patterns wanted."
+    expected: "Every identifier-accepting endpoint is recognized during recon."
+  - anchor: idor-scope-out
+    what: "Boundary rules excluding missing authentication, BFLA vertical escalation, public resources, mass assignment, and SQLi via ID fields."
+    problem: "Findings get misrouted when adjacent classes blur into object-reference abuse, corrupting severity and ownership across scans; misrouting risk, class confusion, double reporting, ownership clarity, dedup discipline, triage errors, category overlap, fuzzy edges."
+    use_when: "A finding could belong to another scan class; triaging overlapping categories."
+    avoid_when: "Positive candidates are needed — see the scope-in anchor; prevention patterns wanted."
+    expected: "Each candidate lands in exactly one class, with public and vertical cases routed out."
+  - anchor: idor-prevention-patterns
+    what: "Safe authorization constructions: user-scoped queries, post-fetch ownership checks, policy middleware, tenant scoping, and centralized authorization modules."
+    problem: "Verify subagents need authoritative safe patterns to avoid flagging secured endpoints, and scattered authorization knowledge produces false positives everywhere; filtered fetches, policy gates, tenant isolation, false-positive control, secure baseline, mitigation catalog, guard patterns."
+    use_when: "Classifying a candidate as mitigated; comparing site code against known-safe forms; writing remediation notes."
+    avoid_when: "Vulnerable examples per stack are the need — see the examples anchor; anti-pattern detail wanted."
+    expected: "User-scoped or policy-guarded endpoints correctly classified as not vulnerable."
+  - anchor: idor-anti-patterns
+    what: "Insufficient-check catalog: request-claimed user identity, tenant IDs from request bodies, and checks that verify the caller but not the object."
+    problem: "Weak checks look like authorization to reviewers, letting ownership gaps pass verification when identity comes from attacker-controlled fields; shallow checks, spoofed principal, body-sourced tenant, verification theater, bypass surface, trust misplacement, false assurance."
+    use_when: "A check exists but its strength is unclear; grading mitigation quality during verify."
+    avoid_when: "Fully safe patterns are the question — see the prevention anchor; no check exists at all."
+    expected: "Cosmetic checks recognized as non-mitigations and the candidate stays flagged."
+  - anchor: idor-advanced-patterns
+    what: "Five advanced detection angles: predictable-ID signals, bulk/export endpoints, file storage IDOR, WebSocket/GraphQL subscriptions, and indirect reference maps."
+    problem: "Classic-only review misses enumeration signals, batch operations, storage keys, and realtime channels that bypass handler-focused checks entirely; export surfaces, realtime subscriptions, reference indirection, exotic paths, storage backends, batch abuse, edge channels."
+    use_when: "Standard endpoint review came back clean but suspicion remains; storage or realtime features present."
+    avoid_when: "Basic endpoint analysis unfinished — cover the examples first; stack recipes wanted."
+    expected: "Exotic object-access paths are checked before declaring the surface safe."
+  - anchor: idor-examples
+    what: "Per-stack vulnerable/secure recipe pairs: Django, Flask/SQLAlchemy, Express/Mongoose, Express/Prisma, Rails, Spring Boot, Go, Laravel, ASP.NET Core, and GraphQL batch lookups."
+    problem: "Authorization idioms differ per framework, and generic ownership rules miss stack-specific scoping like current_user relations, Prisma where clauses, and policy decorators; stack recipes, decorator styles, orm scoping, precise detection, pattern matching, call diversity, api surface."
+    use_when: "Target uses one of the covered stacks; reviewing object-access call sites."
+    avoid_when: "Advanced angles are the question — see that anchor; conceptual definitions wanted."
+    expected: "Stack-specific unscoped queries flagged; scoped or policy-guarded forms verified."
+  - anchor: idor-execution
+    what: "Three-phase execution: recon for identifier-accepting endpoints with a zero-candidate early-exit gate, batched verify in groups of three, merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the IDOR scan execution; dispatching or reviewing any phase."
+    avoid_when: "Conceptual IDOR knowledge is the need — see definition and examples anchors."
+    expected: "All three phases run with shared architecture context into one consolidated report."
+  - anchor: idor-owasp-mapping
+    what: "Mapping of IDOR findings to OWASP API 2023: API1 primary, API10 cross-map for upstream identifiers, API5 explicitly routed out; CWE-639 and CWE-862."
+    problem: "Findings need correct 2023-era taxonomy for reporting, and mixing object-level with function-level rows mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, cwe pairing, risk labels."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "Terminology and routing rules are the question — see the terminology anchor."
+    expected: "Findings mapped to API1 with CWE-639/862 and explicit cross-map reasoning."
+  - anchor: idor-dynamic-tests
+    what: "Dynamic test templates: two-user ID enumeration, tenant boundary crossing, device ownership bypass, GraphQL mutation probes, plus a curl skeleton."
+    problem: "Suspected endpoints stay unconfirmed without concrete cross-user tests, and ad-hoc probes miss two-account patterns that prove object-level abuse; confirmation testing, account pairs, tenant swap, verification evidence, dynamic proof, probe design."
+    use_when: "Confirming a suspected endpoint during verify; designing the proof request."
+    avoid_when: "Static analysis is sufficient for the finding; recon stage not done."
+    expected: "Each suspected endpoint gets a two-account confirmation test."
+  - anchor: idor-references
+    what: "External link list: OWASP API1/API5 pages, CWE-285/639, and authorization cheat sheets."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification is required; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, owasp pages."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — the references list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: idor-important-reminders
+    what: "Closing operational reminders: phase ordering, batch discipline, horizontal focus, framework-convention caveats, and cleanup rules."
+    problem: "Modules close with inconsistent final guidance, letting misrouted vertical findings or weak proof slip into reports; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
+    use_when: "Finalizing the module report; reviewing closing guidance."
+    avoid_when: "Detection or execution is the current stage — finish those first."
+    expected: "Reports close with uniform final rules applied."
+---
+
 # IDOR (Insecure Direct Object Reference) Detection
 
 [ref: #idor-detection]
@@ -6,15 +107,17 @@ You are performing a focused security assessment to find IDOR vulnerabilities in
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## Subagent Constraints
+[ref: #idor-subagent-constraints]
 
 Subagents used in this skill are **read-only investigators**. They must **never modify project source code, configuration files, tests, or any repository file**. Subagents may only create and update the audit report files under `{{ REPORTS_ROOT }}/` (`08_recon.md`, `08_batch_*.md`, and `08_idor.md`). If a subagent asks to edit code, reject the request and remind it to document the finding instead.
 
----
+***
 
 ## IDOR, BOLA, and BFLA
+[ref: #idor-terminology]
 
 The terms **IDOR** and **Broken Object Level Authorization (BOLA)** describe the same class of vulnerability: an application uses a client-supplied identifier to access an object **without verifying that the requesting user is authorized to access that specific object**. OWASP API Security Top 10 2023 calls this risk **API1:2023 – Broken Object Level Authorization (BOLA)**. This file and the scan output still use the name **IDOR** for backwards compatibility.
 
@@ -25,16 +128,19 @@ BOLA is **object-level**: the user is allowed to call the endpoint or function, 
 > **BFLA cross-reference**: If you discover function-level privilege escalation — e.g., a non-admin user reaching an admin endpoint, or a user invoking a function their role should not allow — route that finding to scan 10 (`[ref: #missingauth-detection]` / `references/10-missingauth.md`), not here. Only object-level authorization bypasses belong in this IDOR/BOLA scan.
 
 ## The BOLA Rule
+[ref: #idor-bola-rule]
 
 **Every function that uses a client-supplied ID to access a record must perform an object-level authorization check.** Authenticating the caller or verifying that the caller is a valid user is not enough. The code must verify that the caller is authorized to access the specific record identified by the supplied ID.
 
 ## What is IDOR
+[ref: #idor-definition]
 
 IDOR occurs when an application uses a user-supplied identifier (ID, slug, filename, etc.) to directly access an object **without verifying the requesting user is authorized to access that specific object**. The application authenticates the user but fails to check ownership or permissions on the requested resource.
 
 The core pattern: *authenticated user A can access or modify resources belonging to user B by changing an identifier in the request.*
 
 ### What IDOR IS
+[ref: #idor-scope-in]
 
 - Changing `/api/orders/1001` to `/api/orders/1002` and seeing another user's order
 - Sending `DELETE /api/documents/555` to delete a document you don't own
@@ -43,6 +149,7 @@ The core pattern: *authenticated user A can access or modify resources belonging
 - Updating another user's profile via `PUT /api/users/other-user-id`
 
 ### What IDOR is NOT
+[ref: #idor-scope-out]
 
 Do not flag these as IDOR:
 
@@ -53,6 +160,7 @@ Do not flag these as IDOR:
 - **SQL injection via ID fields**: `?id=1 OR 1=1` → that's SQLi, not IDOR
 
 ### Authorization Patterns That Prevent IDOR
+[ref: #idor-prevention-patterns]
 
 When you see these patterns, the endpoint is likely **not vulnerable**:
 
@@ -101,6 +209,7 @@ Prefer random, non-sequential GUIDs/UUIDs for object IDs. Predictable integer ID
 Write tests that exercise object access with two different users' credentials and each other's object IDs. Fail the build if one user can read, update, or delete another user's object.
 
 ### Authorization Anti-Patterns
+[ref: #idor-anti-patterns]
 
 These patterns look like protection but do **not** prevent IDOR/BOLA:
 
@@ -123,9 +232,10 @@ If the user can choose any `tenant_id`, the scoping check is bypassable.
 **C. Checking authorization only on reads but not writes**
 A `GET` endpoint may be scoped while the paired `PUT`, `PATCH`, or `DELETE` endpoint for the same object is not. Every function that uses a client-supplied ID must perform the check, regardless of HTTP method.
 
----
+***
 
 ## Advanced Detection Patterns
+[ref: #idor-advanced-patterns]
 
 Beyond basic route parameters, look for these higher-risk patterns that frequently hide BOLA.
 
@@ -185,9 +295,10 @@ An API may accept a client-supplied lookup key that maps to an internal ID. If t
 
 **Example**: `GET /api/public-forms/{formSlug}` returns a form by slug. If slugs are guessable and the form is not marked public, an attacker can enumerate slugs to access private forms.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #idor-examples]
 
 ### Python — Django
 
@@ -394,9 +505,10 @@ const resolvers = {
 
 OWASP API1:2023 gives the `deleteReports(reportKeys: [...])` mutation as a classic BOLA example: a user can delete another user's documents because the API trusts the supplied keys and deletes the matching records without verifying ownership. Treat every resolver that uses a client-supplied ID the same way you would a REST endpoint.
 
----
+***
 
 ## Execution
+[ref: #idor-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -463,6 +575,18 @@ Launch a subagent with the following instructions:
 >
 > [Repeat for each candidate]
 > ```
+
+### After Phase 1: Check for Candidates Before Proceeding
+
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/08_recon.md`. If the recon found **zero candidates** (the summary reports "Found 0" or the "Candidates" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/08_idor.md`, **delete** `{{ REPORTS_ROOT }}/08_recon.md`, and stop:
+
+```markdown
+# IDOR Analysis Results
+
+No vulnerabilities found.
+```
+
+Only proceed to Phase 2 if Phase 1 found at least one candidate endpoint.
 
 ### Phase 2: Verify — Check Authorization (Batched)
 
@@ -634,9 +758,28 @@ Use these scenarios when describing impact and when designing dynamic validation
 
 5. After writing `{{ REPORTS_ROOT }}/08_idor.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/08_batch_*.md`).
 
----
+***
+
+## OWASP API Security Top 10 2023 mapping
+[ref: #idor-owasp-mapping]
+
+This scan supports the following OWASP API Security Top 10 2023 risks:
+
+- **API1:2023 Broken Object Level Authorization** — the primary mapping: endpoints accept client-supplied object identifiers and access data without verifying that the object belongs to the requesting user (horizontal privilege escalation).
+- **API10:2023 Unsafe Consumption of APIs** — cross-map when the object identifier originates from a third-party API, webhook, or upstream payload that the target trusts blindly.
+- **API5:2023 Broken Function Level Authorization** — NOT mapped here: vertical escalation to admin or privileged functions is routed to scan 10 (`references/10-missingauth.md`) and cited there.
+
+| Root cause | OWASP risk | When to cross-map |
+| --- | --- | --- |
+| Object accessed by user-supplied ID without an ownership check | **API1:2023** | Primary classification for every confirmed IDOR/BOLA finding. |
+| IDOR reached through third-party or webhook-supplied identifiers | **API1 / API10** | Upstream data supplies the object reference used in the lookup. |
+
+Map findings to **CWE-639** (Authorization Bypass Through User-Controlled Key) for classic IDOR, and to **CWE-862** (Missing Authorization) when no ownership check exists at all.
+
+***
 
 ## Dynamic Test Ideas
+[ref: #idor-dynamic-tests]
 
 When writing the dynamic test for a finding, model it on these real-world BOLA patterns from OWASP API1:2023:
 
@@ -655,9 +798,10 @@ curl -H "Authorization: Bearer <USER_B_TOKEN>" \
 
 If the response contains User A's data (or a success response to a mutation on User A's object), the finding is confirmed.
 
----
+***
 
 ## References
+[ref: #idor-references]
 
 - OWASP API Security Top 10 2023 — **API1:2023 Broken Object Level Authorization (BOLA)**: https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/
 - OWASP API Security Top 10 2023 — **API5:2023 Broken Function Level Authorization (BFLA)**: https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/
@@ -666,9 +810,10 @@ If the response contains User A's data (or a success response to a mutation on U
 - OWASP Authorization Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
 - OWASP Authorization Testing Automation Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
 
----
+***
 
 ## Important Reminders
+[ref: #idor-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.

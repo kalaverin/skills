@@ -1,8 +1,45 @@
+---
+subject: "Domain analysis subagent prompts; business goal, DDD intentional model, entity catalog, aggregates value objects enums events, process map, Temporal workflows state machines, business rules invariants validation authorization, actors external integrations, idempotency, Mermaid diagrams, `repos/<repo>/business`."
+index:
+  - anchor: ra-domain-goal
+    what: "The shared goal contract for all four domain extractors: the seven business questions each answers only its slice of."
+    problem: "Domain subagents launch without shared goal; slices collide or leave gaps and synthesis cannot assemble coherent business picture; goal absence, coverage gaps, incoherent picture, duplicated exploration, unanswered questions, ownership fog, assembly failure."
+    use_when: "Launching any domain-wave subagent; reviewing domain output completeness; assigning question ownership."
+    avoid_when: "Prompt-specific extraction details — those live in the four prompt anchors below."
+    expected: "All seven questions answered exactly once across the four reports."
+  - anchor: ra-domain-entities
+    what: "The entity-catalog extractor prompt: aggregates, entities, value objects, enums, events with lifecycle and invariants."
+    problem: "Business entities hide inside ORM classes and enums; without catalog nobody knows what system tracks or which states are legal; hidden entities, unknown lifecycle, state chaos, catalog absence, model blindness, invariant fog."
+    use_when: "Extracting domain models for a service; documenting state machines; updating entity glossary."
+    avoid_when: "Processes, rules, integrations, risks — sibling prompts own those slices."
+    expected: "Every significant entity cataloged with type, lifecycle, relationships, invariants, and anchors."
+  - anchor: ra-domain-processes
+    what: "The process-map extractor prompt: business processes, Temporal workflows, triggers, flows, and outcomes."
+    problem: "Long-running business flows live scattered across handlers and workers; nobody can say what triggers what or how processes end; flow dispersion, trigger fog, outcome blindness, process blindness, workflow sprawl, orchestration mystery."
+    use_when: "Extracting workflows or long-running flows; mapping state transitions; documenting error and timeout paths."
+    avoid_when: "Entity cataloging from scratch — `ra-domain-entities`; technical orchestration like health checks."
+    expected: "Every process mapped with trigger, actors, flow, outcomes, and Mermaid diagram."
+  - anchor: ra-domain-rules
+    what: "The rules extractor prompt: validation, invariants, authorization, and calculation logic with enforcement locations."
+    problem: "Business rules hide as dispersed guard functions and unnamed numeric constants; violations surprise users and audits find nothing; invisible rules, enforcement fog, rule blindness, threshold obscurity, guard sprawl, audit emptiness, user astonishment, compliance fog."
+    use_when: "Extracting validation or invariant logic; documenting authorization checks; surfacing hardcoded thresholds."
+    avoid_when: "Process and integration deep-dives — sibling prompts own those."
+    expected: "Every rule cataloged with type, enforcement, consequence, and hardcoded values."
+  - anchor: ra-domain-integrations
+    what: "The integrations extractor prompt: actors, external systems, interaction semantics, and failure modes."
+    problem: "External couplings hide in client calls and webhooks; boundary of service stays unknown and outages surprise; concealed couplings, boundary fog, integration blindness, actor confusion, semantic gaps, outage shock, resilience gap, coupling invisibility."
+    use_when: "Mapping boundary couplings; documenting interaction patterns; identifying idempotency mechanisms."
+    avoid_when: "Internal entities and rules — sibling prompts; observability systems that drive no business decisions."
+    expected: "Every actor and business-relevant external system documented with coupling style and outage behavior."
+---
+
 # Domain Analysis Subagent Prompts (repo-audit)
 
 ## Goal of the business-domain analysis
 
-Produce a structured, evidence-based description of the business layer encoded in the repository's source code. The combined output of the domain extractors (this file) and the risks generator (`generators/domain.md`) MUST answer:
+[ref: #ra-domain-goal]
+
+Produce a structured, evidence-based description of the business layer encoded in the repository's source code. Extract the intentional model, not implementation details (DDD discipline: behavior over data; aggregates are defined by their invariants; domain events are business facts). The combined output of the domain extractors (this file) and the risks generator (`generators/domain.md`) MUST answer:
 
 1. What business problem does this code solve?
 2. What are the core business entities, value objects, and aggregates?

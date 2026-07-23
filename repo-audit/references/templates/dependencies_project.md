@@ -1,3 +1,44 @@
+---
+subject: "Project-level dependency card template; generation conditions, fresh per-service cards, `project/dependencies`, `repo: generic`, mandatory sections, edge types, service taxonomy, external inventory, consumer provider matrix, cross-domain summary, key observations, quality rules, aggregate overview."
+index:
+  - anchor: ra-tpl-deps-project
+    what: "The project-level dependency card template: exact layout for `project/dependencies.md`."
+    problem: "Project overview assembles ad hoc; sections mismatch per-service cards and aggregate picture contradicts details; ad-hoc assembly, clashing picture, layout absence, aggregate drift, level confusion, coherence failure, map inconsistency, synthesis fog, trust decay."
+    use_when: "Writing the project-level dependency overview; reviewing its structure."
+    avoid_when: "Per-service details — those live in `repos/<repo>/dependencies.md` by design."
+    expected: "One consistent project overview derived from per-service cards."
+  - anchor: ra-tpl-deps-project-when
+    what: "The generation conditions: explicit user request plus every per-service card fresh at HEAD."
+    problem: "Overview generated from stale per-service cards; aggregate teaches last month's architecture with full confidence; stale inputs, confident staleness, premature generation, freshness neglect, garbage aggregate, rotted summary, trust abuse, input decay, assembly sin."
+    use_when: "Before creating or updating the project overview; checking preconditions; deciding to STOP."
+    avoid_when: "Generating anyway with a warning — conditions are HARD, stop and report instead."
+    expected: "Overview only from explicit request and fully fresh inputs."
+  - anchor: ra-tpl-deps-project-frontmatter
+    what: "The project overview header: `repo: generic` with project-root git tracking."
+    problem: "Overview stamped with random service git; provenance points at wrong repository and freshness checks fire falsely; provenance mismatch, value confusion, stamp error, lineage fog, tracking decay, verification noise, anchor drift, root confusion."
+    use_when: "Stamping the overview header; choosing the repo value and git source."
+    avoid_when: "Field semantics — `[ref: #entity-repo-field]` owns the `generic` rule."
+    expected: "Header carries `generic` anchored to project-root git."
+  - anchor: ra-tpl-deps-project-sections
+    what: "The mandatory eight sections: scope, aliases, edge types, taxonomy, external inventory, matrix, cross-domain summary, observations."
+    problem: "Overview sections get reordered or dropped; readers expect canonical map and lose orientation; reordering, orientation loss, canonical drift, map chaos, section lottery, reader confusion, structure decay, sequence fog, outline rot, navigation pain."
+    use_when: "Structuring the project overview; reviewing section completeness."
+    avoid_when: "Section content details — the fill instructions below."
+    expected: "All eight sections present in canonical order."
+  - anchor: ra-tpl-deps-project-fill
+    what: "The fill instructions: scope method, alias table, edge-type legend, taxonomy rows, inventories, matrix, summary, mandatory observation themes."
+    problem: "Sections filled vaguely; edge types invented, repos skipped silently, observations generic; fill drift, matrix gaps, legend invention, coverage holes, theme neglect, spec neglect, content shallowness, row fog, precision loss, observation fog."
+    use_when: "Filling any overview section; choosing edge types; writing key observations."
+    avoid_when: "Method-level details — those belong to per-service cards, never here."
+    expected: "Every section concrete with only real edge types and all repos accounted."
+  - anchor: ra-tpl-deps-project-quality
+    what: "The quality rules: no method details, no per-service graphs, every repo accounted, UTC dates."
+    problem: "Overview smuggles method details and skips repos quietly; level mixing, detail leakage, rule drift, completeness doubt, discipline breach, boundary erosion, audit failure, coverage lies, level confusion, repo omission, standard decay."
+    use_when: "Final review before saving the overview; checking level discipline."
+    avoid_when: "Per-service card quality — `references/checklists.md` owns that."
+    expected: "Overview passes all four quality rules."
+---
+
 # Project-Level Dependency Card Template (repo-audit)
 
 [ref: #ra-tpl-deps-project]
@@ -6,6 +47,8 @@ This file defines the exact layout and fill-instructions for
 `project/dependencies.md`.
 
 ## When to create or update
+
+[ref: #ra-tpl-deps-project-when]
 
 Generate or refresh `project/dependencies.md` **only** when:
 
@@ -16,6 +59,8 @@ Generate or refresh `project/dependencies.md` **only** when:
 If either condition is not met, STOP and tell the user what is missing.
 
 ## YAML frontmatter
+
+[ref: #ra-tpl-deps-project-frontmatter]
 
 Use the current YAML frontmatter standard from `[ref: #serena-metadata]`;
 collect the git tracking fields per the frontmatter-protocol tracking extension
@@ -39,6 +84,8 @@ as the domain object (legacy `serena`/`project` values normalize to `generic`);
 `.serena`, per `[ref: #entity-repo-field]`.
 
 ## Mandatory section order
+
+[ref: #ra-tpl-deps-project-sections]
 
 ```markdown
 # <Project name> service dependencies
@@ -65,6 +112,8 @@ as the domain object (legacy `serena`/`project` values normalize to `generic`);
 ```
 
 ## Section fill-instructions
+
+[ref: #ra-tpl-deps-project-fill]
 
 ### 1. Scope and method
 
@@ -166,6 +215,8 @@ Bulleted architectural takeaways. Mandatory recurring themes to cover:
 - Method-level details live in `repos/<repo>/dependencies.md`.
 
 ## Quality rules
+
+[ref: #ra-tpl-deps-project-quality]
 
 - No method-level details outside the per-service cards.
 - No "Dependency graph by service" section — that belongs in each

