@@ -3,9 +3,10 @@ name: pytest-design
 description: MANDATORY skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Use when the user asks for pytest, unit tests, integration tests, test fixtures, conftest files, parametrization, mocking, markers, test isolation, faker in tests, async tests, pytest plugins, pytest configuration, coverage, xdist, or any Python testing task. Apply only to Python projects.
 triggers:
   all:
-    files: "fd -e py -e pyi -e toml"
+    files: "fd -e py -e pyi --max-results 1 | wc -l | grep -q 1"
     request: "pytest, unit test, integration test, test fixture, conftest, parametrization, mocking, markers, test isolation, faker in tests, async test, pytest plugin, pytest configuration, coverage, xdist, python test, python tests, тест, тесты, юнит-тест, интеграционный тест, фикстура, параметризация, мок, маркер, покрытие тестами"
 requires:
+  - frontmatter-protocol
   - python-lang
 ---
 
@@ -93,25 +94,11 @@ After this skill triggers, the agent MUST batch-extract the YAML frontmatter of 
 
 ### 3.1 Frontmatter Routing (Two Commands)
 
-Run two commands from the `pytest-design/` skill directory.
-
-Command 1 prints the complete routing map: every reference file with its `subject`, one line per file.
-
-```bash
-rg -N -H '^subject:' references/ | sed -E 's/:subject:[[:space:]]*/\t/'
-```
-
-The output is the full list of references (27 lines), so the agent sees every file at a glance.
+Run the canonical two-command funnel from `frontmatter-protocol` `[ref: #lazy-load-routing]` from the `pytest-design/` skill directory. Command 1 prints the complete routing map: every reference file with its `subject`, one line per file (28 lines — the agent sees every file at a glance).
 Use the `subject` and the request plus the inferred session context (Section 3.2) to shortlist the candidate files.
 
-Command 2 prints the full YAML frontmatter of ONLY the shortlisted files.
-Replace `<FILE-1> <FILE-2> ... <FILE-n>` with the shortlisted file paths.
-
-```bash
-printf '%s\n' "<FILE-1>" "<FILE-2>" ... "<FILE-n>" \
-  | sort -u \
-  | xargs -I{} sh -c 'printf "\n### {}\n"; awk "/^---$/{c++; if(c==2) exit; next} c==1{print}" "{}"'
-```
+Command 2 prints the full YAML frontmatter of ONLY the shortlisted files — the §6 Form 1 primitive, per `frontmatter-protocol` `[ref: #lazy-load-routing]` (the exact command lives there, never restated here).
+Replace `<FILE-1> <FILE-2> ... <FILE-n>` in the canonical form with the shortlisted file paths.
 
 The output prints each chosen file path followed by its YAML frontmatter block.
 Reading only the shortlisted files keeps the agent well under the single-read limit while exposing every card of those files.
@@ -122,19 +109,7 @@ All card evaluation happens in the main agent; do not delegate it to subagents, 
 Shortlist generously from Command 1: when a file might be relevant, add it to the file list rather than risk missing a recipe.
 If the shortlist is too small or uncertain, expand the file list (up to every file in a group) and re-run Command 2; per-file frontmatter is small, so reading more files stays safe.
 
-The agent MUST parse at least these fields:
-
-- `subject` — human-readable summary of the file topic, used for coarse routing (which files to open).
-- `index` — the single catalog of the file. A flat list of self-contained decision cards; **each card is a self-contained decision-making system** that binds one anchor to its full decision criteria and MUST contain:
-  - `anchor` — the id of the body section the card routes to. Anchors are NOT unique within a file: several cards MAY share the same `anchor`, expressing converging selection criteria that point to one recipe.
-  - `what` — brief, concise description of WHAT the entity under the anchor is, framed as applied to solving `problem` (not a detached generic definition).
-  - `problem` — what the **case described in the card** solves (the agent's decision-time problem); NOT a generic statement of what the recipe under the anchor solves.
-  - `use_when` — a **list of clear, precise criteria** for when this recipe MUST be loaded and used.
-  - `avoid_when` — a **list of clear, precise criteria** for when this recipe MUST NOT be used (MAY be empty for pure lookup entries).
-  - `expected` — the **attainability criterion**: what we expect to hold after applying the recipe — the sign that `problem` is solved (MAY be empty for pure lookup entries).
-- `libraries` — optional list of related PyPI packages or plugins.
-
-There is no `triggers`, `description`, or `decisions` field — those were consolidated into `index`. The agent reads the cards to decide WHICH anchors apply, then loads the HOW from the referenced `[ref: #<anchor>]` sections. Any inline `**Selection criteria / anti-patterns:**` blocks in a reference body MUST NOT exist: that content lives in the cards. Selection among recipes is entirely a frontmatter function: a reference body is pure HOW for an already-selected recipe and MAY contain that recipe's own content tables, but MUST NOT contain a cross-recipe decision/routing table.
+The agent MUST parse the frontmatter fields per the lazyload standard — top-level fields (`subject`, `index`, `libraries`) per `[ref: #lazyload-frontmatter-schema]`, the six card keys and their semantics (including convergence: several cards MAY share one anchor) per `[ref: #lazyload-cards]`, and card field style per `[ref: #lazyload-problem-style]` and `[ref: #lazyload-dedup]`. The agent reads the cards to decide WHICH anchors apply, then loads the HOW from the referenced `[ref: #<anchor>]` sections. Any inline `**Selection criteria / anti-patterns:**` blocks in a reference body MUST NOT exist: that content lives in the cards. Selection among recipes is entirely a frontmatter function: a reference body is pure HOW for an already-selected recipe and MAY contain that recipe's own content tables, but MUST NOT contain a cross-recipe decision/routing table.
 
 ### 3.2 Index Card Evaluation
 
@@ -155,11 +130,7 @@ Stop reading when you reach the next `[ref: #...]` marker or the end of the rele
 
 Example:
 
-```bash
-rg -A 80 '^\[ref: #fixtures-scope-placement\]' pytest-design/references/required/fixtures.md
-```
-
-Adjust the `-A` value so the full section is captured without pulling the next anchor.
+Extract per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here). Extraction stops automatically at the next `[ref: #...]` marker or end of file.
 
 ## 4. Master Execution Workflow
 
@@ -194,7 +165,7 @@ Use this exact value for `<PYVER>` in the subsequent steps.
 Run the following command targeting **ONLY the files you modified**:
 
 ```bash
-uvx ruff check --select ALL --ignore D,CPY,DOC,ARG001,ARG002,COM812,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,PLR0912,PLR0913,S101,S105,TC002,TC003,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --output-format concise <changed_files>
+uvx ruff check --select ALL --ignore D,CPY,DOC,ARG001,ARG002,ASYNC109,COM812,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,PLR0912,PLR0913,S101,S105,TC002,TC003,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --output-format concise <changed_files>
 ```
 
 Read every suggestion carefully. Apply fixes ONLY to the code you altered.
@@ -204,7 +175,7 @@ Read every suggestion carefully. Apply fixes ONLY to the code you altered.
 After applying fixes, verify the diff touches **ONLY changed code**:
 
 ```bash
-uvx ruff check --select ALL --ignore D,CPY,DOC,ARG001,ARG002,COM812,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,PLR0912,PLR0913,S101,S105,TC002,TC003,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --diff <changed_files>
+uvx ruff check --select ALL --ignore D,CPY,DOC,ARG001,ARG002,ASYNC109,COM812,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,PLR0912,PLR0913,S101,S105,TC002,TC003,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --diff <changed_files>
 ```
 
 ### 5.4 Rule Lookup

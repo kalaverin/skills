@@ -1,32 +1,8 @@
 ---
 name: security-audit
-description: >
-  Security assessment / SAST workflow for a codebase aligned with the OWASP
-  API Security Top 10 2023. Runs architecture reconnaissance, a mandatory
-  screener that selects applicable vulnerability scans, then dispatches
-  detection subagents for each selected scan class (IDOR/BOLA, SQLi, SSRF,
-  XSS, RCE, XXE, SSTI, JWT, missing authentication, insecure file upload,
-  path traversal, business logic flaws, GraphQL injection, hardcoded secrets,
-  BOPLA, unrestricted resource consumption, improper inventory management,
-  unsafe consumption of APIs, security misconfiguration). Validates findings
-  and produces a consolidated final report stored under
-  `.serena/memories/audit/`. Use when asked for a security audit, SAST scan,
-  vulnerability assessment, code security review, penetration-test style
-  source review, OWASP API 2023 coverage, or specific vulnerability class
-  searches such as SQLi, XSS, IDOR, SSRF, JWT, BOLA, BOPLA, misconfiguration,
-  etc.
+description: Security assessment / SAST workflow for a codebase aligned with the OWASP API Security Top 10 2023. Runs architecture reconnaissance, a mandatory screener that selects applicable vulnerability scans, then dispatches detection subagents for each selected scan class (IDOR/BOLA, SQLi, SSRF, XSS, RCE, XXE, SSTI, JWT, missing authentication, insecure file upload, path traversal, business logic flaws, GraphQL injection, hardcoded secrets, BOPLA, unrestricted resource consumption, improper inventory management, unsafe consumption of APIs, security misconfiguration). Validates findings and produces a consolidated final report stored under `.serena/memories/audit/`. Use when asked for a security audit, SAST scan, vulnerability assessment, code security review, penetration-test style source review, OWASP API 2023 coverage, or specific vulnerability class searches such as SQLi, XSS, IDOR, SSRF, JWT, BOLA, BOPLA, misconfiguration, etc.
 triggers:
-  request: >
-    sast, security audit, vulnerability assessment, code security review,
-    penetration test, pentest, security scan, аудит безопасности,
-    поиск уязвимостей, сканирование уязвимостей, проверка безопасности,
-    SQL injection, SQLi, XSS, IDOR, SSRF, RCE, XXE, SSTI, JWT,
-    file upload, path traversal, missing auth, business logic,
-    GraphQL injection, hardcoded secrets, BOLA, BOPLA,
-    broken object level authorization, broken object property level authorization,
-    resource consumption, rate limiting, inventory management,
-    unsafe consumption of APIs, third-party API, security misconfiguration,
-    OWASP API 2023, OWASP API Security Top 10
+  request: "sast, security audit, vulnerability assessment, code security review, penetration test, pentest, security scan, аудит безопасности, поиск уязвимостей, сканирование уязвимостей, проверка безопасности, SQL injection, SQLi, XSS, IDOR, SSRF, RCE, XXE, SSTI, JWT, file upload, path traversal, missing auth, business logic, GraphQL injection, hardcoded secrets, BOLA, BOPLA, broken object level authorization, broken object property level authorization, resource consumption, rate limiting, inventory management, unsafe consumption of APIs, third-party API, security misconfiguration, OWASP API 2023, OWASP API Security Top 10"
 requires:
   - project-audit
 ---
@@ -137,11 +113,13 @@ Before dispatching any subagent, the root agent must:
      writes `{{ REPORTS_ROOT }}/report.md`.
 
 7. **Commit to Serena memory**
-   - After the final report is written, run `just serena-checkpoint` from the
-     project root. This persists the entire `{{ REPORTS_ROOT }}` tree in git via
-     Serena's memory commit mechanism.
+   - After the final report is written, persist per `serena-protocol`
+     `[ref: #serena-memory-mutation]` — this persists the entire
+     `{{ REPORTS_ROOT }}` tree in git via Serena's memory commit mechanism.
 
 ## Activation table
+
+Load each referenced section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never read reference files in full).
 
 | # | Reference | Anchor | Scan / purpose | Output file |
 |---|---|---|---|---|
@@ -225,5 +203,5 @@ by severity and confidentiality impact.
   detection references tell subagents when to delete them.
 - All metadata timestamps use UTC ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`). The
   compact `sast_YYYY_MMDD_HHMM` suffix is only a directory label.
-- Always run `just serena-checkpoint` after the final report is written so
+- Always persist after the final report is written, per `serena-protocol` `[ref: #serena-memory-mutation]`, so
   the audit artifacts are persisted with the rest of Serena memory.

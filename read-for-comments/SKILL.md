@@ -1,10 +1,7 @@
 ---
 name: read-for-comments
-description: >
-  Always-active local reference library for technical standards (RFC, OWASP, STD, etc.).
-  Before fetching any standard from the internet, the agent MUST check this skill's
-  references/ directory. Use Kagi search only when the requested standard is not
-  present locally.
+description: Always-active local reference library for technical standards (RFC, OWASP, STD, etc.). Before fetching any standard from the internet, the agent MUST check this skill's references/ directory. Use Kagi search only when the requested standard is not present locally.
+runtime: true
 triggers:
   always: true
   reason: "Local copies of common standards should be preferred over web searches in every session."
@@ -16,7 +13,7 @@ This skill hosts local copies of frequently referenced technical standards. It i
 
 ## Lookup protocol
 
-1. When you need a standard (RFC, OWASP, STD, etc.), first list this skill's `references/` directory.
+1. When you need a standard (AIP, RFC, OWASP, STD, etc.), first list this skill's `references/` directory.
 2. If the standard is present locally, read that file. Do **not** search the web.
 3. If it is absent, fall back to `kagi_search_fetch` or `kagi_fastgpt`.
 4. Always save the complete standard body using the `serena` tool to the `standard/` scope with the appropriate path structure, e.g.: `standard/rfc/rfc1439` or `standard/pep/pep8`.

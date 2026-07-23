@@ -40,8 +40,8 @@ Immediately after the Boot Sequence, before the inventory (Phase A), ask the use
 4. **Never invent dependencies.** A package required by a pinned card but absent from the project is a **blocker** for the affected items, not a reason to improvise.
 5. **Cover every public surface** from the cards' exported interface. If a surface is intentionally untestable, document WHY.
 6. **No vague verbs.** "Test X" is forbidden; "Verify that X raises `ValueError` when Y is negative" is required.
-7. **Output target is fixed:** Serena memory `plans/{{ENTITY_NAME}}/tests/coverage`, written per `serena-protocol` (YAML frontmatter, read-back verify, `just serena-checkpoint` from the project root). Nowhere else.
-8. **Progress lives in the plan.** The executor always reads this plan and ticks its checkboxes as items complete (via `edit_memory` + refreshed `updated_at` + `just serena-checkpoint`). Within a session the executor mirrors progress with `SetTodoList` per `todo-protocol`.
+7. **Output target is fixed:** Serena memory `plans/{{ENTITY_NAME}}/tests/coverage`, written per `serena-protocol` `[ref: #serena-memory-mutation]` (YAML frontmatter, verify, persist). Nowhere else.
+8. **Progress lives in the plan.** The executor always reads this plan and ticks its checkboxes as items complete (via `edit_memory` per `[ref: #serena-memory-mutation]`). Within a session the executor mirrors progress with `SetTodoList` per `todo-protocol`.
 
 ## Phase A — Inventory (card-grounded, drift-aware)
 
@@ -104,7 +104,7 @@ Before writing, verify: every inventoried public surface has an item or a docume
 
 ## Output — Content of `plans/{{ENTITY_NAME}}/tests/coverage`
 
-Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full overwrite if present) per `serena-protocol`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`) plus the mandatory tag `scope` set to the exact string `Full project coverage plan (not diff-based)`, then read it back to verify, then `just serena-checkpoint` from the project root. The content MUST follow this structure:
+Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full overwrite if present) per `serena-protocol`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`) plus the mandatory tag `scope` set to the exact string `Full project coverage plan (not diff-based)`, then verify and persist per `[ref: #serena-memory-mutation]`. The content MUST follow this structure:
 
 ~~~markdown
 # TEST COVERAGE PLAN — <REPO_NAME> ({{ENTITY_NAME}})
@@ -171,7 +171,7 @@ Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full ove
 
 1. Boot: require Serena `agent/tests` (HARD STOP if absent → run `pytest-planner`/`BOOTSTRAP.md`), then read this plan.
 2. Pick the earliest `- [ ]` item in the earliest incomplete phase; load its `Anchors to load` from `.kimi/mirror/pytest-design/` before coding (HARD STOP if the mirror is missing).
-3. On completion, tick the item to `- [x]` here via `edit_memory`, refresh `updated_at`, and run `just serena-checkpoint`. Mirror the same progress in-session with `SetTodoList` (`todo-protocol`).
+3. On completion, tick the item to `- [x]` here via `edit_memory` per `[ref: #serena-memory-mutation]`. Mirror the same progress in-session with `SetTodoList` (`todo-protocol`).
 4. Never skip a phase or an item without explicit user authorization; record the reason.
 
 ## Self-Check (must all pass)
@@ -188,6 +188,6 @@ Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full ove
 - Runtime questions asked, answered, and recorded (mutation depth; security-audit yes/no).
 - Inventory sourced from cards; drift investigated by subagents and surfaced as a refresh note.
 - Work items respect the granularity ceiling and carry all mandatory fields, including `Anchors to load` and a status checkbox.
-- Output written to Serena `plans/{{ENTITY_NAME}}/tests/coverage` with valid YAML frontmatter; read back; `just serena-checkpoint` succeeded.
+- Output written to Serena `plans/{{ENTITY_NAME}}/tests/coverage` with valid YAML frontmatter and persisted per `[ref: #serena-memory-mutation]`.
 
 <END PROMPT>

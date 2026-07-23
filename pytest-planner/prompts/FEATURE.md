@@ -41,8 +41,8 @@ Immediately after the Boot Sequence, before any diff materialization or subagent
 4. **Never invent dependencies.** A package required by a pinned card but absent from the project is a **blocker** for the affected items, not a reason to improvise.
 5. **Cover the changed public surface.** Every public class/function changed, added, or removed by the diff gets a work item or a documented WHY; touched-but-unchanged behavior that callers depend on gets regression items. If a surface is intentionally untestable, document WHY.
 6. **No vague verbs.** "Test X" is forbidden; "Verify that X raises `ValueError` when Y is negative" is required.
-7. **Output target is fixed:** Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]`, written per `serena-protocol` (YAML frontmatter, read-back verify, `just serena-checkpoint` from the project root). Nowhere else. The suffix arrives router-resolved as `{{SUFFIX}}` (feature name and/or branch ticket, underscores only, no hyphens; empty is allowed); never invent or re-derive it here.
-8. **Progress lives in the plan.** The executor always reads this plan and ticks its checkboxes as items complete (via `edit_memory` + refreshed `updated_at` + `just serena-checkpoint`). Within a session the executor mirrors progress with `SetTodoList` per `todo-protocol`.
+7. **Output target is fixed:** Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]`, written per `serena-protocol` `[ref: #serena-memory-mutation]` (YAML frontmatter, verify, persist). Nowhere else. The suffix arrives router-resolved as `{{SUFFIX}}` (feature name and/or branch ticket, underscores only, no hyphens; empty is allowed); never invent or re-derive it here.
+8. **Progress lives in the plan.** The executor always reads this plan and ticks its checkboxes as items complete (via `edit_memory` per `[ref: #serena-memory-mutation]`). Within a session the executor mirrors progress with `SetTodoList` per `todo-protocol`.
 9. **Diff materialization is feature-mode-only, stays in-root, and is cleaned up.** All scratch lives under `.tmp/pytest-planner/feature_<sanitized-branch>/`; never write anything inside `.kimi/mirror/` (it is rsynced with `--delete`). The scratch is temporary by definition: delete the whole `feature_<sanitized-branch>/` directory once the plan is sealed (Phase G) and whenever the plan is discarded. Never touch the target repository's `.gitignore` — scratch hygiene is deletion, not ignore rules. In project mode nothing is materialized — this `.tmp/` step does not exist there.
 10. **Subagents receive paths, never contents.** Only absolute paths that resolve inside the repository root: the manifest, the relevant `.diff` files, and the domain-card paths under `.serena/memories/`. Never inline diff contents into subagent prompts; never hand over the whole repo tree.
 
@@ -147,11 +147,11 @@ Granularity ceiling: **one work item per changed/added public class/function**, 
 
 Before writing, verify: every changed/added/removed public surface has an item or a documented WHY; regression items exist for touched-but-unchanged behavior callers depend on; every item is `unit`; the fixture graph is acyclic; no orphan items (each has id, target, scope, anchors); blockers are marked with the exact missing package; the mutation choice is recorded; the security track is either referenced (`security-audit`) or represented by a TODO checkbox.
 
-After the plan is written and verified (read-back + `just serena-checkpoint`), delete the scratch directory `.tmp/pytest-planner/feature_<sanitized-branch>/` — the manifest and `.diff` files are temporary by definition and are not needed at execution time.
+After the plan is written and persisted per `[ref: #serena-memory-mutation]`, delete the scratch directory `.tmp/pytest-planner/feature_<sanitized-branch>/` — the manifest and `.diff` files are temporary by definition and are not needed at execution time.
 
 ## Output — Content of `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]`
 
-Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]` (full overwrite if present) per `serena-protocol`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`) plus the mandatory tag `scope` set to the exact string ``Diff-based coverage plan `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}` `` (placeholders substituted with the resolved values), then read it back to verify, then `just serena-checkpoint` from the project root. The content MUST follow this structure:
+Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]` (full overwrite if present) per `serena-protocol`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`) plus the mandatory tag `scope` set to the exact string ``Diff-based coverage plan `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}` `` (placeholders substituted with the resolved values), then verify and persist per `[ref: #serena-memory-mutation]`. The content MUST follow this structure:
 
 ~~~markdown
 # FEATURE TEST COVERAGE PLAN — <REPO_NAME> ({{ENTITY_NAME}})
@@ -217,7 +217,7 @@ Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{
 
 1. Boot: read this plan; read Serena `agent/tests` as well when it exists (it is optional for feature plans). HARD STOP only if the in-root mirror `.kimi/mirror/` is missing.
 2. Pick the earliest `- [ ]` item in the earliest incomplete phase; load its `Anchors to load` from `.kimi/mirror/pytest-design/` before coding.
-3. On completion, tick the item to `- [x]` here via `edit_memory`, refresh `updated_at`, and run `just serena-checkpoint`. Mirror the same progress in-session with `SetTodoList` (`todo-protocol`).
+3. On completion, tick the item to `- [x]` here via `edit_memory` per `[ref: #serena-memory-mutation]`. Mirror the same progress in-session with `SetTodoList` (`todo-protocol`).
 4. Never skip a phase or an item without explicit user authorization; record the reason.
 5. When the branch is merged or abandoned, discard this plan and delete the scratch directory `.tmp/pytest-planner/feature_<sanitized-branch>/` if it still exists; the plan is never merged into `plans/{{ENTITY_NAME}}/tests/coverage`.
 
@@ -240,6 +240,6 @@ Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{
 - Phase B.5 executed: subagent anchors validated against `.kimi/mirror/pytest-design/references/`, deduplicated, evidence spot-checked; subagent symbol lists reconciled against the manifest; the feature anchor set built (unioned with `agent/tests` §4 when present).
 - Inventory scoped to the changed surface and sourced from cards ∩ manifest; drift investigated by subagents and surfaced as a refresh note.
 - Work items respect the granularity ceiling (one per changed/added public class/function, plus regression items) and carry all mandatory fields, including `Anchors to load` and a status checkbox.
-- Output written to Serena `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]` with valid YAML frontmatter including the mandatory feature `scope` string; read back; `just serena-checkpoint` succeeded.
+- Output written to Serena `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]` with valid YAML frontmatter including the mandatory feature `scope` string and persisted per `[ref: #serena-memory-mutation]`.
 
 <END PROMPT>

@@ -40,11 +40,7 @@ You receive:
    - For `no_h1`: generate a title from the filename.
    - For `naming_violation`: confirm the normalized compliant name.
 
-3. **Collect current commit hashes for every cited source file.**
-
-   ```bash
-   git log -1 --format=%H -- <relative-file-path>
-   ```
+3. **Collect current commit hashes for every cited source file** — per `entity-protocol` `[ref: #entity-findings-traceability]`.
 
 4. **Handle legacy metadata patterns.**
 
@@ -122,7 +118,7 @@ Return a single markdown document:
 
 | Finding | Severity | Category | Suggested memory path | Details |
 |---|---|---|---|---|
-| ... | critical / warning / info | bugs/notes/decisions/style/todo/logic | `<entity>/<topic>` | file:line (commit <hash>) |
+| ... | critical / warning / info | bugs/notes/decisions/style/todo/plans/proposals/reports | `<entity>/<topic>` | file:line (commit <hash>) |
 
 ## Contradictions
 
@@ -140,9 +136,9 @@ Return a single markdown document:
 - Cite exact file paths, line numbers, and commit hashes for every claim.
 - Do not propose secrets, env var values, or default values.
 - Do not propose including Sentry, Prometheus, tests, linters, CI, Makefile,
-  Docker, or entry points in entity cards.
-- If the memory is an entity card (`entities/<entity>`), follow the
-  `project-audit` skeleton and type-specific template.
-- If the memory is a business-domain report (`logic/<entity>/...`), follow the
-  `business-audit` report template.
+  Docker, or entry points in repo cards.
+- If the memory is a repo card (`repos/<repo>/overview`), follow the
+  `repo-audit` skeleton and type-specific template (`templates/overview_card.md`).
+- If the memory is a business-domain report (`repos/<repo>/...`), follow the
+  `repo-audit` report template (`templates/business_writer.md`).
 - Do not write the final memory yourself; return only the report.

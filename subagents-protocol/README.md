@@ -35,21 +35,6 @@ Give the agent a clear goal and boundaries; it packages those into a self-contai
 - Code changes, reports, or plans authored by the subagent and reviewed by the main agent.
 - No direct artifacts from the protocol itself.
 
-## Repository layout
-
-```text
-subagents-protocol/
-├── references/           # Pre-flight checklist for every delegation
-│   └── subagent-launch-checklist.md
-└── SKILL.md              # Agent entry point: delegation rules and parameters
-```
-
-## Reference overview
-
-| File | What it covers |
-|------|----------------|
-| `references/subagent-launch-checklist.md` | Pre-flight checklist for choosing subagent type, parameters, context, and constraints |
-
 ## Important conventions / gotchas
 
 - Requires `bootstrap`, `shell-protocol`, and `serena-protocol`.
@@ -57,4 +42,4 @@ subagents-protocol/
 - The main agent must perform Serena memory, Kagi web search, and symbolic/LSP operations on their behalf.
 - Pass Serena memory pages by file path, never by pasting their contents.
 - Default to foreground subagents; use background only when the task can continue independently and returning early helps.
-- Simple tasks get at least 10 minutes; complex investigations get at least 55 minutes.
+- Simple tasks get at least 1 minutes; complex investigations get up to 60 minutes (max).

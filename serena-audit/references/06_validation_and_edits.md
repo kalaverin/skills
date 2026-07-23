@@ -6,11 +6,7 @@
 
 Before applying any subagent-proposed edit, the root agent MUST verify:
 
-1. **Git metadata is fresh.**
-   - `branch` matches `git rev-parse --abbrev-ref HEAD` in the chosen git source.
-   - `commit` matches `git rev-parse --short HEAD`.
-   - `committed_at` matches `git log -1 --format=%cd --date=iso-strict`,
-     normalized to UTC `Z`.
+1. **Git metadata is fresh** — `branch`, `commit`, and `committed_at` match the current output of the canonical git triplet (`[ref: #tracking-git-commands]`) in the chosen git source.
 
 2. **Every cited commit hash exists.**
 
@@ -37,10 +33,10 @@ Before applying any subagent-proposed edit, the root agent MUST verify:
    - Prefer `AGENTS.md` over session memory unless explicitly overridden.
    - If still unresolved, STOP and report to the user.
 
-6. **Entity prerequisite is satisfied.**
-   - Before writing any entity-scoped memory, `entities/<entity>` MUST exist.
+6. **Repo prerequisite is satisfied.**
+   - Before writing any repo-scoped memory, `repos/<repo>/overview` MUST exist.
    - If it does not exist, STOP and ask the user to create it via
-     `project-audit`.
+     `repo-audit`.
 
 7. **Naming is compliant.**
    - Every directory segment and filename matches `^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)*$`.
@@ -73,7 +69,7 @@ When the content is correct but the header is stale/legacy:
 2. Build a fresh YAML frontmatter block.
 3. Preserve the exact H1 title and all content below it.
 4. Replace the old header directly at `.serena/memories/<path>.md`.
-5. Read the file back and run `just serena-checkpoint`.
+5. Verify and persist per `serena-protocol` `[ref: #serena-memory-mutation]` (read-back + persistence command from the workspace root).
 
 ### Full content rewrite
 
@@ -87,39 +83,18 @@ When the content needs to change:
 
 ### Appending to a memory
 
-Use `edit_memory` with:
-
-```json
-{
-  "mode": "regex",
-  "needle": "\\Z",
-  "repl": "\n\n## <New Section>\n<new content>"
-}
-```
-
-Simultaneously refresh `updated_at` in the YAML frontmatter.
+Use the exact `edit_memory` `\Z` append payload from `serena-protocol` `[ref: #serena-memory-mutation]`. Simultaneously refresh `updated_at` in the YAML frontmatter.
 
 ### Partial update
 
-Use `edit_memory` with a precise regex that targets only the outdated paragraph
-or table row. Refresh `updated_at` and, if the git state changed, `commit`,
-`branch`, and `committed_at`.
+Per `serena-protocol` `[ref: #serena-memory-mutation]` — a precise regex targeting only the outdated paragraph or table row. Refresh `updated_at` and, if the git state changed, `commit`, `branch`, and `committed_at`.
 
 ### Routing new findings
 
-Route each finding to exactly one namespace per `serena-protocol`
-`[ref: #serena-findings-traceability]`:
+Route each finding to exactly one namespace per `entity-protocol`
+`[ref: #entity-namespace-registry]` (scope semantics and when-to-record table).
 
-| Finding kind | Target namespace |
-|---|---|
-| Broken or inconsistent behavior | `bugs/<entity>/<topic>` |
-| Observation, caveat, surprising pattern | `notes/<entity>/<topic>` |
-| Architectural decision or trade-off | `decisions/<entity>/<topic>` |
-| Style convention or technical debt | `style/<entity>/<topic>` |
-| Short actionable item from code/docs | `todo/<entity>/<topic>` |
-| Business-domain insight | `logic/<entity>/<topic>` |
-
-Every finding MUST include:
+Every finding MUST include (evidence format per `[ref: #entity-findings-traceability]`):
 
 - Severity: `critical`, `warning`, or `info`.
 - Location: `path/to/file.py:line_num`.
@@ -127,9 +102,6 @@ Every finding MUST include:
 
 ## Persistence
 
-After ANY memory mutation:
-
-1. Read the memory back to verify it.
-2. Run `just serena-checkpoint` from the workspace root.
+After ANY memory mutation, verify and persist per `serena-protocol` `[ref: #serena-memory-mutation]` (read-back + persistence command from the workspace root).
 
 The agent always persists automatically. Do not wait for manual user approval.

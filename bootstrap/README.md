@@ -1,12 +1,12 @@
 # bootstrap
 
-Automatically discovers and loads the right skills for every agent session.
+Orchestrates loading the right skills for every agent session.
 
 ## What it does
 
-This skill is the canonical skill loader.
-It discovers skill directories, reads the YAML frontmatter in each `SKILL.md`, evaluates triggers, resolves transitive dependencies, and decides which skills the agent should use for your request.
-It also supports runtime re-evaluation for skills that need to activate mid-session.
+This skill is the canonical skill loading orchestrator.
+It owns the operational mandate that every session discovers and loads the correct skill set.
+The mechanics — skill header schema, trigger grammar, evaluation semantics, discovery algorithm — live in `frontmatter-protocol` (include extension), which bootstrap requires.
 
 ## When it activates
 
@@ -27,22 +27,14 @@ The agent uses this skill at startup to figure out which other skills are releva
 
 ```text
 bootstrap/
-├── prompts/
-│   └── REFERENCE_MIGRATION_PROMPT.md  # Six-phase orchestration prompt for standardizing a skill's reference corpus
-├── references/
-│   └── REFERENCE_STANDARD.md          # Normative cross-skill standard for reference files, frontmatter cards, and anchors
-└── SKILL.md                           # Agent entry point: manifest and full loading protocol
+├── README.md   # This file
+└── SKILL.md    # Agent entry point: loading mandate and verification
 ```
-
-## Reference overview
-
-| Reference | Purpose |
-|---|---|
-| `references/REFERENCE_STANDARD.md` | Normative standard for every skill's reference files that use `[ref: #anchor]` lazy-load routing: frontmatter card schema, anchor mechanics, loader funnel, conformance checklist. Load when authoring, migrating, or validating reference corpora. |
 
 ## Important conventions / gotchas
 
 - This skill is always loaded before any other work happens.
-- It can only load skills that are present in the discovered skill directories.
+- Header evaluation mechanics come from `frontmatter-protocol` (boot contract: core → include extension).
+- Skill headers with `draft: true` are ignored — they are purely in development.
 - A matching trigger overrides any internal assumption the agent might have.
 - Runtime re-evaluation applies only to skills that opt in with `runtime: true`.

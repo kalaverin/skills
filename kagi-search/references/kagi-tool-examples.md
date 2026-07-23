@@ -4,7 +4,9 @@ This file contains concrete, tested examples for every working `kagimcp` tool.
 Copy and adapt the calls for real tasks.
 Do not read this file in full; extract only the section you need via the anchor tags.
 
-## [ref: #kagi-search-fetch-examples] kagi_search_fetch
+[ref: #kagi-search-fetch-examples]
+
+## kagi_search_fetch
 
 Default mixed search (web, news, images, videos):
 
@@ -47,7 +49,9 @@ Fetch full inline content for the top results:
 }
 ```
 
-## [ref: #kagi-fastgpt-examples] kagi_fastgpt
+[ref: #kagi-fastgpt-examples]
+
+## kagi_fastgpt
 
 Question with mandatory web search:
 
@@ -60,7 +64,9 @@ Question with mandatory web search:
 
 Use this when the user asks a direct factual question and you need a synthesized answer with sources.
 
-## [ref: #kagi-extract-examples] kagi_extract
+[ref: #kagi-extract-examples]
+
+## kagi_extract
 
 Extract a documentation page as Markdown:
 
@@ -72,7 +78,9 @@ Extract a documentation page as Markdown:
 
 Use this when you already have a URL and need the complete page content, not a summary or search snippet.
 
-## [ref: #kagi-summarizer-examples] kagi_summarizer
+[ref: #kagi-summarizer-examples]
+
+## kagi_summarizer
 
 Bullet-point summary:
 

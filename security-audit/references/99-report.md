@@ -325,4 +325,4 @@ For every `[NEEDS MANUAL REVIEW]` item in any result file, include:
 - If `{{ REPORTS_ROOT }}/01_architecture.md` exists, use it to enrich the severity rationale with application-specific context (e.g., "this endpoint handles payment data, making confidentiality impact Critical").
 - Omit severity sections entirely (e.g., the `### Low` heading) if no findings fall in that tier.
 - This subagent must only write `{{ REPORTS_ROOT }}/report.md` and must not modify any project source code or configuration.
-- After `{{ REPORTS_ROOT }}/report.md` is written, run `just serena-checkpoint` from the project root so the audit artifacts are persisted with the rest of Serena memory.
+- After `{{ REPORTS_ROOT }}/report.md` is written, the ROOT agent persists per `serena-protocol` `[ref: #serena-memory-mutation]` so the audit artifacts are persisted with the rest of Serena memory.

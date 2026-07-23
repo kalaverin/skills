@@ -23,7 +23,7 @@ skills the agent loaded while producing the report.
 title: Code Review Report
 created_at: <YYYY-MM-DDTHH:MM:SSZ>
 updated_at: <YYYY-MM-DDTHH:MM:SSZ>
-repo: project
+repo: generic
 branch: <current git branch>
 commit: <7-char short hash>
 committed_at: <YYYY-MM-DDTHH:MM:SSZ>
@@ -110,7 +110,7 @@ The report MUST be written in **Russian**.
 # Code Review Report
 
 **Branch:** `{{ CURRENT_BRANCH }}`
-**Commit:** `<git rev-parse HEAD>`
+**Commit:** `<git rev-parse --short HEAD>`
 **Reviewer:** Kimi + optional CodeRabbit cross-validation
 **Date:** `<YYYY-MM-DDTHH:MM:SSZ>`
 **Scope:** <Diff-based review `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}`> OR <Full project review (not diff-based)>

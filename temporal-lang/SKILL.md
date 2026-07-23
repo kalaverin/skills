@@ -4,8 +4,8 @@ description: Develop, debug, and manage Temporal applications across Python, Typ
 version: 0.4.0
 triggers:
   any:
-    files: "rg -i 'temporal\\|@temporalio\\|@workflow\\|@activity'"
-    request: "temporal, workflow, activity, worker, durable execution"
+    files: "rg -i 'temporal|@temporalio|@workflow|@activity'"
+    request: "temporal, [temporal] workflow, [temporal] activity"
 ---
 
 # Skill: temporal-lang

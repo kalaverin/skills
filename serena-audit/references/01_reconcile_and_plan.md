@@ -12,7 +12,7 @@ reconciliation plan.
 
 - Workspace root path (`$PWD`).
 - `.serena/memories/` directory.
-- `project/entities` registry (if it exists).
+- `project/repos` registry (if it exists).
 
 ## Steps
 
@@ -63,7 +63,7 @@ Provide:
 - `workspace_root` — absolute path.
 - `memories_dir` — absolute path to `.serena/memories`.
 - `validation_report_path` — path to the script output (if generated).
-- `entity_registry_path` — path to `.serena/memories/project/entities.md` (if it exists).
+- `repo_registry_path` — path to `.serena/memories/project/repos.md` (if it exists).
 
 Timeout: at least **1800 seconds** (30 minutes).
 
@@ -72,12 +72,12 @@ Timeout: at least **1800 seconds** (30 minutes).
 For each memory path, apply the rules from `SKILL.md` `[ref: #smr-git-source]`:
 
 - Entity-scoped → entity git dir → workspace root → `.serena`.
-- Project-wide → workspace root → `.serena` (`repo: project`).
-- Cross-entity/agent → `.serena` (`repo: serena`).
+- Project-wide → workspace root → `.serena` (`repo: generic`).
+- Cross-entity/agent → `.serena` (`repo: generic`).
 - Project-specific → workspace root → `.serena`.
 
 Use `[ref: #smr-entity-mapping]` to map memory-path names to git directories
-and canonical entity cards.
+and canonical repo cards.
 
 Record the chosen `repo`, `branch`, `commit`, and `committed_at`.
 
@@ -96,7 +96,7 @@ For each memory, produce one or more of these classifications:
 | `title_mismatch` | `title` field does not match the first H1. |
 | `source_missing` | The `source` path does not exist. |
 | `source_lines_changed` | The `source` line range is out of bounds. |
-| `entity_card_missing` | Entity-scoped memory exists but `entities/<entity>` does not. |
+| `entity_card_missing` | Repo-scoped memory exists but `repos/<repo>/overview` does not. |
 | `contradiction` | Same fact is recorded differently in another memory. |
 | `naming_violation` | Path contains hyphens or other invalid characters. |
 | `no_h1` | File has no Markdown H1 heading. |
@@ -112,18 +112,14 @@ Target memory name:
 
 The git source for the plan is:
 
-- workspace root if it is a git repo (`repo: project`);
-- else `.serena` (`repo: serena`).
+- workspace root if it is a git repo (`repo: generic`);
+- else `.serena` (`repo: generic`).
 
 Keep the plan compact. Reference the full JSON dump in the notes.
 
 ### Step 7 — Verify and persist
 
-Read the plan back to confirm it was written correctly, then run:
-
-```bash
-just serena-checkpoint
-```
+Verify and persist per `serena-protocol` `[ref: #serena-memory-mutation]` (read-back + persistence command from the workspace root).
 
 ## Output
 

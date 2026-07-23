@@ -1,9 +1,6 @@
 ---
 name: preflight-checklist
-description: >
-  Mandatory pre-flight compliance check. Always loaded. Before executing any
-  task, verify that the `shell-protocol` and `serena-protocol`
-  skills have been discovered and loaded.
+description: Mandatory pre-flight compliance check. Always loaded. Before executing any task, verify that the `shell-protocol` and `serena-protocol` skills have been discovered and loaded.
 triggers:
   always: true
   reason: "Every session must confirm the two core mandatory skills are active."

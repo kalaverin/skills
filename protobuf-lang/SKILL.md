@@ -1,12 +1,9 @@
 ---
 name: protobuf-lang
-description: >
-  MANDATORY skill for Buf Protobuf lint and schema style. Use when writing,
-  editing, or reviewing `.proto` files, `buf.yaml` configuration, packages,
-  imports, enums, messages, services, RPCs, or comments.
+description: MANDATORY skill for Buf Protobuf lint and schema style. Use when writing, editing, or reviewing `.proto` files, `buf.yaml` configuration, packages, imports, enums, messages, services, RPCs, or comments.
 triggers:
   any:
-    files: "fd -e proto"
+    files: "fd -e proto --max-results 1 | wc -l | grep -q 1"
     request: "protobuf, proto, buf, buf.yaml"
 requires:
   - api-design
@@ -24,8 +21,7 @@ You MUST NOT read the file `references/rules.md` in its entirety. You MUST use p
 **Extraction Execution:**"
 1. Match your current task to a "Trigger / Situation" in the table below.
 2. Copy the corresponding `[ref: ...]` tag.
-3. Use `rg` to extract ONLY the relevant section.
-   *Example CLI command:* `rg -A 80 "\\[ref: #enums\\]" references/rules.md`
+3. Extract ONLY the relevant section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 4. Read the extracted rules and apply them strictly to your Protobuf schema.
 
 ---
@@ -52,7 +48,7 @@ You MUST NOT read the file `references/rules.md` in its entirety. You MUST use p
 ## ⚙️ WORKFLOW
 1. **Analyze Task:** Determine what Protobuf element you are creating/editing (e.g., RPC, Enum, Message, import, `buf.yaml`).
 2. **Lookup:** Find the relevant tag in the Trigger Table.
-3. **Extract:** Run `rg` using the exact `[ref: #...]` marker in `references/rules.md`. Use a sufficiently large `-A` flag (e.g., 80-100) to capture code examples.
+3. **Extract:** Run bounded extraction per `frontmatter-protocol` `[ref: #lazy-load-routing]` using the exact `[ref: #...]` marker in `references/rules.md` — never a blind `rg -A N` window.
 4. **Implement:** Write or refactor the Protobuf code ensuring 100% compliance with the extracted rules.
 5. **Lint (if `buf.yaml` exists):** Run `buf lint` and fix any violations. Only fix code you modified.
 6. **Verify:**

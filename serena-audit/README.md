@@ -63,7 +63,7 @@ serena-audit/
 ## Important conventions / gotchas
 
 - Requires the `serena-protocol` skill automatically.
-- Missing entity cards must be created via `project-audit` before entity-scoped memories can be reconciled.
+- Missing repo cards must be created via `repo-audit` before repo-scoped memories can be reconciled.
 - Memory paths and entity names use `snake_case` with underscores and no hyphens.
 - Every memory file must start with strict YAML frontmatter followed immediately by an H1 title.
 - Keep each `write_memory` payload under 25 KB; store large artifacts outside Serena memory.

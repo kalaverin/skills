@@ -1,15 +1,12 @@
 ---
 name: api-design
-description: >
-  MANDATORY skill for Google AIP API resource design and compliance. Covers
-  resources, operations, fields, design patterns, compatibility, polish, and
-  proto API structure. For Buf lint and proto schema style, use the
-  protobuf-lang skill.
+description: MANDATORY skill for Google AIP API resource design and compliance. Covers resources, operations, fields, design patterns, compatibility, polish, and proto API structure. For Buf lint and proto schema style, use the protobuf-lang skill.
+runtime: true
 triggers:
   request: "openapi, swagger, graphql, grpc, rest, api design, fastapi, flask"
 requires:
+  - frontmatter-protocol
   - read-for-comments
-  - protobuf-lang
 ---
 
 # SKILL: Strict API Design & Compliance (Google AIP)
@@ -30,19 +27,7 @@ The `references/` corpus is extremely large (7,300+ lines across 11 files). You 
 
 ### 2.1 The Two-Command Routing Funnel
 
-Run both commands (and the extraction in §2.3) **from the skill directory** — the directory containing this SKILL.md — so that the relative `references/` path resolves. If the session working directory is fixed elsewhere, prefix every `references/` path with the skill directory path.
-
-**Command 1 — subject map** (coarse routing, one line per file):
-
-```bash
-rg -N -H '^subject:' references/ | sed -E 's/:subject:[[:space:]]*/\t/'
-```
-
-**Command 2 — full frontmatter of shortlisted files only** (`<FILE-1> … <FILE-n>` are the chosen paths):
-
-```bash
-for f in "<FILE-1>" "<FILE-2>" ...; do printf '\n### %s\n' "$f"; awk '/^---[ \t]*$/{c++; if(c==2) exit; next} c==1{print}' "$f"; done
-```
+The canonical two-command funnel (Command 1 — subject map; Command 2 — full frontmatter of shortlisted files) lives in `frontmatter-protocol` `[ref: #lazy-load-routing]`; run it exactly as specified there, **from the skill directory** (the directory containing this SKILL.md) so that the relative `references/` path resolves. If the session working directory is fixed elsewhere, prefix every `references/` path with the skill directory path.
 
 ### 2.2 Semantic Routing Rules
 
@@ -56,22 +41,16 @@ Routing is **semantic and context-aware**, never substring/keyword matching:
 
 ### 2.3 Bounded Section Extraction (MANDATORY)
 
-Never use a blind fixed window like `rg -A 100` — it truncates large sections and over-reads small ones. Extract exactly from the target marker to the next marker:
-
-```bash
-awk '/^\[ref: #<ANCHOR>\]$/{f=1;print;next} f&&/^\[ref: #/{exit} f' references/<FILE>.md
-```
-
-When the anchor id is needed first, `rg -n '^\[ref: #' references/<FILE>.md` lists all marker line numbers.
+Extract sections per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` — bounded extraction from the target marker to the next marker, never a blind fixed window like `rg -A 100` (it truncates large sections and over-reads small ones). The exact command and the marker-listing recipe live there, not here.
 
 **Frontmatter extraction warning:** match delimiters as anchored whole lines (`^---\s*$`; in awk: `^---[ \t]*$`). Never split on the bare substring `---` — bodies legitimately contain `---` inside code, and a naive split truncates the frontmatter with false YAML errors.
 
 ### 2.4 Frontmatter Schema Notes
 
 - Top-level keys: `subject`, `index`, `aips` (skill-extra, below). Cards carry exactly `{anchor, what, problem, use_when, avoid_when, expected}`.
-- `aips` — **api-design skill-extra field** (declared per the cross-skill reference standard, `bootstrap/references/REFERENCE_STANDARD.md` §2): a sorted list of the AIP numbers covered by the file, mechanically cross-checked against body section headings. Use it for coarse filtering when the request cites an AIP number directly.
+- `aips` — **api-design skill-extra field** (declared per the lazyload standard's skill-extra mechanism, `frontmatter-protocol/references/lazyload.md`): a sorted list of the AIP numbers covered by the file, mechanically cross-checked against body section headings. Use it for coarse filtering when the request cites an AIP number directly.
 - `avoid_when` and `expected` are empty only for pure lookup sections (Glossary, RFC verbs) that have no anti-pattern and no success state.
-- The normative frontmatter schema, card semantics, and conformance checklist live in `bootstrap/references/REFERENCE_STANDARD.md`; api-design presentation choices live in `prompts/REFERENCE_STANDARD_ADDENDUM.md`.
+- The normative frontmatter schema, card semantics, and conformance checklist live in `frontmatter-protocol/references/lazyload.md`; api-design presentation choices live in `prompts/REFERENCE_STANDARD_ADDENDUM.md`.
 
 ## 3. Master Execution Workflow
 

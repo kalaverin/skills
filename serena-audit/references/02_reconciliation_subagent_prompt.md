@@ -15,7 +15,7 @@ You receive:
 - `memories_dir` — absolute path to `<workspace-root>/.serena/memories`.
 - `validation_report_path` — path to a JSON report from
   `scripts/validate_memory_frontmatter.py` (may be empty/placeholder).
-- `entity_registry_path` — path to `project/entities.md` (may not exist).
+- `repo_registry_path` — path to `project/repos.md` (may not exist).
 
 ## Tasks
 
@@ -38,34 +38,17 @@ You receive:
 
 3. **Infer the scope and entity for each file** from its path.
 
-   The first directory under `memories/` is the **scope**. Known scopes include
-   (but are not limited to):
+   The first directory under `memories/` is the **scope**. The authoritative
+   scope list and routing rules live in `entity-protocol`
+   `[ref: #entity-namespace-registry]`. Classification for this scan:
+   `repos/<repo>/...` and `<findings-scope>/<repo>/<topic>` are repo-scoped
+   (entity segment present); `agent/`, `project/`, `meta/`, `prompts/`,
+   `templates/`, `artifacts/`, `guide/`, `playbook/`, and scope-level
+   `proposal/` are cross-entity/agent or project-wide (no entity segment).
 
-   | Scope | Type | Entity segment? |
-   |---|---|---|
-   | `agent/` | cross-entity/agent | no |
-   | `artifacts/` | cross-entity/agent | no |
-   | `guide/` | cross-entity/agent | no |
-   | `meta/` | cross-entity/agent | no |
-   | `playbook/` | cross-entity/agent | no |
-   | `prompts/` | cross-entity/agent | no |
-   | `templates/` | cross-entity/agent | no |
-   | `project/` | project-wide | no |
-   | `entities/<entity>` | entity card | yes |
-   | `bugs/<entity>/<topic>` | entity-scoped | yes |
-   | `decisions/<entity>/<topic>` | entity-scoped | yes |
-   | `notes/<entity>/<topic>` | entity-scoped | yes |
-   | `style/<entity>/<topic>` | entity-scoped | yes |
-   | `plans/<entity>/<topic>` | entity-scoped | yes |
-   | `proposals/<entity>/<topic>` | entity-scoped | yes |
-   | `proposal/<topic>` | cross-entity/agent | no |
-   | `reports/<entity>/<topic>` | entity-scoped | yes |
-   | `todo/<entity>/<topic>` | entity-scoped | yes |
-   | `logic/<entity>/<topic>` | entity-scoped | yes |
-
-   If a file lives at `<scope>/<topic>.md` inside an entity-scoped scope (for
+   If a file lives at `<scope>/<topic>.md` inside a repo-scoped scope (for
    example `decisions/some_topic.md`), treat it as **scope-level**, not
-   entity-scoped, and leave the Entity column empty.
+   repo-scoped, and leave the Repo column empty.
 
    Project-specific scopes such as `text/` or `tools/` should be reported as
    `project-specific`, not flagged as invalid.

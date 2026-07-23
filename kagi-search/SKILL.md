@@ -55,8 +55,7 @@ Use the Routing Index below to extract only the section you need.
 **Extraction Execution:**
 1. Match your task to a "Trigger / Situation" in the Routing Index below.
 2. Copy the corresponding `[ref: ...]` tag.
-3. Use `rg` to extract ONLY the relevant section.
-   *Example CLI command:* `rg -A 30 "\\[ref: #kagi-search-fetch-examples\\]" references/kagi-tool-examples.md`
+3. Extract ONLY the relevant section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 4. Apply the extracted example strictly.
 
 ### Routing Index

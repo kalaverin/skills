@@ -5,7 +5,7 @@ Defines the canonical rules for Serena memory, knowledge base, and symbolic code
 ## What it does
 
 This skill is the rulebook for the Serena MCP ecosystem.
-It governs memory namespaces and routing, naming conventions, mandatory YAML frontmatter metadata, the metadata contract, git source resolution, memory lifecycle, mutation protocol, entity-card workflow, deterministic type detection, root versus subagent responsibilities, contradiction resolution, findings traceability, and the Serena MCP tools reference.
+It governs the memory mutation & persistence protocol, naming conventions, mandatory YAML frontmatter metadata, memory lifecycle, contradiction resolution, worked examples per findings domain, and the Serena MCP tools reference. Memory namespaces/routing, the repo concept, findings semantics, and card production live in `entity-protocol`; tracking fields and timestamps live in the frontmatter-protocol tracking extension.
 
 ## When it activates
 
@@ -42,14 +42,13 @@ serena-protocol/
 
 | File | What it covers |
 |------|----------------|
-| `references/rules.md` | Overview of Serena memory, naming convention, namespaces and routing, entity analysis prerequisite, metadata header rules, metadata contract, lifecycle, mutation protocol, entity card workflow, type detection algorithm, agent segregation, quality checklist, interface exhaustiveness matrix, contradiction resolution, core tools, deprecations, findings traceability, forbidden actions, examples, memory freshness, common mistakes, and MCP tools reference. |
+| `references/rules.md` | Overview of Serena memory, naming convention, metadata header rules, memory lifecycle, contradiction resolution, worked examples per findings domain, and the MCP tools reference. The mutation & persistence protocol lives in `SKILL.md` §1. |
 
 ## Important conventions / gotchas
 
 - Requires the `markdown-protocol` skill automatically.
 - Every memory file must begin with strict YAML frontmatter followed immediately by an H1 title.
 - Memory names use `snake_case` with underscores and no hyphens.
-- Entity-scoped memories require an existing entity card at `.serena/memories/entities/<entity>`.
-- The reconciliation workflow lives in `serena-audit`; entity card production lives in `project-audit`.
+- The reconciliation workflow lives in `serena-audit`.
 - After any memory mutation, the agent reads the memory back and runs the configured persistence command.
 - All timestamps use UTC ISO 8601 format.

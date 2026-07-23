@@ -2,8 +2,9 @@
 name: python-lang
 description: MANDATORY skill for Python code. Use when writing, editing, refactoring, or reviewing Python files, modules, packages, classes, functions, type annotations, imports, exceptions, comprehensions, decorators, or docstrings. Enforces Google Python Style Guide and a mandatory, unconditional Ruff format+check pipeline scoped strictly to the agent's own changes.
 triggers:
-  files: "fd -e py -e pyi"
+  files: "fd -e py -e pyi --max-results 1 | wc -l | grep -q 1"
 requires:
+  - frontmatter-protocol
   - read-for-comments
 ---
 
@@ -33,8 +34,7 @@ You MUST NOT read the files `references/01_language_rules.md` or `references/02_
 **Extraction Execution:**
 1. Match your task to a "Trigger / Situation" in the tables below.
 2. Copy the corresponding `[ref: ...]` tag.
-3. Use `rg` to extract ONLY the relevant section.
-   *Example CLI command:* `rg -A 50 "\\[ref: #s1.12-default-argument-values\\]" references/01_language_rules.md`
+3. Extract ONLY the relevant section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 
 ### Table A: Python Language Rules (`references/01_language_rules.md`)
 

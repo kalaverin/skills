@@ -4,6 +4,8 @@ description: Mandatory skill for CLI, shell execution, and filesystem operations
 triggers:
   always: true
   reason: "All file/code operations use CLI tools."
+requires:
+  - frontmatter-protocol
 ---
 
 # SKILL: Modern Shell Tooling & Environment
@@ -45,8 +47,7 @@ You MUST NOT read the tool manuals in `references/` in their entirety. You MUST 
 
 **Extraction Workflow:**
 1. Match your task to the routing table below."
-2. Execute an `rg` command to extract the exact section."
-   *Example CLI command:* `rg -A 40 "\\[ref: #fd-agent-recipes\\]" references/fd-find.md`
+2. Extract the exact section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 3. Apply the extracted flags and commands strictly.
 
 ## 2. Mandatory Routing Table

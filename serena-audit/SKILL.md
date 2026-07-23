@@ -1,12 +1,11 @@
 ---
 name: serena-audit
-description: >
-  Reconcile and update every Serena memory file against its source repository.
-  Use when the user asks to reconcile memory.
+description: Reconcile and update every Serena memory file against its source repository. Use when the user asks to reconcile memory.
 triggers:
   all:
-    files: ".serena/memories/"
+    files: "test -d .serena/memories"
     request: "reconcile memory, memory audit, audit memory, реконсиляция памяти"
+draft: true
 requires:
   - serena-protocol
 ---
@@ -14,10 +13,7 @@ requires:
 # SKILL: Serena Memory Reconciler
 
 Keep the entire Serena memory store in sync with the repositories it describes.
-This skill covers **all** memory scopes: `agent/`, `project/`, `meta/`,
-`prompts/`, `templates/`, `entities/`, `bugs/`, `decisions/`, `notes/`,
-`style/`, `plans/`, `proposals/`, `proposal/`, `reports/`, `todo/`, `logic/`,
-`guide/`, `artifacts/`, and `playbook/`.
+This skill covers **all** memory scopes — the single normative registry of scopes and routing rules is `entity-protocol` `[ref: #entity-namespace-registry]`.
 
 ## Skill Boundary
 
@@ -26,11 +22,11 @@ This skill covers **all** memory scopes: `agent/`, `project/`, `meta/`,
 - **This skill does NOT own** the rules that define how memories are named,
   routed, or formatted. Those live in `serena-protocol` and MUST be
   loaded automatically.
-- **This skill does NOT own** entity-card creation. If an entity-scoped memory
-  exists but `entities/<entity>` is missing, STOP and ask the user to create the
-  card via `project-audit`.
-- **This skill does NOT own** business-domain analysis. If a `logic/<entity>/...`
-  memory needs domain-level refresh, delegate to the `business-audit`
+- **This skill does NOT own** repo-card creation. If a repo-scoped memory
+  exists but `repos/<repo>/overview` is missing, STOP and ask the user to create the
+  card via `repo-audit`.
+- **This skill does NOT own** business-domain analysis. If a `repos/<repo>/...`
+  memory needs domain-level refresh, delegate to the `repo-audit`
   subagent prompt.
 
 ## Lazy-Load Protocol
@@ -52,10 +48,7 @@ sections needed for the current sub-task.
 
 Extract a reference section with `rg` (example):
 
-```bash
-rg -A 200 '^\[ref: #smr-scan-prompt\]' \
-  serena-audit/references/02_reconciliation_subagent_prompt.md
-```
+Extract ONLY the relevant section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 
 Stop reading when you reach the next `[ref: #...]` marker or the end of the
 relevant subsection.
@@ -93,8 +86,8 @@ workflow. For full details, lazy-load the anchors above.
    - Keep every `write_memory` payload under **25 KB**. For large structured
      data, store the full artifact outside Serena memory (e.g.
      `/tmp/serena_audit_full.json`) and keep the memory entry compact.
-   - After every mutation, read the memory back and run
-     `just serena-checkpoint` from the project root.
+   - After every mutation, verify and persist per `serena-protocol`
+     `[ref: #serena-memory-mutation]`.
 
 ## Determining the git source and `repo` value
 
@@ -104,32 +97,34 @@ workflow. For full details, lazy-load the anchors above.
 `commit`, and `committed_at` is chosen by what actually exists on disk.
 
 A memory file lives under `.serena/memories/<scope>/...`. The first path
-segment is the scope.
+segment is the scope. Scope definitions and routing are owned by `entity-protocol`
+`[ref: #entity-namespace-registry]`; the classification below only maps scope
+groups to git sources.
 
-### Entity-scoped scopes
+### Repo-scoped scopes
 
-`entities/`, `bugs/`, `decisions/`, `notes/`, `style/`, `plans/`,
-`proposals/`, `reports/`, `todo/`, `logic/`.
+`repos/`, `bugs/`, `decisions/`, `notes/`, `style/`, `plans/`,
+`proposals/`, `reports/`, `todo/`, `deprecations/`.
 
-- If the path is `<scope>/<entity>/<topic>` (or `<scope>/<entity>` for
-  `entities/`), treat it as entity-scoped.
+- If the path is `<scope>/<repo>/<topic>` (or `repos/<repo>/...`), treat it as
+  repo-scoped.
 - Map the memory-path entity segment to the git directory and to the canonical
-  entity card name (`[ref: #smr-entity-mapping]`).
+  repo card name (`[ref: #smr-entity-mapping]`).
 - Git source order: `<workspace-root>/<git-entity-dir>` → `<workspace-root>` →
   `<workspace-root>/.serena`.
 - `repo` value: the canonical **snake_case** entity name when the entity
-  directory is the source; otherwise `project` or `serena` matching the chosen
-  directory.
+  directory is the source; otherwise `generic` (legacy `project`/`serena`
+  normalize lazily per `entity-protocol` `[ref: #entity-repo-field]`).
 - If the path is `<scope>/<topic>` (no entity segment), treat it as
   scope-level. Git source order: `<workspace-root>` → `<workspace-root>/.serena`;
-  `repo` is `project` or `serena`.
+  `repo` is `generic`.
 
 ### Project-wide scope
 
 `project/`.
 
 - Git source order: `<workspace-root>` → `<workspace-root>/.serena`.
-- `repo` value: `project` regardless of which directory supplies the commit.
+- `repo` value: `generic` regardless of which directory supplies the commit.
   (If the workspace root is not a git repo, the metadata still comes from
   `.serena`, but the memory logically belongs to the project.)
 
@@ -139,29 +134,22 @@ segment is the scope.
 `playbook/`, and scope-level `proposal/`.
 
 - Git source: `<workspace-root>/.serena`.
-- `repo` value: `serena`.
+- `repo` value: `generic`.
 
 ### Project-specific scopes
 
 Any other top-level scope (e.g. `text/`, `tools/`):
 
 - Git source order: `<workspace-root>` → `<workspace-root>/.serena`.
-- `repo` value: `project` or `serena` matching the chosen directory.
+- `repo` value: `generic`.
 
-Collect current metadata with:
-
-```bash
-cd <selected-git-source>
-git rev-parse --abbrev-ref HEAD         # branch
-git rev-parse --short HEAD                # 7-char commit
-git log -1 --format=%cd --date=iso-strict # commit timestamp, normalize to UTC Z
-```
+Collect current metadata per the canonical git triplet — `[ref: #tracking-git-commands]` — run inside `<selected-git-source>`.
 
 ## Entity name mapping
 
 [ref: #smr-entity-mapping]
 
-Memory paths, entity cards, and git directories may use different forms.
+Memory paths, repo cards, and git directories may use different forms.
 Normalize using the rules in `[ref: #serena-naming]`. Common examples:
 
 | Memory directory | Entity card | Git directory |
@@ -172,8 +160,8 @@ Normalize using the rules in `[ref: #serena-naming]`. Common examples:
 | `production` | `configs_production` | `production` |
 | `staging` | `configs_staging` | `staging` |
 
-Always verify that an entity-scoped memory maps to an existing
-`entities/<entity>.md` card before editing.
+Always verify that a repo-scoped memory maps to an existing
+`repos/<repo>/overview` card before editing.
 
 ## Scripts
 
@@ -187,8 +175,8 @@ report. The root agent and subagents may call it via shell.
 ## Do Not
 
 - Do not edit memory contents as the root agent during phase 1.
-- Do not create missing entity cards implicitly; route them to the user via
-  `project-audit`.
+- Do not create missing repo cards implicitly; route them to the user via
+  `repo-audit`.
 - Do not pass full memory contents to subagents; pass absolute file paths.
 - Do not write memory files larger than ~25 KB via `write_memory`; split or
   store large artifacts outside Serena memory.

@@ -48,8 +48,6 @@ api-design/
 │   ├── 09_polish.md
 │   ├── 10_protocol_buffers.md
 │   └── rfc_verbs.md
-├── scripts/
-│   └── validate_reference_frontmatter.py  # Frontmatter conformance checker (run per reference file)
 └── SKILL.md              # Agent entry point: manifest, triggers, and the lazy-load routing funnel
 ```
 
@@ -73,17 +71,17 @@ api-design/
 
 Each reference file opens with YAML frontmatter: a `subject` line naming the chapter and its section areas, an `index` of decision cards (one selection gate per section), and an `aips` list of covered AIP numbers. The agent routes in three steps without reading whole files:
 
-1. **Subject map** — `rg -N -H '^subject:' references/` gives one coarse routing line per file.
-2. **Frontmatter dump** — an `awk` one-liner prints the full frontmatter of the shortlisted files only; the agent matches every card's `what`/`use_when`/`avoid_when` semantically against the request and marks anchors (duplicates converge on one section).
-3. **Bounded extraction** — a bounded `awk` command reads each chosen section exactly from its `[ref: #<anchor>]` marker to the next marker.
+1. **Subject map** — one coarse routing line per file (Command 1 of the canonical funnel).
+2. **Frontmatter dump** — the full frontmatter of the shortlisted files only (Command 2); the agent matches every card's `what`/`use_when`/`avoid_when` semantically against the request and marks anchors (duplicates converge on one section).
+3. **Bounded extraction** — each chosen section is read exactly from its `[ref: #<anchor>]` marker to the next marker.
 
-The exact commands and routing rules live in `SKILL.md` §2; the normative format lives in `bootstrap/references/REFERENCE_STANDARD.md` with api-design specifics in `prompts/REFERENCE_STANDARD_ADDENDUM.md`.
+The exact commands and routing rules live in `frontmatter-protocol` `[ref: #lazy-load-routing]` (referenced from `SKILL.md` §2); the normative format lives in `frontmatter-protocol/references/lazyload.md` with api-design specifics in `prompts/REFERENCE_STANDARD_ADDENDUM.md`.
 
 ## Important conventions / gotchas
 
 - Requires the `read-for-comments` and `protobuf-lang` skills.
 - Reference files MUST NOT be read in full; routing goes through frontmatter cards only.
-- After editing any reference frontmatter, run `uv run --no-project --with pyyaml python scripts/validate_reference_frontmatter.py references/<FILE>.md` — it MUST pass.
+- After editing any reference frontmatter, run `uv run --no-project --with pyyaml python frontmatter-protocol/scripts/validate_frontmatter.py --aips references/<FILE>.md` from the workspace root — it MUST pass.
 - This skill enforces AIP resource-design rules; it does not handle Buf lint or raw `.proto` schema style.
 - Buf lint and `.proto` style questions are handled by `protobuf-lang`.
 - Requirement verbs follow RFC 2119 / RFC 8174.

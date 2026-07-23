@@ -27,8 +27,8 @@ large, keep only grouped counts in the plan and store the per-item list in
 
 Use the current git source for the plan:
 
-- workspace root if it is a git repo → `repo: project`;
-- else `.serena` → `repo: serena`.
+- workspace root if it is a git repo → `repo: generic`;
+- else `.serena` → `repo: generic`.
 
 Refresh all header fields.
 
@@ -87,7 +87,7 @@ Refresh all header fields.
 
 List any items that require user input before proceeding:
 
-- Missing entity card for `<entity>` — create via `project-audit` first.
+- Missing repo card for `<repo>` — create via `repo-audit` first.
 - Unresolved contradiction between `<memory-A>` and `<memory-B>`.
 - Missing git repository for `<entity>` / workspace root / `.serena`.
 
@@ -99,7 +99,7 @@ List any items that require user input before proceeding:
 4. Add missing headers (`no_header`) and H1 titles (`no_h1`).
 5. Sync stale metadata (`stale_commit`, `stale_branch`, `stale_date`) where content is still valid.
 6. Update source-anchored content (`source_missing`, `source_lines_changed`).
-7. Update entity cards (`entities/<entity>`) and business-domain reports (`logic/<entity>/...`).
+7. Update repo cards (`repos/<repo>/overview`) and business-domain reports (`repos/<repo>/...`).
 8. Route new findings to `bugs/`, `notes/`, `decisions/`, `style/`, `todo/`.
 ```
 

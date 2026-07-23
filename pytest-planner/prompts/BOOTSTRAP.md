@@ -23,7 +23,7 @@ The current working directory is the target repository root, and Serena is conne
 3. **Never install dependencies.** Collect ALL dependencies the agent will need (from pinned cards, detected plugins, fixtures, test utilities) and explicitly ASK THE USER to install them. Present the full list with installation command(s). Do not proceed until the user confirms installation. Missing packages go into the stack profile as "required but missing" with explicit installation instructions for the user.
 4. **Never pass Serena memory contents to subagents.** Pass absolute file paths that resolve inside the repository root only; subagents are root-locked and cannot read anything outside it.
 5. **Never trust subagent output blindly.** Validate every anchor against the declaring cards in `.kimi/mirror/pytest-design/references/`, spot-check evidence, and extend the set yourself.
-6. **Output target is fixed:** Serena memory `agent/tests`, written per `serena-protocol` (YAML frontmatter, read-back verify, `just serena-checkpoint` from the project root). Nowhere else.
+6. **Output target is fixed:** Serena memory `agent/tests`, written per `serena-protocol` `[ref: #serena-memory-mutation]` (YAML frontmatter, verify, persist). Nowhere else.
 7. **Never write into `.kimi/mirror/`.** It is rsynced with `--delete`; foreign files are wiped.
 
 ## Phase 0 — Preconditions (hard STOP)
@@ -39,13 +39,7 @@ If anything is missing, STOP and ask the user to create it via the named skill. 
 ## Phase 1 — Feature Discovery
 
 1. `cd` into `.kimi/mirror/pytest-design` (the in-root mirror; HARD STOP if absent).
-2. Harvest the frontmatter of every reference card into a temporary file (path is your choice, but never inside `.kimi/mirror/`). The frontmatter-harvest file is your working inventory — never hand it to subagents:
-
-```bash
-fd -t f . references/ 2>/dev/null | sort -u \
-    | xargs -I{} sh -c 'printf "\n### {}\n"; awk "/^---$/{c++; if(c==2) exit; next} c==1{print}" "{}"' | grep -v 'expected:' \
-    > <HARVEST_FILE>
-```
+2. Harvest the frontmatter of every reference card into a temporary file, per the canonical recipe `frontmatter-protocol` `[ref: #offline-harvest]` (the exact command lives there, never restated here), with the documented field filter dropping `expected:` lines. The harvest path is your choice, but never inside `.kimi/mirror/`; the harvest file is your working inventory — never hand it to subagents.
 
 ## Phase 2 — Fan-Out to Read-Only Subagents
 
@@ -80,7 +74,7 @@ A subagent returns only anchors backed by evidence in its region. It must not in
 
 ## Phase 4 — Generate and Write `agent/tests`
 
-Produce the repository-specific prompt and write it to Serena memory `agent/tests` (full overwrite if it exists) following `serena-protocol`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`), then read it back to verify, then run `just serena-checkpoint` from the project root.
+Produce the repository-specific prompt and write it to Serena memory `agent/tests` (full overwrite if it exists) per `serena-protocol` `[ref: #serena-memory-mutation]`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`), then verify and persist.
 
 The content of `agent/tests` MUST follow this structure:
 
@@ -118,11 +112,7 @@ All skills are read from the in-root mirror `.kimi/mirror/` — HARD STOP if it 
 ```bash
 cd .kimi/mirror/pytest-design
 
-# subject map (coarse routing)
-rg -N -H '^subject:' references/ | sed -E 's/:subject:[[:space:]]*/\t/'
-
-# load one anchor body (adjust -A to capture to the next [ref:] marker)
-rg -A 80 '^\[ref: #<anchor>\]' references/<file>.md
+Run the canonical two-command funnel (subject map, then bounded per-anchor extraction) per `frontmatter-protocol` `[ref: #lazy-load-routing]` — the exact commands live there, not here.
 ```
 
 Grouped by file, the pinned anchors for this repository are:
@@ -145,7 +135,7 @@ Only rules NOT already covered by the pinned cards. The universal floor lives in
 ## Phase 5 — Verify and Persist
 
 - Read back `agent/tests` and confirm: header complete, domain identity sourced from the cards (not invented), every manifest anchor exists in its declaring card under `.kimi/mirror/pytest-design/references/`, no duplicated rule prose, commands reference the in-root mirror `.kimi/mirror/pytest-design/` and state the hard-stop rule.
-- Run `just serena-checkpoint` from the project root. If it fails, STOP and report.
+- Persist per `[ref: #serena-memory-mutation]`. If it fails, STOP and report.
 
 ## Self-Check (must all pass before finalizing)
 
@@ -154,6 +144,6 @@ Only rules NOT already covered by the pinned cards. The universal floor lives in
 - Every emitted anchor exists in its declaring card under `.kimi/mirror/pytest-design/references/`; none invented.
 - Evidence spot-checked; stack coverage complete; convergence deduplicated; missing anchors added by you.
 - `agent/tests` contains: header, domain identity from cards, evidence-backed stack profile, pinned manifest grouped by file, minimal repo-only rules (or explicit "none"), usage note.
-- Written to Serena `agent/tests` with valid YAML frontmatter; read back; `just serena-checkpoint` succeeded.
+- Written to Serena `agent/tests` with valid YAML frontmatter and persisted per `[ref: #serena-memory-mutation]`.
 
 <END PROMPT>

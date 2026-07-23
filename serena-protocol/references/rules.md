@@ -1,10 +1,56 @@
-# Universal Serena Memory Protocol
-
-A project-agnostic reference for organizing, populating, and maintaining Serena memory, and for creating entity cards.
-
+---
+subject: "Serena memory protocol rules; `.serena/memories` location, AGENTS.md relationship, snake_case naming, rename normalization, YAML frontmatter metadata contract, proactive lifecycle, when-to-record, contradiction resolution, override hierarchy, worked findings examples, symbolic MCP tools, diagnostics."
+index:
+  - anchor: serena-what-is
+    what: "The orientation table defining what Serena memory is: on-disk location, relationship to `AGENTS.md`, authoritative index, workspace-wide scope, content language."
+    problem: "Agent starts memory work without knowing where store lives on disk or how it differs from AGENTS.md; wrong root assumed, wrong tongue used; store confusion, location mistakes, scope misunderstanding, speech drift, orientation failure."
+    use_when: "First contact with Serena ecosystem in session; deciding where memories physically live; weighing AGENTS.md against memory as source of truth."
+    avoid_when: "Concrete write/edit recipes — `#serena-memory-mutation`; scope routing — `[ref: #entity-namespace-registry]`."
+    expected: "Agent orients correctly: right directory, right language, right truth source."
+  - anchor: serena-naming
+    what: "The `snake_case` grammar for memory names plus the hard rename rule and five-step normalization recipe with worked examples."
+    problem: "Memory paths arrive with hyphens, spaces, leading underscores; left unfixed they break routing and linking across workspace; invalid characters, non-compliant paths, broken links, rename hesitation, batch postponement, character drift, regex mismatch."
+    use_when: "Creating any memory file or directory; encountering non-compliant existing path; normalizing entity directory names into memory segments."
+    avoid_when: "Choosing which scope receives content — `[ref: #entity-namespace-registry]`; header fields — `#serena-metadata`."
+    expected: "Every memory path matches grammar; violations renamed immediately before edits."
+  - anchor: serena-metadata
+    what: "The metadata header contract: mandatory YAML frontmatter with immediate H1, refresh-on-mutation, and the ownership map to tracking extension and `repo` field rules."
+    problem: "Memories written with plain-text metadata or stale headers become unparseable and falsify freshness checks; header drift, missing frontmatter, stale timestamps, contract violations, parse failures, refresh neglect, uniformity loss, downstream distrust, audit noise."
+    use_when: "Writing or editing any memory; refreshing outdated headers; verifying field set after mutation."
+    avoid_when: "Field-by-field semantics — `[ref: #tracking-field-semantics]`; `repo` value choice — `[ref: #entity-repo-field]`."
+    expected: "Every memory carries valid refreshed frontmatter with matching H1."
+  - anchor: serena-lifecycle
+    what: "The proactive-population mandate and the cross-cutting when-to-record routing for `agent/` and `project/` scopes."
+    problem: "Agent finishes sessions leaving discoveries unrecorded; knowledge evaporates between sessions and bugs get rediscovered; forgotten findings, silent sessions, knowledge loss, repeated mistakes, recording hesitation, evaporation, rediscovery cycles, memory amnesia, reminder dependence."
+    use_when: "Ending any task or session; deciding whether discovery warrants memory; routing agent-behavior or project-wide knowledge."
+    avoid_when: "Repo-scoped findings routing — `[ref: #entity-namespace-registry]`; mutation mechanics — `#serena-memory-mutation`."
+    expected: "Every discovery recorded in correct scope without reminders."
+  - anchor: serena-contradictions
+    what: "The five-step resolution protocol for conflicting memories: date/hash comparison, explicit override, `AGENTS.md` hierarchy, stop-and-report, mandatory logging."
+    problem: "Two memories state opposite facts; agent picks one arbitrarily or averages them, corrupting downstream decisions; conflicting facts, stale duplicates, arbitrary resolution, silent divergence, unresolved clashes, guesswork, trust erosion, flip-flopping, evidence neglect."
+    use_when: "Fresh report contradicts stored memory; two memories disagree; reviewing flagged contradictions log entries."
+    avoid_when: "Stale-vs-fresh commit checks — tracking extension `[ref: #tracking-staleness]`; naming conflicts — `#serena-naming`."
+    expected: "Every contradiction resolved by protocol or escalated; all logged."
+  - anchor: serena-examples
+    what: "Worked body examples for all nine findings domains from `bugs/` through `deprecations/`."
+    problem: "Agent writes first finding of some domain and invents structure ad hoc; inconsistent formats across domains confuse later readers; format guessing, structure drift, missing severity, inconsistent evidence, template absence, ad-hoc bodies, format chaos."
+    use_when: "Drafting memory in any findings domain; checking expected body shape; calibrating severity and evidence placement."
+    avoid_when: "Header assembly — `[ref: #tracking-fields]`; scope selection — `[ref: #entity-namespace-registry]`."
+    expected: "Findings follow uniform per-domain shapes with complete evidence."
+  - anchor: serena-mcp-tools
+    what: "The Serena MCP tool catalog: symbolic search, exploration, and editing tools with usage guidelines."
+    problem: "Agent greps whole files or edits textually when symbolic tools would answer precisely; context floods, imprecise edits, broken symbols; raw reads, context bloat, blind edits, rename hazards, tool ignorance, textual hacks."
+    use_when: "Exploring code structure; finding symbols or references; renaming or replacing symbol bodies; verifying edits via diagnostics."
+    avoid_when: "Memory operations — `#serena-memory-mutation`; web search — kagi tools per kagi-search skill."
+    expected: "Code operations use symbolic tools; textual fallback reserved for gaps."
 ---
 
-## 1. What Serena memory is
+# Universal Serena Memory Protocol
+
+The canonical rule set for organizing, populating, and maintaining Serena memory. The mutation & persistence protocol lives in `serena-protocol/SKILL.md` §1 (`[ref: #serena-memory-mutation]`). Namespaces/scopes, the repo concept, and findings routing live in `entity-protocol`.
+
+## What Serena Memory Is
+
 [ref: #serena-what-is]
 
 | Aspect | Rule |
@@ -15,46 +61,25 @@ A project-agnostic reference for organizing, populating, and maintaining Serena 
 | **Scope** | Workspace-wide. The parent workspace owns `.serena/`; individual entity directories usually do not contain their own `.serena/`. |
 | **Content language** | Technical English only. |
 
-**Available namespaces/scopes:**
+All namespaces/scopes and their routing rules: `entity-protocol` `[ref: #entity-namespace-registry]` — the single place defining all topics, repos, domains, and namespaces.
 
-| Scope | Structure | Purpose |
-|-------|-----------|---------|
-| `agent/` | `agent/<topic>` | Agent behavior rules, deprecations, contradictions, known issues, user preferences. |
-| `project/` | `project/<topic>` | Project-wide information: glossary, dependency graph, tech stack, entity registry. |
-| `meta/` | `meta/<topic>` | Meta-information about conventions (e.g., how to name memories, skill structure). |
-| `prompts/` | `prompts/<topic>` | Orchestration prompts for root/subagent workflows. |
-| `templates/` | `templates/<topic>` | Entity-card templates. |
-| `entities/` | `entities/<entity>` | Canonical entity cards (services, libraries, configs, infrastructure, components). No findings. |
-| `bugs/` | `bugs/<entity>/<topic>` | Broken or inconsistent behavior. |
-| `decisions/` | `decisions/<entity>/<topic>` | Architectural decisions and trade-offs. |
-| `notes/` | `notes/<entity>/<topic>` | Observations, caveats, surprising patterns, hardcoded constants, missing docs. |
-| `style/` | `style/<entity>/<topic>` | Project/entity-specific style conventions and technical-debt notes. |
-| `plans/` | `plans/<entity>/<topic>` | Complex multi-step plans or investigations. |
-| `proposals/` | `proposals/<entity>/<topic>` | Results of a session: proposed changes, alternative solutions, code snippets to revisit. |
-| `reports/` | `reports/<entity>/<topic>` | Agent reports (reviews, incident investigations, feature research). |
-| `todo/` | `todo/<entity>/<topic>` | TODOs from code and docs; short actionable one-shots so nothing is forgotten. |
+## Memory Naming Convention
 
----
-
-## 2. Memory naming convention
 [ref: #serena-naming]
 
 - **Format:** `snake_case` with underscores (`_`) as word separators.
 - **Allowed characters:** Latin letters (`a-zA-Z`), digits (`0-9`), and underscore (`_`) ONLY.
 - **No hyphens, dashes, minus signs, spaces, or any other special characters** in memory names or directory names.
 - **No leading, trailing, or consecutive underscores** (e.g. `_name`, `name_`, `name__part`).
-- **Pattern:** `<domain>/<topic>` for cross-cutting scopes; `<domain>/<entity>/<topic>` for entity-scoped scopes. Topics may be nested (e.g. `guide/onboarding_glossary/chapter_01`).
+- **Pattern:** `<domain>/<topic>` for cross-cutting scopes; `<domain>/<repo>/<topic>` for repo-scoped scopes. Topics may be nested (e.g. `guide/onboarding_glossary/chapter_01`).
 
 ### Hard rename rule
 
-If an existing memory file or directory under `.serena/memories/` violates the
-character rules above, the agent MUST rename it to a compliant name
-immediately, before reading or editing its contents. Do not wait for a separate
-batch and do not leave non-compliant names in place.
+If an existing memory file or directory under `.serena/memories/` violates the character rules above, the agent MUST rename it to a compliant name immediately, before reading or editing its contents. Do not wait for a separate batch and do not leave non-compliant names in place.
 
 **Normalization recipe:**
-1. Replace hyphens, dashes, en-dashes, em-dashes, spaces, and any other
-   separator with `_`.
+
+1. Replace hyphens, dashes, en-dashes, em-dashes, spaces, and any other separator with `_`.
 2. Remove every character that is not a Latin letter, digit, or `_`.
 3. Strip leading and trailing underscores.
 4. Collapse any sequence of two or more underscores into a single `_`.
@@ -71,531 +96,187 @@ batch and do not leave non-compliant names in place.
 | `double__underscore` | `double_underscore` |
 
 Additional rules:
+
 - One memory = one focused topic; keep files short and specialized.
 - For entity-scoped memories, replace directory dashes with underscores: `my-service` → `my_service`.
 
----
+## Metadata Header Rules
 
-## 3. Memory namespaces & routing
-[ref: #serena-namespaces-routing]
-
-Memory names MUST use `snake_case` with underscores. NO hyphens.
-Pattern: `<domain>/<topic>` or `<domain>/<entity>/<topic>`. Directory dashes become underscores (e.g., `client-api` → `client_api`).
-
-### Entity analysis prerequisite (HARD RULE)
-[ref: #serena-entity-prerequisite]
-
-Before creating any entity-scoped memory (`bugs/<entity>/...`, `decisions/<entity>/...`, `notes/<entity>/...`, `style/<entity>/...`, `plans/<entity>/...`, `proposals/<entity>/...`, `proposal/<entity>/...`, `reports/<entity>/...`, `todo/<entity>/...`, `logic/<entity>/...`, or `entities/<entity>`), the agent MUST verify that the target entity already has a card at `entities/<entity>`.
-
-`project/entities` is the curated registry of entity names. It groups recognized entities, but an entity is only considered usable after its card has been created via the `project-audit` skill.
-
-**If no entity cards exist yet (`entities/` scope is empty):**
-1. STOP all entity-scoped memory writes.
-2. Ask the user to create the first entity card using the `project-audit` skill.
-3. Do NOT guess, infer, or default to a name based on directory names.
-
-**If the target `<entity>` does not have a card in `entities/`:**
-1. STOP all memory writes for that entity.
-2. Ask the user to create the entity card via `project-audit` or confirm the correct entity name from existing cards.
-3. Do NOT create the entity card implicitly and do NOT guess.
-
-Examples of valid entity registries:
-- Monorepo with services, libraries, configs: `client_api`, `billing_wf`, `payment_lib`, `production`.
-- Game project: `engine`, `renderer`, `physics`, `audio`, `ui`.
-- Personal dotfiles: `dotbot`, `dotbot_git`, `shell`, `text`, `scripts`.
-
-### Strict Routing Rules
-
-- `agent/rules`: Contains the `## Contradictions log`.
-- `agent/deprecations`: Source of truth for legacy aliases (e.g., `billing-api` is external).
-- `project/entities`: Canonical registry of entities recognized in this workspace.
-- `project/<topic>`: Project-wide knowledge (glossary, dependency graph, tech stack).
-- `bugs/<entity>/<topic>`: Broken behavior, Sentry exceptions, contract mismatches.
-- `decisions/<entity>/<topic>`: Architectural choices (e.g., "intentionally stateless").
-- `notes/<entity>/<topic>`: Hardcoded constants, surprising patterns, missing docs.
-- `entities/<entity>`: Canonical entity card ONLY. No findings here.
-- `plans/<entity>/<topic>`: Complex multi-step plans or investigations.
-- `proposals/<entity>/<topic>`: Proposed code changes, alternative solutions, session results.
-- `proposal/<topic>` or `proposal/<entity>/<topic>`: Agent proposals that are not yet accepted but are kept for future consideration.
-- `reports/<entity>/<topic>`: Agent reports (reviews, incident investigations, feature research).
-- `style/<entity>/<topic>`: Technical debt, deprecated library usage, naming inconsistencies.
-- `todo/<entity>/<topic>`: TODOs from code/docs for humans and agents.
-- `logic/<entity>/<topic>`: Business-domain analysis output (owned by the `business-audit` skill).
-- `guide/<topic>`: Manuals, onboarding docs, and reference literature for users.
-- `artifacts/<topic>`: Artifacts produced during agent work (diagrams, exported data, intermediate dumps).
-- `playbook/<topic>`: Agent-facing instructions, scripts, and repeatable procedures.
-
----
-
-## 4. Metadata header rules
 [ref: #serena-metadata]
 
-Every memory entry MUST begin with a YAML frontmatter block enclosed in `---`, followed immediately by a Markdown H1 header (`# <Title>`). Do NOT put metadata as plain text below the header. On every `write_memory` or `edit_memory`, refresh the entire header.
+Every memory entry MUST begin with a YAML frontmatter block enclosed in `---`, followed immediately by a Markdown H1 header (`# <Title>`). Do NOT put metadata as plain text below the header.
 
-### Header template
-```yaml
----
-title: <String; must match the H1 title below>
-created_at: <UTC ISO 8601, e.g., 2026-06-16T20:00:53Z>
-updated_at: <UTC ISO 8601; refresh on every edit>
-repo: <String; "serena", "project", or <repo-name>>
-branch: <String; current git branch>
-commit: <String; 7-char short hash>
-committed_at: <UTC ISO 8601; timestamp of the commit referenced by `commit`>
-source: <String; project-relative path with optional line range>
----
+**The contract:**
 
-# <Title>
-```
+- The header template and the required field set are owned by the tracking extension — `[ref: #tracking-fields]`.
+- Per-field semantics and optional tags are owned by the tracking extension — `[ref: #tracking-field-semantics]`; `repo` value semantics (domain axis, legal values, git-anchor chain) are owned by `entity-protocol` `[ref: #entity-repo-field]`.
+- On EVERY mutation the entire header is refreshed per the tracking extension (`[ref: #tracking-refresh]`, `[ref: #tracking-timestamps]`) — including the header refresh caused by the mutation itself.
+- Optional tags MAY appear after the mandatory fields; they do not relax the refresh-on-mutation requirement.
+- Git metadata commands, validation timing, and the staleness protocol (`stale_since`) are owned by the tracking extension (`frontmatter-protocol/references/tracking.md`) — apply it here in full.
 
-### Field semantics
-| Field | Meaning | Source |
-|-------|---------|--------|
-| `title` | Exact duplicate of the H1 title below the frontmatter. | The `# <Title>` line. |
-| `created_at` | Timestamp when the memory was first created. | Current UTC time at first `write_memory`. |
-| `updated_at` | Timestamp of the most recent content change. | Current UTC time at every `write_memory`/`edit_memory`. |
-| `repo` | Git repository context: `serena` for cross-entity/agent memories, `project` for project-wide memories, or the entity/repo name (e.g., `merchant-api`) for entity-specific memories. | See Repository selection rules below. |
-| `branch` | Current git branch of the selected repository. | `git rev-parse --abbrev-ref HEAD` |
-| `commit` | Short hash of the latest commit in the selected repository. | `git rev-parse --short HEAD` |
-| `committed_at` | Timestamp of the commit referenced by `commit`. | `git log -1 --format=%cd --date=iso-strict`, normalized to UTC `Z`. |
-| `source` | Project-relative path to the relevant file or entity directory, with optional line range (`path:lineno..lineno`). | The file/directory the memory describes. |
+## Memory Lifecycle / Workflow
 
-### Optional tags
-
-Agents MAY add additional YAML fields (tags) to the frontmatter when they provide useful metadata for filtering, routing, or context. Optional tags MUST:
-
-- Be valid YAML scalar or list values.
-- Not duplicate or contradict the mandatory fields.
-- Be relevant to the memory type and content.
-
-Common optional tags include:
-
-| Tag | Useful for | Example |
-|-----|------------|---------|
-| `status` | Bugs, proposals, plans, TODOs | `status: diagnosed, fix pending` |
-| `severity` | Findings, bugs | `severity: critical` |
-| `priority` | TODOs, plans, proposals | `priority: high` |
-| `owner` | Reports, proposals, decisions | `owner: platform-team` |
-| `due_date` | TODOs, plans | `due_date: 2026-07-10T00:00:00Z` |
-
-Agents should add tags based on the memory's nature and project conventions, not invent tags without purpose.
-
-### Repository selection rules
-| Memory type | Git source | `repo` value |
-|-------------|------------|--------------|
-| Entity-specific (`bugs/<entity>/...`, `entities/<entity>`) | The entity's own repository (`cd <workspace-root>/<entity-name>`). | The entity/repo name (e.g., `merchant-api`). |
-| Project-wide (`project/...`) | The main project repository (`cd <workspace-root>`). | `project` |
-| Cross-entity / agent (`agent/...`, `meta/...`, `prompts/...`, `templates/...`) | The Serena repository (`cd <workspace-root>/.serena`). | `serena` |
-
-### Commands to collect metadata
-```bash
-cd <selected-repo>
-git rev-parse --abbrev-ref HEAD         # branch
-git rev-parse --short HEAD                # latest commit hash
-git log -1 --format=%cd --date=iso-strict # latest commit date (ISO 8601)
-```
-The latest commit date must be normalized to UTC with a `Z` suffix (e.g., `2026-06-17T08:39:38Z`).
-
----
-
-## 5. The metadata contract
-[ref: #serena-metadata-contract]
-
-Every memory entry MUST begin with the exact YAML frontmatter block below.
-On EVERY `write_memory` or `edit_memory`, you MUST refresh this header.
-
-```yaml
----
-title: <String; must match the H1 title below>
-created_at: <UTC ISO 8601>
-updated_at: <UTC ISO 8601>
-repo: <String; "serena", "project", or <repo-name>>
-branch: <String>
-commit: <7-char-short-hash>
-committed_at: <UTC ISO 8601>
-source: <String; project-relative path with optional line range>
----
-
-# <Title>
-```
-
-Additional optional tags MAY appear after the mandatory fields. They do not relax the requirement to refresh the header on every mutation.
-
-**Git Source Resolution Rule:**
-- **Entity-specific memory** (`bugs/`, `entities/`, etc.): Execute git commands INSIDE the entity's own repository (`cd <workspace-root>/<entity-name>`). Set `repo` to the entity/repo name (e.g., `merchant-api`).
-- **Project-wide memory** (`project/`): Execute git commands INSIDE the main project repository (`cd <workspace-root>`). Set `repo` to `project`.
-- **Meta/Cross-entity memory** (`agent/`, `meta/`, `prompts/`, `templates/`): Execute git commands INSIDE the `.serena` directory (`cd <workspace-root>/.serena`). Set `repo` to `serena`.
-
-**Mandatory Git Retrieval Commands:**
-```bash
-git rev-parse --abbrev-ref HEAD
-git rev-parse --short HEAD
-git log -1 --format=%cd --date=iso-strict
-```
-*(Ensure timezone is converted/appended as UTC `Z`).*
-
----
-
-## 6. Memory lifecycle / workflow
 [ref: #serena-lifecycle]
 
-Agents must proactively populate Serena memory without being reminded.
+Agents MUST proactively populate Serena memory without being reminded — every session, every task, every discovery.
 
-### Before writing any entity-scoped memory
-1. Apply `[ref: #serena-entity-prerequisite]`: verify the target entity has a card at `entities/<entity>`.
-2. If `entities/` is empty, STOP and ask the user to create the first entity card via `project-audit`.
-3. If the target entity has no card, STOP and ask the user to create it via `project-audit` or pick an existing entity.
-4. Only then proceed to the routing table below.
+**Memory-operation triggers (HARD):** any instruction mentioning "memory", "память", "knowledge base", or "база знаний" for read/write/edit/list/delete/rename MUST trigger the Serena memory tools — never raw file operations. The ONLY raw-file exception: refreshing an outdated memory header in place at `.serena/memories/<path>.md`, preserving all content below the header (per `serena-protocol/SKILL.md` §4 Master Execution Workflow).
 
-### When to record
+**Decision cards (MANDATORY after the user answers presented options):** record ONE self-contained memory in `decisions/<repo-or-project>/<topic>` containing, in order: (1) **Global context** — the overarching task/goal and why it matters; (2) **Local scope** — the specific sub-task(s) that led to the question(s); (3) **Questions & options** — each question posed, the options presented for it, and the user's chosen answer; (4) **Decision summary** — the consolidated decision(s) and the concrete consequences / next steps. A reader opening only this card MUST understand the full picture without consulting any other source.
+
+**Before writing any repo-scoped memory:** apply `entity-protocol` `[ref: #entity-prerequisite]` (verification, STOP procedures, meta-entity exemption). Repo-scoped findings routing (which findings domain receives what): `entity-protocol` `[ref: #entity-namespace-registry]`.
+
+**When to record (cross-cutting scopes):**
+
 | Trigger | Target namespace |
 |---------|------------------|
-| Confirmed bug | `bugs/<entity>/<topic>` |
-| Architectural decision or trade-off | `decisions/<entity>/<topic>` |
-| Strange pattern, caveat, observation | `notes/<entity>/<topic>` |
-| Coding style convention or technical debt | `style/<entity>/<topic>` |
 | Agent behavior bug or workaround | `agent/<topic>` |
-| Proposed change/refactoring/alternative solution | `proposals/<entity>/<topic>` |
-| Short actionable item from code/docs | `todo/<entity>/<topic>` |
-| Complex multi-step plan or investigation | `plans/<entity>/<topic>` |
-| Agent report | `reports/<entity>/<topic>` |
-| Project-wide knowledge or entity registry | `project/<topic>` |
+| Project-wide knowledge or repo registry | `project/<topic>` |
 
-### Verification and persistence
-1. After any `write_memory` or `edit_memory`, **read the memory back** to verify it was saved correctly.
-2. Run the configured persistence command (e.g., `just serena-checkpoint`) from the workspace root. Do not stop until everything is persisted.
+**After any write/edit:** verify and persist per `[ref: #serena-memory-mutation]` (read-back + persistence command from the workspace root).
 
-### When reading entity-specific memories
-[ref: #serena-memory-freshness]
+**When reading repo-specific memories:** apply the freshness rule of `entity-protocol` `[ref: #entity-freshness]`.
 
-Before trusting the contents of an entity-specific memory (where `repo` is neither `serena` nor `project`), verify that the memory still reflects the current state of the entity's repository.
+## Contradiction Resolution
 
-1. Locate the entity repository (`<workspace-root>/<repo>`).
-2. Compare the memory's `commit` and `committed_at` against the repository's current HEAD:
-   ```bash
-   cd <workspace-root>/<repo>
-   git rev-parse --short HEAD
-   git log -1 --format=%cd --date=iso-strict
-   ```
-3. If the memory's `commit` differs from HEAD, treat the memory as potentially stale. Then:
-   - Run `git diff <memory-commit>..HEAD` to see all changes in the repository since the memory was recorded.
-   - Reconcile the memory's claims against the diff. Update the memory if the changes invalidate it, or append a note describing the divergence.
-   - If you cannot reconcile automatically, inform the user that the memory may be stale and ask how to proceed.
-
-This freshness check does NOT apply to memories where `repo` is `serena` or `project`.
-
----
-
-## 7. Memory mutation protocol
-[ref: #serena-memory-mutation]
-
-**CRITICAL:** `write_memory` completely overwrites a file. You MUST NEVER use it to append to an existing memory.
-
-**To CREATE a new memory:**
-1. Call `list_memories` to ensure the name does not exist.
-2. Call `write_memory`.
-
-**To APPEND to an existing memory:**
-Call `edit_memory` with the following EXACT JSON payload:
-```json
-{
-  "mode": "regex",
-  "needle": "\\Z",
-  "repl": "\n\n## <New Section>\n<new content>"
-}
-```
-
-**To UPDATE specific lines:**
-Use `edit_memory` with a highly specific `regex` targeting only the outdated paragraph/table row.
-
----
-
-## 8. Entity card creation workflow
-[ref: #serena-card-workflow]
-
-The root agent orchestrates; a read-only subagent explores.
-
-### Root-agent responsibilities
-1. Load templates and existing memory.
-2. Apply `[ref: #serena-entity-prerequisite]`: confirm the target entity has a card at `entities/<entity>`; if not, STOP and ask the user.
-3. Determine entity type via safe, read-only shell checks.
-4. Launch a read-only `explore` subagent.
-5. Generate the `## Directory structure` section using the exact `tree` command.
-6. Validate the report, resolve contradictions, write the final card to `entities/<entity>`.
-7. Write findings to separate memories (bugs, notes, decisions, style, todo).
-8. Run the persistence command.
-
-### Subagent responsibilities
-- Read existing memories and templates.
-- Explore the codebase thoroughly.
-- Do **not** generate the directory tree.
-- Do **not** write to Serena or run mutating commands.
-- Return a structured markdown report.
-
-### Directory tree command (Root Agent Only)
-```bash
-cd <entity_path>
-tree --gitignore --prune --condense --compress 3 --dirsfirst -vnx
-```
-- Add one-line responsibility comments for meaningful files/directories only.
-- Do **not** write the `tree` command itself into the final card.
-
----
-
-## 9. Deterministic type detection algorithm
-[ref: #serena-algo-type-detection]
-
-When analyzing a repository to create an `entities/` card, you MUST apply this logic in exact order:
-
-1. `IF` directory contains `apps/base/` or `clusters/` AND NO `app/` source tree:
-   ➔ Type is **`Infrastructure / GitOps`**
-2. `ELSE IF` directory contains `proto/` AND NO `app/` OR `worker.py`:
-   ➔ Type is **`library`**
-3. `ELSE IF` directory contains `app/api/` (with FastAPI/Flask routers) OR `main.py`/`server.py` exposing HTTP:
-   ➔ Type is **`REST API gateway`**
-4. `ELSE IF` directory contains `worker.py` OR `app/workflow/` with `@workflow.defn`:
-   ➔ Type is **`Temporal workflow worker`**
-5. `ELSE IF` directory contains `app/` with gRPC servicers:
-   ➔ Type is **`gRPC API service`**
-6. `ELSE`:
-   ➔ Default to closest match or STOP and ask user.
-
----
-
-## 10. Card creation segregation (Root vs Subagent)
-[ref: #serena-agent-segregation]
-
-To prevent hallucinations and restricted-shell failures, responsibilities are strictly segregated.
-
-**ROOT AGENT (You):**
-- Applies `[ref: #serena-entity-prerequisite]`: confirms the entity has a card at `entities/<entity>`; if not, STOP and ask.
-- Determines the entity type using the algorithm above.
-- Generates the `## Directory structure` locally (Subagent MUST NOT do this).
-- Reads existing memories to prepare for contradiction checks.
-- Launches the Subagent.
-- Resolves contradictions, writes the final card to `entities/`, and writes findings to `bugs/`, `notes/`, etc.
-- Runs `just serena-checkpoint`.
-
-**EXPLORATION SUBAGENT (Read-only):**
-- Has a `timeout` of at least `1800` seconds.
-- Reads `pyproject.toml`, `uv.lock`, code, and proto files.
-- Extracts exhaustive interfaces (see Matrix below).
-- Outputs a flat list of meaningful paths (so Root Agent knows what to annotate in the tree).
-- Outputs findings with severity and exact Git hashes.
-
-**Mandatory Tree Command (Run by ROOT AGENT):**
-```bash
-cd <entity_path>
-tree --gitignore --prune --condense --compress 3 --dirsfirst -vnx
-```
-*Rule: Do NOT include `__init__.py`, `Makefile`, `Dockerfile`, `tests/`, `CI` files, or entry points in the final annotated tree.*
-
----
-
-## 11. Quality checklist
-[ref: #serena-quality]
-
-Before saving an entity card, verify:
-- **Completeness:** Every required section is present; exported interface is exhaustive (every endpoint, every gRPC method, every workflow/activity).
-- **Precision:** All versions come from lockfiles/manifests; do not guess.
-- **Consistency:** Metadata uses the entity's own git branch and latest commit.
-- **Traceability:** Every finding cites file path, line, and current commit hash.
-
----
-
-## 12. Interface exhaustiveness matrix
-[ref: #serena-interface-exhaustiveness]
-
-The Subagent MUST extract interfaces according to these strict rules. Summarization is FORBIDDEN.
-
-| Type | Exhaustive Requirements |
-|---|---|
-| **gRPC API** | MUST extract EVERY method. MUST create a separate table for methods declared in `.proto` but NOT implemented in code. Use Protobuf message names (e.g., `CreateAdvertRequest`), not field definitions. |
-| **REST API** | MUST extract EVERY route. MUST split into unauthenticated (misc/health) vs authenticated (`/api/v1`). Path parameters MUST use `{param}` notation. MUST specify Auth type (e.g., `OAuth2`, `RSA-PSS`, `none`). |
-| **Temporal Worker** | MUST extract EVERY `@workflow.defn` and `@activity.defn`. MUST list all signals, queries, updates, and cron schedules. Activities MUST map to their downstream service calls. |
-| **Library** | MUST list EVERY public package/module. Omit generated internal helpers. MUST include build/generation rules (e.g., `buf`, `protoc-gen-go`). |
-| **Infra** | MUST extract EVERY `HelmRelease` grouped by environment/namespace. |
-
----
-
-## 13. Contradiction resolution
 [ref: #serena-contradictions]
 
-1. Compare the recorded dates and commit hashes of the conflicting memories.
-2. Newer memory explicitly overriding older memory wins.
-3. `AGENTS.md` wins over session memory unless explicitly stated otherwise.
-4. If unresolved, **STOP and report it to the user**. Do not guess.
+Applies whenever stored knowledge conflicts — between memories, or between a fresh report (e.g. a card-creation subagent report) and existing memories.
 
-Log detected contradictions in `agent/rules ## Contradictions log`.
+1. **Compare dates/hashes:** check the headers of the conflicting memories.
+2. **Explicit override:** if the newer memory explicitly states it overrides the older one, the newer wins.
+3. **Hierarchy rule:** if one source is `AGENTS.md` and the other is a session memory, `AGENTS.md` WINS unless the session memory explicitly overrides `AGENTS.md` by name.
+4. **Failure state:** if the contradiction is unresolved, STOP and report it to the user. Do NOT guess.
+5. **Logging:** log EVERY detected contradiction (even if resolved) by appending to `agent/rules` under the `## Contradictions log` header via `edit_memory` (`[ref: #serena-memory-mutation]`).
 
----
+## Examples of Memory Entries
 
-## 14. Contradiction resolution protocol
-[ref: #serena-contradiction-resolution]
-
-When creating a card, compare the Subagent's fresh report against existing Serena memories.
-
-1. **Compare Dates/Hashes:** Check the header of the conflicting memories.
-2. **Explicit Override:** If the newer memory explicitly states it overrides the older one, adopt the newer.
-3. **Hierarchy Rule:** If one source is `AGENTS.md` and the other is a session memory, **`AGENTS.md` WINS** unless the session memory explicitly overrides `AGENTS.md` by name.
-4. **Failure State:** If the contradiction is unresolved, you MUST STOP and report it to the user. DO NOT GUESS.
-5. **Logging:** You MUST log every detected contradiction (even if resolved) by appending to `agent/rules` under the `## Contradictions log` header using `edit_memory`.
-
----
-
-## 15. Core tools and commands
-[ref: #serena-core-tools]
-
-### Serena memory tools
-- `write_memory` **overwrites** the entire file. Never use it to append.
-- To create a new memory, first call `list_memories` to ensure the name does not exist.
-- To add to an existing memory, use `edit_memory` with:
-```json
-{
-  "mode": "regex",
-  "needle": "\\Z",
-  "repl": "\n\n<new content>"
-}
-```
-
-### Git metadata commands
-```bash
-cd <entity-repo>
-git rev-parse --abbrev-ref HEAD
-git rev-parse --short HEAD
-git log -1 --format=%cd --date=iso-strict
-```
-
-### Persistence command
-```bash
-<memory-commit-command>
-```
-Run from the workspace root after every memory write/edit. Replace with the command configured for the project (commonly `just serena-checkpoint`).
-
-### Working directory for Serena operations
-Every Serena operation that touches `.serena/` — including `write_memory`, `edit_memory`, `list_memories`, `delete_memory`, `rename_memory`, and the persistence command — MUST be executed from the workspace root (`cd <workspace-root>`). Before running the command, verify that the target `.serena/` directory is the workspace-root `.serena/` and not a nested instance inside a subdirectory. Never run Serena commands from within an entity directory or any other nested project that may contain its own `.serena/`.
-
----
-
-## 16. Deprecated services and aliases
-[ref: #serena-deprecations]
-
-Maintain a deprecation table in `agent/deprecations` for the project. Example structure:
-| Name | Status | Canonical / Replacement | Implications |
-|------|--------|------------------------|--------------|
-| `<old-name>` | Deprecated | `<new-name>` | Treat `<old-name>` as legacy; do not create new cards. |
-
-Every project must document its own deprecated names and aliases. Cards must use canonical names.
-
----
-
-## 17. Findings & traceability
-[ref: #serena-findings-traceability]
-
-Findings (bugs, anomalies, missing configs, TODOs, style issues) MUST NEVER be placed in the `entities/<entity>` card. They MUST be routed to `bugs/`, `notes/`, `decisions/`, `style/`, or `todo/`.
-
-**Traceability Requirement:**
-EVERY finding must be anchored to a specific file, line, AND the exact commit hash of that file at the moment of exploration.
-
-**Subagent Command for Traceability:**
-```bash
-git log -1 --format=%H -- <relative-file-path>
-```
-
-Each finding must declare:
-- **Severity:** `critical` (breaks functionality), `warning` (tech debt/inconsistency), `info` (observation).
-- **Location:** `path/to/file.py:line_num`
-- **Hash:** `(commit <extracted-hash>)`
-
----
-
-## 18. Hard fails & forbidden actions
-[ref: #serena-forbidden-actions]
-
-If you do any of the following, you fail the protocol:
-- **HARD FAIL:** Hand-writing a directory tree instead of using the exact `tree` CLI command output.
-- **HARD FAIL:** Rounding or normalizing dependency versions (e.g., writing `FastAPI 0.10x` instead of reading the exact version from `uv.lock`).
-- **HARD FAIL:** Using the `.serena` git repository to fill out the metadata header for a specific entity like `client-api`.
-- **HARD FAIL:** Including `Sentry`, `Prometheus`, `pytest`, `ruff`, or CI/CD pipelines in the `Technology stack` section of an entity card.
-- **HARD FAIL:** Writing actual environment variable VALUES or SECRETS in memory. Write the PREFIX and description only.
-- **HARD FAIL:** Forgetting to run `just serena-checkpoint` (or equivalent persistence command) after writing/editing memories.
-- **HARD FAIL:** Writing to an entity-scoped namespace when the target entity has no card at `entities/<entity>`.
-- **HARD FAIL:** Implicitly creating an entity card outside the `project-audit` skill.
-- **HARD FAIL:** Guessing an entity name instead of asking the user.
-- **HARD FAIL:** Executing any Serena memory operation or persistence command from anywhere other than the workspace root when a nested `.serena/` could be affected.
-
----
-
-## 19. Examples of memory entries
 [ref: #serena-examples]
 
-### `bugs/<entity>/<topic>`
-```yaml
----
-title: Example validation error not translated (EXAMPLE-API-E1)
-created_at: YYYY-MM-DDTHH:MM:SSZ
-updated_at: YYYY-MM-DDTHH:MM:SSZ
-repo: example-api
-branch: <branch>
-commit: <7-char-short-hash>
-committed_at: YYYY-MM-DDTHH:MM:SSZ
-source: example-api/src/handlers/example.py:42..45
-status: diagnosed, fix pending
----
+One worked body example per findings domain. Headers are NOT restated: assemble them per `[ref: #tracking-fields]`, with `repo` per `[ref: #entity-repo-field]` and evidence (`path:line` + commit hash) per `[ref: #entity-findings-traceability]`. Scope semantics: `[ref: #entity-namespace-registry]`.
 
+### `bugs/<repo>/<topic>`
+
+```markdown
 # Example validation error not translated (EXAMPLE-API-E1)
 
-**Entity:** example-api → downstream-api
+**Severity:** critical — `example-api/src/handlers/example.py:42` (commit abc1234)
 
 ## Problem
-`POST /api/v1/example` triggers Sentry event `EXAMPLE-API-E1`:
-`ValidationError: Invalid input`.
+`POST /api/v1/example` triggers Sentry event `EXAMPLE-API-E1`: `ValidationError: Invalid input`.
+
+## Root cause
+The handler raises before the translation layer runs.
 ```
 
-### `entities/<entity>` card header
-```yaml
----
-title: example-api entity card
-created_at: YYYY-MM-DDTHH:MM:SSZ
-updated_at: YYYY-MM-DDTHH:MM:SSZ
-repo: example-api
-branch: <branch>
-commit: <7-char-short-hash>
-committed_at: YYYY-MM-DDTHH:MM:SSZ
-source: example-api
----
+### `decisions/<repo>/<topic>`
 
-# example-api entity card
+```markdown
+# Sessions intentionally stateless in example-api
 
-## Purpose
-Example public-facing REST gateway for the platform...
+Decided 2026-07-23 with the user. `example-api/src/auth/session.py:18` (commit abc1234)
+
+## Decision
+All session state lives in Redis; the service holds no in-process session cache.
+
+## Rationale
+Horizontal scaling behind the balancer requires any instance to serve any request.
+
+## Consequences
+Every request pays one Redis round-trip; local caching is forbidden.
 ```
 
----
+### `notes/<repo>/<topic>`
 
-## 20. Common mistakes and gotchas
-[ref: #serena-mistakes]
+```markdown
+# Retry budget hardcoded at 3 in example-api client
 
-| Mistake | How to avoid |
-|---------|--------------|
-| **Hand-written directory trees** | Always run `tree --gitignore --prune --condense --compress 3 --dirsfirst -vnx` |
-| **Stale metadata headers** | Refresh the header on every `write_memory`/`edit_memory`. |
-| **Using `.serena` repo for entity metadata** | Use the entity's own git repository for entity cards/findings. Use `.serena` only for cross-entity meta. |
-| **Forgetting the persistence command** | Run the configured memory-commit command after every write/edit cycle. |
-| **Using `write_memory` to append** | Use `edit_memory` with `mode: "regex"`, `needle: "\\Z"` to append. |
-| **Putting findings in the entity card** | Route anomalies, TODOs, style issues to `bugs/`, `notes/`, `decisions/`, `style/`, or `todo/` memories. |
-| **Including development meta in cards** | Omit Sentry, Prometheus, tests, linters, CI, Makefile, Docker. |
-| **Writing env var values** | List only important env var prefixes and names; never values, examples, or secrets. |
-| **Guessing entity names** | Apply `[ref: #serena-entity-prerequisite]`; if the entity has no card, STOP and ask the user. |
+`example-api/src/clients/downstream.py:77` (commit abc1234)
 
----
+The downstream client hardcodes `MAX_RETRIES = 3` with no config override. Surprising during incident drills: longer outages cannot be tuned without a deploy.
+```
 
-## 21. Serena MCP tools reference
+### `style/<repo>/<topic>`
+
+```markdown
+# Repository pattern naming in example-api
+
+`example-api/src/db/` (commit abc1234)
+
+Repositories are named `<entity>_repo.py` and expose only async methods. Sync helpers are tech debt scheduled for removal; do not add new ones.
+```
+
+### `todo/<repo>/<topic>`
+
+```markdown
+# TODO: backfill idempotency keys on payment retries
+
+Source: `example-api/src/handlers/payments.py:133` TODO comment (commit abc1234)
+
+Priority: high. Retry path re-charges on timeout until the key backfill lands.
+```
+
+### `plans/<repo>/<topic>`
+
+```markdown
+# Plan: migrate example-api webhooks to outbox pattern
+
+Status: in progress. Context: webhook delivery lost on deploy rollbacks.
+
+- [x] 1. Add outbox table and writer
+- [ ] 2. Dual-write from handlers
+- [ ] 3. Relay worker with retries
+- [ ] 4. Cut over and drop direct sends
+```
+
+### `proposals/<repo>/<topic>`
+
+```markdown
+# Proposal: replace hand-rolled retry with tenacity in example-api
+
+Status: not yet accepted. `example-api/src/clients/downstream.py:70..90` (commit abc1234)
+
+## Proposal
+Adopt `tenacity` with jittered backoff; delete the custom loop.
+
+## Trade-offs
++ Battle-tested, less code. − New dependency; behavior change in backoff curve.
+```
+
+### `reports/<repo>/<topic>`
+
+```markdown
+# Report: auth latency investigation in example-api
+
+Date: 2026-07-23. Trigger: p99 auth latency alert.
+
+## Findings
+1. RSA verify dominates (62% of span). 2. Key fetched per request — no cache.
+
+## Recommendation
+Cache the JWKS for 5 minutes; expected p99 drop ~40%.
+```
+
+### `deprecations/<repo>/<topic>`
+
+```markdown
+# Deprecated: legacy_charge endpoint in example-api
+
+| Name | Status | Canonical / Replacement | Implications |
+|------|--------|------------------------|--------------|
+| `POST /api/v1/legacy_charge` | Deprecated | `POST /api/v1/charges` | Do not add new callers; removal planned 2026-09. |
+```
+
+## Serena MCP Tools Reference
+
 [ref: #serena-mcp-tools]
 
 Serena exposes powerful MCP tools. Prefer them over raw file reads, manual grep, or direct edits.
 
+**Protocol context.** The Model Context Protocol defines three server primitives — Resources, Prompts, and Tools (spec 2025-11-25; Roots and Sampling are deprecated per SEP-2577 over prompt-injection and exfiltration concerns). Serena exposes every operation below as a Tool; the tables group them by domain.
+
 ### Symbolic search and exploration
+
 | Tool | Use it for |
 |------|------------|
 | `get_symbols_overview` | High-level view of symbols in a file. Best first step when opening a new file. |
@@ -607,6 +288,7 @@ Serena exposes powerful MCP tools. Prefer them over raw file reads, manual grep,
 | `get_diagnostics_for_file` | Retrieve LSP diagnostics (errors, warnings) for a file. |
 
 ### Symbolic editing
+
 | Tool | Use it for |
 |------|------------|
 | `replace_symbol_body` | Replace the entire body of a function, method, or class. |
@@ -615,7 +297,28 @@ Serena exposes powerful MCP tools. Prefer them over raw file reads, manual grep,
 | `rename_symbol` | Rename a symbol across the entire codebase. |
 | `safe_delete_symbol` | Delete a symbol if it has no references. |
 
+### Memory operations
+
+| Tool | Use it for |
+|------|------------|
+| `write_memory` | Create or fully overwrite a memory file. NEVER use to append (`[ref: #serena-memory-mutation]`). |
+| `read_memory` | Read a memory by name. |
+| `edit_memory` | Edit in place (`literal` or `regex` mode) — the append/update tool (`[ref: #serena-memory-mutation]`). |
+| `list_memories` | List memories, optionally filtered by topic; mandatory pre-create check. |
+| `delete_memory` | Delete a memory — only on explicit instruction or granted permission. |
+| `rename_memory` | Rename/move a memory; use `/` for scope organization. |
+
+### Project and session management
+
+| Tool | Use it for |
+|------|------------|
+| `activate_project` | Activate a project by name or path before any symbolic or memory work. |
+| `get_current_config` | Print the active configuration: projects, tools, contexts, modes. |
+| `onboarding` | Perform first-time onboarding for a project (at most once per conversation). |
+| `initial_instructions` | Read the Serena Instructions Manual — mandatory if not yet read. |
+
 ### Agent guidelines for Serena tools
+
 - **Prefer symbolic tools over raw reads.** Do not read a whole file if `get_symbols_overview` or `find_symbol` can give you the answer.
 - **Line numbers are 0-based** in Serena tool results.
 - **Verify edits.** After symbolic edits, use `get_diagnostics_for_file` to confirm the change.

@@ -1,6 +1,6 @@
 # Addendum: api-design presentation choices for the Cross-Skill Reference Standard
 
-This addendum documents the api-design-specific presentation decisions for the `references/` corpus. It **defers to** `bootstrap/references/REFERENCE_STANDARD.md` for everything covered there (frontmatter schema, card semantics, anchor mechanics, body skeleton, loader contract, conformance checking) and MUST NOT contradict it. What follows is only what the standard leaves to the owning skill, plus accepted waivers.
+This addendum documents the api-design-specific presentation decisions for the `references/` corpus. It **defers to** `frontmatter-protocol/references/lazyload.md` for everything covered there (frontmatter schema, card semantics, anchor mechanics, body skeleton, loader contract, conformance checking) and MUST NOT contradict it. What follows is only what the standard leaves to the owning skill, plus accepted waivers.
 
 ## 1. Corpus layout
 
@@ -14,16 +14,16 @@ This addendum documents the api-design-specific presentation decisions for the `
 
 The corpus adapts Google AIP rule sections, so card field semantics are the normative-rule variant of the standard schema:
 
-- `problem` — the **design risk or cost the AIP prevents** (inconsistency, breaking change, client friction), written as agent situation + stake per §4.4.
+- `problem` — the **design risk or cost the AIP prevents** (inconsistency, breaking change, client friction), written as agent situation + stake per `[ref: #lazyload-problem-style]`.
 - `what` — the AIP's rule mechanism, framed as applied to that risk; the AIP number names the mechanism (`The AIP-NNN …`).
 - `use_when` — design/review situations that mandate the section.
 - `avoid_when` — where the section is inapplicable, routing to the better alternative via the cross-reference convention (§4 below).
 - `expected` — the **compliant end state**: what holds when the design follows the section.
 - Pure lookup sections (Glossary `glossary-aip-9`, `rfc-verbs`) leave `avoid_when`/`expected` empty per the standard's lookup convention.
 
-## 3. Anchor marker placement (accepted waiver)
+## 3. Anchor marker placement
 
-The standard's §6.1 separate-line form shows a blank line above and below the marker. This corpus uses the **tight placement form**: the marker sits at column 0 on its own line directly under the section heading — **no blank line above**, one blank line below. It is applied uniformly to all 73 markers and was accepted as this skill's one placement form (§6.1: "A skill MUST choose one placement form and apply it uniformly"). New sections MUST follow the tight form. Extraction tooling MUST NOT depend on a blank line above the marker.
+This corpus uses the **tight placement form** — the standard's default (`markdown-protocol` `marker_style`; `[ref: #lazyload-anchors]`): the marker sits at column 0 on its own line directly under the section heading, one blank line below. It is applied uniformly to all 73 markers. New sections MUST follow the tight form. Extraction tooling MUST NOT depend on a blank line above the marker.
 
 ## 4. Cross-reference convention inside card fields
 
@@ -34,21 +34,21 @@ The standard's §6.1 separate-line form shows a blank line above and below the m
 
 ## 5. `subject` composition
 
-- Form per §4.2: `<chapter essence>; <cloud of every section area>`, 30–50 words, no articles.
+- Form per `[ref: #lazyload-frontmatter-schema]`: `<chapter essence>; <cloud of every section area>`, 30–50 words, no articles.
 - Nine files embed `AIP-NNN` hooks in the cloud. **Waiver:** `07_design_patterns.md` (at the 50-word ceiling) and `10_protocol_buffers.md` carry semantic hooks only; their AIP numbers live exclusively in the `aips` field (decision P4-Q1). Coarse routing for an AIP-number-citing request uses `aips`, not `subject`.
 
 ## 6. `aips` skill-extra metadata
 
-- Declared in `SKILL.md` §2.4 per the standard's §2 skill-extra mechanism.
+- Declared in `SKILL.md` §2.4 per the skill-extra mechanism of `[ref: #lazyload-scope-addenda]`.
 - Sorted flat list of integers, one per AIP covered by the file's body sections; **required** in every file (empty list allowed, e.g. `rfc_verbs.md`).
-- Mechanically cross-checked against the AIP numbers in body section headings by `scripts/validate_reference_frontmatter.py`; fenced code blocks are skipped during the check.
+- Mechanically cross-checked against the AIP numbers in body section headings by the canonical validator (`frontmatter-protocol/scripts/validate_frontmatter.py --aips`); fenced code blocks are skipped during the check.
 
 ## 7. Validation
 
-`scripts/validate_reference_frontmatter.py` enforces the standard's §9 checklist plus this corpus's extras: the `aips` cross-check (§6 above), deep cross-field dedup with the §4.5 identifier exemption (backticked identifiers and `›` cross-reference pointers are exempt; prose phrases are not), cloud sub-gram leaks, and the cloud-vs-situation paraphrase heuristic. Run it per file:
+The canonical validator (`frontmatter-protocol/scripts/validate_frontmatter.py --aips`) enforces the `[ref: #lazyload-conformance]` checklist plus this corpus's extras: the `aips` cross-check (§6 above), deep cross-field dedup with the identifier exemption (`[ref: #lazyload-dedup]` — backticked identifiers and `›` cross-reference pointers are exempt; prose phrases are not), cloud sub-gram leaks, and the cloud-vs-situation paraphrase heuristic. Run it per file from the workspace root:
 
 ```bash
-uv run --no-project --with pyyaml python scripts/validate_reference_frontmatter.py references/<FILE>.md
+uv run --no-project --with pyyaml python frontmatter-protocol/scripts/validate_frontmatter.py --aips references/<FILE>.md
 ```
 
 Every reference file MUST pass before a change is called done.

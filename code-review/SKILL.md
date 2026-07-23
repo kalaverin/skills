@@ -1,16 +1,12 @@
 ---
 name: code-review
-description: >
-  Language-agnostic thorough code review for any programming language. Use when
-  the user asks for: code review, review code, review diff, review feature,
-  review project, pull request review, PR review, ревью, код-ревью, ревью кода,
-  проверь код, проверь diff, проверь изменения. Supports both diff-based
-  (feature) and full-project review modes. Enforces mandatory boilerplate file
-  naming, branch metadata, and severity classification.
+description: "Language-agnostic thorough code review for any programming language. Use when the user asks for: code review, review code, review diff, review feature, review project, pull request review, PR review, ревью, код-ревью, ревью кода, проверь код, проверь diff, проверь изменения. Supports both diff-based (feature) and full-project review modes. Enforces mandatory boilerplate file naming, branch metadata, and severity classification."
+runtime: true
 triggers:
   request: "code review, review code, review diff, review feature, review project, pull request review, pr review, ревью, код-ревью, ревью кода, проверь код, проверь diff, проверь изменения, проверь проект"
 requires:
   - api-design
+  - frontmatter-protocol
   - serena-protocol
 ---
 
@@ -107,7 +103,7 @@ fields, add the review-specific optional tags `reviewer`, `scope`, and
 title: Code Review Report
 created_at: <YYYY-MM-DDTHH:MM:SSZ>
 updated_at: <YYYY-MM-DDTHH:MM:SSZ>
-repo: project
+repo: generic
 branch: <current git branch>
 commit: <7-char short hash>
 committed_at: <YYYY-MM-DDTHH:MM:SSZ>
@@ -129,7 +125,7 @@ Use the markdown header:
 
 ```markdown
 **Branch:** `{{ CURRENT_BRANCH }}`
-**Commit:** `$(git rev-parse HEAD 2>/dev/null || echo "N/A")`
+**Commit:** `$(git rev-parse --short HEAD 2>/dev/null || echo "N/A")`
 **Reviewer:** Kimi + optional CodeRabbit cross-validation
 **Date:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
 **Scope:** <Diff-based review `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}`> OR <Full project review (not diff-based)>
@@ -318,7 +314,7 @@ Include:
 
 ### Phase 6: Persist
 
-After both reports are written, just run `just serena-checkpoint` without any checks.
+After both reports are written, verify and persist per `serena-protocol` `[ref: #serena-memory-mutation]` (read-back + persistence command from the workspace root).
 
 ## 6. Language Adaptation
 
@@ -338,11 +334,7 @@ machine-readable report.
 
 Every review — `feature` or `project` mode, any programming language — MUST include an architectural design review grounded in the `api-design` skill (Google AIP corpus). This skill's `requires:` frontmatter guarantees api-design is loaded; this section defines how to route it. The pass is never skipped: when the reviewed code exposes no API surface, it concludes "clean" quickly — but the routing steps below are still executed and documented.
 
-1. **Root-agent routing (never delegated).** The ROOT agent MUST read the FULL YAML frontmatter (the complete decision-card index) of EVERY file in `api-design/references/`. Do NOT use the shortlist funnel (api-design §2.1 Command 1 → shortlist → Command 2): a review has no design task to route from, so the whole card index is the routing input. Run Command 2 from api-design §2.1 over all reference files at once:
-
-   ```bash
-   cd <api-design skill directory> && for f in references/*.md; do printf '\n### %s\n' "$f"; awk '/^---[ \t]*$/{c++; if(c==2) exit; next} c==1{print}' "$f"; done
-   ```
+1. **Root-agent routing (never delegated).** The ROOT agent MUST read the FULL YAML frontmatter (the complete decision-card index) of EVERY file in `api-design/references/`. Do NOT use the shortlist funnel (Command 1 → shortlist → Command 2 per `frontmatter-protocol` `[ref: #lazy-load-routing]`): a review has no design task to route from, so the whole card index is the routing input. Run Command 2 from `[ref: #lazy-load-routing]` from the api-design skill directory over ALL `references/*.md` at once.
 
 2. **Card selection.** Read every card and semantically match `what`/`use_when`/`avoid_when` against the API surface actually present in the reviewed code (HTTP routes, gRPC services, resource models, field semantics, error model, pagination, versioning, etc.). Deduplicate anchors per api-design §2.2.
 3. **Bounded extraction.** Extract each selected anchor with the bounded awk command from api-design §2.3. Never read reference bodies in full.
@@ -364,7 +356,7 @@ Do not read the full reference files unless required. Use the routing table belo
 | Need the architecture/maintainability subagent prompt. | `references/subagent-architecture-and-maintainability.md` | `[ref: #subagent-architecture-and-maintainability]` |
 | Need exact machine-readable report template. | `references/report-templates.md` | `[ref: #machine-readable-template]` |
 | Need exact human-readable report template. | `references/report-templates.md` | `[ref: #human-readable-template]` |
-| Need to adapt concepts to a specific language. | Section 6 above | `[ref: #language-adaptation]` |
+| Need to adapt concepts to a specific language. | Section 6 above | — |
 | Need the mandatory AIP design review procedure. | Section 7 above | — |
 
 ## 9. Hard Rules

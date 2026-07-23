@@ -4,10 +4,11 @@ description: "MANDATORY skill for producing repository-specific pytest enablemen
 version: 0.2.0
 triggers:
   all:
-    files: ".serena/memories/"
+    files: "test -d .serena/memories"
     request: "pytest bootstrap, bootstrap tests, generate test prompt, test agent prompt, pytest-planner, test planning bootstrap, master test plan, план покрытия, бутстрап тестов, сгенерируй промпт тестов, промпт для тестов, промпт pytest, планирование тестов, feature coverage plan, coverage plan, diff coverage plan, feature test plan, branch coverage plan, feature testing, branch coverage, план покрытия фичи, покрытие фичи, план покрытия ветки, покрытие диффа, тестирование фичи, покрытие ветки"
 requires:
   - business-audit
+  - frontmatter-protocol
   - project-audit
   - pytest-design
   - serena-protocol
@@ -84,17 +85,11 @@ Feature artifact naming: `plans/<entity>/tests/feature_coverage`, optionally suf
 This is the **bootstrap** path (→ Serena `agent/tests`); for the **planning** path, resolve the plan mode first (Plan Mode Resolution above — NEVER guess it outside the `main`/`master` → `project` default), then follow `prompts/PLANNING.md` (`project`) or `prompts/FEATURE.md` (`feature`).
 
 1. **Preconditions.** Resolve `{{ENTITY_NAME}}`; verify the hard preconditions above. STOP on failure.
-2. **Frontmatter harvest (main agent only).** Run the frontmatter harvest from the in-root mirror `.kimi/mirror/pytest-design/` into a temporary file (path is the agent's choice, but never inside `.kimi/mirror/`, which is rsynced with `--delete`). The frontmatter-harvest file is a main-agent working inventory and is never handed to subagents:
-
-```bash
-fd -t f . references/ 2>/dev/null | sort -u \
-    | xargs -I{} sh -c 'printf "\n### {}\n"; awk "/^---$/{c++; if(c==2) exit; next} c==1{print}" "{}"' | grep -v 'expected:' \
-    > <HARVEST_FILE>
-```
+2. **Frontmatter harvest (main agent only).** Run the frontmatter harvest from the in-root mirror `.kimi/mirror/pytest-design/` into a temporary file, per the canonical recipe `frontmatter-protocol` `[ref: #offline-harvest]` (the exact command lives there, never restated here), with the documented field filter dropping `expected:` lines. The harvest path is the agent's choice, but never inside `.kimi/mirror/` (rsynced with `--delete`); the harvest file is a main-agent working inventory and is never handed to subagents.
 
 3. **Fan-out.** Slice the **codebase** into coherent regions (directory / module / subsystem), including the tests that belong to each region. Launch parallel read-only `explore` subagents — one per region. Subagents are root-locked and survey the `pytest-design` cards themselves from the in-root mirror `.kimi/mirror/pytest-design/references/`; each receives only its region path and the domain-card paths under `.serena/memories/` (paths, not contents). Follow `subagents-protocol`: no MCP for subagents; timeout ≥ 600 s for a simple region, ≥ 3300 s (55 min) for a complex investigation. Per-subagent contract is in `prompts/BOOTSTRAP.md`.
 4. **Aggregate and validate (main agent).** Collect every subagent's anchors. Validate each anchor slug exists in its declaring card under `.kimi/mirror/pytest-design/references/` (frontmatter `index[].anchor` entry and `[ref: #<slug>]` body heading); drop hallucinated anchors. Spot-check the cited `file:line` evidence. Ensure the stack is covered (async/sync, HTTP, DB, time, CLI, frameworks, isolation). Deduplicate convergence (several cards → one anchor). Add any anchor the subagents missed.
-5. **Write output.** Produce the repository-specific prompt and write it to Serena memory `agent/tests` (full overwrite) per `serena-protocol`: YAML frontmatter, read-back verify, then `just serena-checkpoint` from the project root. The required contents of `agent/tests` are defined in `prompts/BOOTSTRAP.md` (Phase 4).
+5. **Write output.** Produce the repository-specific prompt and write it to Serena memory `agent/tests` (full overwrite) per `serena-protocol` `[ref: #serena-memory-mutation]` (YAML frontmatter, read-back verify, persist). The required contents of `agent/tests` are defined in `prompts/BOOTSTRAP.md` (Phase 4).
 
 ## Output Contract (what lands in `agent/tests`)
 

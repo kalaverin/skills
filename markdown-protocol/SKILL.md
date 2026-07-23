@@ -8,6 +8,8 @@ triggers:
 
 # SKILL: Markdown Authoring Protocol
 
+**STRICTEST RULE: ALL dates and times MUST use UTC ISO 8601 format `YYYY-MM-DDTHH:MM:SSZ` — NO exceptions, NEVER local time, NEVER omit the `Z` suffix, NEVER any other format. Example: `2026-05-23T11:25:54Z`.**
+
 This skill owns how the agent produces Markdown content. It applies to every `.md` file the agent creates or edits, including but not limited to:
 
 - `SKILL.md` files and their YAML frontmatter.
@@ -46,7 +48,7 @@ Write the same content as one continuous source line:
 
 ```markdown
 ---
-description: Canonical skill discovery and auto-loading protocol. Always active. Governs how the agent discovers skill directories, parses SKILL.md frontmatter, evaluates triggers, resolves transitive dependencies via `requires:`, and lazily loads reference sections. This skill is the loader for all other skills.
+description: "Canonical skill discovery and auto-loading protocol. Always active. Governs how the agent discovers skill directories, parses SKILL.md frontmatter, evaluates triggers, resolves transitive dependencies via `requires:`, and lazily loads reference sections. This skill is the loader for all other skills."
 ---
 ```
 
@@ -75,10 +77,44 @@ A line containing only `---` (a Markdown thematic break / horizontal rule) MUST 
 
 Documents in this ecosystem carry YAML frontmatter delimited by `---` lines and are machine-parsed: frontmatter extraction tooling keys on anchored delimiter lines (`^---[ \t]*$` in awk), so a bare body `---` is indistinguishable from a delimiter and falsifies splitter assumptions. Inside fenced code blocks `---` is content, not markup, and remains allowed.
 
-## 4. Hard Rules
+## 5. Anchor Marker Placement (`marker_style`)
+
+For `[ref: #<anchor>]` lazy-load markers (mechanics: `frontmatter-protocol` lazyload extension), two placement forms exist:
+
+- **`tight` (DEFAULT):** the marker sits at column 0 on its own line directly under the section heading, with one blank line below it.
+- **`separate`:** the marker additionally has a blank line above it (blank lines on both sides).
+
+A skill MUST choose **one** form and apply it uniformly across its corpus; a non-default choice is declared in that skill's addendum. Extraction tooling MUST NOT depend on a blank line above the marker. Inline heading markers (`## Heading [ref: #x]`) are a legacy form and MUST NOT be introduced.
+
+## 6. Title and H1
+
+Every frontmatter-carrying document has exactly **one** H1, placed immediately after the frontmatter block. When the frontmatter carries a `title` field (e.g. Serena memories), the H1 text MUST match `title` exactly.
+
+## 7. Hard Rules
 
 - **NEVER** wrap a single sentence or logical line across multiple source lines.
 - **NEVER** use YAML `>` folded blocks just to split a long string over several lines for visual narrowing.
 - **NEVER** place a bare `---` thematic break in a document body outside fenced code blocks; use headings, or `***` when a break is unavoidable.
 - **ALWAYS** write term–description list items in the single-line inline colon form `- `term`: description`; **NEVER** split the description onto an indented continuation line (the HTML-style description-list form).
 - **ALWAYS** prefer a single continuous source line unless a line break carries real structural meaning (new paragraph, list item, code block, etc.).
+- **ALWAYS** place `[ref: #anchor]` markers per `marker_style` (default `tight`: own line directly under the heading, one blank line below); **NEVER** mix forms in one skill or introduce inline heading markers.
+- **ALWAYS** keep exactly one H1 immediately after the frontmatter, matching the `title` field when one exists.
+- **ALWAYS** use YAML double-quoted style for quoted frontmatter values; **NEVER** place escaped double quotes (`\"`) inside them — nested quotations use single quotes.
+
+## 8. Quoting Inside YAML Frontmatter Strings (HARD RULE)
+
+When a frontmatter value must be quoted (it contains `: `, starts with an indicator character, or the owning standard requires quoted style), you MUST use YAML double-quoted style. Inside a double-quoted YAML string, every nested quotation MUST be written with single quotes — NEVER as escaped double quotes (`\"`). Escaped quotes are visual noise, rot quickly under editing, and signal that the author did not control the quoting style.
+
+Forbidden:
+
+```yaml
+description: "... the user asks for: business rules, \"domain events\", ..."
+```
+
+Correct:
+
+```yaml
+description: "... the user asks for: business rules, 'domain events', ..."
+```
+
+Corollary: when authoring prose destined for a double-quoted YAML string, write inner quotations as single quotes from the start. Do not write `"..."` and escape it afterwards.

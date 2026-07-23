@@ -39,7 +39,7 @@ Group items by:
 
 - Header-only refreshes.
 - Content updates per entity.
-- Business-domain reports (`logic/<entity>/...`).
+- Business-domain reports (`repos/<repo>/...`).
 - New findings to route to `bugs/`, `notes/`, `decisions/`, `style/`, `todo/`.
 
 ### Step 3 — Process header-only refreshes in batches
@@ -53,8 +53,7 @@ still correct:
 3. Replace the old header directly at `.serena/memories/<path>.md`, preserving
    all content below the first H1.
 4. Process in batches of 20–40 files using a Python script or direct edits.
-5. After each batch, run `git diff --stat`, review a sample, and run
-   `just serena-checkpoint`.
+5. After each batch, run `git diff --stat`, review a sample, and persist per `serena-protocol` `[ref: #serena-memory-mutation]`.
 
 ### Step 4 — Launch per-memory update subagents
 
@@ -82,34 +81,22 @@ Apply the checklist from `references/06_validation_and_edits.md`
 
 ### Step 6 — Apply edits
 
-- Content rewrites → `write_memory` with refreshed YAML frontmatter. Keep the
-  payload under **25 KB**.
-- Appends → `edit_memory` with `mode: "regex"`, `needle: "\\Z"` and refresh
-  `updated_at`/`commit`/`committed_at`.
-- Partial updates → `edit_memory` with a precise regex and refresh header.
+- Content rewrites, appends, and partial updates → per `serena-protocol` `[ref: #serena-memory-mutation]` (`write_memory` with refreshed YAML frontmatter, `edit_memory` `\Z` append, precise-regex update). Keep `write_memory` payloads under **25 KB**.
 - For large structured outputs, write the full artifact outside Serena memory
   and keep the memory entry compact.
 
 ### Step 7 — Route new findings
 
 For each new finding reported by a subagent, create a focused memory in the
-appropriate namespace per `serena-protocol` `[ref: #serena-findings-traceability]`:
+appropriate namespace per `entity-protocol` `[ref: #entity-namespace-registry]`
+(scope semantics and when-to-record table: `bugs/`, `notes/`, `decisions/`,
+`style/`, `todo/`, `plans/`, `proposals/`, `reports/`, `deprecations/`).
 
-- `bugs/<entity>/<topic>`
-- `notes/<entity>/<topic>`
-- `decisions/<entity>/<topic>`
-- `style/<entity>/<topic>`
-- `todo/<entity>/<topic>`
-- `logic/<entity>/<topic>` for business-domain findings
-
-Before writing any entity-scoped finding, verify `entities/<entity>` exists.
+Before writing any repo-scoped finding, verify `repos/<repo>/overview` exists.
 
 ### Step 8 — Verify and persist
 
-After every mutation:
-
-1. Read the memory back.
-2. Run `just serena-checkpoint` from the workspace root.
+Verify and persist per `serena-protocol` `[ref: #serena-memory-mutation]` (read-back + persistence command from the workspace root).
 
 The agent always persists automatically. Manual user review before commit is
 not required.
