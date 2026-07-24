@@ -1,120 +1,118 @@
 ---
 name: markdown-protocol
-description: MANDATORY skill for Markdown authoring rules. Always active. Governs how the agent writes and edits Markdown files, including Serena memory entries, skill documents, and README files.
+description: "MANDATORY skill for Markdown authoring rules and the Markdown Headings as a Public API standard. Always active. Governs how the agent writes and edits any Markdown file: line discipline, date format, frontmatter pairing, markers and anchors, heading identity (slugs, renames, uniqueness), section shape and size, deprecation, and the errata conformance queue. The full normative standard lives in references/specification.md with rationale in references/rationale.md."
 triggers:
   always: true
-  reason: "Markdown is used for all documentation, skills, and Serena memories."
+  reason: "Markdown is used for all documentation, skills, and Serena memories; every authored document must be machine-addressable."
+version: 0.1.0
 ---
 
-# SKILL: Markdown Authoring Protocol
+# SKILL: Markdown Authoring Protocol & Headings-as-API Standard
+
+This skill owns how the agent produces Markdown content. The complete normative standard lives in `references/specification.md` (load rule sections by their `[ref: #mds-*]` anchors per the pointers below); commentary, rejected alternatives, and evidence live in `references/rationale.md`. The compressed list in §4 summarizes the writer-side rules — the specification is authoritative: always read the pointed section when a rule's application is in doubt.
+
+**Skill addendum (lazyload):** paths in this skill are skill-root-relative; the corpus anchor prefix is `mds-` (domain prefix per the cross-file citation recommendation).
+
+## 1. Date and Language (STRICTEST)
+
+[ref: #mds-date-and-language]
 
 **STRICTEST RULE: ALL dates and times MUST use UTC ISO 8601 format `YYYY-MM-DDTHH:MM:SSZ` — NO exceptions, NEVER local time, NEVER omit the `Z` suffix, NEVER any other format. Example: `2026-05-23T11:25:54Z`.**
 
-This skill owns how the agent produces Markdown content. It applies to every `.md` file the agent creates or edits, including but not limited to:
+All document content (bodies, comments, memory entries) is technical English only.
 
-- `SKILL.md` files and their YAML frontmatter.
-- `README.md` files.
-- Serena memory entries under `.serena/memories/` and at serena MCP calls.
-- Reports, proposals, decisions, and notes.
+## 2. Application (HARDEST)
 
-## 1. No Manual Line Wrapping Inside a Line (HARD RULE)
+[ref: #mds-application]
 
-When a sentence, phrase, or logical line is conceptually a single line of text, you MUST write it as a single continuous line. Do NOT insert manual line breaks (soft wrapping) in the source Markdown to make the file look narrower.
+Every Markdown FILE you write or edit — memory files, skill corpora, READMEs, docs, reports, plans, standards — MUST conform to this skill and to `references/specification.md`. NO exceptions, no partial conformance. Chat output, code comments, and commit messages are exempt EXCEPT the date rule, which always applies.
 
-### 1.1 What is forbidden
+The only legal outs:
 
-Breaking a single sentence or clause across source lines like this:
+1. Fix the deviation before finishing.
+2. Record it in the document's `errata:` list (tracked documents).
+3. A waiver recorded in `agent/allowed_violations`.
 
-```markdown
----
-description: >
-  Canonical skill discovery and auto-loading protocol. Always active. Governs how
-  the agent discovers skill directories, parses SKILL.md frontmatter, evaluates
-  triggers, resolves transitive dependencies via `requires:`, and lazily loads
-  reference sections. This skill is the loader for all other skills.
----
+When in doubt — STOP and ASK the user.
 
-- Inside code blocks, tables, and other block-level structures where newlines
-are semantically required.
-- Between distinct sentences when you intentionally want one sentence per source
-line for diff readability (optional, but never inside a sentence).
-```
+## 3. Authoring Rules
 
-Although YAML `>` folds newlines into spaces, the source still contains manual breaks inside what is logically one string. This is forbidden.
+[ref: #mds-authoring-rules]
 
-### 1.2 Correct form
+- **One logical line = one source line (MUST NOT wrap):** never break a single sentence or logical line across source lines (no soft wrapping, no YAML `>` folds for visual narrowing); breaks only between paragraphs, list items, and block structures.
+- **No bare `---` (MUST NOT):** a line containing only `---` never appears in a document body outside fenced code blocks; separate sections with headings, use `***` when a break is unavoidable. Never substitute `~~~`.
+- **Marker placement (`marker_style`, default `tight`):** a `[ref: #<anchor>]` marker sits at column 0 on its own line directly under the section heading, with one blank line below it; one form per skill, declared when non-default; inline heading markers are legacy and MUST NOT be introduced.
+- **YAML quoting (MUST):** double-quoted YAML strings for quoted frontmatter values; nested quotations use single quotes — never escaped double quotes (`\"`).
+- **Term–description lists (MUST):** single-line inline colon form `- \`term\`: description`; never split the description onto an indented continuation line.
 
-Write the same content as one continuous source line:
+## 4. Headings-as-API Rule List
 
-```markdown
----
-description: "Canonical skill discovery and auto-loading protocol. Always active. Governs how the agent discovers skill directories, parses SKILL.md frontmatter, evaluates triggers, resolves transitive dependencies via `requires:`, and lazily loads reference sections. This skill is the loader for all other skills."
----
-```
+[ref: #mds-headings-api-rule-list]
 
-### 1.3 When line breaks are allowed
+Summary of the writer-side rules of `references/specification.md` (authoritative):
 
-- Between paragraphs.
-- Between list items.
-- Inside code blocks, tables, and other block-level structures where newlines are semantically required.
-- Between distinct sentences when you intentionally want one sentence per source line for diff readability (optional, but never inside a sentence).
+- **Scope:** applies to ANY agent-authored Markdown FILE. → `[ref: #mds-scope-and-conformance-classes]`
+- **Conformance model:** repair, never rejection — tooling indexes everything parseable and marks violations via `errata`. → `[ref: #mds-conformance-model]`
+- **Slugs:** NFC → lowercase → strip punctuation and symbols (P*/S*, backticks included) → whitespace to dash → collapse → strip edges → strip leading digits until the first letter (`3.5 Parser` → `parser`, `RFC 2119` → `rfc-2119`, `2fa` → `fa`); leading numbers are positional and never identity, so sections differing only in numbers collide as `dup_chain` — name sections meaningfully. Writers Latin-only, tooling Unicode-liberal; uniqueness judged post-slugging. → `[ref: #mds-slug-specification]`
+- **Anchors:** `[ref: #<id>]` at column 0 under the heading, one blank line below; kebab-case, unique per document; H1+H2 required, H3+ optional; ids stable forever, never reused (tombstones), never positional. → `[ref: #mds-anchor-specification]`
+- **Single H1 (MUST):** exactly one H1 immediately after frontmatter, matching `title` exactly. → `[ref: #mds-single-h1-matching-title]`
+- **ATX only (MUST):** `#`–`######` forms only; setext forbidden. → `[ref: #mds-atx-headings-only]`
+- **No skipped levels (MUST):** no H1→H3 jumps. → `[ref: #mds-no-skipped-levels]`
+- **Depth unlimited (INFO):** H5/H6 legitimate; anchors required only at H1/H2. → `[ref: #mds-depth-unlimited]`
+- **Preamble (MUST):** no semantic content before the first H2 — only meta-remarks about the document; flat H1-only documents are legal. → `[ref: #mds-preamble-discipline]`
+- **Unique chain (MUST):** slugged heading chain unique per document. → `[ref: #mds-unique-heading-chain]`
+- **Cosmetic differences (INFO):** case/punctuation/emphasis differences are not regulated (slugging erases them). → `[ref: #mds-cosmetic-differences-unregulated]`
+- **Renames forbidden (MUST NOT):** NEVER rename a heading or the title — new thought = new heading; obsolete heading = DEPRECATION (the only path). Closed exemption list: cosmetic (slug-erased) edits; typo fixes with Damerau–Levenshtein distance ≤ 2 AND ≤ 20% of string length; repository-recorded waivers (`agent/allowed_violations`). Anything else = STOP and ask the user. → `[ref: #mds-heading-renames-forbidden]`
+- **Anchors on H1/H2 (MUST).** → `[ref: #mds-anchors-on-h1-h2]`
+- **Plain-text headings (MUST):** no bold/italic/links in heading text; code identifiers MUST be backticked; pure-symbol headings forbidden. → `[ref: #mds-plain-text-headings]`
+- **One section = one thought (SHOULD):** no minimum size, no merging. → `[ref: #mds-one-section-one-thought]`
+- **Writer limit (MUST):** own body above 8192 UTF-8 bytes excluding whitespace → the writer splits into subsections; **queue limit (MUST NOT exceed):** any subtree above 16536 bytes (same count, anchor marker lines excluded) → `errata: over_cap`, indexed whole, never mechanically split. The terms soft/hard limit are forbidden — limits trigger repair, never rejection. → `[ref: #mds-size-limits]`
+- **Deprecation (MUST):** never delete or rename — deprecate with `> **DEPRECATED <YYYY-MM-DDTHH:MM:SSZ>:** <reason>. See [ref: #<replacement>]` placed after the anchor marker with one blank line. → `[ref: #mds-deprecation-instead-of-deletion]`
+- **Fence-aware parsing (MUST, tooling):** heading-lookalikes inside fences are content. → `[ref: #mds-fence-aware-parsing]`
+- **Frontmatter stripping (MUST, tooling):** strip YAML before heading detection; frontmatter is never chunked or hashed. → `[ref: #mds-frontmatter-stripping]`
+- **Errata mechanism (MUST):** authors MUST fix violations they author; encountering an unflagged violation → fix it or flag it in `errata:` (silence is non-conformant); already-flagged docs carry no remediation obligation, but your own writing MUST conform. Writers self-report known deviations and remove a reason ONLY after a complete fix of ALL its instances; unknown reasons are never touched; flow style `errata: [a, b]` is required. → `[ref: #mds-the-errata-mechanism]`
+- **Cross-file citation (SHOULD):** anchor ids globally unique per domain; name the owner when citing across files; domain prefixes (`entity-`, `ra-`, `fm-`, `serena-`, `mds-`). → `[ref: #mds-cross-file-citation]`
 
-### 1.4 Applies to Serena memory too
+## 5. Pre-Write Checklist (MANDATORY)
 
-Serena memory files are Markdown. The same rule applies to their YAML frontmatter and body: do not wrap a single sentence across multiple source lines.
+[ref: #mds-pre-write-checklist]
 
-## 2. Rationale
+Before writing or editing ANY Markdown file, verify:
 
-- **Consistent rendering:** Manual wrapping behaves differently across Markdown parsers and YAML folded-block implementations.
-- **Clean diffs:** Adding or removing a word in a wrapped paragraph reshuffles many lines; a single-line paragraph produces a minimal diff.
-- **Predictability:** One logical line = one source line. There is no ambiguity about whether a newline is a paragraph break or just wrapping.
+- [ ] Exactly one H1 matching `title` (where frontmatter is present).
+- [ ] ATX headings only; no skipped levels.
+- [ ] Anchors on every H1 and H2 heading, correct form and placement.
+- [ ] No heading renames (cosmetic edits and the closed exemption list aside).
+- [ ] Plain-text headings; code identifiers backticked.
+- [ ] Sections within the writer limit (UTF-8 bytes excluding whitespace).
+- [ ] Dates in UTC ISO 8601 with `Z`.
+- [ ] No bare `---` in the body; no manual line wrapping.
 
-## 3. No Bare `---` Thematic Breaks (HARD RULE)
+## 6. Reviewer Role (MANDATORY)
 
-A line containing only `---` (a Markdown thematic break / horizontal rule) MUST NOT appear in a document body outside fenced code blocks. Separate sections with headings; if a visual break is truly unavoidable, use `***` instead.
+[ref: #mds-reviewer-role]
 
-### 3.1 Rationale
+Any agent acting as a Markdown reviewer, rewriter, or validator MUST first load the specification's full frontmatter card index into context and route through it before working. Bounded section extraction uses ONLY the canonical one-liner from `frontmatter-protocol` core §7 (`[ref: #lazy-load-routing]`) — the exact command lives there and is never restated here.
 
-Documents in this ecosystem carry YAML frontmatter delimited by `---` lines and are machine-parsed: frontmatter extraction tooling keys on anchored delimiter lines (`^---[ \t]*$` in awk), so a bare body `---` is indistinguishable from a delimiter and falsifies splitter assumptions. Inside fenced code blocks `---` is content, not markup, and remains allowed.
+## 7. Scope and Exemptions
 
-## 5. Anchor Marker Placement (`marker_style`)
+[ref: #mds-scope-and-exemptions]
 
-For `[ref: #<anchor>]` lazy-load markers (mechanics: `frontmatter-protocol` lazyload extension), two placement forms exist:
+- **Bound:** Markdown FILES — memory files, skill corpora, READMEs, docs, reports, plans, standards.
+- **Exempt:** chat output, code comments, commit messages — EXCEPT the date rule, which always applies.
+- **Waivers:** permitted deviations live ONLY in the `agent/allowed_violations` Serena memory (format: date, rule being waived, scope, rationale); verify it before assuming a rule applies in full force. A custom anchor id (non-slug form) requires a recorded reason.
+- **Repository waivers** never weaken the `errata` recording duty: a permitted deviation is still recorded when it exists.
 
-- **`tight` (DEFAULT):** the marker sits at column 0 on its own line directly under the section heading, with one blank line below it.
-- **`separate`:** the marker additionally has a blank line above it (blank lines on both sides).
+## 8. Relationship to Other Standards
 
-A skill MUST choose **one** form and apply it uniformly across its corpus; a non-default choice is declared in that skill's addendum. Extraction tooling MUST NOT depend on a blank line above the marker. Inline heading markers (`## Heading [ref: #x]`) are a legacy form and MUST NOT be introduced.
+[ref: #mds-relationship-to-other-standards]
 
-## 6. Title and H1
+- `frontmatter-protocol` (tracking extension) owns the tracking field set; `errata` is registered there as an optional top-level field activating by presence alone, with semantics pointing to `references/specification.md`.
+- `frontmatter-protocol` (lazyload extension) owns `[ref: #…]` marker usage for reference corpora — same notation as this standard's anchors, one mental model.
+- Details: `[ref: #mds-relationship-to-other-standards]` in `references/specification.md`.
 
-Every frontmatter-carrying document has exactly **one** H1, placed immediately after the frontmatter block. When the frontmatter carries a `title` field (e.g. Serena memories), the H1 text MUST match `title` exactly.
+## 9. Violation Protocol
 
-## 7. Hard Rules
+[ref: #mds-violation-protocol]
 
-- **NEVER** wrap a single sentence or logical line across multiple source lines.
-- **NEVER** use YAML `>` folded blocks just to split a long string over several lines for visual narrowing.
-- **NEVER** place a bare `---` thematic break in a document body outside fenced code blocks; use headings, or `***` when a break is unavoidable.
-- **ALWAYS** write term–description list items in the single-line inline colon form `- `term`: description`; **NEVER** split the description onto an indented continuation line (the HTML-style description-list form).
-- **ALWAYS** prefer a single continuous source line unless a line break carries real structural meaning (new paragraph, list item, code block, etc.).
-- **ALWAYS** place `[ref: #anchor]` markers per `marker_style` (default `tight`: own line directly under the heading, one blank line below); **NEVER** mix forms in one skill or introduce inline heading markers.
-- **ALWAYS** keep exactly one H1 immediately after the frontmatter, matching the `title` field when one exists.
-- **ALWAYS** use YAML double-quoted style for quoted frontmatter values; **NEVER** place escaped double quotes (`\"`) inside them — nested quotations use single quotes.
-
-## 8. Quoting Inside YAML Frontmatter Strings (HARD RULE)
-
-When a frontmatter value must be quoted (it contains `: `, starts with an indicator character, or the owning standard requires quoted style), you MUST use YAML double-quoted style. Inside a double-quoted YAML string, every nested quotation MUST be written with single quotes — NEVER as escaped double quotes (`\"`). Escaped quotes are visual noise, rot quickly under editing, and signal that the author did not control the quoting style.
-
-Forbidden:
-
-```yaml
-description: "... the user asks for: business rules, \"domain events\", ..."
-```
-
-Correct:
-
-```yaml
-description: "... the user asks for: business rules, 'domain events', ..."
-```
-
-Corollary: when authoring prose destined for a double-quoted YAML string, write inner quotations as single quotes from the start. Do not write `"..."` and escape it afterwards.
+If you produce Markdown violating this skill (wrapped lines, bare `---`, renamed headings, markup in headings, missing anchors on H1/H2, lost `errata`, silence about a known deviation), halt immediately, discard the offending output, reload the pointed rule section from `references/specification.md`, and redo correctly. Deviations you cannot fix now MUST be recorded in the document's `errata:` list; deviations you are unsure about MUST be asked about — record permitted ones in `agent/allowed_violations` per its protocol.

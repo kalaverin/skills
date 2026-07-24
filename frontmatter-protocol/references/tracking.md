@@ -76,7 +76,7 @@ It binds a document to the git revision its content was verified against, and de
 
 A document carrying any of these keys MUST carry the full required set (`--expect-extension tracking`).
 
-The canonical assembled header of a tracked document (the `title`/H1 pairing is owned by `markdown-protocol` §6; `source` names the file the document describes; timestamps per `[ref: #tracking-timestamps]`):
+The canonical assembled header of a tracked document (the `title`/H1 pairing is owned by `markdown-protocol` — `[ref: #mds-single-h1-matching-title]` in `markdown-protocol/references/specification.md`; `source` names the file the document describes; timestamps per `[ref: #tracking-timestamps]`):
 
 ```yaml
 ---
@@ -186,7 +186,7 @@ Every field of the tracked-document header carries exactly one canonical meaning
 
 | Field | Meaning | Source |
 |-------|---------|--------|
-| `title` | Exact duplicate of the H1 title below the frontmatter. | The `# <Title>` line; pairing owned by `markdown-protocol` §6. |
+| `title` | Exact duplicate of the H1 title below the frontmatter. | The `# <Title>` line; pairing owned by `markdown-protocol` `[ref: #mds-single-h1-matching-title]`. |
 | `created_at` | Creation timestamp (immutable). | `[ref: #tracking-timestamps]`. |
 | `updated_at` | Last-mutation timestamp, refreshed on every edit. | `[ref: #tracking-timestamps]`. |
 | `repo` | Domain entity the document is about: `<repo-name>` or `generic`. | Semantics owned by `entity-protocol` `[ref: #entity-repo-field]`. |
@@ -212,6 +212,8 @@ Common optional tags:
 | `due_date` | TODOs, plans | `due_date: 2026-07-10T00:00:00Z` |
 
 Agents add tags based on the document's nature and project conventions, never inventing tags without purpose.
+
+**Standardized optional keys:** `errata` — the conformance repair queue of the *Markdown Headings as a Public API* standard; its semantics and the reason enum live in `markdown-protocol/references/specification.md` (`[ref: #mds-the-errata-mechanism]`). Registered here as an optional top-level field; agents write and shrink it per that standard's recording rule (record known deviations, shrink on fix, never silently drop unresolved reasons). **Independent activation:** `errata` activates its rules by its presence ALONE — documents without any git-tracking keys (e.g. files outside tracking scope) may conformantly carry it.
 
 ## Scope
 

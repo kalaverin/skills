@@ -51,7 +51,7 @@ Only include is always loaded (it evaluates every skill header); the lazy-load r
 [ref: #fm-delimiter-law]
 
 - Delimiters MUST be matched as **anchored whole lines**: regex `^---[ \t]*$` (in awk: `/^---[ \t]*$/`).
-- You MUST NEVER split a file on the bare substring `---`. Bodies legitimately contain `---` inside code, comments, and horizontal rules; a naive split truncates the frontmatter and produces false YAML errors.
+- You MUST NEVER split a file on the bare substring `---`. Bodies legitimately contain `---` inside code blocks and comments; a naive split truncates the frontmatter and produces false YAML errors. Outside code blocks a bare `---` line is FORBIDDEN as a thematic break (`markdown-protocol`: use `***` instead) — and `~~~` is never an alternative, since it collides with fenced-code delimiters in CommonMark.
 - This law applies to every reader: shell one-liners, scripts, validators, and manual extraction alike.
 
 ## 5. How to Write (binding)
@@ -91,7 +91,7 @@ fd <FD-ARGS> 2>/dev/null | LC_ALL=C sort -u | while IFS= read -r f; do printf '\
 
 This section is the COMPLETE instruction set for **consuming** a conformant reference corpus (`references/**/*.md` carrying `subject`+`index` frontmatter per the lazyload extension). Authoring or validating such corpora requires the lazyload extension (§8) — a reader needs only this section.
 
-**Toolbox discipline (HARD):** the canonical one-liners in §6 and this section are the ONLY sanctioned introspection tools. For every task they address — batch frontmatter extraction, subject maps, marker indexes, anchor-section extraction — the agent MUST use them exactly as written and MUST NOT hand-roll alternatives (`head`, `tail`, blind `rg -A N`, ad-hoc `awk`). If a canonical one-liner fails or returns unexpected output for its task, **STOP immediately and ASK the user** with the exact command and its output — do NOT fall back to ad-hoc tooling and do NOT improvise a workaround: the toolbox must be fixed without data loss. **Empty output on an existing file means 'not found' — STOP and ASK before proceeding; a command error or malformed output means STOP and report. No silent continuation in either case, no exceptions.**
+**Toolbox discipline (HARD):** the canonical one-liners in §6 and this section are the ONLY sanctioned introspection tools. For every task they address — batch frontmatter extraction, subject maps, marker indexes, anchor-section extraction — the agent MUST use them exactly as written and MUST NOT hand-roll alternatives (`head`, `tail`, blind `rg -A N`, ad-hoc `awk`). **Single source of truth (HARD):** frontmatter-protocol is the ONLY home of introspection one-liners; nothing outside this skill may restate, copy, or paraphrase them — consumers either run the canonical command exactly as written here, or reference it by anchor (`[ref: #fm-read-primitive]`, `[ref: #lazy-load-routing]`). A restated introspection one-liner anywhere else is non-conformant: replace it with the anchor pointer on sight. If a canonical one-liner fails or returns unexpected output for its task, **STOP immediately and ASK the user** with the exact command and its output — do NOT fall back to ad-hoc tooling and do NOT improvise a workaround: the toolbox must be fixed without data loss. **Empty output on an existing file means 'not found' — STOP and ASK before proceeding; a command error or malformed output means STOP and report. No silent continuation in either case, no exceptions.**
 
 **Mental model.** A reference file is read in two stages: (1) **routing** — decide from frontmatter alone WHICH sections to load; (2) **loading** — read only the selected `[ref: #<anchor>]` sections. Never read a whole reference file to decide relevance.
 
@@ -145,6 +145,7 @@ for a in <A1> <A2> ...; do printf '\n### [ref: #%s]\n' "$a"; awk -v a="$a" '/^``
 2. **Validator expectation (planned).** The validator (`scripts/validate_frontmatter.py`) is planned to accept `--expect-extension <name>` to hard-require an extension: it will then error on incomplete or contradictory extension field sets (e.g. `branch` without `commit`). Until the flag lands (tracked in the project backlog), only the lazyload profile is enforced mechanically; the other extensions conform editorially.
 3. **Skill-declared extras.** A skill MAY declare additional top-level keys for its own files. Every extra key MUST be declared and documented in that skill's `SKILL.md` (see lazyload §2 for the reference-corpus case).
 4. Extensions MUST NOT contradict the core. A skill addendum MUST NOT contradict an extension it uses.
+5. **`errata` is a cross-cutting optional key** (the conformance repair queue of the *Markdown Headings as a Public API* standard): its rules activate by its presence ALONE, independent of any extension's keys — documents without git-tracking fields (e.g. files outside tracking scope) may conformantly carry it. Its semantics and reason enum live in `markdown-protocol/references/specification.md` (`[ref: #mds-the-errata-mechanism]`).
 
 ## 10. Conformance and Validator
 

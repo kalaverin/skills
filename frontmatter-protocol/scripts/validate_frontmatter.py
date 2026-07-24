@@ -242,7 +242,7 @@ def validate_file(path: Path, allowed_top_keys: set, aips: bool) -> int:
                 f"aips mismatch: frontmatter {sorted(set(aips))} vs headings {sorted(heading_aips)}"
             )
 
-    refs = re.findall(r"^\[ref: #([A-Za-z0-9-]+)\]\s*$", body, re.M)
+    refs = re.findall(r"^\[ref: #([A-Za-z0-9-]+)\]\s*$", clean_body, re.M)
 
     problem_counts: list[int] = []
     for i, card in enumerate(cards):
