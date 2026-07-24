@@ -56,7 +56,24 @@ Pipeline (the bulk-import carve-out of `serena-protocol` `[ref: #serena-memory-m
 
 ## 4. What Counts as a Standard
 
-A versioned technical text issued by an authoritative body with a stable URL. Families (the `<family>` path segment): `rfc` (IETF RFC), `std` (IETF STD), `bcp` (IETF BCP), `pep` (Python PEP), `aip` (Google AIP), `owasp` (OWASP cheat sheets, ASVS, API Top 10), `w3c` (W3C REC), `whatwg` (WHATWG living standards), `zmpc` (ZeroMQ RFC).
+A versioned technical text issued by an authoritative body with a stable URL. Families (the `<family>` path segment): `rfc` (IETF RFC), `std` (IETF STD), `bcp` (IETF BCP), `pep` (Python PEP), `aip` (Google AIP), `owasp` (OWASP cheat sheets, ASVS, API Top 10), `w3c` (W3C REC), `whatwg` (WHATWG living standards), `zmpc` (ZeroMQ RFC), `cwe` (MITRE CWE entries).
+
+### Fetch URL Registry
+
+The canonical fetch URL pattern for every registered family. When archiving a standard (§3), fetch from THESE URLs; do not invent mirrors or alternate hosts.
+
+| Family | Authority | Fetch URL pattern |
+|---|---|---|
+| `rfc` | IETF RFC Editor | `https://www.rfc-editor.org/rfc/rfc<N>.txt` |
+| `std` | IETF RFC Editor | `https://www.rfc-editor.org/std/std<N>.txt` (meta-document over constituent RFCs) |
+| `bcp` | IETF RFC Editor | `https://www.rfc-editor.org/bcp/bcp<N>.txt` (meta-document over constituent RFCs) |
+| `pep` | Python (PSF) | `https://peps.python.org/pep-<NNNN>/` |
+| `aip` | Google | `https://google.aip.dev/<N>` |
+| `owasp` | OWASP Foundation | cheat sheets: `https://cheatsheetseries.owasp.org/cheatsheets/<Name>.html`; API Top 10: `https://owasp.org/API-Security/editions/2023/en/0x11-t10/`; ASVS: `https://owasp.org/www-project-application-security-verification-standard/` |
+| `w3c` | W3C | `https://www.w3.org/TR/<shortname>/` |
+| `whatwg` | WHATWG | `https://<spec>.spec.whatwg.org/` (e.g. `html`, `url`, `fetch`) |
+| `zmpc` | ZeroMQ community | `https://rfc.zeromq.org/spec/<N>/` |
+| `cwe` | MITRE | `https://cwe.mitre.org/data/definitions/<N>.html` |
 
 - **Full body only:** an archive entry is the complete standard text (raw download or `kagi_extract`). `kagi_summarizer` output is a derivative and is NEVER archived. If a summary sufficed for the answer but the document is a standard, fetch the full body for the archive anyway.
 - **Not standards:** blogs, tutorials, vendor documentation (e.g. Temporal docs), marketing pages — never archived here.
