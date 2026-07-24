@@ -60,7 +60,7 @@ Optional but important:
 
 - `timeout`: minimum 60 seconds (1 minute) for simple tasks; minimum 3600 seconds (60 minutes maximum) for complex investigations or large code changes.
 - `run_in_background`: default `false`. Use `true` only when the task can continue independently, you do not need the result immediately, and there is a clear benefit to returning control before it finishes.
-- `model`: override only when the task specifically needs a different model.
+- `model`: default to `kimi-code/k3-256k` for every subagent launch. Override with a stronger model only when the task specifically needs it.
 - `resume`: reuse an existing `agent_id` when the new task clearly continues prior work or when that instance already holds relevant context.
 
 ## 5. Context Passing
@@ -163,6 +163,7 @@ Use this checklist before every `Agent` call.
 - [ ] `subagent_type` matches the task.
 - [ ] `prompt` is self-contained and specific.
 - [ ] `timeout` is at least 60s for simple tasks or maximum 3600s for complex tasks.
+- [ ] `model` is `kimi-code/k3-256k` unless the task specifically needs a different model.
 - [ ] `run_in_background` is `true` only when the task can proceed independently and returning early is useful.
 - [ ] `resume` is used only when continuing prior work on the same `agent_id`.
 
