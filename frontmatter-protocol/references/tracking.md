@@ -87,7 +87,7 @@ repo: <String; "generic" or <repo-name>>
 branch: <String; current git branch>
 commit: <String; 7-char short hash>
 committed_at: <UTC ISO 8601; timestamp of the commit referenced by `commit`>
-source: <String; project-relative path with optional line range>
+source: <String; project-relative path with optional line range, or the origin URL for archived external documents>
 ---
 
 # <Title>
@@ -193,7 +193,7 @@ Every field of the tracked-document header carries exactly one canonical meaning
 | `branch` | Current git branch of the resolved repository. | `[ref: #tracking-git-commands]`. |
 | `commit` | Short hash (7 chars) of the last verified revision. | `[ref: #tracking-git-commands]`. |
 | `committed_at` | Timestamp of the commit referenced by `commit`, UTC ISO 8601 with `Z`. | `[ref: #tracking-git-commands]`. |
-| `source` | Project-relative path to the relevant file or entity directory, with optional line range (`path:lineno..lineno`). | The file/directory the document describes (domain-defined). |
+| `source` | Project-relative path to the relevant file or entity directory, with optional line range (`path:lineno..lineno`); for archived external documents — the origin URL (the URL IS the source of that content). | The file/directory/URL the document describes or was taken from (domain-defined). |
 
 **Optional tags.** Agents MAY add additional YAML fields (tags) to the frontmatter when they provide useful metadata for filtering, routing, or context. Optional tags MUST:
 

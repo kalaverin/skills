@@ -62,6 +62,8 @@ Before creating any repo-scoped memory (`bugs/<repo>/...`, `decisions/<repo>/...
 
 All Serena memory namespaces/scopes are defined HERE — the single normative source for the entire skills repository. No other file may define, restate, or own a scope.
 
+**Scope creation (HARD, no deviations, no agent skips):** any new scope is born ONLY with explicit user approval. The agent that believes a new scope is needed MUST STOP, present the case and the options to the user, and wait for an explicit decision. Two approved forms exist: (1) **registered scopes** — durable, cross-project; this registry itself is amended (the user approves the edit); (2) **session scopes** — workspace-local, approved in conversation and recorded in `agent/rules` (a compressed note: scope exists, what it holds, when to read it at minimum); session scopes are NEVER added to this registry. Writing to a scope that is neither registered nor user-approved is a HARD FAIL.
+
 | Scope | Structure | Purpose |
 |-------|-----------|---------|
 | `agent/` | `agent/<topic>` | Agent behavior rules, deprecations, contradictions, known issues, user preferences. |
@@ -70,6 +72,7 @@ All Serena memory namespaces/scopes are defined HERE — the single normative so
 | `prompts/` | `prompts/<topic>` | Orchestration prompts for root/subagent workflows. |
 | `templates/` | `templates/<topic>` | Repo-card templates. |
 | `repos/` | `repos/<repo>/...` | Canonical repo cards (`overview`) and repo analysis (`business`, `dependencies`, `glossary`, split-model subdirs). No findings. |
+| `standard/` | `standard/<family>/<family>_<id>.md` | Fetch-once archive of authoritative standards (full raw bodies). Families: `rfc`, `std`, `bcp`, `pep`, `aip`, `owasp`, `w3c`, `whatwg`, `zmpc`. |
 | Findings scopes | `<domain>/<repo>/<topic>` | Repo-scoped findings (`bugs`, `decisions`, `notes`, `style`, `todo`, `plans`, `proposals`, `reports`, `deprecations`) — semantics in the subsection below. |
 
 **Strict routing rules:**
@@ -83,6 +86,7 @@ All Serena memory namespaces/scopes are defined HERE — the single normative so
 - `guide/<topic>`: Manuals, onboarding docs, and reference literature for users.
 - `artifacts/<topic>`: Artifacts produced during agent work (diagrams, exported data, intermediate dumps).
 - `playbook/<topic>`: Agent-facing instructions, scripts, and repeatable procedures.
+- `standard/<family>/<family>_<id>.md`: Fetch-once archive of authoritative standards — written ONLY by the archival pipeline owned by the `read-for-comments` skill. Project-wide (`repo: generic`), exempt from the prerequisite gate. Raw bodies stay untouched below the synthetic H1.
 
 ### Findings scopes: semantics and when to record
 
