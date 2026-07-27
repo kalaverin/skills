@@ -1,10 +1,10 @@
 ---
-subject: "Security misconfiguration detection reference for SAST subagents; three-phase detection prompt, `API8:2023` mapping, risk summary, vulnerability conditions, fourteen detection rules incl. modern headers, corrected Log4j `2.17.1`, per-stack/infra recipes — Flask, Django, `FastAPI`, Express, Spring, ASP.NET, Rails, Go, Nginx, Apache, Kubernetes, Docker, Terraform, CloudFormation — execution with zero-candidate early-exit gate, hardening checklist, uniform processing, references, reminders."
+subject: "Security misconfiguration detection reference for SAST subagents; shared-protocol execution parameters, `API8:2023` mapping, risk summary, vulnerability conditions, fourteen detection rules incl. modern headers, corrected Log4j `2.17.1`, per-stack/infra recipes — Flask, Django, `FastAPI`, Express, Spring, ASP.NET, Rails, Go, Nginx, Apache, Kubernetes, Docker, Terraform, CloudFormation — hardening checklist, uniform processing, references, reminders."
 index:
   - anchor: misconfiguration-detection
-    what: "Focused security-misconfiguration detection role using the three-phase subagent approach — recon for configuration files, header definitions, error handlers, and dependency manifests, batched verify of misconfiguration indicators, merge — gated on the architecture report."
+    what: "Focused security-misconfiguration detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon for configuration files, header definitions, error handlers, and dependency manifests, batched verify of misconfiguration indicators, merge — gated on the architecture report."
     problem: "Codebase and deployment configuration need systematic sweep of every config artifact, header chain, error handler, and manifest for insecure defaults, yet unstructured hunting misses proxy-stripped headers and buries reviewers in unverified candidates; detection orchestration, hardening audit, discovery discipline, candidate flood, coverage goal, methodical triage, shadow configs."
-    use_when: "Misconfiguration scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Misconfiguration scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual hardening knowledge is needed, not execution."
     expected: "Confirmed misconfiguration findings consolidated into one module report with false positives filtered."
   - anchor: misconfiguration-owasp-mapping
@@ -22,15 +22,15 @@ index:
   - anchor: misconfiguration-vulnerable-vs-secure-examples
     what: "Per-stack vulnerable/secure recipe pairs — Flask, Django, `FastAPI`, Express with `helmet`, Spring Boot `SecurityFilterChain`, ASP.NET Core `UseHsts`, Rails `Rack::Cors`, Go `net/http`, Nginx, Apache, Kubernetes `securityContext`, Docker, Terraform, CloudFormation — covering CORS restriction, header injection, TLS hardening, generic errors, non-root containers, private buckets, least-privilege IAM."
     problem: "Misconfiguration idioms differ per framework and infra layer, and generic hardening rules miss stack-specific debug switches, middleware quirks, and template defaults that decide exploitability; stack recipes, secure idioms, precise detection, pattern matching, framework diversity, config quirks, handler review, exploit signal."
-    use_when: "Target project uses one of the covered stacks or infra tools; reviewing config files, manifests, or middleware setup for concrete idioms; verify batch subagent needs `[TECH-STACK EXAMPLES]` selection."
+    use_when: "Target project uses one of the covered stacks or infra tools; reviewing config files, manifests, or middleware setup for concrete idioms; verify stage applies the file's per-stack examples when judging candidates."
     avoid_when: "Conceptual indicator catalog is the question — see the detection-rules card; dependency-version CVE depth belongs to `23-dependencies.md`; undocumented asset discovery belongs to `18-inventory.md`."
     expected: "Stack-specific misconfigurations confirmed with matching secure counterpart; hardened configs verified per framework or platform."
   - anchor: misconfiguration-execution
-    what: "Three-phase execution: recon discovering configuration artifacts with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three with four-tier classification (`Vulnerable`, `Likely Vulnerable`, `Not Vulnerable`, `Needs Manual Review`) and dynamic-test blocks, orchestrator merge grouped by category with intermediate-file cleanup."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the misconfiguration scan execution; dispatching recon, verify batches, or merge; reviewing any phase output, classification verdict, or the early-exit decision."
-    avoid_when: "Conceptual conditions are the need — see the `API8:2023` mapping card; concrete stack idioms wanted — see the examples card."
-    expected: "All phases run with shared architecture context into one consolidated report grouped by category; intermediates deleted."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of configuration artifacts and misconfiguration indicators across twelve search groups, per-candidate verify checklist, classification rubric, and the finding-field set with category grouping and dynamic tests."
+    problem: "Misconfiguration hunting without precise domain criteria lets recon miss proxy-stripped headers and shadow configs while verify applies generic checklists that overlook stack and infra quirks; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current misconfiguration vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual conditions belong to the `API8:2023` mapping card; concrete stack idioms wanted — see the examples card."
+    expected: "Stage subagents apply exact misconfiguration criteria without inheriting generic templates."
   - anchor: misconfiguration-prevention-guidance
     what: "Layered hardening checklist: repeatable environment hardening, debug and verbose features off, consistent security headers on every response, HTTPS everywhere with modern TLS, restricted CORS, minimal verbs, default accounts removed, non-root containers with pinned images and least-privilege IAM, patched components with lockfiles, JNDI disabled, `Cache-Control: no-store` on PII, uniform request processing across the chain, restricted content types, enforced response schemas, CI/CD scanners (Checkov, tfsec, Trivy, Snyk, Mozilla Observatory)."
     problem: "Remediation advice scattered across guides leaves gaps, and one missed control lets wildcard origins, debug pages, or public buckets persist after fixes ship; remediation checklist, defense layers, control mapping, gap elimination, hardening steps, closure guarantee, mitigation breadth, fix completeness."
@@ -55,7 +55,7 @@ index:
 
 [ref: #misconfiguration-detection]
 
-You are performing a focused security assessment to find **security misconfiguration** vulnerabilities in a codebase and its deployment configuration. This skill uses a three-phase approach with subagents: **recon** (find configuration files, header definitions, error handlers, and dependency manifests), **batched verify** (check each misconfiguration indicator in parallel batches of 3), and **merge** (consolidate results).
+You are performing a focused security assessment to find **security misconfiguration** vulnerabilities in a codebase and its deployment configuration. This skill uses a three-stage pipeline with subagents: **recon** (find configuration files, header definitions, error handlers, and dependency manifests), **batched verify** (check each misconfiguration indicator in parallel batches of 3), and **merge** (consolidate results).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -885,309 +885,164 @@ Resources:
 ## Execution
 [ref: #misconfiguration-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/20_misconfiguration.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-> **Subagent constraint**: All subagents must **investigate only**. They are prohibited from modifying project source files, committing changes, opening pull requests, or running destructive commands against the repository or its environments.
+### Recon catalog
 
-### Phase 1: Recon — Find Configuration Artifacts
+Search for these configuration artifacts and misconfiguration indicators:
 
-Launch a subagent with the following instructions:
+1. **Web / application server configuration**:
+   - Nginx: `nginx.conf`, `sites-available/*`, `sites-enabled/*`
+   - Apache: `httpd.conf`, `.htaccess`, `apache2.conf`, `sites-enabled/*`
+   - Application frameworks: `settings.py`, `application*.yml`, `config/*.py`, `app.js`, `server.js`, `Program.cs`, `Startup.cs`
 
-> **Goal**: Find configuration files, header definitions, error handlers, and dependency manifests that may indicate security misconfiguration. Write results to `{{ REPORTS_ROOT }}/20_recon.md`.
->
-> **Constraint**: Investigate only. Do not modify project source files or open pull requests.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, frameworks, web servers, container orchestration, and cloud services.
->
-> **What to search for**:
->
-> 1. **Web / application server configuration**:
->    - Nginx: `nginx.conf`, `sites-available/*`, `sites-enabled/*`
->    - Apache: `httpd.conf`, `.htaccess`, `apache2.conf`, `sites-enabled/*`
->    - Application frameworks: `settings.py`, `application*.yml`, `config/*.py`, `app.js`, `server.js`, `Program.cs`, `Startup.cs`
->
-> 2. **Security header definitions**:
->    - Look for `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Cache-Control`, `Pragma`
->    - Framework middleware or `after_request` / `setHeaders` equivalents
->    - Web server `add_header` / `Header` directives
->
-> 3. **CORS configuration**:
->    - Wildcard origins (`*`), reflected origins, `Access-Control-Allow-Credentials: true` with wildcard
->    - Flask-CORS, Django-CORS-Headers, Express `cors`, Spring `@CrossOrigin`, FastAPI `CORSMiddleware`, Rails `Rack::Cors`, etc.
->
-> 4. **TLS / HTTPS configuration**:
->    - `ssl_protocols`, `SSLProtocol`, `ssl_ciphers`, `SSLCipherSuite`
->    - `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`
->    - Hard-coded `http://` URLs or disabled certificate validation
->
-> 5. **Error handlers and debug mode**:
->    - Global exception handlers that return `stack`, `traceback`, or raw exception messages
->    - `DEBUG=True`, `debug=True`, `NODE_ENV=development`, `app.Environment.IsDevelopment()`, `app.run(debug=True)` in production contexts
->    - Detailed error pages or developer exception pages
->
-> 6. **Unnecessary features / HTTP verbs**:
->    - `TRACE`, `OPTIONS`, `HEAD`, `PUT`, `DELETE` enabled without need
->    - Admin panels, debug endpoints, or health endpoints exposed publicly
->
-> 7. **Container / orchestration configuration**:
->    - `Dockerfile`, `docker-compose.yml`, Kubernetes manifests, Helm charts
->    - `runAsRoot`, `privileged: true`, missing resource limits, `latest` image tags
->    - Missing `NetworkPolicy`, overly broad `Service` or `Ingress` rules
->
-> 8. **Dependency manifests**:
->    - `requirements.txt`, `Pipfile.lock`, `package.json`, `package-lock.json`, `yarn.lock`
->    - `pom.xml`, `build.gradle`, `go.mod`, `Cargo.toml`, `Gemfile.lock`
->    - Outdated or known-vulnerable versions (note the version and package name)
->
-> 9. **Cloud / platform configuration**:
->    - Terraform, CloudFormation, Pulumi, ARM templates
->    - S3 bucket ACLs, IAM policies, security group rules, overly permissive roles
->
-> 10. **Log4j-style JNDI / lookup injection indicators**:
->    - Logging libraries with JNDI or placeholder lookup features (Log4j 2.x before 2.17.1, Log4j 1.x JMSAppender; Logback has no equivalent message-lookup feature)
->    - Request headers, query parameters, or bodies logged without sanitization
->    - Outbound network policies allowing unrestricted egress
->
-> 11. **HTTP request smuggling / desync indicators**:
->    - Conflicting `Content-Length` / `Transfer-Encoding` handling
->    - Header normalization differences across proxies and backends
->    - Path/encoding inconsistencies
->
-> 12. **Content-type and schema validation**:
->    - Endpoints accepting `*/*` or arbitrary content types
->    - Missing OpenAPI / JSON Schema / protobuf response schemas
->    - Error handlers returning unvalidated objects
->
-> **What to ignore**:
-> - Local development-only configuration that is clearly not used in production
-> - Static asset serving where no sensitive data is involved
-> - Third-party dependency source code (focus on the project's own configuration)
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/20_recon.md`:
->
-> ```markdown
-> # Security Misconfiguration Recon: [Project Name]
->
-> ## Summary
-> Found [N] configuration artifacts or indicators that require verification.
->
-> ## Candidates
->
-> ### 1. [Descriptive name]
-> - **Category**: [headers / cors / tls / errors / verbs / defaults / patches / container / cloud / jndi / smuggling / content-type / schema]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Issue summary**: [One-line description]
-> - **Relevant snippet**:
->   ```
->   [relevant code or config]
->   ```
->
-> [Repeat for each candidate]
-> ```
+2. **Security header definitions**:
+   - Look for `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Cache-Control`, `Pragma`
+   - Framework middleware or `after_request` / `setHeaders` equivalents
+   - Web server `add_header` / `Header` directives
 
-### After Phase 1: Check for Candidates Before Proceeding
+3. **CORS configuration**:
+   - Wildcard origins (`*`), reflected origins, `Access-Control-Allow-Credentials: true` with wildcard
+   - Flask-CORS, Django-CORS-Headers, Express `cors`, Spring `@CrossOrigin`, FastAPI `CORSMiddleware`, Rails `Rack::Cors`, etc.
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/20_recon.md`. If the recon found **zero misconfiguration candidates** (the summary reports "Found 0" or the candidates section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/20_misconfiguration.md`, **delete** `{{ REPORTS_ROOT }}/20_recon.md`, and stop:
+4. **TLS / HTTPS configuration**:
+   - `ssl_protocols`, `SSLProtocol`, `ssl_ciphers`, `SSLCipherSuite`
+   - `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`
+   - Hard-coded `http://` URLs or disabled certificate validation
 
-```markdown
-# Security Misconfiguration Analysis Results: [Project Name]
+5. **Error handlers and debug mode**:
+   - Global exception handlers that return `stack`, `traceback`, or raw exception messages
+   - `DEBUG=True`, `debug=True`, `NODE_ENV=development`, `app.Environment.IsDevelopment()`, `app.run(debug=True)` in production contexts
+   - Detailed error pages or developer exception pages
 
-## Executive Summary
-- Candidates analyzed: 0
-- Scope reviewed: [configuration artifacts across headers, CORS, TLS, errors, defaults, containers, cloud, and dependency manifests reviewed]
-- No security misconfiguration candidates were found: no missing security headers, permissive CORS, weak TLS, verbose errors, insecure defaults, container/cloud misconfigurations, or known-vulnerable dependency versions identified in the reviewed scope.
-```
+6. **Unnecessary features / HTTP verbs**:
+   - `TRACE`, `OPTIONS`, `HEAD`, `PUT`, `DELETE` enabled without need
+   - Admin panels, debug endpoints, or health endpoints exposed publicly
 
-Only proceed to Phase 2 if Phase 1 found at least one candidate.
+7. **Container / orchestration configuration**:
+   - `Dockerfile`, `docker-compose.yml`, Kubernetes manifests, Helm charts
+   - `runAsRoot`, `privileged: true`, missing resource limits, `latest` image tags
+   - Missing `NetworkPolicy`, overly broad `Service` or `Ingress` rules
 
-### Phase 2: Verify — Check Misconfiguration Indicators (Batched)
+8. **Dependency manifests**:
+   - `requirements.txt`, `Pipfile.lock`, `package.json`, `package-lock.json`, `yarn.lock`
+   - `pom.xml`, `build.gradle`, `go.mod`, `Cargo.toml`, `Gemfile.lock`
+   - Outdated or known-vulnerable versions (note the version and package name)
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/20_recon.md` and split the candidates into **batches of up to 3 candidates each**. Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned candidates and writes results to its own batch file.
+9. **Cloud / platform configuration**:
+   - Terraform, CloudFormation, Pulumi, ARM templates
+   - S3 bucket ACLs, IAM policies, security group rules, overly permissive roles
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+10. **Log4j-style JNDI / lookup injection indicators**:
+   - Logging libraries with JNDI or placeholder lookup features (Log4j 2.x before 2.17.1, Log4j 1.x JMSAppender; Logback has no equivalent message-lookup feature)
+   - Request headers, query parameters, or bodies logged without sanitization
+   - Outbound network policies allowing unrestricted egress
 
-1. Read `{{ REPORTS_ROOT }}/20_recon.md` and count the numbered candidate sections (### 1., ### 2., etc.).
-2. Divide them into batches of up to 3. For example, 8 candidates → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those candidate sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned candidates.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/20_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework and infrastructure from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+11. **HTTP request smuggling / desync indicators**:
+   - Conflicting `Content-Length` / `Transfer-Encoding` handling
+   - Header normalization differences across proxies and backends
+   - Path/encoding inconsistencies
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+12. **Content-type and schema validation**:
+   - Endpoints accepting `*/*` or arbitrary content types
+   - Missing OpenAPI / JSON Schema / protobuf response schemas
+   - Error handlers returning unvalidated objects
 
-> **Goal**: Verify the following security misconfiguration candidates and determine whether each is actually vulnerable. Write results to `{{ REPORTS_ROOT }}/20_batch_[N].md`.
->
-> **Constraint**: Investigate only. Do not modify project source files or open pull requests.
->
-> **Your assigned candidates** (from the recon phase):
->
-> [Paste the full text of the assigned candidate sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the runtime environment, framework conventions, and deployment topology.
->
-> **Security Misconfiguration Reference — What to look for**:
->
-> Security misconfiguration occurs when any layer of the API stack lacks secure hardening, uses insecure defaults, exposes unnecessary features, or leaks information. Focus on issues that are observable from configuration or code.
->
-> **What is IN scope**:
-> - Missing or incorrectly set security headers (`HSTS`, `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, `Cache-Control`)
-> - Overly permissive CORS (wildcard origin, reflected origin, credentials with wildcard)
-> - Missing, weak, or inconsistent TLS
-> - Verbose error messages, stack traces, or debug information returned to clients
-> - Unnecessary HTTP verbs or features enabled
-> - Insecure framework defaults, debug mode in production, default credentials
-> - Insecure container/orchestration/cloud settings (root containers, privileged mode, open buckets, broad IAM)
-> - Missing patches or outdated components with known vulnerabilities
-> - Log4j-style JNDI / lookup injection via logged request data
-> - Missing `Cache-Control` on sensitive responses
-> - HTTP request smuggling / desync indicators (CWE-444)
-> - Overly permissive content-type / data-format handling
-> - Missing OpenAPI / JSON Schema response validation, including error responses
-> - Verbose or debug logging that leaks sensitive data or expands untrusted input
->
-> **What is NOT in scope for this scan**:
-> - Missing authentication (route has no auth at all) → covered by the unauthenticated access scan
-> - Business logic flaws → covered by the business logic scan
-> - Injection vulnerabilities in request parameters → covered by injection scans
->
-> **Vulnerable vs. Secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **For each candidate, check**:
->
-> 1. **Is the configuration actually used in the production path?**
->    - Is there a separate production config that overrides the finding?
->    - Is the file in a `dev/`, `test/`, or `local/` directory that is excluded from production?
->
-> 2. **Headers**
->    - Are the expected security headers defined anywhere (application code, middleware, or reverse proxy)?
->    - Are they sent on **all** responses, including errors?
->    - Is `Cache-Control` set correctly on sensitive responses?
->
-> 3. **CORS**
->    - Is the allowed origin a wildcard (`*`)?
->    - Does the server reflect the request `Origin` without validation?
->    - Is `Access-Control-Allow-Credentials: true` combined with a wildcard or untrusted origin?
->
-> 4. **TLS**
->    - Is HTTPS enforced (HSTS, redirects, secure cookies)?
->    - Are weak protocols/ciphers enabled?
->    - Is there mixed HTTP/HTTPS traffic or disabled certificate validation?
->
-> 5. **Error handling**
->    - Do error responses include stack traces, SQL, internal paths, or framework versions?
->    - Is debug mode enabled in a production-looking configuration?
->
-> 6. **Features and defaults**
->    - Are unnecessary HTTP verbs enabled?
->    - Are there debug endpoints, admin panels, or default accounts exposed?
->    - Are framework/orchestrator defaults hardened?
->
-> 7. **Dependencies and patches**
->    - Is the component version known to be vulnerable? (If yes, cite the CVE if known.)
->    - Is there a lockfile ensuring reproducible builds?
->
-> 8. **JNDI / lookup injection**
->    - Are logging libraries with JNDI/lookup features used in vulnerable versions?
->    - Are request headers or parameters logged without sanitization?
->    - Is outbound egress permissive?
->
-> 9. **HTTP request smuggling / desync**
->    - Are there conflicting `Content-Length` / `Transfer-Encoding` behaviors?
->    - Do proxies and backends normalize headers differently?
->
-> 10. **Content-type and schema validation**
->    - Do endpoints accept arbitrary content types?
->    - Are response schemas (including error responses) defined and enforced?
->
-> 11. **Verbose logging**
->    - Is debug logging enabled in production?
->    - Are request/response bodies or sensitive fields logged verbatim?
->
-> **Classification**:
-> - **Vulnerable**: A clear misconfiguration is present and exploitable in the production path.
-> - **Likely Vulnerable**: A misconfiguration indicator exists, but context (e.g., a compensating proxy control) prevents a definitive conclusion.
-> - **Not Vulnerable**: The configuration is hardened correctly or the candidate is in a non-production path.
-> - **Needs Manual Review**: Automated analysis cannot determine the status (e.g., configuration pulled from environment at runtime, complex multi-layer header chain).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/20_batch_[N].md`:
->
-> ```markdown
-> # Security Misconfiguration Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Configuration name
-> - **Category**: [headers / cors / tls / errors / verbs / defaults / patches / container / cloud / jndi / smuggling / content-type / schema]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Issue**: [Clear description of the misconfiguration]
-> - **Impact**: [What an attacker can do — leak data, bypass security controls, fingerprint the stack, etc.]
-> - **Proof**: [Show the relevant configuration or code path]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [curl command, request example, or step-by-step instructions to confirm on the live app.
->    Include exact endpoint/URL, headers to send or observe, and what to look for in the response.]
->   ```
->
-> ### [LIKELY VULNERABLE] Configuration name
-> - **Category**: [headers / cors / tls / errors / verbs / defaults / patches / container / cloud / jndi / smuggling / content-type / schema]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Issue**: [What's suspicious]
-> - **Concern**: [Why this might still be exploitable]
-> - **Proof**: [Show the relevant configuration or code path]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [curl command or step-by-step confirmation instructions]
->   ```
->
-> ### [NOT VULNERABLE] Configuration name
-> - **Category**: [headers / cors / tls / errors / verbs / defaults / patches / container / cloud / jndi / smuggling / content-type / schema]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Protection**: [Why it is safe]
->
-> ### [NEEDS MANUAL REVIEW] Configuration name
-> - **Category**: [headers / cors / tls / errors / verbs / defaults / patches / container / cloud / jndi / smuggling / content-type / schema]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Uncertainty**: [Why automated analysis couldn't determine the status]
-> - **Suggestion**: [What to look at manually]
-> ```
+**Recon exclusions** — do not report:
+- Local development-only configuration that is clearly not used in production
+- Static asset serving where no sensitive data is involved
+- Third-party dependency source code (focus on the project's own configuration)
 
-### Phase 3: Merge — Consolidate Batch Results
+### Verify checklist
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/20_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/20_misconfiguration.md`. You (the orchestrator) do this directly — no subagent needed.
+Security misconfiguration occurs when any layer of the API stack lacks secure hardening, uses insecure defaults, exposes unnecessary features, or leaks information. Focus on issues that are observable from configuration or code.
 
-**Merge procedure**:
+**What is IN scope**:
+- Missing or incorrectly set security headers (`HSTS`, `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, `Cache-Control`)
+- Overly permissive CORS (wildcard origin, reflected origin, credentials with wildcard)
+- Missing, weak, or inconsistent TLS
+- Verbose error messages, stack traces, or debug information returned to clients
+- Unnecessary HTTP verbs or features enabled
+- Insecure framework defaults, debug mode in production, default credentials
+- Insecure container/orchestration/cloud settings (root containers, privileged mode, open buckets, broad IAM)
+- Missing patches or outdated components with known vulnerabilities
+- Log4j-style JNDI / lookup injection via logged request data
+- Missing `Cache-Control` on sensitive responses
+- HTTP request smuggling / desync indicators (CWE-444)
+- Overly permissive content-type / data-format handling
+- Missing OpenAPI / JSON Schema response validation, including error responses
+- Verbose or debug logging that leaks sensitive data or expands untrusted input
 
-1. Read all `{{ REPORTS_ROOT }}/20_batch_1.md`, `{{ REPORTS_ROOT }}/20_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Group findings by category (headers, CORS, TLS, errors, verbs, defaults, patches, container, cloud, jndi, smuggling, content-type, schema) within each classification group.
-5. Write the merged report to `{{ REPORTS_ROOT }}/20_misconfiguration.md` using this format:
+**What is NOT in scope for this scan**:
+- Missing authentication (route has no auth at all) → covered by the unauthenticated access scan
+- Business logic flaws → covered by the business logic scan
+- Injection vulnerabilities in request parameters → covered by injection scans
 
-```markdown
-# Security Misconfiguration Analysis Results: [Project Name]
+For each candidate, check:
 
-## Executive Summary
-- Candidates analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+1. **Is the configuration actually used in the production path?**
+   - Is there a separate production config that overrides the finding?
+   - Is the file in a `dev/`, `test/`, or `local/` directory that is excluded from production?
 
-## Findings
+2. **Headers**
+   - Are the expected security headers defined anywhere (application code, middleware, or reverse proxy)?
+   - Are they sent on **all** responses, including errors?
+   - Is `Cache-Control` set correctly on sensitive responses?
 
-[VULNERABLE findings first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
-Preserve every field from the batch results exactly as written.]
+3. **CORS**
+   - Is the allowed origin a wildcard (`*`)?
+   - Does the server reflect the request `Origin` without validation?
+   - Is `Access-Control-Allow-Credentials: true` combined with a wildcard or untrusted origin?
 
-## Prevention Guidance
+4. **TLS**
+   - Is HTTPS enforced (HSTS, redirects, secure cookies)?
+   - Are weak protocols/ciphers enabled?
+   - Is there mixed HTTP/HTTPS traffic or disabled certificate validation?
 
-[Summarize the hardening checklist, automated scanning recommendations, request-processing uniformity advice, content-type/schema restrictions, and logging hardening from the Prevention section below.]
-```
+5. **Error handling**
+   - Do error responses include stack traces, SQL, internal paths, or framework versions?
+   - Is debug mode enabled in a production-looking configuration?
 
-6. After writing `{{ REPORTS_ROOT }}/20_misconfiguration.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/20_batch_*.md`).
+6. **Features and defaults**
+   - Are unnecessary HTTP verbs enabled?
+   - Are there debug endpoints, admin panels, or default accounts exposed?
+   - Are framework/orchestrator defaults hardened?
+
+7. **Dependencies and patches**
+   - Is the component version known to be vulnerable? (If yes, cite the CVE if known.)
+   - Is there a lockfile ensuring reproducible builds?
+
+8. **JNDI / lookup injection**
+   - Are logging libraries with JNDI/lookup features used in vulnerable versions?
+   - Are request headers or parameters logged without sanitization?
+   - Is outbound egress permissive?
+
+9. **HTTP request smuggling / desync**
+   - Are there conflicting `Content-Length` / `Transfer-Encoding` behaviors?
+   - Do proxies and backends normalize headers differently?
+
+10. **Content-type and schema validation**
+   - Do endpoints accept arbitrary content types?
+   - Are response schemas (including error responses) defined and enforced?
+
+11. **Verbose logging**
+   - Is debug logging enabled in production?
+   - Are request/response bodies or sensitive fields logged verbatim?
+
+### Classification
+
+- **Vulnerable**: A clear misconfiguration is present and exploitable in the production path.
+- **Likely Vulnerable**: A misconfiguration indicator exists, but context (e.g., a compensating proxy control) prevents a definitive conclusion.
+- **Not Vulnerable**: The configuration is hardened correctly or the candidate is in a non-production path.
+- **Needs Manual Review**: Automated analysis cannot determine the status (e.g., configuration pulled from environment at runtime, complex multi-layer header chain).
+
+Report ordering: `[VULNERABLE]` findings first, then `[LIKELY VULNERABLE]`, then `[NEEDS MANUAL REVIEW]`, then `[NOT VULNERABLE]`.
+
+### Finding fields
+
+Every finding block carries: classification tag, **Category** (one of `headers`, `cors`, `tls`, `errors`, `verbs`, `defaults`, `patches`, `container`, `cloud`, `jndi`, `smuggling`, `content-type`, `schema`), file/lines, issue, impact, proof (relevant configuration or code path), remediation, and a dynamic test (curl command, request example, or step-by-step instructions to confirm on the live app — exact endpoint/URL, headers to send or observe, and what to look for in the response). Per-classification field variants: `Concern` (why this might still be exploitable) for `[LIKELY VULNERABLE]`; `Protection` (why it is safe) for `[NOT VULNERABLE]`; `Uncertainty` and `Suggestion` (what to look at manually) for `[NEEDS MANUAL REVIEW]`.
+
+**Merge grouping extension**: the merge stage groups findings by the `Category` enum above inside each classification tier (declared under `execution-protocol.md` → Extension points).
 
 ***
 
@@ -1267,15 +1122,9 @@ Preserve every field from the batch results exactly as written.]
 ## Important Reminders
 [ref: #misconfiguration-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 candidates per subagent**. If there are 1-3 candidates total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned candidates' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
 - Subagents must **investigate only** and are prohibited from modifying project source files, committing changes, opening pull requests, or running destructive commands.
 - Distinguish production configuration from development/test configuration; only production-relevant findings should be classified as Vulnerable.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
 - Check the full request/response path: headers may be added or stripped by reverse proxies, load balancers, or CDNs. The absence of a header in application code does not always mean it is missing in production.
 - Verify that error handlers return generic messages to clients while logging detailed diagnostics server-side.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/20_recon.md` and all `{{ REPORTS_ROOT }}/20_batch_*.md` files after the final `{{ REPORTS_ROOT }}/20_misconfiguration.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `20_recon.md`, `20_batch_*.md`, and `20_verify_*.md`; only the final `{{ REPORTS_ROOT }}/20_misconfiguration.md` persists.

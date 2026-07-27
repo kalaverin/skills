@@ -7,7 +7,7 @@ Runs a source-code security assessment aligned with the OWASP API Security Top 1
 This skill orchestrates a SAST-style audit of your codebase.
 It starts with architecture reconnaissance and a screener that decides which vulnerability scans are relevant.
 Then it dispatches focused detection subagents for up to twenty-four vulnerability classes.
-Findings are validated against source code, a design checklist is run, and everything is consolidated into a final report stored in Serena memory.
+An independent validator subagent re-checks every finding against source code, the core agent adjudicates its doubts, a design checklist is run in parallel, and everything is consolidated into a final report stored in Serena memory.
 
 ## When it activates
 
@@ -23,8 +23,8 @@ Example prompts:
 ## How to use it
 
 Tell the agent what you want audited.
-You can scope the audit to a single entity that already has an entity card, or run a project-level audit.
-The agent creates a report directory, runs the screener, launches the selected scans in parallel, validates the results, and writes the final report.
+You can scope the audit to a single entity that already has a repo card, or run a project-level audit.
+The agent creates a report directory, runs the screener, launches the selected scans in parallel, independently validates the results, and writes the final report.
 You do not need to pick individual scans yourself.
 
 ## What it produces
@@ -33,6 +33,7 @@ You do not need to pick individual scans yourself.
 - Architecture reconnaissance notes.
 - A scan plan listing the selected vulnerability checks.
 - Per-scan module reports, for example `02_sqli.md`, `03_ssrf.md`, `08_idor.md`.
+- An independent validation ledger with per-finding verdicts.
 - A design checklist assessment.
 - A consolidated final report at `report.md` ranked by severity and impact.
 
@@ -67,8 +68,10 @@ security-audit/
 │   ├── 23-dependencies.md          # Supply chain / dependency risks
 │   ├── 24-jvm-anomalies.md         # Kotlin/Java JVM-specific anomalies
 │   ├── 90-design-checklist.md      # API Security design checklist assessment
-│   └── 99-report.md                # Final consolidated report generation
-└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
+│   ├── 98-validator.md             # Independent finding validation
+│   ├── 99-report.md                # Final consolidated report generation
+│   └── registry.md                 # Single scan registry (meta + detection layers)
+└── SKILL.md              # Agent entry point: thin-core orchestration
 ```
 
 ## Reference overview
@@ -101,14 +104,16 @@ security-audit/
 | `references/23-dependencies.md` | Supply chain / dependency risk detection. |
 | `references/24-jvm-anomalies.md` | Kotlin/Java JVM-specific anomaly detection. |
 | `references/90-design-checklist.md` | API Security design checklist assessment. |
+| `references/98-validator.md` | Independent validation of findings against source. |
 | `references/99-report.md` | Consolidated final report generation. |
+| `references/registry.md` | Single scan registry: layers, OWASP mapping, applicability, tag families. |
 
 ## Important conventions / gotchas
 
-- Requires the `project-audit` skill automatically.
-- An entity-scoped audit needs an existing card at `.serena/memories/entities/<entity>`.
+- An entity-scoped audit needs an existing card at `.serena/memories/repos/<entity>/overview` (create it via `repo-audit` first).
 - This skill reports findings; it does not patch source code itself.
 - The screener always runs first, even when you ask for a specific vulnerability class.
-- Detection scans run in parallel batches of up to five.
+- Detection scans run in parallel batches of up to five; the design checklist runs alongside them.
+- Every finding is independently validated; the core agent personally re-checks doubtful ones.
 - All audit artifacts are persisted with `just serena-checkpoint`.
 - All timestamps use UTC ISO 8601 format.

@@ -1,10 +1,10 @@
 ---
-subject: "Supply-chain dependency security detection reference for SAST subagents; three-phase detection prompt, supply-chain definition with scope boundaries plus prevention patterns incl. OIDC trusted publishing, six-category attack taxonomy, per-category vulnerable/secure examples, per-category heuristics incl. Shai-Hulud signals, execution with early-exit gate, `API8:2023`/`API10:2023` mapping, CWE list, operational reminders, references incl. CISA/SLSA/Sigstore."
+subject: "Supply-chain dependency security detection reference for SAST subagents; shared-protocol execution parameters, supply-chain definition with scope boundaries plus prevention patterns incl. OIDC trusted publishing, six-category attack taxonomy, per-category vulnerable/secure examples, per-category heuristics incl. Shai-Hulud signals, `API8:2023`/`API10:2023` mapping, CWE list, operational reminders, references incl. CISA/SLSA/Sigstore."
 index:
   - anchor: dependencies-detection
-    what: "Focused supply-chain dependency detection role using the three-phase subagent approach — recon for risky dependency indicators across six categories, batched verify separating real threats from acceptable posture, merge — gated on the architecture report."
+    what: "Focused supply-chain dependency detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon for risky dependency indicators across six categories, batched verify separating real threats from acceptable posture, merge — gated on the architecture report."
     problem: "Project may pull hostile or vulnerable third-party packages rather than trustworthy components, and unstructured hunting conflates outdated-but-safe packages with malicious ones while burying reviewers in unverified candidates; detection orchestration, dependency sweep, trust judgment, candidate flood, coverage goal, methodical triage, hostile provenance."
-    use_when: "Dependency scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Dependency scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual supply-chain knowledge is needed, not execution."
     expected: "Confirmed dependency-threat findings consolidated into one module report with acceptable posture filtered out."
   - anchor: dependencies-what-is
@@ -22,7 +22,7 @@ index:
   - anchor: dependencies-vulnerable-vs-secure-examples
     what: "Six vulnerable/secure pairs — typo-squatted `lodahs` alongside `lodash` versus verified names only, internal scope falling back to public npm versus every scope pinned private, Log4Shell `log4j-core:2.14.1` versus patched `2.17.1`, abandoned `left-pad` versus maintained alternative, `99.99.99` burst from unknown maintainer versus signed semver releases, obfuscated `postinstall` payload versus script-free reproducible build."
     problem: "Supply-chain attacks look different per category, and generic suspicion rules miss whether near-name packages, scope fallback, stale releases, or install-time payloads actually decide hostile provenance; category recipes, hardened idioms, precise detection, pattern matching, manifest quirks, payload signals, verdict support, attack shape."
-    use_when: "Verify batch subagent needs `[TECH-STACK EXAMPLES]` selection; target project uses one of the covered ecosystems; contrasting observed package against known-good counterpart."
+    use_when: "Verify stage applies the file's per-stack examples when judging candidates; target project uses one of the covered ecosystems; contrasting observed package against known-good counterpart."
     avoid_when: "Conceptual scope boundaries are the question — see the definition card; category catalog needed — see the taxonomy card; implant-intent analysis of package payloads belongs to `21-backdoors.md`."
     expected: "Each suspicious package matched against its vulnerable pattern and secure counterpart; matching idioms cited in batch findings."
   - anchor: dependencies-detection-heuristics
@@ -32,11 +32,11 @@ index:
     avoid_when: "Category catalog without procedure is the need — see the taxonomy card; pure implant-intent judgment belongs to `21-backdoors.md`; hardcoded secret extraction belongs to `15-hardcodedsecrets.md`."
     expected: "Every category checked with its concrete tells; each signal class inspected before verdict."
   - anchor: dependencies-execution
-    what: "Three-phase execution: recon discovering dependency risk indicators across manifests, registry configuration, typosquat and confusion candidates, CVEs, abandonment, maintainer changes, and compromised-package signals with zero-indicator early-exit gate writing an empty-results report, batched verify in groups of three with per-category questions and four-level classification, orchestrator merge with intermediate-file cleanup."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the dependency scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
-    avoid_when: "Scope-boundary concepts are the need — see the definition card; concrete per-category tells wanted — see the heuristics card."
-    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+    what: "Domain execution parameters for the shared three-stage pipeline: recon catalog of dependency risk indicators across eight groups incl. publish-pipeline auth, per-category verify checklist, threat classification family (`[CONFIRMED THREAT]` / `[LIKELY THREAT]`), and the finding-field set with the required OWASP API 2023 root-cause risk (API8/API10) and CWE fields."
+    problem: "Dependency hunting without precise domain criteria lets recon miss registry-confusion and publish-pipeline signals while verify applies generic checklists that conflate outdated-but-safe packages with hostile ones; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current supply-chain vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; scope-boundary concepts are the need — see the definition card; concrete per-category tells wanted — see the heuristics card."
+    expected: "Stage subagents apply exact supply-chain criteria without inheriting generic templates."
   - anchor: dependencies-owasp-mapping
     what: "Two-row OWASP root-cause mapping: `API8:2023` Security Misconfiguration for vulnerable, abandoned, or untrusted dependencies as configuration failure; `API10:2023` Unsafe Consumption of APIs for malicious or compromised dependencies abusing third-party APIs, exfiltrating data, or executing arbitrary code."
     problem: "Findings must carry root-cause risk labels, yet reviewers guess between misconfiguration and unsafe-consumption framings or skip mapping entirely, weakening report credibility; taxonomy tagging, risk attribution, mapping choice, report compliance, framing consistency, required field, dual applicability."
@@ -67,7 +67,7 @@ index:
 
 [ref: #dependencies-detection]
 
-You are performing a focused security assessment to find **supply-chain risks in third-party dependencies**. This includes typosquatting, dependency confusion, known CVEs, abandoned packages, suspicious maintainer changes, and compromised registry packages. This skill uses a three-phase approach with subagents: **recon** (find risky dependency indicators), **batched verify** (confirm which indicators are real threats, in parallel batches of 3), and **merge** (consolidate results).
+You are performing a focused security assessment to find **supply-chain risks in third-party dependencies**. This includes typosquatting, dependency confusion, known CVEs, abandoned packages, suspicious maintainer changes, and compromised registry packages. This skill uses a three-stage pipeline with subagents: **recon** (find risky dependency indicators), **batched verify** (confirm which indicators are real threats, in parallel batches of 3), and **merge** (consolidate results).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -292,214 +292,82 @@ implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
 ## Execution
 [ref: #dependencies-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/23_dependencies.md`; classification family: **threat** (`[CONFIRMED THREAT]` / `[LIKELY THREAT]`).
 
-### Phase 1: Recon — Find Dependency Risk Indicators
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Search for these dependency risk indicators:
 
-> **Goal**: Find every dependency-related supply-chain risk indicator in the project. Write results to `{{ REPORTS_ROOT }}/23_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, package manager(s), registry configuration, and internal vs. external dependency conventions.
->
-> **What to search for**:
->
-> 1. **Dependency manifests**:
->    - Node.js: `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
->    - Python: `requirements.txt`, `Pipfile`, `Pipfile.lock`, `pyproject.toml`, `poetry.lock`
->    - Java: `pom.xml`, `build.gradle`, `gradle.lockfile`
->    - .NET: `*.csproj`, `packages.config`, `PackageReference`
->    - Go: `go.mod`, `go.sum`
->    - Ruby: `Gemfile`, `Gemfile.lock`
->    - Rust: `Cargo.toml`, `Cargo.lock`
->
-> 2. **Registry configuration**:
->    - `.npmrc`, `.yarnrc`, `.pnpmfile.cjs`, `pip.conf`, `maven` settings, `NuGet.config`
->    - Check whether internal scopes are locked to private registries.
->    - Publish pipeline authentication: long-lived registry tokens in CI secrets versus OIDC trusted publishing (npm classic tokens revoked 2025-11).
->
-> 3. **Typosquatting candidates**:
->    - Direct dependency names that are close edits to popular packages.
->    - Low-download, no-repo, or recently created direct dependencies.
->
-> 4. **Dependency confusion candidates**:
->    - Package names that look internal but resolve from public registries.
->    - Inflated version numbers on internal-looking packages.
->
-> 5. **Known CVEs**:
->    - Outdated dependencies with known CVEs (cross-reference NVD/OSV/GitHub Advisories).
->    - Focus on runtime dependencies first; note dev-only findings separately.
->
-> 6. **Abandoned packages**:
->    - Packages whose last release is > 2 years ago.
->    - Packages with a single inactive maintainer.
->
-> 7. **Suspicious maintainer changes**:
->    - New maintainers, email/domain changes, MFA downgrades, version bursts after silence.
->
-> 8. **Compromised package indicators**:
->    - Install-time scripts that perform network calls or dynamic execution.
->    - Obfuscated code in dependency files.
->    - Mismatch between package version and source repository tag.
->
-> **What to skip**:
-> - Internal/vendored source code (not distributed as a package).
-> - License-only issues.
-> - Outdated packages with no CVE and no behavioral risk.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/23_recon.md`:
->
-> ```markdown
-> # Supply Chain / Dependency Recon: [Project Name]
->
-> ## Summary
-> Found [N] dependency risk indicators: [X] typosquatting, [Y] dependency confusion, [Z] CVEs, etc.
->
-> ## Risk Indicators
->
-> ### 1. [Descriptive name]
-> - **Category**: [typosquatting / dependency-confusion / known-cve / abandoned / maintainer-change / compromised]
-> - **Package**: `name@version`
-> - **Manifest file**: `path/to/manifest` (lines X-Y)
-> - **Indicator**: [the specific signal]
-> - **Code snippet / evidence**:
->   ```
->   [relevant manifest lines or registry metadata]
->   ```
-> - **Why it matters**: [one-line rationale]
->
-> [Repeat for each indicator]
-> ```
+1. **Dependency manifests**:
+   - Node.js: `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
+   - Python: `requirements.txt`, `Pipfile`, `Pipfile.lock`, `pyproject.toml`, `poetry.lock`
+   - Java: `pom.xml`, `build.gradle`, `gradle.lockfile`
+   - .NET: `*.csproj`, `packages.config`, `PackageReference`
+   - Go: `go.mod`, `go.sum`
+   - Ruby: `Gemfile`, `Gemfile.lock`
+   - Rust: `Cargo.toml`, `Cargo.lock`
 
-### After Phase 1: Check for Candidates Before Proceeding
+2. **Registry configuration**:
+   - `.npmrc`, `.yarnrc`, `.pnpmfile.cjs`, `pip.conf`, `maven` settings, `NuGet.config`
+   - Check whether internal scopes are locked to private registries.
+   - Publish pipeline authentication: long-lived registry tokens in CI secrets versus OIDC trusted publishing (npm classic tokens revoked 2025-11).
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/23_recon.md`. If the recon found **zero risk indicators** (the summary reports "Found 0" or the "Risk Indicators" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/23_dependencies.md`, **delete** `{{ REPORTS_ROOT }}/23_recon.md`, and stop:
+3. **Typosquatting candidates**:
+   - Direct dependency names that are close edits to popular packages.
+   - Low-download, no-repo, or recently created direct dependencies.
 
-```markdown
-# Supply Chain / Dependency Analysis Results: [Project Name]
+4. **Dependency confusion candidates**:
+   - Package names that look internal but resolve from public registries.
+   - Inflated version numbers on internal-looking packages.
 
-## Executive Summary
-- Candidates analyzed: 0
-- Scope reviewed: [dependency manifests, registry configurations, publish pipelines, and maintainer metadata reviewed]
-- No dependency risk candidates were found: no typosquatting, dependency-confusion, known-CVE, abandonment, maintainer-takeover, or compromised-package indicators identified in the reviewed scope.
-```
+5. **Known CVEs**:
+   - Outdated dependencies with known CVEs (cross-reference NVD/OSV/GitHub Advisories).
+   - Focus on runtime dependencies first; note dev-only findings separately.
 
-Only proceed to Phase 2 if Phase 1 found at least one risk indicator.
+6. **Abandoned packages**:
+   - Packages whose last release is > 2 years ago.
+   - Packages with a single inactive maintainer.
 
-### Phase 2: Verify — Confirm Real Supply-Chain Threats (Batched)
+7. **Suspicious maintainer changes**:
+   - New maintainers, email/domain changes, MFA downgrades, version bursts after silence.
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/23_recon.md` and split the indicators into **batches of up to 3 indicators each**. Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned indicators and writes results to its own batch file.
+8. **Compromised package indicators**:
+   - Install-time scripts that perform network calls or dynamic execution.
+   - Obfuscated code in dependency files.
+   - Mismatch between package version and source repository tag.
 
-**Batching procedure**:
+**Recon exclusions** — do not report:
 
-1. Read `{{ REPORTS_ROOT }}/23_recon.md` and count the numbered indicator sections (`### 1.`, `### 2.`, etc.).
-2. Divide them into batches of up to 3. For example, 8 indicators → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those indicator sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned indicators.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/23_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary package manager and language from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+- Internal/vendored source code (not distributed as a package).
+- License-only issues.
+- Outdated packages with no CVE and no behavioral risk.
 
-Give each batch subagent the following instructions:
+### Verify checklist
 
-> **Goal**: For each assigned dependency risk indicator, determine whether it represents a real supply-chain threat. Write results to `{{ REPORTS_ROOT }}/23_batch_[N].md`.
->
-> **Your assigned indicators** (from the recon phase):
->
-> [Paste the full text of the assigned indicator sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the package manager, registry setup, and which dependencies are runtime vs. development-only.
->
-> **Supply-chain reference — what to look for**:
->
-> For each indicator, answer:
->
-> 1. **Typosquatting**: Is the name within ≤ 2 edits of a popular package? Is it a known malicious package? Does it have a repository and legitimate usage?
-> 2. **Dependency confusion**: Does the package name match an internal package? Does it resolve from a public registry? Is the version suspiciously high? Is the internal scope locked in `.npmrc`/equivalent?
-> 3. **Known CVE**: Is the CVE confirmed for this version? Is the vulnerable function reachable from application code? Is a patch available?
-> 4. **Abandoned package**: How old is the last release? How many active maintainers remain? Is there a security policy or replacement?
-> 5. **Suspicious maintainer change**: Did the maintainer list or email change? Is there a corresponding source-repo tag/changelog? Is the version signed?
-> 6. **Compromised package**: Does the package contain install-time scripts that contact the network or execute dynamic code? Does the package content match the source repository?
-> 7. **Publish pipeline**: Do new versions come from a trusted-publishing OIDC workflow with provenance, or from long-lived tokens? Does the package's provenance match its source repository state (and is provenance treated as origin evidence, not innocence)?
->
-> **Vulnerable vs. secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **Classification**:
-> - **Confirmed Threat**: A real typosquat, dependency-confusion package, exploitable CVE, abandoned critical dependency, suspicious maintainer takeover, or compromised version.
-> - **Likely Threat**: Strong signal but some uncertainty (e.g., no public advisory yet, unusual but not confirmed malicious version).
-> - **Low Risk / Acceptable**: CVE in dev-only dependency with no runtime path, old but well-maintained stable package, intentional internal package.
-> - **Needs Manual Review**: Cannot verify from metadata alone; requires registry audit, maintainer contact, or runtime analysis.
->
-> **Required fields for every finding**:
-> - **OWASP API 2023 root-cause risk**: choose API8:2023 Security Misconfiguration and/or API10:2023 Unsafe Consumption of APIs, and explain why.
-> - **CWE**: map to the most specific CWE from the reference (e.g., CWE-1104, CWE-1035, CWE-912, CWE-506).
-> - **Verification steps**: describe how to confirm the finding safely (registry lookup, SCA scan, source-repo diff, `npm view`, `pip show`, etc.).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/23_batch_[N].md`:
->
-> ```markdown
-> # Supply Chain Batch [N] Results
->
-> ## Findings
->
-> ### [CONFIRMED THREAT] Descriptive name
-> - **File**: `path/to/manifest.ext` (lines X-Y)
-> - **Package**: `name@version`
-> - **Category**: [typosquatting / dependency-confusion / known-cve / abandoned / maintainer-change / compromised]
-> - **OWASP API 2023 root-cause risk**: [API8 / API10 / both]
-> - **CWE**: [CWE-1104 / CWE-1035 / CWE-912 / CWE-506 / ...]
-> - **Issue**: [e.g., "Dependency confusion: @mycompany/api resolves to public npm at v100.100.100"]
-> - **Evidence**:
->   ```
->   [manifest lines, registry output, SCA result]
->   ```
-> - **Impact**: [code execution, data exfiltration, DoS, etc.]
-> - **Remediation**: [remove package, pin to private registry, upgrade version, rotate secrets]
-> - **Verification Steps**:
->   ```
->   [safe read-only commands]
->   ```
->
-> ### [LIKELY THREAT] Descriptive name
-> ...
->
-> ### [LOW RISK] Descriptive name
-> ...
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> ...
-> ```
+For each candidate, answer the question for its category:
 
-### Phase 3: Merge — Consolidate Batch Results
+1. **Typosquatting**: Is the name within ≤ 2 edits of a popular package? Is it a known malicious package? Does it have a repository and legitimate usage?
+2. **Dependency confusion**: Does the package name match an internal package? Does it resolve from a public registry? Is the version suspiciously high? Is the internal scope locked in `.npmrc`/equivalent?
+3. **Known CVE**: Is the CVE confirmed for this version? Is the vulnerable function reachable from application code? Is a patch available?
+4. **Abandoned package**: How old is the last release? How many active maintainers remain? Is there a security policy or replacement?
+5. **Suspicious maintainer change**: Did the maintainer list or email change? Is there a corresponding source-repo tag/changelog? Is the version signed?
+6. **Compromised package**: Does the package contain install-time scripts that contact the network or execute dynamic code? Does the package content match the source repository?
+7. **Publish pipeline**: Do new versions come from a trusted-publishing OIDC workflow with provenance, or from long-lived tokens? Does the package's provenance match its source repository state (and is provenance treated as origin evidence, not innocence)?
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/23_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/23_dependencies.md`. You (the orchestrator) do this directly — no subagent needed.
+### Classification
 
-**Merge procedure**:
+- **Confirmed Threat**: A real typosquat, dependency-confusion package, exploitable CVE, abandoned critical dependency, suspicious maintainer takeover, or compromised version.
+- **Likely Threat**: Strong signal but some uncertainty (e.g., no public advisory yet, unusual but not confirmed malicious version).
+- **Low Risk / Acceptable**: CVE in dev-only dependency with no runtime path, old but well-maintained stable package, intentional internal package.
+- **Needs Manual Review**: Cannot verify from metadata alone; requires registry audit, maintainer contact, or runtime analysis.
 
-1. Read all `{{ REPORTS_ROOT }}/23_batch_1.md`, `{{ REPORTS_ROOT }}/23_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/23_dependencies.md` using this format:
+### Finding fields
 
-```markdown
-# Supply Chain / Dependency Analysis Results: [Project Name]
+Every finding block carries: classification tag, file/lines (manifest path), package (`name@version`), category, issue, evidence, impact, remediation, and these required extra fields:
 
-## Executive Summary
-- Dependency risk indicators analyzed: [total across all batches]
-- Confirmed Threat: [N]
-- Likely Threat: [N]
-- Needs Manual Review: [N]
-- Low Risk / Acceptable: [N]
-
-## Findings
-
-[All findings from all batches, grouped by classification:
- CONFIRMED THREAT first, then LIKELY THREAT, then NEEDS MANUAL REVIEW, then LOW RISK.
- Preserve every field from the batch results exactly as written.]
-```
-
-5. After writing `{{ REPORTS_ROOT }}/23_dependencies.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/23_batch_*.md`).
+- **OWASP API 2023 root-cause risk**: API8:2023 Security Misconfiguration and/or API10:2023 Unsafe Consumption of APIs, with a one-line justification.
+- **CWE**: the most specific entry from CWE-1104, CWE-1035, CWE-506, CWE-912, CWE-1357, CWE-1395.
+- **Safe verification steps**: how to confirm the finding without changing anything (registry lookup, SCA scan, source-repo diff, `npm view`, `pip show`, etc.).
 
 ***
 
@@ -538,6 +406,7 @@ CWE-1104 and CWE-1035 are the parent weaknesses for most findings produced by th
 - **Rotate credentials** if a compromised package was installed or built in any environment.
 - **Generate and review an SBOM** for the project; it is the authoritative inventory for incident response.
 - Subagents are read-only: they must not modify project source code, commit changes, or run destructive commands against registries.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `23_recon.md`, `23_batch_*.md`, and `23_verify_*.md`; only the final `{{ REPORTS_ROOT }}/23_dependencies.md` persists.
 
 ***
 

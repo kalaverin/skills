@@ -1,10 +1,10 @@
 ---
-subject: "SSTI detection reference for SAST subagents: definition, engine probe matrix, scope boundaries vs XSS/RCE/SQLi, prevention patterns, per-engine vulnerable/secure recipes, specialized contexts incl. PDF LaTeX serverless nested and LLM chat templates, engine hardening, three-phase execution, OWASP mapping, second-order variants."
+subject: "SSTI detection reference for SAST subagents: definition, engine probe matrix, scope boundaries vs XSS/RCE/SQLi, prevention patterns, per-engine vulnerable/secure recipes, specialized contexts incl. PDF LaTeX serverless nested and LLM chat templates, engine hardening, shared-protocol execution parameters, OWASP mapping, second-order variants."
 index:
   - anchor: ssti-detection
-    what: "Focused SSTI detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    what: "Focused SSTI detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic template-injection sweep across every rendering engine, yet unstructured hunting misses dynamic template strings and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "SSTI scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "SSTI scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual SSTI knowledge is needed, not execution."
     expected: "Verified SSTI findings consolidated into the module report with false positives filtered."
   - anchor: ssti-definition
@@ -62,11 +62,11 @@ index:
     avoid_when: "Detection mechanics are the question — see execution anchors."
     expected: "Each engine gets its exact hardened setup."
   - anchor: ssti-execution
-    what: "Three-phase execution: structural recon for template-string sites, batched taint verify in groups of three, merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the SSTI scan execution; dispatching or reviewing any phase."
-    avoid_when: "Conceptual SSTI knowledge is the need — see definition and examples anchors."
-    expected: "All three phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of dynamic template-string rendering sites, per-candidate taint verify checklist, classification rubric, and the finding-field set with engine probes."
+    problem: "SSTI hunting without precise domain criteria lets recon miss dynamic template strings and verify apply generic checklists that overlook engine quirks; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current SSTI vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definition belongs to the definition anchor."
+    expected: "Stage subagents apply exact SSTI criteria without inheriting generic templates."
   - anchor: ssti-owasp-mapping
     what: "Mapping of SSTI findings to OWASP API 2023 risks, routed via API8 and API10 with a cross-mapping table."
     problem: "Findings need correct 2023-era taxonomy, and assuming dedicated injection categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, compliance notes, risk labels."
@@ -85,7 +85,7 @@ index:
 
 [ref: #ssti-detection]
 
-You are performing a focused security assessment to find Server-Side Template Injection vulnerabilities in a codebase. This skill uses a three-phase approach with subagents: **recon** (find candidate rendering sites where the template string is dynamic), **batched verify** (trace whether user input reaches each site's template argument, in parallel batches of 3), and **merge** (consolidate batch results into the final report).
+You are performing a focused security assessment to find Server-Side Template Injection vulnerabilities in a codebase. This skill uses a three-stage pipeline with subagents: **recon** (find candidate rendering sites where the template string is dynamic), **batched verify** (trace whether user input reaches each site's template argument, in parallel batches of 3), and **merge** (consolidate batch results into the final report).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -711,314 +711,166 @@ The most reliable prevention is to **never use untrusted input as a template str
 ## Execution
 [ref: #ssti-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/06_ssti.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-**Subagent constraint**: Subagents must perform read-only analysis. They are forbidden from modifying project source code, configuration files, tests, or any other file under the repository root.
+### Recon catalog
 
-### Phase 1: Find Template Rendering Sites Using Dynamic Strings
+Flag any call where the first argument (the template string) is a variable, a concatenated string, or any non-literal value:
 
-Launch a subagent with the following instructions:
+1. **Python — Jinja2 / Flask**:
+   - `render_template_string(var)` — any non-literal argument
+   - `Environment().from_string(var)` or `env.from_string(var)`
+   - `jinja2.Template(var).render(...)`
+   - `Template(var)` where Template is imported from jinja2
 
-> **Goal**: Find every location in the codebase where a template engine renders, compiles, or evaluates a **dynamically built string** as the template itself — rather than loading a static template file. Write results to `{{ REPORTS_ROOT }}/06_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, template engines in use, and how views/responses are rendered.
->
-> **What to search for — vulnerable template rendering patterns**:
->
-> Flag any call where the first argument (the template string) is a variable, a concatenated string, or any non-literal value. You are not yet checking whether that variable comes from user input — that is Phase 2's job.
->
-> 1. **Python — Jinja2 / Flask**:
->    - `render_template_string(var)` — any non-literal argument
->    - `Environment().from_string(var)` or `env.from_string(var)`
->    - `jinja2.Template(var).render(...)`
->    - `Template(var)` where Template is imported from jinja2
->
-> 2. **Python — Mako**:
->    - `Template(var).render(...)` where Template is from `mako.template`
->    - `mako.template.Template(var)`
->
-> 3. **Python — Django**:
->    - `django.template.Template(var)` with non-literal `var`
->    - `render(request, var, ...)` or `render_to_string(var, ...)` where `var` is user-controlled
->    - `django.template.loader.get_template(var)` with non-literal `var`
->
-> 4. **Node.js — EJS**:
->    - `ejs.render(var, ...)` or `ejs.renderFile(var, ...)` where var is not a static string literal
->
-> 5. **Node.js — Nunjucks**:
->    - `nunjucks.renderString(var, ...)` — any non-literal first argument
->    - `env.renderString(var, ...)`
->
-> 6. **Node.js — Handlebars**:
->    - `Handlebars.compile(var)` — any non-literal argument
->    - `Handlebars.precompile(var)`
->
-> 7. **Node.js — Pug/Jade**:
->    - `pug.render(var, ...)` — any non-literal argument
->    - `pug.compile(var, ...)`
->
-> 8. **Node.js — Lodash/Underscore**:
->    - `_.template(var)` — any non-literal argument
->    - `Handlebars.compile(var)`
->
-> 9. **Node.js — Swig / Twig.js**:
->    - `swig.render(var, ...)`
->    - `twig({ data: var })`
->
-> 10. **Ruby — ERB**:
->     - `ERB.new(var).result(...)` — any non-literal argument
->     - `ERB.new(var).result_with_hash(...)`
->
-> 11. **Ruby — Liquid**:
->     - `Liquid::Template.parse(var).render(...)` — any non-literal argument
->
-> 12. **Java — FreeMarker**:
->     - `new Template(name, new StringReader(var), cfg)` — var is not a literal
->     - `cfg.getTemplate(var)` where var is not a literal (potential template path injection)
->
-> 13. **Java — Velocity**:
->     - `Velocity.evaluate(ctx, writer, logTag, var)` — any non-literal fourth argument
->     - `ve.evaluate(ctx, writer, logTag, var)`
->
-> 14. **Java — StringTemplate / ST4**:
->     - `new ST(var)` — any non-literal argument
->     - `new STGroup(var, ...)` with non-literal path
->
-> 15. **Java — Thymeleaf**:
->     - Controller methods returning a view name built by string concatenation: `return "user/" + var + "/page"` or `return String.format("prefix/%s/suffix", var)`
->     - `templateEngine.process(var, ctx)` with non-literal var
->
-> 16. **Java — JSP / JSTL**:
->     - `RequestDispatcher.forward(request, response)` to a user-controlled path
->     - Controller returning a view name built from user input
->     - Scriptlets or EL expressions that include user input without `<c:out>`
->
-> 17. **C# — ASP.NET Razor / MVC**:
->     - `View(var, model)` or `return View(var)` where `var` is user-controlled
->     - RazorLight / RazorEngine compiling user input
->     - `@Html.Raw(Model.UserInput)` in `.cshtml` files
->
-> 18. **PHP — Twig**:
->     - `$twig->createTemplate($var)->render(...)` — any non-literal argument
->     - `$environment->createTemplate($var)`
->
-> 19. **PHP — Smarty**:
->     - `$smarty->fetch("string:" . $var)` or `$smarty->display("string:" . $var)`
->     - `$smarty->fetch($var)` where var may contain a "string:" prefix
->
-> 20. **PHP — Blade / Laravel**:
->     - `Blade::render($var, ...)` — any non-literal argument
->     - `\Illuminate\Support\Facades\View::make($var, ...)` with non-literal name (template path injection)
->
-> 21. **Go — text/template or html/template**:
->     - `template.New(name).Parse(var)` — any non-literal argument to Parse
->     - `t.Parse(var)` on any template variable
->     - `t.ParseFiles(var)` with non-literal var (template path injection)
->
-> 22. **C# — Scriban / Handlebars.Net / DotLiquid / Fluid**:
->     - `Template.Parse(var)` (Scriban) — non-literal
->     - `Handlebars.Compile(var)` — non-literal
->     - `DotLiquid.Template.Parse(var)` — non-literal
->     - `FluidParser.TryParse(var, ...)` — non-literal
->
-> 23. **Specialized contexts**:
->     - PDF generators (`weasyprint.HTML(string=var)`, `pdfkit.from_string(var)`, Puppeteer `page.setContent(var)`)
->     - LaTeX wrappers that concatenate user input into `.tex` source
->     - Markdown preprocessors that run a template engine before conversion
->     - JSON/YAML config builders that use string templating with user values
->     - Serverless / infrastructure template assemblers (CloudFormation, SAM, ARM, Terraform)
->     - Nested template evaluation: output of one template passed to another parser
->
-> **What to skip** (safe patterns — do not flag):
-> - Calls where the first argument is a **string literal**: `render_template_string("<h1>Hello</h1>")`, `ejs.render("<p>static</p>", ctx)`
-> - Calls where a file path is loaded from a trusted constant and user input only appears in context: `render_template("profile.html", user=user_obj)`
-> - Template engine configuration calls that do not render user-supplied content: `env = Environment(loader=FileSystemLoader("templates/"))`
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/06_recon.md`:
->
-> ```markdown
-> # SSTI Recon: [Project Name]
->
-> ## Summary
-> Found [N] locations where a template engine renders a dynamic (non-literal) string as the template.
->
-> ## Candidate Rendering Sites
->
-> ### 1. [Descriptive name — e.g., "render_template_string in /greet endpoint"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: [function name or route]
-> - **Template engine**: [Jinja2 / EJS / Handlebars / FreeMarker / Twig / ERB / etc.]
-> - **Rendering call**: [render_template_string / from_string / ejs.render / Handlebars.compile / etc.]
-> - **Dynamic argument**: `var_name` — [brief note on what it appears to represent, e.g., "looks like it comes from a form field" or "unknown origin"]
-> - **Code snippet**:
->   ```
->   [the rendering call with the dynamic argument]
->   ```
->
-> [Repeat for each site]
-> ```
+2. **Python — Mako**:
+   - `Template(var).render(...)` where Template is from `mako.template`
+   - `mako.template.Template(var)`
 
-### After Phase 1: Check for Candidates Before Proceeding
+3. **Python — Django**:
+   - `django.template.Template(var)` with non-literal `var`
+   - `render(request, var, ...)` or `render_to_string(var, ...)` where `var` is user-controlled
+   - `django.template.loader.get_template(var)` with non-literal `var`
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/06_recon.md`. If the recon found **zero candidate rendering sites** (the summary reports "Found 0" or the "Candidate Rendering Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/06_ssti.md` and stop:
+4. **Node.js — EJS**:
+   - `ejs.render(var, ...)` or `ejs.renderFile(var, ...)` where var is not a static string literal
 
-```markdown
-# SSTI Analysis Results
+5. **Node.js — Nunjucks**:
+   - `nunjucks.renderString(var, ...)` — any non-literal first argument
+   - `env.renderString(var, ...)`
 
-No vulnerabilities found.
-```
+6. **Node.js — Handlebars**:
+   - `Handlebars.compile(var)` — any non-literal argument
+   - `Handlebars.precompile(var)`
 
-Only proceed to Phase 2 if Phase 1 found at least one candidate rendering site.
+7. **Node.js — Pug/Jade**:
+   - `pug.render(var, ...)` — any non-literal argument
+   - `pug.compile(var, ...)`
 
-### Phase 2: Verify — Trace User Input (Batched)
+8. **Node.js — Lodash/Underscore**:
+   - `_.template(var)` — any non-literal argument
+   - `Handlebars.compile(var)`
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/06_recon.md` and split the candidate rendering sites into **batches of up to 3 candidates each**. Launch **one subagent per batch in parallel**. Each subagent traces taint for only its assigned candidates and writes results to its own batch file.
+9. **Node.js — Swig / Twig.js**:
+   - `swig.render(var, ...)`
+   - `twig({ data: var })`
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+10. **Ruby — ERB**:
+    - `ERB.new(var).result(...)` — any non-literal argument
+    - `ERB.new(var).result_with_hash(...)`
 
-1. Read `{{ REPORTS_ROOT }}/06_recon.md` and count the numbered candidate sections under "Candidate Rendering Sites" (`### 1.`, `### 2.`, etc.).
-2. Divide them into batches of up to 3. For example, 8 candidates → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those candidate sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned candidates.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/06_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project uses Python/Flask with Jinja2, include only the "Python — Flask / Jinja2" examples. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+11. **Ruby — Liquid**:
+    - `Liquid::Template.parse(var).render(...)` — any non-literal argument
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+12. **Java — FreeMarker**:
+    - `new Template(name, new StringReader(var), cfg)` — var is not a literal
+    - `cfg.getTemplate(var)` where var is not a literal (potential template path injection)
 
-> **Goal**: For each assigned candidate rendering site, determine whether a user-supplied value reaches the dynamic template string argument. Our goal is to find SSTI vulnerabilities.Write results to `{{ REPORTS_ROOT }}/06_batch_[N].md`.
->
-> **Your assigned candidates** (from the recon phase):
->
-> [Paste the full text of the assigned candidate sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand request entry points, middleware, and how data flows through the application.
->
-> **SSTI reference — what to trace**:
->
-> For each rendering site, trace the **dynamic template argument** backwards to its origin.
->
-> 1. **Direct user input** — the argument is assigned directly from a request source with no transformation:
->    - HTTP query params: `request.GET.get(...)`, `req.query.x`, `params[:x]`, `$_GET['x']`, `c.Query("x")`
->    - Path parameters: `request.path_params['id']`, `req.params.id`, `params[:id]`
->    - Request body / form fields: `request.POST.get(...)`, `req.body.x`, `params[:x]`, `$_POST['x']`
->    - HTTP headers: `request.headers.get(...)`, `req.headers['x']`
->    - Cookies: `request.COOKIES.get(...)`, `req.cookies.x`
->    - File upload content: if a file's content is read and passed as the template string
->
-> 2. **Indirect user input** — the argument is derived from user input through transformations, function calls, or intermediate assignments. Trace the full chain:
->    - Variable assigned from a function return value → check that function's parameter origin
->    - Variable passed as a function argument → check the call site(s)
->    - Variable read from a class attribute or shared state set elsewhere → find the setter
->    - Variable conditionally assigned — check all branches
->
-> 3. **Second-order input** — the template string is read from the database, a config store, or a file, but the stored value originally came from user input (e.g., user-submitted "custom email template" feature):
->    - Find where this value was written — was it stored from a user-supplied field?
->    - Was it sanitized before storage? Note: sanitizing SSTI payloads is unreliable — still flag.
->
-> 4. **Server-side / hardcoded value** — the template string comes from a file loaded at startup, a hardcoded constant, or server-side logic with no user influence — this site is NOT exploitable.
->
-> **Template engine risk level**:
-> - **Critical**: Jinja2, Mako, Twig, Smarty, FreeMarker, Velocity, ERB, Pug, EJS, Go `text/template`, Thymeleaf, JSP/JSTL — full code execution possible
-> - **High**: Handlebars (with prototype pollution gadgets), Nunjucks, Lodash `_.template`, Blade, Razor
-> - **Medium / Logic-less**: Mustache, Liquid (without dangerous tags enabled) — arbitrary code execution not typically possible, but still check for data leakage
->
-> **Mitigations to check**:
-> - Is the template engine running in a sandboxed mode? (e.g., Jinja2 `SandboxedEnvironment`, Twig `sandbox` extension with strict policy)
-> - Is the input validated or filtered before being used as a template? Note: blocklist-based filtering of template syntax characters (`{`, `}`, `%`) is **not** a reliable mitigation — attackers can often bypass it.
-> - Is the result of rendering passed directly to the response, or is it used in a non-dangerous context?
->
-> **Vulnerable vs. secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **Classification**:
-> - **Vulnerable**: User input demonstrably reaches the template string argument with no effective mitigation, using a critical/high-risk engine.
-> - **Likely Vulnerable**: User input probably reaches the template string (indirect flow or second-order), or a medium-risk engine is used, or only blocklist filtering is applied.
-> - **Not Vulnerable**: The template string is server-side only (file, constant, hardcoded), OR a properly configured sandbox is confirmed in place.
-> - **Needs Manual Review**: Cannot determine the argument's origin with confidence, or a logic-less engine is used and data leakage scope is unclear.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/06_batch_[N].md`:
->
-> ```markdown
-> # SSTI Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Template engine**: [Jinja2 / FreeMarker / Twig / ERB / etc.] (severity: Critical/High)
-> - **Issue**: [e.g., "HTTP query param `tmpl` flows directly into render_template_string()"]
-> - **Taint trace**: [Step-by-step from entry point to the rendering call — e.g., "request.args.get('tmpl') → tmpl → render_template_string(tmpl)"]
-> - **Impact**: Remote code execution — attacker can execute arbitrary OS commands, read files, exfiltrate secrets, or pivot internally.
-> - **Proof-of-concept payload**:
->   ```
->   [Template syntax payload appropriate for the engine.
->    Example for Jinja2: ?tmpl={{config.__class__.__init__.__globals__['os'].popen('id').read()}}
->    Example for FreeMarker: ?tmpl=<#assign+ex="freemarker.template.utility.Execute"?new()>${ex("id")}
->    Example for Twig: ?tmpl={{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}
->    Example for ERB: ?tmpl=<%= `id` %>
->    Example for EJS: ?tmpl=<%- global.process.mainModule.require('child_process').execSync('id') %>
->    Example for JSP/EL: ?tmpl=${7*7} then escalate to classloader gadgets
->    Example for Razor: ?tmpl=@(7*7) then @System.Diagnostics.Process.Start("cmd","/c whoami")
->    Example for Django: ?tmpl={% debug %} then filter/sandbox abuse]
->   ```
-> - **Remediation**: Never use user input as a template string. Pass user data as context variables to a static template. If dynamic templates are a product requirement, use a sandboxed logic-less engine (e.g., Mustache, Liquid with safe config) and enforce strict input validation.
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Template engine**: [engine name] (severity: High/Medium)
-> - **Issue**: [e.g., "Template string likely sourced from user input via helper function" or "Second-order: user-submitted template stored in DB then evaluated server-side"]
-> - **Taint trace**: [Best-effort trace with the uncertain step identified]
-> - **Concern**: [Why it's still a risk — e.g., "Second-order SSTI: user can craft payload at submission time that executes when the template is rendered later"]
-> - **Proof-of-concept payload**:
->   ```
->   [payload for the engine]
->   ```
-> - **Remediation**: [Specific fix]
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Reason**: [e.g., "Template string is loaded from a hardcoded file path" or "Jinja2 SandboxedEnvironment confirmed in use with restricted globals"]
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Uncertainty**: [Why the argument's origin could not be determined]
-> - **Suggestion**: [What to trace manually — e.g., "Follow `get_custom_template()` in services/email.py to check where its return value originates"]
-> ```
+13. **Java — Velocity**:
+    - `Velocity.evaluate(ctx, writer, logTag, var)` — any non-literal fourth argument
+    - `ve.evaluate(ctx, writer, logTag, var)`
 
-### Phase 3: Merge — Consolidate Batch Results
+14. **Java — StringTemplate / ST4**:
+    - `new ST(var)` — any non-literal argument
+    - `new STGroup(var, ...)` with non-literal path
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/06_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/06_ssti.md`. You (the orchestrator) do this directly — no subagent needed.
+15. **Java — Thymeleaf**:
+    - Controller methods returning a view name built by string concatenation: `return "user/" + var + "/page"` or `return String.format("prefix/%s/suffix", var)`
+    - `templateEngine.process(var, ctx)` with non-literal var
 
-**Merge procedure**:
+16. **Java — JSP / JSTL**:
+    - `RequestDispatcher.forward(request, response)` to a user-controlled path
+    - Controller returning a view name built from user input
+    - Scriptlets or EL expressions that include user input without `<c:out>`
 
-1. Read all `{{ REPORTS_ROOT }}/06_batch_1.md`, `{{ REPORTS_ROOT }}/06_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/06_ssti.md` using this format:
+17. **C# — ASP.NET Razor / MVC**:
+    - `View(var, model)` or `return View(var)` where `var` is user-controlled
+    - RazorLight / RazorEngine compiling user input
+    - `@Html.Raw(Model.UserInput)` in `.cshtml` files
 
-```markdown
-# SSTI Analysis Results: [Project Name]
+18. **PHP — Twig**:
+    - `$twig->createTemplate($var)->render(...)` — any non-literal argument
+    - `$environment->createTemplate($var)`
 
-## Executive Summary
-- Rendering sites analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+19. **PHP — Smarty**:
+    - `$smarty->fetch("string:" . $var)` or `$smarty->display("string:" . $var)`
+    - `$smarty->fetch($var)` where var may contain a "string:" prefix
 
-## Findings
+20. **PHP — Blade / Laravel**:
+    - `Blade::render($var, ...)` — any non-literal argument
+    - `\Illuminate\Support\Facades\View::make($var, ...)` with non-literal name (template path injection)
 
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
+21. **Go — text/template or html/template**:
+    - `template.New(name).Parse(var)` — any non-literal argument to Parse
+    - `t.Parse(var)` on any template variable
+    - `t.ParseFiles(var)` with non-literal var (template path injection)
 
-5. After writing `{{ REPORTS_ROOT }}/06_ssti.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/06_batch_*.md`).
+22. **C# — Scriban / Handlebars.Net / DotLiquid / Fluid**:
+    - `Template.Parse(var)` (Scriban) — non-literal
+    - `Handlebars.Compile(var)` — non-literal
+    - `DotLiquid.Template.Parse(var)` — non-literal
+    - `FluidParser.TryParse(var, ...)` — non-literal
+
+23. **Specialized contexts**:
+    - PDF generators (`weasyprint.HTML(string=var)`, `pdfkit.from_string(var)`, Puppeteer `page.setContent(var)`)
+    - LaTeX wrappers that concatenate user input into `.tex` source
+    - Markdown preprocessors that run a template engine before conversion
+    - JSON/YAML config builders that use string templating with user values
+    - Serverless / infrastructure template assemblers (CloudFormation, SAM, ARM, Terraform)
+    - Nested template evaluation: output of one template passed to another parser
+
+**Recon exclusions** — do not report:
+
+- Calls where the first argument is a **string literal**: `render_template_string("<h1>Hello</h1>")`, `ejs.render("<p>static</p>", ctx)`
+- Calls where a file path is loaded from a trusted constant and user input only appears in context: `render_template("profile.html", user=user_obj)`
+- Template engine configuration calls that do not render user-supplied content: `env = Environment(loader=FileSystemLoader("templates/"))`
+
+### Verify checklist
+
+For each candidate rendering site, trace the **dynamic template argument** backwards to its origin:
+
+1. **Direct user input** — the argument is assigned directly from a request source with no transformation:
+   - HTTP query params: `request.GET.get(...)`, `req.query.x`, `params[:x]`, `$_GET['x']`, `c.Query("x")`
+   - Path parameters: `request.path_params['id']`, `req.params.id`, `params[:id]`
+   - Request body / form fields: `request.POST.get(...)`, `req.body.x`, `params[:x]`, `$_POST['x']`
+   - HTTP headers: `request.headers.get(...)`, `req.headers['x']`
+   - Cookies: `request.COOKIES.get(...)`, `req.cookies.x`
+   - File upload content: if a file's content is read and passed as the template string
+
+2. **Indirect user input** — the argument is derived from user input through transformations, function calls, or intermediate assignments. Trace the full chain:
+   - Variable assigned from a function return value → check that function's parameter origin
+   - Variable passed as a function argument → check the call site(s)
+   - Variable read from a class attribute or shared state set elsewhere → find the setter
+   - Variable conditionally assigned — check all branches
+
+3. **Second-order input** — the template string is read from the database, a config store, or a file, but the stored value originally came from user input (e.g., user-submitted "custom email template" feature):
+   - Find where this value was written — was it stored from a user-supplied field?
+   - Was it sanitized before storage? Note: sanitizing SSTI payloads is unreliable — still flag.
+
+4. **Server-side / hardcoded value** — the template string comes from a file loaded at startup, a hardcoded constant, or server-side logic with no user influence — this site is NOT exploitable.
+
+**Template engine risk level**:
+
+- **Critical**: Jinja2, Mako, Twig, Smarty, FreeMarker, Velocity, ERB, Pug, EJS, Go `text/template`, Thymeleaf, JSP/JSTL — full code execution possible
+- **High**: Handlebars (with prototype pollution gadgets), Nunjucks, Lodash `_.template`, Blade, Razor
+- **Medium / Logic-less**: Mustache, Liquid (without dangerous tags enabled) — arbitrary code execution not typically possible, but still check for data leakage
+
+**Mitigations to check**:
+
+- Is the template engine running in a sandboxed mode? (e.g., Jinja2 `SandboxedEnvironment`, Twig `sandbox` extension with strict policy)
+- Is the input validated or filtered before being used as a template? Note: blocklist-based filtering of template syntax characters (`{`, `}`, `%`) is **not** a reliable mitigation — attackers can often bypass it.
+- Is the result of rendering passed directly to the response, or is it used in a non-dangerous context?
+
+### Classification
+
+- **Vulnerable**: User input demonstrably reaches the template string argument with no effective mitigation, using a critical/high-risk engine.
+- **Likely Vulnerable**: User input probably reaches the template string (indirect flow or second-order), or a medium-risk engine is used, or only blocklist filtering is applied.
+- **Not Vulnerable**: The template string is server-side only (file, constant, hardcoded), OR a properly configured sandbox is confirmed in place.
+- **Needs Manual Review**: Cannot determine the argument's origin with confidence, or a logic-less engine is used and data leakage scope is unclear.
+
+### Finding fields
+
+Every finding block carries: classification tag, file/lines, endpoint or function, template engine (with severity), issue, taint trace (step-by-step from entry point to the rendering call), impact, an engine-appropriate proof-of-concept payload (math probe first, e.g. `{{7*7}}`, then escalation to RCE), and remediation.
 
 ***
 
@@ -1043,17 +895,11 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 ## Important Reminders
 [ref: #ssti-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Subagents must not modify project source code**. This skill is read-only. Subagents may only write analysis reports under `{{ REPORTS_ROOT }}/`.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 candidates per subagent**. If there are 1-3 candidates total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned candidates' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
-- **Phase 1 is purely structural**: flag any dynamic (non-literal) variable used as the template string argument. Do not attempt to trace user input in Phase 1 — that is Phase 2's job.
-- **Phase 2 is purely taint analysis**: for each site assigned to a batch, trace the dynamic template argument back to its origin. If it comes from a user-controlled source, the site is a real vulnerability.
+- **The recon stage is purely structural**: flag any dynamic (non-literal) variable used as the template string argument — tracing belongs to the verify stage.
+- **The verify stage is purely taint analysis**: for each assigned site, trace the dynamic template argument back to its origin. If it comes from a user-controlled source, the site is a real vulnerability.
 - The critical distinction is **template string vs. template context**: user input passed as a *variable name/value* inside `render_template("page.html", user=input)` is safe. User input passed as the *template string itself* to `render_template_string(input)` is dangerous.
-- **Second-order SSTI is easy to miss**: a "custom template" feature may let users store Jinja2/Twig syntax in the database. When that stored template is later loaded and rendered server-side without sandboxing, it's SSTI. In Phase 2, treat DB-read template strings as potentially tainted.
+- **Second-order SSTI is easy to miss**: a "custom template" feature may let users store Jinja2/Twig syntax in the database. When that stored template is later loaded and rendered server-side without sandboxing, it's SSTI. In the verify stage, treat DB-read template strings as potentially tainted.
 - **Thymeleaf fragment expressions**: in Spring Boot, if a controller returns a view name constructed from user input (e.g., `return "user/" + lang + "/view"`), Thymeleaf may process Spring EL expressions embedded in the path segment, enabling RCE. Flag any controller that builds a view name string using user-supplied values.
 - **JSP / JSTL EL injection**: `${7*7}` is a reliable probe. Legacy containers may allow classloader gadgets leading to RCE. Always verify whether `<c:out>` is used for output and whether scriptlets are disabled.
 - **ASP.NET Razor**: `@(7*7)` confirms expression evaluation. `@Html.Raw()` on user data is XSS, but compiling attacker-controlled strings with Razor is SSTI/RCE.
@@ -1061,4 +907,4 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 - **Blocklist filtering is not a mitigation**: attempts to strip `{{`, `}}`, `<%`, `%>`, `${`, `@(`, etc. from user input are routinely bypassed via encoding, alternate syntax, or nested expressions. Do not classify a finding as "Not Vulnerable" solely because filtering is present.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
 - Include engine-appropriate proof-of-concept payloads for all Vulnerable and Likely Vulnerable findings. Payloads should first test with a math expression (e.g., `{{7*7}}`, `${7*7}`, `@(7*7)`, `{% debug %}`) to confirm template execution before escalating to RCE payloads.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/06_recon.md` and all `{{ REPORTS_ROOT }}/06_batch_*.md` files after the final `{{ REPORTS_ROOT }}/06_ssti.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `06_recon.md`, `06_batch_*.md`, and `06_verify_*.md`; only the final `{{ REPORTS_ROOT }}/06_ssti.md` persists.

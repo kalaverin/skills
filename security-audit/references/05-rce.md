@@ -1,10 +1,10 @@
 ---
-subject: "RCE detection reference for SAST subagents: definition, three root causes, CWE-78/94/95/502, scope boundaries vs SSTI/XSS/SQLi, prevention patterns, per-stack vulnerable/secure recipes, specialized vectors incl. processor, serverless/CI, and LLM/AI agent execution, dynamic payloads, prevention checklist, three-phase execution, OWASP mapping."
+subject: "RCE detection reference for SAST subagents: definition, three root causes, CWE-78/94/95/502, scope boundaries vs SSTI/XSS/SQLi, prevention patterns, per-stack vulnerable/secure recipes, specialized vectors incl. processor, serverless/CI, and LLM/AI agent execution, dynamic payloads, prevention checklist, shared-protocol execution parameters, OWASP mapping."
 index:
   - anchor: rce-detection
-    what: "Focused RCE detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    what: "Focused RCE detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic execution-sink sweep across every command, evaluator, and deserializer, yet unstructured hunting misses sinks and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "RCE scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "RCE scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual RCE knowledge is needed, not execution."
     expected: "Verified RCE findings consolidated into the module report with false positives filtered."
   - anchor: rce-definition
@@ -50,7 +50,7 @@ index:
     avoid_when: "Basic sink analysis unfinished — cover the examples first; stack recipes wanted."
     expected: "Exotic vectors are checked before declaring an execution path safe."
   - anchor: rce-dynamic-payloads
-    what: "Dynamic test payload catalog: PoC curl examples per sink type and platform for Phase 2 confirmation."
+    what: "Dynamic test payload catalog: PoC curl examples per sink type and platform for verify-stage confirmation."
     problem: "Suspected sinks stay unconfirmed without concrete payloads, and generic injection strings fail against specific platforms and encodings; confirmation testing, platform variants, encoded forms, verification evidence, dynamic proof, sink matching, proof strings."
     use_when: "Confirming a suspected sink during verify; choosing payload forms per platform."
     avoid_when: "Static analysis is sufficient for the finding; recon stage not done."
@@ -68,11 +68,11 @@ index:
     avoid_when: "Detection content is the question — see phase anchors."
     expected: "Subagents operate read-only with report-scoped writes only."
   - anchor: rce-execution
-    what: "Three-phase execution: recon for execution sinks, batched verify in groups of three with taint tracing, merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the RCE scan execution; dispatching or reviewing any phase."
-    avoid_when: "Conceptual RCE knowledge is the need — see definition and examples anchors."
-    expected: "All three phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of dangerous execution sinks across four categories, per-sink verify checklist with taint tracing, classification rubric, and the finding-field set with CWE and dynamic tests."
+    problem: "RCE hunting without precise domain criteria lets recon miss evaluator, deserializer, processor, and CI sinks and verify apply generic checklists that overlook stack quirks; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current RCE vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definition belongs to the definition anchor."
+    expected: "Stage subagents apply exact RCE criteria without inheriting generic templates."
   - anchor: rce-owasp-mapping
     what: "Mapping of RCE findings to OWASP API 2023 risks, routed primarily via API8 and API10."
     problem: "Findings need correct 2023-era taxonomy, and assuming dedicated injection categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, compliance notes, risk labels."
@@ -91,7 +91,7 @@ index:
 
 [ref: #rce-detection]
 
-You are performing a focused security assessment to find Remote Code Execution vulnerabilities in a codebase. This skill uses a three-phase approach with subagents: **recon** (find dangerous execution sinks), **batched verify** (trace whether user-supplied input reaches each sink in parallel batches of 3), and **merge** (consolidate batch results into the final report).
+You are performing a focused security assessment to find Remote Code Execution vulnerabilities in a codebase. This skill uses a three-stage pipeline with subagents: **recon** (find dangerous execution sinks), **batched verify** (trace whether user-supplied input reaches each sink in parallel batches of 3), and **merge** (consolidate batch results into the final report).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -769,7 +769,7 @@ Mitigations to verify: sandboxed execution (an isolated container or VM per sess
 ## Dynamic Test Payloads and PoC curl Examples
 [ref: #rce-dynamic-payloads]
 
-Use the payloads below to confirm suspected RCE sinks during Phase 2. Select payloads that match the sink type and platform.
+Use the payloads below to confirm suspected RCE sinks during the verify stage. Select payloads that match the sink type and platform.
 
 ### OS Command Injection
 
@@ -888,7 +888,7 @@ Apply the following controls to eliminate or reduce RCE risk. Map them to OWASP 
 Subagents performing this RCE assessment MUST:
 
 - **Read only** the project source code and configuration files.
-- **Write only** to the report files under `{{ REPORTS_ROOT }}/` (`05_recon.md`, `05_batch_*.md`, `05_rce.md`).
+- **Write only** to the report files under `{{ REPORTS_ROOT }}/` (`05_recon.md`, `05_batch_*.md`, `05_verify_*.md`, `05_rce.md`).
 - **Never modify, patch, delete, or commit any project source file**, test file, CI configuration, or infrastructure definition.
 - If a proof-of-concept requires generating a test payload, write it to a temporary file under `/tmp/` or describe it in the report; do not leave it inside the project repository.
 
@@ -897,378 +897,217 @@ Subagents performing this RCE assessment MUST:
 ## Execution
 [ref: #rce-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/05_rce.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Find Dangerous Execution Sinks
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Find every location in the codebase where OS commands are executed, code is dynamically evaluated, expression languages are interpreted, processor commands are built, or data is deserialized using an unsafe deserializer. Flag ANY dynamic variable passed to these sinks, regardless of where it originates.
 
-> **Goal**: Find every location in the codebase where OS commands are executed, code is dynamically evaluated, expression languages are interpreted, processor commands are built, or data is deserialized using an unsafe deserializer. Flag ANY dynamic variable passed to these sinks, regardless of where it originates. Write results to `{{ REPORTS_ROOT }}/05_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, language, frameworks, and any serialization patterns in use.
->
-> ---
->
-> **Category 1 — OS Command Execution Sinks**
->
-> Look for functions that execute OS commands where the command string or arguments may be dynamically constructed. Flag when any non-constant variable appears in a dangerous position:
->
-> **Python:**
-> - `os.system(var)` — always flag if any variable
-> - `os.popen(var)` — always flag if any variable
-> - `subprocess.run(var, shell=True)`, `subprocess.call(var, shell=True)`, `subprocess.Popen(var, shell=True)`, `subprocess.check_output(var, shell=True)` — flag if `shell=True` AND a variable appears in the command string, OR if the command is a string (not a list) with any variable
-> - `subprocess.run(f"cmd {var}")` without `shell=True` — flag: passing a string (not list) to subprocess can still be unsafe
-> - `commands.getoutput(var)`, `commands.getstatusoutput(var)` — always flag (Python 2 only; the module was removed in Python 3 — legacy marker)
-> - `asyncio.create_subprocess_shell(var)` — flag if any variable in the command string (shell interpretation equivalent to `shell=True`); `asyncio.create_subprocess_exec("cmd", var)` with separate args is the safe form
->
-> **Node.js / JavaScript:**
-> - `child_process.exec(var)`, `child_process.execSync(var)` — flag if any variable in command string
-> - `child_process.execFile(var, ...)` — flag if command or args contain variables
-> - `child_process.spawn(var, ...)` or `spawn(cmd, args)` with `shell: true` and variable in command — flag
-> - `shelljs.exec(var)`, `execa(var)` — flag if variable in command
->
-> **PHP:**
-> - `exec(var)`, `system(var)`, `passthru(var)`, `shell_exec(var)`, `popen(var, ...)`, `proc_open(var, ...)` — flag if any variable in command string
-> - Backtick operator: `` `...{$var}...` `` or `` `$var` `` — always flag
->
-> **Ruby:**
-> - `system(var)`, `exec(var)`, `spawn(var)`, `IO.popen(var)`, `Open3.popen3(var)` — flag if string form with interpolated variable
-> - Backtick operator: `` `...#{var}...` `` — always flag
-> - `%x{...#{var}...}` — always flag
->
-> **Java:**
-> - `Runtime.getRuntime().exec(var)` — flag if string argument contains variable concatenation
-> - `new ProcessBuilder(var)` or `ProcessBuilder` constructed from variable-containing list — flag
->
-> **Go:**
-> - `exec.Command(var, ...)` — flag if command name or arguments are dynamically built from variables (especially from string splits of external input)
-> - `exec.Command("sh", "-c", var)` or similar shell wrappers — flag
->
-> **C# / .NET:**
-> - `Process.Start(var)` — flag if FileName or Arguments are variable
-> - `ProcessStartInfo { FileName = var, Arguments = var }` — flag
->
-> **Processors / Shell Outs:**
-> - ImageMagick `convert`, `magick` with user-controlled filenames, MVG/MSL inputs, or policy options
-> - FFmpeg with user-controlled inputs, playlists, `drawtext`, `eval` expressions, or protocol handlers
-> - LaTeX / pdflatex / xelatex with user-controlled `.tex` source or shell-escape flags
-> - PDF generators (e.g., wkhtmltopdf, Headless Chrome) with user-controlled HTML/JS or URLs
-> - Office converters (LibreOffice, Aspose, etc.) with user-controlled documents
->
-> ---
->
-> **Category 2 — Code Evaluation Sinks**
->
-> Look for functions that interpret strings as executable code or expression language:
->
-> **Python:**
-> - `eval(var)` — flag if argument is a variable
-> - `exec(var)` — flag if argument is a variable
-> - `compile(var, ...)` followed by `exec()` — flag
-> - `importlib.import_module(var)`, `__import__(var)` — flag if module name is a variable
->
-> **JavaScript / Node.js:**
-> - `eval(var)` — flag if argument is a variable
-> - `new Function(var)`, `new Function('x', var)` — flag if body is a variable
-> - `setTimeout(var, delay)`, `setInterval(var, delay)` — flag if first arg is a string variable
-> - `vm.runInNewContext(var)`, `vm.runInContext(var)`, `vm.runInThisContext(var)` — flag if variable
-> - `require(var)` — flag if module path is a variable (dynamic require with external input → path traversal + potential code execution)
->
-> **PHP:**
-> - `eval(var)` — always flag if variable in argument
-> - `preg_replace(pattern, replacement, subject)` with `/e` modifier in pattern — always flag
-> - `assert(var)` with string argument — flag if variable
-> - `create_function('', var)` — flag if body is variable (deprecated in PHP 7.2, removed in PHP 8.0 — legacy marker for pre-8.0 codebases)
-> - `call_user_func(var)`, `call_user_func_array(var, ...)` — flag if function name is a variable
->
-> **Ruby:**
-> - `eval(var)`, `instance_eval(var)`, `class_eval(var)`, `module_eval(var)` — flag if variable
-> - `binding.eval(var)` — flag if variable
->
-> **Java:**
-> - `SpelExpressionParser.parseExpression(var)` with `StandardEvaluationContext` — flag if expression is variable
-> - Struts OGNL evaluation of user-controlled parameter names/values — flag
-> - Apache JEXL `createExpression(var)` / `evaluate(var)` — flag if expression is variable
-> - Spring `@Value` or Thymeleaf `${...}` / `*{...}` containing user-controlled fragments — flag
->
-> **C# / .NET:**
-> - `CSharpScript.EvaluateAsync(var)` or Roslyn script execution with user input — flag
-> - `DataBinder.Eval(context, var)` with user-controlled expression — flag
-> - `Jint.Engine.Execute(var)` or similar JS-in-.NET evaluators — flag
->
-> ---
->
-> **Category 3 — Unsafe Deserialization Sinks**
->
-> Look for deserialization of data that may originate externally. For deserialization sinks, flag every usage — the question of whether data is user-controlled is Phase 2's job:
->
-> **Python:**
-> - `pickle.loads(var)`, `pickle.load(file_var)` — flag always (pickle is inherently unsafe with untrusted data)
-> - `marshal.loads(var)`, `marshal.load(file_var)` — flag always
-> - `yaml.load(var)` without explicit `Loader=yaml.SafeLoader` — flag (any form without a safe loader)
-> - `jsonpickle.decode(var)` — flag always
-> - `shelve` accessed with externally-influenced keys
->
-> **Java:**
-> - `ObjectInputStream.readObject()`, `ObjectInputStream.readUnshared()` — flag always
-> - `XMLDecoder.readObject()` — flag always
-> - `XStream.fromXML(var)` — flag always (unless XStream security filters are explicitly configured)
-> - `ObjectMapper` with `.enableDefaultTyping()` or `.activateDefaultTyping(...)` configured on it — flag the readValue call
-> - `new Yaml().load(var)` (SnakeYAML) without `SafeConstructor` / a safe loader — flag always (CVE-2022-1471)
-> - `Kryo.readObject(var, ...)`, `Kryo.readClassAndObject(var)` — flag if input stream comes from external source
->
-> **PHP:**
-> - `unserialize(var)` — flag always when argument is a variable
->
-> **Ruby:**
-> - `Marshal.load(var)`, `Marshal.restore(var)` — flag always
-> - `YAML.load(var)` (Psych) without `permitted_classes: []` — flag
->
-> **Node.js:**
-> - `require('node-serialize').unserialize(var)` — flag always
-> - `yaml.load(var)` (js-yaml v3 default unsafe load) — flag
->
-> **.NET:**
-> - `BinaryFormatter.Deserialize(var)` — flag always, including projects that re-enable it on .NET 8/9 via the `System.Runtime.Serialization.Formatters` package or `EnableUnsafeBinaryFormatterSerialization`
-> - `SoapFormatter.Deserialize(var)` — flag always
-> - `NetDataContractSerializer.ReadObject(var)` — flag
-> - `JavaScriptSerializer.Deserialize(var)` — flag if TypeNameHandling is enabled or argument is variable
-> - `LosFormatter.Deserialize(var)` — flag always
->
-> **Go:**
-> - `gob.NewDecoder(r).Decode(&v)` on externally influenced data — flag
->
-> ---
->
-> **Category 4 — Serverless / CI / Infrastructure Execution Sinks**
->
-> Flag when user-controlled or externally-influenced values reach:
-> - CI pipeline `run:` scripts or shell steps (GitHub Actions, GitLab CI, Azure Pipelines, CircleCI)
-> - GitHub Actions expressions `${{ ... }}` evaluated against attacker-influenced contexts
-> - cloud-init `runcmd` / `write_files` content built from user input
-> - Lambda / function handler code that passes event fields to `eval`, `exec`, `os.system`, or deserialization
-> - Terraform / Helm / Kustomize template values rendered into shell snippets or command args
-> - LLM agent tool dispatch — `exec`/`eval`/REPL invocation of model-generated code, or tool names/arguments from model output reaching dynamic dispatch (`getattr`, `call_user_func`, reflection) without an allowlist
->
-> ---
->
-> **What to skip** (these are safe and should not be flagged):
-> - `subprocess.run(["cmd", arg1, arg2])` with a list and no `shell=True` — no shell expansion
-> - `json.loads(var)`, `JSON.parse(var)`, `json_decode(var)` — safe format with no code execution
-> - `yaml.safe_load(var)` or `yaml.load(var, Loader=yaml.SafeLoader)` — safe loader
-> - `ast.literal_eval(var)` — only parses Python literals, not arbitrary code
-> - `SimpleEvaluationContext` SpEL evaluations with read-only data binding
-> - `JsonConvert.DeserializeObject<T>(json)` in .NET with default `TypeNameHandling.None`
->
-> ---
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/05_recon.md`:
->
-> ```markdown
-> # RCE Recon: [Project Name]
->
-> ## Summary
-> Found [N] potential RCE sinks: [X] OS command, [Y] code injection, [Z] unsafe deserialization.
->
-> ## Sinks Found
->
-> ### 1. [Descriptive name — e.g., "shell=True subprocess in image converter"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: [function name or route]
-> - **Category**: [OS Command Injection / Code Injection / Expression Language Injection / Unsafe Deserialization / Processor RCE / CI Environment Injection]
-> - **Sink**: [the dangerous function call — e.g., subprocess.run(..., shell=True)]
-> - **Dynamic argument(s)**: `var_name` — [brief note on what it appears to represent]
-> - **Code snippet**:
->   ```
->   [the relevant code around the sink]
->   ```
->
-> [Repeat for each sink]
-> ```
+**Category 1 — OS Command Execution Sinks**
 
-### After Phase 1: Check for Candidates Before Proceeding
+Look for functions that execute OS commands where the command string or arguments may be dynamically constructed. Flag when any non-constant variable appears in a dangerous position:
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/05_recon.md`. If the recon found **zero sinks** (the summary reports "Found 0" or the "Sinks Found" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/05_rce.md`, **delete** `{{ REPORTS_ROOT }}/05_recon.md`, and stop:
+**Python:**
+- `os.system(var)` — always flag if any variable
+- `os.popen(var)` — always flag if any variable
+- `subprocess.run(var, shell=True)`, `subprocess.call(var, shell=True)`, `subprocess.Popen(var, shell=True)`, `subprocess.check_output(var, shell=True)` — flag if `shell=True` AND a variable appears in the command string, OR if the command is a string (not a list) with any variable
+- `subprocess.run(f"cmd {var}")` without `shell=True` — flag: passing a string (not list) to subprocess can still be unsafe
+- `commands.getoutput(var)`, `commands.getstatusoutput(var)` — always flag (Python 2 only; the module was removed in Python 3 — legacy marker)
+- `asyncio.create_subprocess_shell(var)` — flag if any variable in the command string (shell interpretation equivalent to `shell=True`); `asyncio.create_subprocess_exec("cmd", var)` with separate args is the safe form
 
-```markdown
-# RCE Analysis Results
+**Node.js / JavaScript:**
+- `child_process.exec(var)`, `child_process.execSync(var)` — flag if any variable in command string
+- `child_process.execFile(var, ...)` — flag if command or args contain variables
+- `child_process.spawn(var, ...)` or `spawn(cmd, args)` with `shell: true` and variable in command — flag
+- `shelljs.exec(var)`, `execa(var)` — flag if variable in command
 
-No vulnerabilities found.
-```
+**PHP:**
+- `exec(var)`, `system(var)`, `passthru(var)`, `shell_exec(var)`, `popen(var, ...)`, `proc_open(var, ...)` — flag if any variable in command string
+- Backtick operator: `` `...{$var}...` `` or `` `$var` `` — always flag
 
-Only proceed to Phase 2 if Phase 1 found at least one potential sink.
+**Ruby:**
+- `system(var)`, `exec(var)`, `spawn(var)`, `IO.popen(var)`, `Open3.popen3(var)` — flag if string form with interpolated variable
+- Backtick operator: `` `...#{var}...` `` — always flag
+- `%x{...#{var}...}` — always flag
 
-### Phase 2: Trace User Input to Sinks (Batched)
+**Java:**
+- `Runtime.getRuntime().exec(var)` — flag if string argument contains variable concatenation
+- `new ProcessBuilder(var)` or `ProcessBuilder` constructed from variable-containing list — flag
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/05_recon.md` and split the sinks into **batches of up to 3 sinks each** (numbered sections under `## Sinks Found`: `### 1.`, `### 2.`, etc.). Launch **one subagent per batch in parallel**. Each subagent traces taint only for its assigned sinks and writes results to its own batch file.
+**Go:**
+- `exec.Command(var, ...)` — flag if command name or arguments are dynamically built from variables (especially from string splits of external input)
+- `exec.Command("sh", "-c", var)` or similar shell wrappers — flag
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+**C# / .NET:**
+- `Process.Start(var)` — flag if FileName or Arguments are variable
+- `ProcessStartInfo { FileName = var, Arguments = var }` — flag
 
-1. Read `{{ REPORTS_ROOT }}/05_recon.md` and count the numbered sink sections (`### 1.`, `### 2.`, ...).
-2. Divide them into batches of up to 3. For example, 8 sinks → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those sink sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned sinks.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/05_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project is Python-focused, include the Python OS command, eval, pickle, and YAML subsections that apply. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+**Processors / Shell Outs:**
+- ImageMagick `convert`, `magick` with user-controlled filenames, MVG/MSL inputs, or policy options
+- FFmpeg with user-controlled inputs, playlists, `drawtext`, `eval` expressions, or protocol handlers
+- LaTeX / pdflatex / xelatex with user-controlled `.tex` source or shell-escape flags
+- PDF generators (e.g., wkhtmltopdf, Headless Chrome) with user-controlled HTML/JS or URLs
+- Office converters (LibreOffice, Aspose, etc.) with user-controlled documents
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+**Category 2 — Code Evaluation Sinks**
 
-> **Goal**: For each assigned RCE sink, determine whether a user-supplied value reaches the dangerous argument. Our goal is to find code execution vulnerabilities. Write results to `{{ REPORTS_ROOT }}/05_batch_[N].md`.
->
-> **Your assigned sinks** (from the recon phase):
->
-> [Paste the full text of the assigned sink sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use the architecture to understand request entry points, middleware, and how data flows through the application.
->
-> **RCE reference — what to look for**:
->
-> Trace each sink's dynamic argument(s) back to their origin. RCE requires attacker-controlled data to reach a dangerous sink (OS command with shell interpretation, eval-like execution, expression-language evaluation, processor command construction, CI/infrastructure execution, or unsafe deserialization).
->
-> **What RCE is NOT** — do not flag these as RCE:
-> - **SSRF**, **path traversal**, **SSTI**, **XSS**, **SQLi** — other classes (see skill preamble).
-> - **Safe subprocess list-form** with no shell: arguments passed without shell expansion are not command injection.
-> - **Safe formats**: `json.loads`, `yaml.safe_load`, `ast.literal_eval` — no code execution semantics.
-> - **Pure SSTI** belongs to `06-ssti.md`; only flag template-engine arbitrary code execution here, and cross-reference `06_ssti.md`.
->
-> **Specialized vectors to consider during tracing**:
-> - Shell metacharacter chaining (`;`, `&&`, `||`, `|`, `$()`, backticks, newline injection).
-> - Polyglot payloads that bypass validation before reaching execution sinks.
-> - Processor-related RCE (ImageMagick, FFmpeg, LaTeX, PDF generators, Office converters).
-> - Serverless / CI environment injection (build scripts, Lambda layers, GitHub Actions expressions, cloud-init).
->
-> **Mitigations that prevent exploitation** — if present and effective, the sink is likely safe:
-> 1. **Subprocess list form without shell**: `subprocess.run(["cmd", var])` without `shell=True` — no shell metacharacter injection.
-> 2. **Strict allowlist** before use: fixed set of safe values only.
-> 3. **Safe deserialization**: JSON, `yaml.safe_load`, concrete typed Jackson reads without default typing, .NET JSON without TypeNameHandling.
-> 4. **Safe expression context**: SpEL `SimpleEvaluationContext` or equivalent with no access to `Runtime`, `ProcessBuilder`, or reflection.
-> 5. **Processor hardening**: dangerous features disabled, sandboxed execution, up-to-date binaries.
->
-> **Vulnerable vs. secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **For each sink, trace the dynamic argument(s) backwards to their origin**:
->
-> 1. **Direct user input** — the variable is assigned directly from a request source with no transformation:
->    - HTTP query params: `request.GET.get(...)`, `req.query.x`, `params[:x]`, `$_GET['x']`, `c.Query("x")`
->    - Path parameters: `request.path_params['id']`, `req.params.id`, `params[:id]`
->    - Request body / form fields: `request.POST.get(...)`, `req.body.x`, `params[:x]`, `$_POST['x']`
->    - HTTP headers: `request.headers.get(...)`, `req.headers['x']`
->    - Cookies: `request.COOKIES.get(...)`, `req.cookies.x`
->    - File upload content: `request.files['file'].read()`, `req.file.buffer`
->    - WebSocket messages, queue/event payloads
->    - Third-party API responses consumed by the target API
->
-> 2. **Indirect user input** — the variable is derived from user input through transformations, function calls, or intermediate assignments. Trace the full chain:
->    - Variable assigned from a function return value → check that function's parameter origin
->    - Variable passed as a function argument → check the call site(s)
->    - Variable conditionally assigned — check all branches
->
-> 3. **Externally-influenced deserialization data** — for deserialization sinks: Is the raw bytes/string coming from a network socket, HTTP request body, cookie, file upload, or a database value that was originally user-supplied? Any externally-controllable byte stream fed to an unsafe deserializer is exploitable.
->
-> 4. **Server-side / hardcoded value** — the variable comes from config, an environment variable, a hardcoded constant, or server-side logic with no external influence — NOT exploitable.
->
-> **Mitigations to check for each sink**:
-> - **Allowlist validation**: Is the variable validated against a fixed set of known-safe values before use? If strict and complete, mark as Not Vulnerable.
-> - **Integer/type cast**: Does casting to `int`/`float` actually prevent injection in this context? Effective only for purely numeric arguments with no quoting issues.
-> - **escapeshellarg / escapeshellcmd** (PHP): Reduces risk but is not elimination — flag as Likely Vulnerable; shell escaping has bypass history in certain contexts.
-> - **Subprocess list form**: `subprocess.run(["cmd", var])` without `shell=True` — arguments are passed directly to the OS, no shell expansion. This IS an effective mitigation for command injection (mark as Not Vulnerable for injection; the value is still passed to the command, but cannot inject new commands).
-> - **Safe deserializer in place**: If `json.loads()`, `yaml.safe_load()`, etc. are used instead — skip (Phase 1 should not have flagged these).
-> - **Safe expression context**: If SpEL `SimpleEvaluationContext`, JEXL restricted permissions, or equivalent sandboxing is in place and verified effective — mark as Not Vulnerable.
->
-> **Classification**:
-> - **Vulnerable**: User input demonstrably reaches the dangerous sink with no effective mitigation.
-> - **Likely Vulnerable**: User input probably reaches the sink (indirect flow) or only weak mitigation is present (shell escaping, partial validation, unclear allowlist).
-> - **Not Vulnerable**: The argument is server-side only, OR effective mitigation is in place (subprocess list form, strict allowlist, safe deserializer format, safe expression context).
-> - **Needs Manual Review**: Cannot determine the argument's origin with confidence (passes through opaque helpers, complex conditional flows, or external libraries).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/05_batch_[N].md`:
->
-> ```markdown
-> # RCE Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Category**: [OS Command Injection / Code Injection / Expression Language Injection / Unsafe Deserialization / Processor RCE / CI Environment Injection]
-> - **CWE**: [CWE-78 / CWE-94 / CWE-95 / CWE-502 / most specific applicable]
-> - **Issue**: [e.g., "HTTP query param `host` flows directly into shell=True subprocess call"]
-> - **Taint trace**: [Step-by-step from entry point to the sink — e.g., "request.args.get('host') → host → subprocess.run(f'ping -c 1 {host}', shell=True)"]
-> - **Impact**: [What an attacker can do — execute arbitrary OS commands, read /etc/passwd, establish reverse shell, achieve full server compromise, etc.]
-> - **Remediation**: [Specific fix — use list-form subprocess, replace eval with safe alternative, switch to json.loads/yaml.safe_load, use SimpleEvaluationContext, disable processor feature, etc.]
-> - **Dynamic Test**:
->   ```
->   [curl command or payload to confirm the finding.
->    Show the exact parameter, payload, and what to look for in the response.
->    Examples:
->      curl "https://app.example.com/ping?host=127.0.0.1;id"
->      curl "https://app.example.com/ping?host=127.0.0.1%3Bid"
->      For expression language: ?expr=${T(java.lang.Runtime).getRuntime().exec('id')}
->      For processor RCE: crafted MVG/LaTeX/Office file upload
->      For deserialization: show how to craft a malicious payload with ysoserial or pickletools]
->   ```
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Category**: [OS Command Injection / Code Injection / Expression Language Injection / Unsafe Deserialization / Processor RCE / CI Environment Injection]
-> - **CWE**: [applicable CWE]
-> - **Issue**: [e.g., "Variable likely sourced from user input via helper function" or "escapeshellarg applied but bypassable in some contexts"]
-> - **Taint trace**: [Best-effort trace with the uncertain step identified]
-> - **Concern**: [Why it's still a risk despite uncertainty]
-> - **Remediation**: [Fix]
-> - **Dynamic Test**:
->   ```
->   [payload to attempt]
->   ```
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Reason**: [e.g., "Argument is hardcoded constant" or "subprocess called with list form, no shell=True — shell injection impossible" or "strict allowlist gates the value before use"]
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Uncertainty**: [Why the variable's origin could not be determined]
-> - **Suggestion**: [What to trace manually — e.g., "Follow `build_command()` in utils.py to check where its return value originates"]
-> ```
+Look for functions that interpret strings as executable code or expression language:
 
-### Phase 3: Merge — Consolidate Batch Results
+**Python:**
+- `eval(var)` — flag if argument is a variable
+- `exec(var)` — flag if argument is a variable
+- `compile(var, ...)` followed by `exec()` — flag
+- `importlib.import_module(var)`, `__import__(var)` — flag if module name is a variable
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/05_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/05_rce.md`. You (the orchestrator) do this directly — no subagent needed.
+**JavaScript / Node.js:**
+- `eval(var)` — flag if argument is a variable
+- `new Function(var)`, `new Function('x', var)` — flag if body is a variable
+- `setTimeout(var, delay)`, `setInterval(var, delay)` — flag if first arg is a string variable
+- `vm.runInNewContext(var)`, `vm.runInContext(var)`, `vm.runInThisContext(var)` — flag if variable
+- `require(var)` — flag if module path is a variable (dynamic require with external input → path traversal + potential code execution)
 
-**Merge procedure**:
+**PHP:**
+- `eval(var)` — always flag if variable in argument
+- `preg_replace(pattern, replacement, subject)` with `/e` modifier in pattern — always flag
+- `assert(var)` with string argument — flag if variable
+- `create_function('', var)` — flag if body is variable (deprecated in PHP 7.2, removed in PHP 8.0 — legacy marker for pre-8.0 codebases)
+- `call_user_func(var)`, `call_user_func_array(var, ...)` — flag if function name is a variable
 
-1. Read all `{{ REPORTS_ROOT }}/05_batch_1.md`, `{{ REPORTS_ROOT }}/05_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/05_rce.md` using this format:
+**Ruby:**
+- `eval(var)`, `instance_eval(var)`, `class_eval(var)`, `module_eval(var)` — flag if variable
+- `binding.eval(var)` — flag if variable
 
-```markdown
-# RCE Analysis Results: [Project Name]
+**Java:**
+- `SpelExpressionParser.parseExpression(var)` with `StandardEvaluationContext` — flag if expression is variable
+- Struts OGNL evaluation of user-controlled parameter names/values — flag
+- Apache JEXL `createExpression(var)` / `evaluate(var)` — flag if expression is variable
+- Spring `@Value` or Thymeleaf `${...}` / `*{...}` containing user-controlled fragments — flag
 
-## Executive Summary
-- Sinks analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+**C# / .NET:**
+- `CSharpScript.EvaluateAsync(var)` or Roslyn script execution with user input — flag
+- `DataBinder.Eval(context, var)` with user-controlled expression — flag
+- `Jint.Engine.Execute(var)` or similar JS-in-.NET evaluators — flag
 
-## Findings
+**Category 3 — Unsafe Deserialization Sinks**
 
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
+Look for deserialization of data that may originate externally. For deserialization sinks, flag every usage — the question of whether data is user-controlled belongs to the verify stage:
 
-5. After writing `{{ REPORTS_ROOT }}/05_rce.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/05_batch_*.md`) and **delete** `{{ REPORTS_ROOT }}/05_recon.md`.
+**Python:**
+- `pickle.loads(var)`, `pickle.load(file_var)` — flag always (pickle is inherently unsafe with untrusted data)
+- `marshal.loads(var)`, `marshal.load(file_var)` — flag always
+- `yaml.load(var)` without explicit `Loader=yaml.SafeLoader` — flag (any form without a safe loader)
+- `jsonpickle.decode(var)` — flag always
+- `shelve` accessed with externally-influenced keys
 
-***
+**Java:**
+- `ObjectInputStream.readObject()`, `ObjectInputStream.readUnshared()` — flag always
+- `XMLDecoder.readObject()` — flag always
+- `XStream.fromXML(var)` — flag always (unless XStream security filters are explicitly configured)
+- `ObjectMapper` with `.enableDefaultTyping()` or `.activateDefaultTyping(...)` configured on it — flag the readValue call
+- `new Yaml().load(var)` (SnakeYAML) without `SafeConstructor` / a safe loader — flag always (CVE-2022-1471)
+- `Kryo.readObject(var, ...)`, `Kryo.readClassAndObject(var)` — flag if input stream comes from external source
 
+**PHP:**
+- `unserialize(var)` — flag always when argument is a variable
+
+**Ruby:**
+- `Marshal.load(var)`, `Marshal.restore(var)` — flag always
+- `YAML.load(var)` (Psych) without `permitted_classes: []` — flag
+
+**Node.js:**
+- `require('node-serialize').unserialize(var)` — flag always
+- `yaml.load(var)` (js-yaml v3 default unsafe load) — flag
+
+**.NET:**
+- `BinaryFormatter.Deserialize(var)` — flag always, including projects that re-enable it on .NET 8/9 via the `System.Runtime.Serialization.Formatters` package or `EnableUnsafeBinaryFormatterSerialization`
+- `SoapFormatter.Deserialize(var)` — flag always
+- `NetDataContractSerializer.ReadObject(var)` — flag
+- `JavaScriptSerializer.Deserialize(var)` — flag if TypeNameHandling is enabled or argument is variable
+- `LosFormatter.Deserialize(var)` — flag always
+
+**Go:**
+- `gob.NewDecoder(r).Decode(&v)` on externally influenced data — flag
+
+**Category 4 — Serverless / CI / Infrastructure Execution Sinks**
+
+Flag when user-controlled or externally-influenced values reach:
+- CI pipeline `run:` scripts or shell steps (GitHub Actions, GitLab CI, Azure Pipelines, CircleCI)
+- GitHub Actions expressions `${{ ... }}` evaluated against attacker-influenced contexts
+- cloud-init `runcmd` / `write_files` content built from user input
+- Lambda / function handler code that passes event fields to `eval`, `exec`, `os.system`, or deserialization
+- Terraform / Helm / Kustomize template values rendered into shell snippets or command args
+- LLM agent tool dispatch — `exec`/`eval`/REPL invocation of model-generated code, or tool names/arguments from model output reaching dynamic dispatch (`getattr`, `call_user_func`, reflection) without an allowlist
+
+**Recon exclusions** — these are safe and should not be flagged:
+- `subprocess.run(["cmd", arg1, arg2])` with a list and no `shell=True` — no shell expansion
+- `json.loads(var)`, `JSON.parse(var)`, `json_decode(var)` — safe format with no code execution
+- `yaml.safe_load(var)` or `yaml.load(var, Loader=yaml.SafeLoader)` — safe loader
+- `ast.literal_eval(var)` — only parses Python literals, not arbitrary code
+- `SimpleEvaluationContext` SpEL evaluations with read-only data binding
+- `JsonConvert.DeserializeObject<T>(json)` in .NET with default `TypeNameHandling.None`
+
+### Verify checklist
+
+Trace each sink's dynamic argument(s) back to their origin. RCE requires attacker-controlled data to reach a dangerous sink (OS command with shell interpretation, eval-like execution, expression-language evaluation, processor command construction, CI/infrastructure execution, or unsafe deserialization).
+
+**What RCE is NOT** — do not flag these as RCE:
+- **SSRF**, **path traversal**, **SSTI**, **XSS**, **SQLi** — other classes (see skill preamble).
+- **Safe subprocess list-form** with no shell: arguments passed without shell expansion are not command injection.
+- **Safe formats**: `json.loads`, `yaml.safe_load`, `ast.literal_eval` — no code execution semantics.
+- **Pure SSTI** belongs to `06-ssti.md`; only flag template-engine arbitrary code execution here, and cross-reference `06_ssti.md`.
+
+**Specialized vectors to consider during tracing**:
+- Shell metacharacter chaining (`;`, `&&`, `||`, `|`, `$()`, backticks, newline injection).
+- Polyglot payloads that bypass validation before reaching execution sinks.
+- Processor-related RCE (ImageMagick, FFmpeg, LaTeX, PDF generators, Office converters).
+- Serverless / CI environment injection (build scripts, Lambda layers, GitHub Actions expressions, cloud-init).
+
+**Mitigations that prevent exploitation** — if present and effective, the sink is likely safe:
+1. **Subprocess list form without shell**: `subprocess.run(["cmd", var])` without `shell=True` — no shell metacharacter injection.
+2. **Strict allowlist** before use: fixed set of safe values only.
+3. **Safe deserialization**: JSON, `yaml.safe_load`, concrete typed Jackson reads without default typing, .NET JSON without TypeNameHandling.
+4. **Safe expression context**: SpEL `SimpleEvaluationContext` or equivalent with no access to `Runtime`, `ProcessBuilder`, or reflection.
+5. **Processor hardening**: dangerous features disabled, sandboxed execution, up-to-date binaries.
+
+**For each sink, trace the dynamic argument(s) backwards to their origin**:
+
+1. **Direct user input** — the variable is assigned directly from a request source with no transformation:
+   - HTTP query params: `request.GET.get(...)`, `req.query.x`, `params[:x]`, `$_GET['x']`, `c.Query("x")`
+   - Path parameters: `request.path_params['id']`, `req.params.id`, `params[:id]`
+   - Request body / form fields: `request.POST.get(...)`, `req.body.x`, `params[:x]`, `$_POST['x']`
+   - HTTP headers: `request.headers.get(...)`, `req.headers['x']`
+   - Cookies: `request.COOKIES.get(...)`, `req.cookies.x`
+   - File upload content: `request.files['file'].read()`, `req.file.buffer`
+   - WebSocket messages, queue/event payloads
+   - Third-party API responses consumed by the target API
+
+2. **Indirect user input** — the variable is derived from user input through transformations, function calls, or intermediate assignments. Trace the full chain:
+   - Variable assigned from a function return value → check that function's parameter origin
+   - Variable passed as a function argument → check the call site(s)
+   - Variable conditionally assigned — check all branches
+
+3. **Externally-influenced deserialization data** — for deserialization sinks: Is the raw bytes/string coming from a network socket, HTTP request body, cookie, file upload, or a database value that was originally user-supplied? Any externally-controllable byte stream fed to an unsafe deserializer is exploitable.
+
+4. **Server-side / hardcoded value** — the variable comes from config, an environment variable, a hardcoded constant, or server-side logic with no external influence — NOT exploitable.
+
+**Mitigations to check for each sink**:
+- **Allowlist validation**: Is the variable validated against a fixed set of known-safe values before use? If strict and complete, mark as Not Vulnerable.
+- **Integer/type cast**: Does casting to `int`/`float` actually prevent injection in this context? Effective only for purely numeric arguments with no quoting issues.
+- **escapeshellarg / escapeshellcmd** (PHP): Reduces risk but is not elimination — flag as Likely Vulnerable; shell escaping has bypass history in certain contexts.
+- **Subprocess list form**: `subprocess.run(["cmd", var])` without `shell=True` — arguments are passed directly to the OS, no shell expansion. This IS an effective mitigation for command injection (mark as Not Vulnerable for injection; the value is still passed to the command, but cannot inject new commands).
+- **Safe deserializer in place**: If `json.loads()`, `yaml.safe_load()`, etc. are used instead — skip (the recon stage should not have flagged these).
+- **Safe expression context**: If SpEL `SimpleEvaluationContext`, JEXL restricted permissions, or equivalent sandboxing is in place and verified effective — mark as Not Vulnerable.
+
+### Classification
+
+- **Vulnerable**: User input demonstrably reaches the dangerous sink with no effective mitigation.
+- **Likely Vulnerable**: User input probably reaches the sink (indirect flow) or only weak mitigation is present (shell escaping, partial validation, unclear allowlist).
+- **Not Vulnerable**: The argument is server-side only, OR effective mitigation is in place (subprocess list form, strict allowlist, safe deserializer format, safe expression context).
+- **Needs Manual Review**: Cannot determine the argument's origin with confidence (passes through opaque helpers, complex conditional flows, or external libraries).
+
+### Finding fields
+
+Every finding block carries: classification tag, file/lines, endpoint or function, category, CWE (the most specific applicable identifier — see the CWE References table), issue, taint trace (step-by-step from entry point to the sink), impact, remediation, and a dynamic test (curl command or payload to confirm the sink on the live app, selected from the Dynamic Test Payloads and PoC curl Examples section).
 ## OWASP API Security Top 10 2023 mapping
 [ref: #rce-owasp-mapping]
 
@@ -1282,14 +1121,8 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 ## Important Reminders
 [ref: #rce-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 sinks per subagent**. If there are 1-3 sinks total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned sinks' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
-- **Phase 1 is purely structural**: flag any sink where a non-constant variable appears in a dangerous position, regardless of where that variable comes from. Do not trace user input in Phase 1.
-- **Phase 2 is purely taint analysis**: for each sink found in Phase 1, trace the dynamic argument back to its origin. If it comes from a user-controlled source, the site is a real vulnerability.
+- **The recon stage is purely structural**: flag any sink where a non-constant variable appears in a dangerous position, regardless of where that variable comes from — tracing belongs to the verify stage.
+- **The verify stage is purely taint analysis**: for each sink found by recon, trace the dynamic argument back to its origin. If it comes from a user-controlled source, the site is a real vulnerability.
 - **For deserialization sinks**: any externally-controllable byte stream is dangerous — HTTP bodies, cookies, file uploads, WebSocket frames, queue messages, third-party API responses. Be conservative and flag all deserialization sinks where data flow from an external source cannot be ruled out.
 - **For OS command sinks**: `subprocess.run(["cmd", var])` with list form and no `shell=True` is NOT command injection — the argument is passed directly to the process without shell interpretation. Only flag when shell interpretation is possible (string command + `shell=True`, or `exec()`/`system()` equivalents).
 - **For `eval`-like sinks**: there is almost no safe way to use `eval()` with user input. Any eval-like sink receiving external data should be flagged Vulnerable.
@@ -1300,5 +1133,5 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 - Taint can flow indirectly through middleware, helper functions, class attributes, and intermediate variables. Trace the full chain.
 - Second-order RCE is possible: a value stored from user input may later be deserialized or evaluated in a different code path (e.g., a user-supplied config stored in DB and later `eval()`'d by a cron job).
 - For Java deserialization: the presence of dangerous gadget libraries in the classpath (Apache Commons Collections, Spring Framework, etc.) determines exploitability. Flag the deserialization call; note any relevant libraries from `architecture.md`.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/05_recon.md` and all `{{ REPORTS_ROOT }}/05_batch_*.md` files after the final `{{ REPORTS_ROOT }}/05_rce.md` is written (Phase 3 merge step 5 performs this).
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `05_recon.md`, `05_batch_*.md`, and `05_verify_*.md`; only the final `{{ REPORTS_ROOT }}/05_rce.md` persists.
 - **Do not modify project source code**. Subagents must only produce reports under `{{ REPORTS_ROOT }}/`.

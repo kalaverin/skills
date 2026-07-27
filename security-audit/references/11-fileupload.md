@@ -1,10 +1,10 @@
 ---
-subject: "Insecure file upload detection reference for SAST subagents: definition and exclusions, prevention patterns, per-stack vulnerable/secure recipes incl. FastAPI, 22-vector bypass catalog, prevention guidance, 8 modern watch-outs incl. multipart parser differentials, three-phase execution, OWASP and CWE mapping."
+subject: "Insecure file upload detection reference for SAST subagents: definition and exclusions, prevention patterns, per-stack vulnerable/secure recipes incl. FastAPI, 22-vector bypass catalog, prevention guidance, 8 modern watch-outs incl. multipart parser differentials, shared-protocol execution parameters, OWASP and CWE mapping."
 index:
   - anchor: fileupload-detection
-    what: "Focused upload-security detection role using the three-phase subagent approach — recon, batched bypass verify, merge — gated on the architecture report."
+    what: "Focused upload-security detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched bypass verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic sweep of every upload and file-processing endpoint, yet unstructured hunting misses validation gaps and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "Upload scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Upload scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual upload knowledge is needed, not execution."
     expected: "Verified upload findings consolidated into the module report with false positives filtered."
   - anchor: fileupload-definition
@@ -38,11 +38,11 @@ index:
     avoid_when: "Basic upload analysis unfinished — cover the examples first; vector catalog wanted."
     expected: "Modern bypass paths are checked before declaring validation sound."
   - anchor: fileupload-execution
-    what: "Three-phase execution: upload-site recon with a zero-candidate early-exit gate, batched bypass verify in groups of three, merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the upload scan execution; dispatching or reviewing any phase."
-    avoid_when: "Conceptual upload knowledge is the need — see definition and examples anchors."
-    expected: "All three phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of file-upload handling sites across stacks, per-candidate verify checklist of sixteen bypass vectors, classification rubric, and the finding-field set with dynamic tests."
+    problem: "Upload hunting without precise domain criteria lets recon miss storage paths and verify apply generic checklists that overlook bypass vectors; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current upload-bypass vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual upload knowledge belongs to the definition and examples anchors."
+    expected: "Stage subagents apply exact upload-security criteria without inheriting generic templates."
   - anchor: fileupload-owasp-mapping
     what: "Mapping of upload findings to OWASP API 2023 risks, routed via API8 and API10."
     problem: "Findings need correct 2023-era taxonomy for reporting, and assuming dedicated upload categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, risk labels."
@@ -73,7 +73,7 @@ index:
 
 [ref: #fileupload-detection]
 
-You are performing a focused security assessment to find insecure file upload vulnerabilities in a codebase. This skill uses a three-phase approach with subagents: **discovery** (find all places where uploaded files are received and stored), **batched verify** (check bypass vectors in parallel batches of up to 3 upload sites each), and **merge** (consolidate batch reports into one results file).
+You are performing a focused security assessment to find insecure file upload vulnerabilities in a codebase. This skill uses a three-stage pipeline with subagents: **discovery** (find all places where uploaded files are received and stored), **batched verify** (check bypass vectors in parallel batches of up to 3 upload sites each), and **merge** (consolidate batch reports into one results file).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -453,7 +453,7 @@ public async Task<IActionResult> Upload(IFormFile file) {
 ## Bypass Vector Catalog
 [ref: #fileupload-bypass-catalog]
 
-Use this catalog during Phase 2 to evaluate every upload site. Each vector includes detection guidance, a concrete code/logic example, and a dynamic-test PoC. These vectors apply regardless of language or framework.
+Use this catalog during the verify stage to evaluate every upload site. Each vector includes detection guidance, a concrete code/logic example, and a dynamic-test PoC. These vectors apply regardless of language or framework.
 
 ### 1. No Extension Validation
 
@@ -960,260 +960,116 @@ Framework and proxy multipart parsers disagree on parameter handling, boundary r
 ## Execution
 [ref: #fileupload-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/11_fileupload.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Find All File Upload Sites
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Look for any code that receives a file from an HTTP request and writes or stores it. Do not yet evaluate whether validation is present — just find all the sites. Use the architecture summary to understand the framework, file storage patterns, and whether uploads go to local disk, cloud storage, or a CDN.
 
-> **Goal**: Find every location in the codebase where files uploaded by users are received and stored. Write results to `{{ REPORTS_ROOT }}/11_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the framework, file storage patterns, and whether uploads go to local disk, cloud storage, or a CDN.
->
-> **What to search for — file upload handling patterns**:
->
-> Look for any code that receives a file from an HTTP request and writes or stores it. Do not yet evaluate whether validation is present — just find all the sites.
->
-> 1. **Python / Django**:
->    - `request.FILES` access
->    - `InMemoryUploadedFile`, `TemporaryUploadedFile`
->    - `default_storage.save(...)`, `FileSystemStorage().save(...)`
->    - Model `FileField` / `ImageField` form submissions
->    - `shutil.copyfileobj(f, dest)` or manual `.write(f.read())` on uploaded data
->
-> 2. **Python / Flask**:
->    - `request.files.get(...)` or `request.files[...]`
->    - `file.save(...)` calls on a `FileStorage` object
->    - `werkzeug` `FileStorage` handling
->
-> 3. **Node.js**:
->    - `multer` middleware: `upload.single(...)`, `upload.array(...)`, `upload.fields(...)`
->    - `busboy`, `formidable`, `multiparty` form parsing
->    - `express-fileupload`: `req.files`
->    - `fs.writeFile` / `fs.createWriteStream` / `pipe()` called with a request stream
->
-> 4. **PHP**:
->    - `$_FILES` access
->    - `move_uploaded_file(...)` calls
->    - `copy($_FILES[...]['tmp_name'], ...)`
->
-> 5. **Java / Spring**:
->    - `MultipartFile` parameters in controller methods: `@RequestParam MultipartFile`
->    - `CommonsMultipartFile`, `StandardMultipartFile`
->    - `Part.write(...)` (Servlet API)
->    - `file.transferTo(...)`, `Files.write(path, file.getBytes())`
->
-> 6. **Go**:
->    - `r.FormFile(...)` or `r.MultipartForm.File`
->    - `io.Copy(dst, file)` where `file` comes from a multipart form
->    - `os.Create(...)` called with a filename derived from `header.Filename`
->
-> 7. **Ruby / Rails**:
->    - `params[:file]` with `.read`, `.original_filename`, `.tempfile`
->    - `File.open(..., 'wb')` called with uploaded data
->    - `has_one_attached` / `has_many_attached` (ActiveStorage)
->    - CarrierWave `mount_uploader`, Shrine `include Shrine::Attachment`
->
-> 8. **C# / ASP.NET**:
->    - `IFormFile` parameters: `file.CopyToAsync(...)`, `file.OpenReadStream()`
->    - `HttpPostedFileBase.SaveAs(...)`
->    - `Request.Files[...]`
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/11_recon.md`:
->
-> ```markdown
-> # File Upload Recon: [Project Name]
->
-> ## Summary
-> Found [N] file upload sites.
->
-> ## Upload Sites
->
-> ### 1. [Descriptive name — e.g., "Avatar upload endpoint"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Framework / method**: [e.g., Flask request.files / multer / move_uploaded_file]
-> - **Storage destination**: [path, variable, or storage abstraction — e.g., "static/uploads/" or "S3 via boto3" or "unknown"]
-> - **Validation observed** (preliminary, Phase 2 will analyze in depth): [list any extension checks, content-type checks, or "none visible"]
-> - **Code snippet**:
->   ```
->   [the upload receive and save code]
->   ```
->
-> [Repeat for each site]
-> ```
+1. **Python / Django**:
+   - `request.FILES` access
+   - `InMemoryUploadedFile`, `TemporaryUploadedFile`
+   - `default_storage.save(...)`, `FileSystemStorage().save(...)`
+   - Model `FileField` / `ImageField` form submissions
+   - `shutil.copyfileobj(f, dest)` or manual `.write(f.read())` on uploaded data
 
-### After Phase 1: Check for Candidates Before Proceeding
+2. **Python / Flask**:
+   - `request.files.get(...)` or `request.files[...]`
+   - `file.save(...)` calls on a `FileStorage` object
+   - `werkzeug` `FileStorage` handling
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/11_recon.md`. If the recon found **zero upload sites** (the summary reports "Found 0" or the "Upload Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/11_fileupload.md` and stop:
+3. **Node.js**:
+   - `multer` middleware: `upload.single(...)`, `upload.array(...)`, `upload.fields(...)`
+   - `busboy`, `formidable`, `multiparty` form parsing
+   - `express-fileupload`: `req.files`
+   - `fs.writeFile` / `fs.createWriteStream` / `pipe()` called with a request stream
 
-```markdown
-# File Upload Analysis Results
+4. **PHP**:
+   - `$_FILES` access
+   - `move_uploaded_file(...)` calls
+   - `copy($_FILES[...]['tmp_name'], ...)`
 
-No file upload sites found.
-```
+5. **Java / Spring**:
+   - `MultipartFile` parameters in controller methods: `@RequestParam MultipartFile`
+   - `CommonsMultipartFile`, `StandardMultipartFile`
+   - `Part.write(...)` (Servlet API)
+   - `file.transferTo(...)`, `Files.write(path, file.getBytes())`
 
-Only proceed to Phase 2 if Phase 1 found at least one upload site.
+6. **Go**:
+   - `r.FormFile(...)` or `r.MultipartForm.File`
+   - `io.Copy(dst, file)` where `file` comes from a multipart form
+   - `os.Create(...)` called with a filename derived from `header.Filename`
 
-### Phase 2: Check for Extension Bypass Vulnerabilities (Batched)
+7. **Ruby / Rails**:
+   - `params[:file]` with `.read`, `.original_filename`, `.tempfile`
+   - `File.open(..., 'wb')` called with uploaded data
+   - `has_one_attached` / `has_many_attached` (ActiveStorage)
+   - CarrierWave `mount_uploader`, Shrine `include Shrine::Attachment`
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/11_recon.md` and split the upload sites into **batches of up to 3 sites each**. Launch **one subagent per batch in parallel**. Each subagent analyzes only its assigned sites and writes results to its own batch file.
+8. **C# / ASP.NET**:
+   - `IFormFile` parameters: `file.CopyToAsync(...)`, `file.OpenReadStream()`
+   - `HttpPostedFileBase.SaveAs(...)`
+   - `Request.Files[...]`
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+**Recon exclusions** — do not flag as file-upload execution issues (other skills cover those): stored XSS via SVG, SSRF via uploaded XML, DoS via size limits, IDOR on download.
 
-1. Read `{{ REPORTS_ROOT }}/11_recon.md` and count the numbered site sections (### 1., ### 2., etc.).
-2. Divide them into batches of up to 3. For example, 8 sites → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those site sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned sites.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/11_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project uses Node.js with Multer, include only the "Node.js — Multer (Express)" examples. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+### Verify checklist
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+For each candidate upload site, determine whether an attacker can upload a malicious file (e.g., a PHP web shell, a JSP shell, a Python script) by manipulating the filename, extension, or Content-Type header. Focus on execution or dangerous file types reaching storage without adequate controls. If you see a strong combination of controls (allowlist, sanitization, non-web-root storage, UUID rename), the site is likely **Not Vulnerable** unless a bypass still applies.
 
-> **Goal**: For each assigned file upload site below, determine whether an attacker can upload a malicious file (e.g., a PHP web shell, a JSP shell, a Python script) by manipulating the filename, extension, or Content-Type header. Write results to `{{ REPORTS_ROOT }}/11_batch_[N].md`.
->
-> **Your assigned upload sites** (from the recon phase):
->
-> [Paste the full text of the assigned site sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the framework, storage paths, and how uploads are served.
->
-> **Reference — what insecure file upload is and is not**:
->
-> Focus on execution or dangerous file types reaching storage without adequate controls. Do **not** flag stored XSS via SVG, SSRF via uploaded XML, DoS via size limits, or IDOR on download as file-upload execution issues (other skills cover those).
->
-> **Patterns that reduce risk** — if you see a strong combination (allowlist, sanitization, non-web-root storage, UUID rename), the site is likely **Not Vulnerable** unless bypass still applies.
->
-> **Vulnerable vs. Secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **For each upload site, evaluate the following bypass vectors**:
->
-> 1. **No extension check**: No validation of any kind on the filename or extension. Any file is accepted. Immediately flag as **Vulnerable**.
->
-> 2. **Content-Type / MIME header only**: Validation reads `Content-Type` or `mimetype` from the request headers but does not inspect the actual filename extension or file bytes. Attackers can set `Content-Type: image/png` while uploading `shell.php`. Flag as **Vulnerable**.
->
-> 3. **Blocklist-based validation**: An explicit list of forbidden extensions. Check whether the blocklist is exhaustive for the server's technology:
->    - **PHP servers**: Are `.php3`, `.php4`, `.php5`, `.php7`, `.phtml`, `.phar`, `.shtml` also blocked? If any are missing, flag as **Vulnerable**.
->    - **Java servers**: Are `.jsp`, `.jspx`, `.jsw`, `.jsv`, `.jspf` also blocked?
->    - **ASP.NET servers**: Are `.asp`, `.aspx`, `.ashx`, `.asmx`, `.cer`, `.asa` also blocked?
->    - **Node.js**: Is `.js` execution possible via the server config? Check if `.js` files in the upload dir can be required/executed.
->    - Any blocklist is inherently weaker than an allowlist — flag as **Likely Vulnerable** even if seemingly complete.
->
-> 4. **Case sensitivity bypass**: Blocking `.php` but not `.PHP`, `.Php`, `.pHp`. Check whether the comparison uses `.toLowerCase()` / `.lower()` / `strtolower()` / case-insensitive matching.
->
-> 5. **Double extension / multi-extension**: `shell.php.jpg` — if the code extracts the extension using a method that takes the last segment after the last dot, this should be caught by an allowlist. However, on Apache servers with `AddHandler` misconfig, the leftmost recognized extension may be used for execution. Check how the extension is extracted:
->    - Safe: `filename.rsplit('.', 1)[-1]`, `path.extname(filename)` (takes the last extension)
->    - Risky server config: Apache `AddHandler application/x-httpd-php .php` — even `shell.php.jpg` may be executed as PHP
->
-> 6. **Path traversal in filename**: If the original filename is used in the storage path without sanitization, `../../webroot/shell.php` can place files in unintended directories. Check for:
->    - Use of `secure_filename()`, `basename()`, `path.basename()`, `Path.GetFileName()`, or `filepath.Base()` — these strip directory separators and are safe
->    - Direct use of `file.filename`, `header.Filename`, `file.getOriginalFilename()`, `$_FILES['name']` in a path join without sanitization — flag as **Vulnerable**
->
-> 7. **File stored in web-executable directory**: Even with a correct extension allowlist, if uploads go to a directory served by the web server (e.g., `static/uploads/`, `public/uploads/`, `wwwroot/uploads/`) and the web server is configured to execute scripts, a bypass in extension validation becomes critical. Note whether the storage path is web-accessible.
->
-> 8. **No content-based validation (magic bytes)**: The server trusts the extension without verifying the actual file content. A file named `shell.jpg` with PHP code inside is still dangerous if the extension check can be bypassed and the server executes it. Note absence of magic-byte checking as a contributing weakness.
->
-> 9. **Null-byte truncation**: Some runtimes stop parsing a filename at a null byte (`%00`). Test whether `shell.php%00.jpg` or `shell.jpg%00.php` is accepted and how it is stored.
->
-> 10. **Polyglot files**: A valid image/document that also contains executable code. If the server re-derives the extension from a user field or executes files based on content, flag as **Likely Vulnerable**.
->
-> 11. **Archive extraction**: If the site accepts ZIP/TAR/RAR/7z, check for ZipSlip (path traversal inside archive entries) and missing resource limits (archive bombs). Flag as **Vulnerable** if traversal is possible; **Likely Vulnerable** if limits are missing.
->
-> 12. **Predictable / user-controlled filenames**: If the stored name is derived from user input, an incrementing ID, or a timestamp, an attacker may overwrite or access other users' files. Note this as a contributing factor.
->
-> 13. **Third-party processing / unsafe API consumption**: If uploads are forwarded to ImageMagick, LibreOffice, ffmpeg, OCR, document converters, or external APIs without sandboxing or validation, note the risk and cross-reference the SSRF/unsafe-API-consumption skills. Do not flag as a pure upload RCE unless execution is proven.
->
-> 14. **Object-storage public-read ACLs**: If uploads go to S3/GCS/Azure Blob with `public-read` ACL or a public bucket policy, flag as **Likely Vulnerable** (data exposure / indirect execution risk).
->
-> 15. **Client-side validation bypass**: Any check that exists only in JavaScript, HTML `accept`, or mobile code is not a security control. Confirm the server repeats the validation.
->
-> 16. **Race conditions / symlink attacks**: If the file is validated in one step and moved/copied in another, or if symlinks are followed, an attacker may swap the file between check and use. Flag as **Likely Vulnerable** if non-atomic.
->
-> **Classification**:
-> - **Vulnerable**: No validation at all, or a clearly bypassable check (content-type only, missing common extensions in blocklist, missing `.lower()`, path traversal in filename, null-byte truncation, symlink traversal, archive ZipSlip).
-> - **Likely Vulnerable**: Blocklist that appears complete but is inherently weaker than an allowlist; or an allowlist with potential edge cases (e.g., does not account for uppercase extensions, missing magic-byte defense in depth, public ACL, third-party processing without sandboxing).
-> - **Not Vulnerable**: Strict allowlist of safe extensions (applied case-insensitively), combined with filename sanitization and/or server-generated UUID rename, files stored outside web root or behind a controlled download endpoint, plus defense-in-depth controls such as size limits and magic-byte checks.
-> - **Needs Manual Review**: Validation logic is in a shared helper or middleware that could not be fully read; or storage path is dynamic and could not be determined; or third-party processing makes execution impact unclear.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/11_batch_[N].md`:
->
-> ```markdown
-> # File Upload Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Issue**: [e.g., "No extension validation — any file type accepted" or "Content-Type header used as sole check"]
-> - **Bypass vector**: [Exact technique — e.g., "Upload shell.php directly" or "Set Content-Type: image/png while uploading a .php file" or "Use .phtml extension not covered by blocklist"]
-> - **Storage path**: [Where the file lands — web-accessible or not]
-> - **Impact**: [e.g., "Attacker uploads PHP web shell and achieves RCE by accessing /uploads/shell.php"]
-> - **Remediation**: [Specific fix — switch to allowlist, add `.lower()`, use secure_filename, move storage outside web root]
-> - **Dynamic Test**:
->   ```
->   [curl or HTTP request demonstrating the bypass.
->    Example: curl -X POST https://app.example.com/upload \
->      -F "file=@shell.php;type=image/png" \
->      then access: https://app.example.com/static/uploads/shell.php?cmd=id]
->   ```
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Issue**: [e.g., "Blocklist-based extension check — inherently incomplete"]
-> - **Bypass vector**: [Possible bypass — e.g., "Try .phtml, .phar, .php5 if server is Apache/PHP"]
-> - **Storage path**: [Where the file lands]
-> - **Concern**: [Why it's still a risk]
-> - **Remediation**: [Replace blocklist with allowlist]
-> - **Dynamic Test**:
->   ```
->   [payload to attempt bypass]
->   ```
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Reason**: [e.g., "Strict allowlist of png/jpg/gif with .lower(), UUID rename, stored outside web root"]
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Uncertainty**: [Why validation logic or storage path could not be determined]
-> - **Suggestion**: [What to trace manually]
-> ```
+For each upload site, evaluate the following bypass vectors:
 
-### Phase 3: Merge — Consolidate Batch Results
+1. **No extension check**: No validation of any kind on the filename or extension. Any file is accepted. Immediately flag as **Vulnerable**.
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/11_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/11_fileupload.md`. You (the orchestrator) do this directly — no subagent needed.
+2. **Content-Type / MIME header only**: Validation reads `Content-Type` or `mimetype` from the request headers but does not inspect the actual filename extension or file bytes. Attackers can set `Content-Type: image/png` while uploading `shell.php`. Flag as **Vulnerable**.
 
-**Merge procedure**:
+3. **Blocklist-based validation**: An explicit list of forbidden extensions. Check whether the blocklist is exhaustive for the server's technology:
+   - **PHP servers**: Are `.php3`, `.php4`, `.php5`, `.php7`, `.phtml`, `.phar`, `.shtml` also blocked? If any are missing, flag as **Vulnerable**.
+   - **Java servers**: Are `.jsp`, `.jspx`, `.jsw`, `.jsv`, `.jspf` also blocked?
+   - **ASP.NET servers**: Are `.asp`, `.aspx`, `.ashx`, `.asmx`, `.cer`, `.asa` also blocked?
+   - **Node.js**: Is `.js` execution possible via the server config? Check if `.js` files in the upload dir can be required/executed.
+   - Any blocklist is inherently weaker than an allowlist — flag as **Likely Vulnerable** even if seemingly complete.
 
-1. Read all `{{ REPORTS_ROOT }}/11_batch_1.md`, `{{ REPORTS_ROOT }}/11_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary (total sites analyzed equals the number from recon; counts per classification sum across batches).
-4. Write the merged report to `{{ REPORTS_ROOT }}/11_fileupload.md` using this format:
+4. **Case sensitivity bypass**: Blocking `.php` but not `.PHP`, `.Php`, `.pHp`. Check whether the comparison uses `.toLowerCase()` / `.lower()` / `strtolower()` / case-insensitive matching.
 
-```markdown
-# File Upload Analysis Results: [Project Name]
+5. **Double extension / multi-extension**: `shell.php.jpg` — if the code extracts the extension using a method that takes the last segment after the last dot, this should be caught by an allowlist. However, on Apache servers with `AddHandler` misconfig, the leftmost recognized extension may be used for execution. Check how the extension is extracted:
+   - Safe: `filename.rsplit('.', 1)[-1]`, `path.extname(filename)` (takes the last extension)
+   - Risky server config: Apache `AddHandler application/x-httpd-php .php` — even `shell.php.jpg` may be executed as PHP
 
-## Executive Summary
-- Upload sites analyzed: [total from recon]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+6. **Path traversal in filename**: If the original filename is used in the storage path without sanitization, `../../webroot/shell.php` can place files in unintended directories. Check for:
+   - Use of `secure_filename()`, `basename()`, `path.basename()`, `Path.GetFileName()`, or `filepath.Base()` — these strip directory separators and are safe
+   - Direct use of `file.filename`, `header.Filename`, `file.getOriginalFilename()`, `$_FILES['name']` in a path join without sanitization — flag as **Vulnerable**
 
-## Findings
+7. **File stored in web-executable directory**: Even with a correct extension allowlist, if uploads go to a directory served by the web server (e.g., `static/uploads/`, `public/uploads/`, `wwwroot/uploads/`) and the web server is configured to execute scripts, a bypass in extension validation becomes critical. Note whether the storage path is web-accessible.
 
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
+8. **No content-based validation (magic bytes)**: The server trusts the extension without verifying the actual file content. A file named `shell.jpg` with PHP code inside is still dangerous if the extension check can be bypassed and the server executes it. Note absence of magic-byte checking as a contributing weakness.
 
-5. After writing `{{ REPORTS_ROOT }}/11_fileupload.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/11_batch_*.md`).
+9. **Null-byte truncation**: Some runtimes stop parsing a filename at a null byte (`%00`). Test whether `shell.php%00.jpg` or `shell.jpg%00.php` is accepted and how it is stored.
+
+10. **Polyglot files**: A valid image/document that also contains executable code. If the server re-derives the extension from a user field or executes files based on content, flag as **Likely Vulnerable**.
+
+11. **Archive extraction**: If the site accepts ZIP/TAR/RAR/7z, check for ZipSlip (path traversal inside archive entries) and missing resource limits (archive bombs). Flag as **Vulnerable** if traversal is possible; **Likely Vulnerable** if limits are missing.
+
+12. **Predictable / user-controlled filenames**: If the stored name is derived from user input, an incrementing ID, or a timestamp, an attacker may overwrite or access other users' files. Note this as a contributing factor.
+
+13. **Third-party processing / unsafe API consumption**: If uploads are forwarded to ImageMagick, LibreOffice, ffmpeg, OCR, document converters, or external APIs without sandboxing or validation, note the risk and cross-reference the SSRF/unsafe-API-consumption skills. Do not flag as a pure upload RCE unless execution is proven.
+
+14. **Object-storage public-read ACLs**: If uploads go to S3/GCS/Azure Blob with `public-read` ACL or a public bucket policy, flag as **Likely Vulnerable** (data exposure / indirect execution risk).
+
+15. **Client-side validation bypass**: Any check that exists only in JavaScript, HTML `accept`, or mobile code is not a security control. Confirm the server repeats the validation.
+
+16. **Race conditions / symlink attacks**: If the file is validated in one step and moved/copied in another, or if symlinks are followed, an attacker may swap the file between check and use. Flag as **Likely Vulnerable** if non-atomic.
+
+### Classification
+
+- **Vulnerable**: No validation at all, or a clearly bypassable check (content-type only, missing common extensions in blocklist, missing `.lower()`, path traversal in filename, null-byte truncation, symlink traversal, archive ZipSlip).
+- **Likely Vulnerable**: Blocklist that appears complete but is inherently weaker than an allowlist; or an allowlist with potential edge cases (e.g., does not account for uppercase extensions, missing magic-byte defense in depth, public ACL, third-party processing without sandboxing).
+- **Not Vulnerable**: Strict allowlist of safe extensions (applied case-insensitively), combined with filename sanitization and/or server-generated UUID rename, files stored outside web root or behind a controlled download endpoint, plus defense-in-depth controls such as size limits and magic-byte checks.
+- **Needs Manual Review**: Validation logic is in a shared helper or middleware that could not be fully read; or storage path is dynamic and could not be determined; or third-party processing makes execution impact unclear.
+
+### Finding fields
+
+Every finding block carries: classification tag, file/lines, endpoint or function, issue, bypass vector (the exact technique), storage path (where the file lands — web-accessible or not), impact, remediation, and a dynamic test (curl or HTTP request demonstrating the bypass, e.g. uploading `shell.php` with a spoofed `Content-Type` and then accessing it). Not-vulnerable blocks record the reason; needs-manual-review blocks record the uncertainty and what to trace manually.
 
 ***
 
@@ -1263,15 +1119,8 @@ Use these CWE identifiers in findings to improve traceability and remediation gu
 ## Important Reminders
 [ref: #fileupload-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 upload sites per subagent**. If there are 1-3 sites total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned sites' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
-- **Phase 1 is purely discovery**: find every place a user-supplied file is received and stored. Do not deeply analyze validation in Phase 1 — just note what is visible. That is Phase 2's job.
-- **Phase 2 is purely bypass analysis**: for each assigned upload site, examine the validation logic and determine whether it can be bypassed through extension manipulation, case variation, content-type spoofing, path traversal, null-byte truncation, polyglot files, archive extraction, or other vectors in the catalog.
-- **Phase 3 is merge only**: combine batch files into `{{ REPORTS_ROOT }}/11_fileupload.md` and remove intermediates; do not re-analyze code in Phase 3.
+- **The recon stage is purely discovery**: find every place a user-supplied file is received and stored. Do not deeply analyze validation in the recon stage — just note what is visible. That is the verify stage's job.
+- **The verify stage is purely bypass analysis**: for each assigned upload site, examine the validation logic and determine whether it can be bypassed through extension manipulation, case variation, content-type spoofing, path traversal, null-byte truncation, polyglot files, archive extraction, or other vectors in the catalog.
 - An allowlist is always stronger than a blocklist. Any blocklist-based approach should be flagged as at minimum **Likely Vulnerable** because blocklists are almost always incomplete.
 - Content-Type (MIME type from the HTTP header) is **fully attacker-controlled** — never treat it as a security control.
 - Case sensitivity matters: `.PHP` bypasses a check for `.php` if `.toLowerCase()` is missing. Always check.
@@ -1279,7 +1128,7 @@ Use these CWE identifiers in findings to improve traceability and remediation gu
 - Even a correct extension check is weakened if the file is stored in a web-executable directory. Note storage location in every finding.
 - Magic byte checking (reading actual file bytes) is defense-in-depth but does not replace extension allowlisting — a valid image with PHP code appended can still be dangerous.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/11_recon.md` and all `{{ REPORTS_ROOT }}/11_batch_*.md` files after the final `{{ REPORTS_ROOT }}/11_fileupload.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `11_recon.md`, `11_batch_*.md`, and `11_verify_*.md`; only the final `{{ REPORTS_ROOT }}/11_fileupload.md` persists.
 - **Subagents must not modify project source code, configuration, tests, or documentation.** All output goes to the report files under `{{ REPORTS_ROOT }}/`.
 
 ***

@@ -1,10 +1,10 @@
 ---
-subject: "IDOR/BOLA detection reference for SAST subagents: terminology vs BFLA, BOLA rule, scope boundaries, authorization prevention patterns and anti-patterns, advanced detection angles, per-stack vulnerable/secure recipes, three-phase execution, OWASP API1 mapping, dynamic tests, references."
+subject: "IDOR/BOLA detection reference for SAST subagents: terminology vs BFLA, BOLA rule, scope boundaries, authorization prevention patterns and anti-patterns, advanced detection angles, per-stack vulnerable/secure recipes, shared-protocol execution parameters, OWASP API1 mapping, dynamic tests, references."
 index:
   - anchor: idor-detection
-    what: "Focused IDOR/BOLA detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    what: "Focused IDOR/BOLA detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic sweep of every endpoint accepting object identifiers, yet unstructured hunting misses ownership gaps and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "IDOR scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "IDOR scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual IDOR knowledge is needed, not execution."
     expected: "Verified IDOR findings consolidated into the module report with false positives filtered."
   - anchor: idor-subagent-constraints
@@ -68,11 +68,11 @@ index:
     avoid_when: "Advanced angles are the question — see that anchor; conceptual definitions wanted."
     expected: "Stack-specific unscoped queries flagged; scoped or policy-guarded forms verified."
   - anchor: idor-execution
-    what: "Three-phase execution: recon for identifier-accepting endpoints with a zero-candidate early-exit gate, batched verify in groups of three, merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the IDOR scan execution; dispatching or reviewing any phase."
-    avoid_when: "Conceptual IDOR knowledge is the need — see definition and examples anchors."
-    expected: "All three phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of identifier-accepting endpoints and handlers, per-candidate verify checklist, classification rubric, and the finding-field set with dynamic tests."
+    problem: "IDOR hunting without precise domain criteria lets recon miss exotic identifier paths and verify apply generic checklists that overlook stack quirks; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current IDOR vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual IDOR knowledge is the need — see definition and examples anchors."
+    expected: "Stage subagents apply exact IDOR criteria without inheriting generic templates."
   - anchor: idor-owasp-mapping
     what: "Mapping of IDOR findings to OWASP API 2023: API1 primary, API10 cross-map for upstream identifiers, API5 explicitly routed out; CWE-639 and CWE-862."
     problem: "Findings need correct 2023-era taxonomy for reporting, and mixing object-level with function-level rows mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, cwe pairing, risk labels."
@@ -103,7 +103,7 @@ index:
 
 [ref: #idor-detection]
 
-You are performing a focused security assessment to find IDOR vulnerabilities in a codebase. This skill uses a three-phase approach with subagents: **recon** (find candidate endpoints), **batched verify** (check authorization in parallel batches of 3), and **merge** (consolidate results).
+You are performing a focused security assessment to find IDOR vulnerabilities in a codebase. This skill uses a three-stage pipeline with subagents: **recon** (find candidate endpoints), **batched verify** (check authorization in parallel batches of 3), and **merge** (consolidate results).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -112,7 +112,7 @@ You are performing a focused security assessment to find IDOR vulnerabilities in
 ## Subagent Constraints
 [ref: #idor-subagent-constraints]
 
-Subagents used in this skill are **read-only investigators**. They must **never modify project source code, configuration files, tests, or any repository file**. Subagents may only create and update the audit report files under `{{ REPORTS_ROOT }}/` (`08_recon.md`, `08_batch_*.md`, and `08_idor.md`). If a subagent asks to edit code, reject the request and remind it to document the finding instead.
+Subagents used in this skill are **read-only investigators**. They must **never modify project source code, configuration files, tests, or any repository file**. Subagents may only create and update the audit report files under `{{ REPORTS_ROOT }}/` (`08_recon.md`, `08_batch_*.md`, `08_verify_*.md`, and `08_idor.md`). If a subagent asks to edit code, reject the request and remind it to document the finding instead.
 
 ***
 
@@ -510,253 +510,83 @@ OWASP API1:2023 gives the `deleteReports(reportKeys: [...])` mutation as a class
 ## Execution
 [ref: #idor-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/08_idor.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Recon — Find Candidate Endpoints
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Search for these identifier-accepting endpoints and handlers:
 
-> **Goal**: Find every endpoint, controller action, or handler that retrieves, modifies, or deletes a specific object using a user-supplied identifier. Write results to `{{ REPORTS_ROOT }}/08_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, frameworks, route definitions, and data access patterns.
->
-> **Constraints**: You are a read-only investigator. Do not modify any project source code, configuration, or tests. Only write to `{{ REPORTS_ROOT }}/08_recon.md`.
->
-> **What to search for**:
->
-> 1. **Route definitions** that contain ID parameters:
->    - Path parameters: `:id`, `{id}`, `<int:id>`, `[id]`
->    - Search patterns: route/path/endpoint definitions with parameter placeholders
->
-> 2. **Controller/handler methods** that accept ID arguments and use them to fetch or mutate objects:
->    - ORM lookups: `find(id)`, `findById()`, `get(id=)`, `objects.get()`, `findOne()`, `findUnique()`, `findFirst()`, `query.get()`, `where(id:)`
->    - Raw queries: `SELECT ... WHERE id = ?`, etc.
->    - Also look for delete, update operations with user-supplied IDs
->
-> 3. **Request body or query parameter IDs** used in operations:
->    - `req.body.userId`, `req.query.id`, `request.data['account_id']`, etc.
->
-> 4. **GraphQL resolvers and mutations** that accept ID arguments
->
-> 5. **File/resource access by user-supplied path or filename** (e.g., `?file_id=...`, `?document_key=...`, `?path=...`)
->
-> 6. **Bulk/export endpoints** that operate on collections: `export`, `bulk_delete`, `bulk_update`, etc.
->
-> 7. **WebSocket/GraphQL subscriptions** that use client-supplied room, channel, or object IDs
->
-> 8. **Indirect reference maps** where a client-supplied slug, code, or reference maps to an internal object ID
->
-> **What to ignore**:
-> - Endpoints that are intentionally public (no auth required by design)
-> - Admin-only endpoints behind role-based checks (these are a different class; route BFLA to scan 10 / `[ref: #missingauth-detection]`)
-> - Endpoints where the only ID used is the authenticated user's own ID (e.g., `GET /api/me/profile`)
-> - Static asset serving
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/08_recon.md`:
->
-> ```markdown
-> # IDOR Recon: [Project Name]
->
-> ## Summary
-> Found [N] candidate endpoints that use user-supplied identifiers to access objects.
->
-> ## Candidates
->
-> ### 1. [Descriptive name]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path/:param`
-> - **Identifier source**: [path param / query param / body field]
-> - **Operation**: [read / update / delete]
-> - **Object accessed**: [model/table name]
-> - **Code snippet**:
->   ```
->   [relevant code]
->   ```
->
-> [Repeat for each candidate]
-> ```
+1. **Route definitions** that contain ID parameters:
+   - Path parameters: `:id`, `{id}`, `<int:id>`, `[id]`
+   - Search patterns: route/path/endpoint definitions with parameter placeholders
 
-### After Phase 1: Check for Candidates Before Proceeding
+2. **Controller/handler methods** that accept ID arguments and use them to fetch or mutate objects:
+   - ORM lookups: `find(id)`, `findById()`, `get(id=)`, `objects.get()`, `findOne()`, `findUnique()`, `findFirst()`, `query.get()`, `where(id:)`
+   - Raw queries: `SELECT ... WHERE id = ?`, etc.
+   - Also look for delete, update operations with user-supplied IDs
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/08_recon.md`. If the recon found **zero candidates** (the summary reports "Found 0" or the "Candidates" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/08_idor.md`, **delete** `{{ REPORTS_ROOT }}/08_recon.md`, and stop:
+3. **Request body or query parameter IDs** used in operations:
+   - `req.body.userId`, `req.query.id`, `request.data['account_id']`, etc.
 
-```markdown
-# IDOR Analysis Results
+4. **GraphQL resolvers and mutations** that accept ID arguments
 
-No vulnerabilities found.
-```
+5. **File/resource access by user-supplied path or filename** (e.g., `?file_id=...`, `?document_key=...`, `?path=...`)
 
-Only proceed to Phase 2 if Phase 1 found at least one candidate endpoint.
+6. **Bulk/export endpoints** that operate on collections: `export`, `bulk_delete`, `bulk_update`, etc.
 
-### Phase 2: Verify — Check Authorization (Batched)
+7. **WebSocket/GraphQL subscriptions** that use client-supplied room, channel, or object IDs
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/08_recon.md` and split the candidates into **batches of up to 3 candidates each**. Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned candidates and writes results to its own batch file.
+8. **Indirect reference maps** where a client-supplied slug, code, or reference maps to an internal object ID
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+**Recon exclusions** — do not report:
 
-1. Read `{{ REPORTS_ROOT }}/08_recon.md` and count the numbered candidate sections (### 1., ### 2., etc.).
-2. Divide them into batches of up to 3. For example, 8 candidates → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those candidate sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned candidates.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/08_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project uses Node.js/Express with Prisma, include only the "Node.js — Express / Prisma" and "Node.js — Express / Mongoose" examples. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+- Endpoints that are intentionally public (no auth required by design)
+- Admin-only endpoints behind role-based checks (these are a different class; route BFLA to scan 10 / `[ref: #missingauth-detection]`)
+- Endpoints where the only ID used is the authenticated user's own ID (e.g., `GET /api/me/profile`)
+- Static asset serving
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+### Verify checklist
 
-> **Goal**: Verify the following IDOR (Insecure Direct Object Reference) candidates and determine whether adequate authorization checks exist. Our goal is to find IDOR vulnerabilities. Write results to `{{ REPORTS_ROOT }}/08_batch_[N].md`.
->
-> **Your assigned candidates** (from the recon phase):
->
-> [Paste the full text of the assigned candidate sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the auth mechanism, middleware stack, and ORM patterns.
->
-> **Constraints**: You are a read-only investigator. Do not modify any project source code, configuration, or tests. Only write to `{{ REPORTS_ROOT }}/08_batch_[N].md`.
->
-> **IDOR Reference — What to look for**:
->
-> IDOR occurs when an authenticated user can access or modify resources belonging to another user by changing an identifier in the request. Focus on **horizontal privilege escalation** (user-to-user).
->
-> **What IDOR is NOT** — do not flag these as IDOR:
-> - **Missing authentication**: Endpoint requires no login at all → that's "Unauthenticated Access", not IDOR
-> - **Broken function-level access control**: Regular user accessing `/admin/dashboard` → that's vertical privilege escalation, not IDOR. Route to scan 10 / `[ref: #missingauth-detection]`.
-> - **Public resources**: Accessing `/api/posts/123` where posts are intentionally public is not IDOR
-> - **Parameter tampering on non-object fields**: Changing `role=admin` or `price=0` → that's mass assignment or business logic, not IDOR
-> - **SQL injection via ID fields**: `?id=1 OR 1=1` → that's SQLi, not IDOR
->
-> **Authorization patterns that PREVENT IDOR** — if you see these, the endpoint is likely safe:
-> 1. **Query scoped to current user**: The query filters by the authenticated user's ID (e.g., `WHERE id = ? AND user_id = ?`, `current_user.orders.find(id)`, `Order.findOne({ _id: id, userId: req.user.id })`, `Order.objects.filter(id=order_id, user=request.user)`)
-> 2. **Explicit ownership check after fetch**: Code fetches the object then compares `resource.user_id == current_user.id` before returning
-> 3. **Policy / ability / authorization middleware**: Framework authorization like `authorize('view', order)`, `can?(:read, @order)`, `@PreAuthorize("@auth.ownsOrder(#orderId)")`
-> 4. **Tenant/organization scoping**: All queries scoped to the current tenant/org
-> 5. **Centralized authorization module**: A single authorization service or library invoked consistently across business functions
->
-> **Advanced patterns to double-check**:
-> - **Predictable IDs**: sequential integers, short slugs, or auto-increment values make enumeration trivial
-> - **Bulk/export endpoints**: `export`, `bulk_delete`, `bulk_update` — verify per-item ownership, not just a batch gate
-> - **File storage IDOR**: `?file_id=...`, `?document_key=...`, `?path=...` — treat storage keys as object IDs
-> - **WebSocket / GraphQL subscription IDOR**: real-time channels joined via client-supplied IDs
-> - **Indirect reference maps**: client-supplied slugs/codes that map to internal IDs without authorization
->
-> **Vulnerable vs. Secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **For each candidate endpoint, check**:
->
-> 1. **Is the database query scoped to the authenticated user?**
->    - Does the query include a `user_id` / `owner_id` / `tenant_id` filter matching the current user?
->    - Is the query done through an association (e.g., `current_user.orders.find(id)`)?
->
-> 2. **Is there an explicit ownership/permission check after fetching?**
->    - Does the code compare `resource.user_id == current_user.id` (or equivalent)?
->    - Is there a policy/ability/authorization check?
->
-> 3. **Is there authorization middleware applied to this route?**
->    - Is there middleware that verifies object ownership before the handler runs?
->    - Trace the middleware chain — don't assume a middleware name implies it checks ownership
->
-> 4. **For mutations (update/delete), are the same checks present?**
->    - Sometimes read endpoints are protected but write endpoints are not
->
-> 5. **Edge cases to check**:
->    - Does the auth check exist but only run conditionally (e.g., skipped for certain content types)?
->    - Is the check present in one branch of an if/else but missing in another?
->    - Can the check be bypassed by sending the ID in an alternative field?
->    - Are bulk/batch endpoints checked per-item or just at the batch level?
->
-> **Classification**:
-> - **Vulnerable**: No authorization check found for the specific object. User A can access User B's resources.
-> - **Likely Vulnerable**: Auth check exists but appears incomplete, bypassable, or conditional.
-> - **Not Vulnerable**: Proper authorization check is in place.
-> - **Needs Manual Review**: Cannot determine with confidence (e.g., complex middleware chain, authorization happens in a service layer that's hard to trace).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/08_batch_[N].md`:
->
-> ```markdown
-> # IDOR Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path/:param`
-> - **Issue**: [Clear description of what's missing]
-> - **Impact**: [What an attacker can do — read other users' X, delete other users' Y, etc.]
-> - **Proof**: [Show the code path — from route to DB query — highlighting the missing check]
-> - **Remediation**: [Specific fix for this endpoint]
-> - **Dynamic Test**:
->   ```
->   [curl command or step-by-step instructions to confirm this finding on the live app.
->    Include the exact endpoint, HTTP method, headers, and what to look for in the response.
->    Use placeholder tokens like <USER_B_TOKEN> and <USER_A_RESOURCE_ID>.]
->   ```
->
-> ### [LIKELY VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path/:param`
-> - **Issue**: [What's incomplete about the check]
-> - **Concern**: [Why this might still be exploitable]
-> - **Proof**: [Show the code path with the weak/partial check]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [curl command or step-by-step instructions to confirm this finding on the live app.
->    Include the exact endpoint, HTTP method, headers, and what to look for in the response.
->    Use placeholder tokens like <USER_B_TOKEN> and <USER_A_RESOURCE_ID>.]
->   ```
->
-> ### [NOT VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path/:param`
-> - **Protection**: [How it's protected — scoped query / ownership check / policy]
->
-> ### [NEEDS MANUAL REVIEW] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path/:param`
-> - **Uncertainty**: [Why automated analysis couldn't determine the status]
-> - **Suggestion**: [What to look at manually]
-> ```
+For each candidate, check:
 
-### Phase 3: Merge — Consolidate Batch Results
+1. **Is the database query scoped to the authenticated user?**
+   - Does the query include a `user_id` / `owner_id` / `tenant_id` filter matching the current user?
+   - Is the query done through an association (e.g., `current_user.orders.find(id)`)?
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/08_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/08_idor.md`. You (the orchestrator) do this directly — no subagent needed.
+2. **Is there an explicit ownership/permission check after fetching?**
+   - Does the code compare `resource.user_id == current_user.id` (or equivalent)?
+   - Is there a policy/ability/authorization check?
 
-**Merge procedure**:
+3. **Is there authorization middleware applied to this route?**
+   - Is there middleware that verifies object ownership before the handler runs?
+   - Trace the middleware chain — don't assume a middleware name implies it checks ownership
 
-1. Read all `{{ REPORTS_ROOT }}/08_batch_1.md`, `{{ REPORTS_ROOT }}/08_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/08_idor.md` using this format:
+4. **For mutations (update/delete), are the same checks present?**
+   - Sometimes read endpoints are protected but write endpoints are not
 
-```markdown
-# IDOR Analysis Results: [Project Name]
+5. **Edge cases to check**:
+   - Does the auth check exist but only run conditionally (e.g., skipped for certain content types)?
+   - Is the check present in one branch of an if/else but missing in another?
+   - Can the check be bypassed by sending the ID in an alternative field?
+   - Are bulk/batch endpoints checked per-item or just at the batch level?
 
-## Executive Summary
-- Candidates analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+6. **Advanced patterns**:
+   - Predictable IDs (sequential integers, short slugs, auto-increment values) that make enumeration trivial
+   - Bulk/export endpoints — verify per-item ownership, not just a batch gate
+   - File storage IDOR — treat storage keys (`?file_id=...`, `?document_key=...`, `?path=...`) as object IDs
+   - WebSocket / GraphQL subscription IDOR — real-time channels joined via client-supplied IDs
+   - Indirect reference maps — client-supplied slugs/codes that map to internal IDs without authorization
 
-## Findings
+### Classification
 
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
+- **Vulnerable**: No authorization check found for the specific object. User A can access User B's resources.
+- **Likely Vulnerable**: Auth check exists but appears incomplete, bypassable, or conditional.
+- **Not Vulnerable**: Proper authorization check is in place.
+- **Needs Manual Review**: Cannot determine with confidence (e.g., complex middleware chain, authorization happens in a service layer that's hard to trace).
 
-## Real-World Impact References
+### Finding fields
 
-The following OWASP API1:2023 attack scenarios illustrate the business impact of BOLA findings like those above:
-
-1. **Shop revenue charts** (`/shops/{shopName}/revenue_data.json`): A predictable, user-supplied shop identifier grants access to other tenants' sales data.
-2. **Vehicle remote-control API**: The API accepts a Vehicle Identification Number (VIN) but fails to verify that the VIN belongs to the logged-in owner, allowing remote control of another user's vehicle.
-3. **Document storage GraphQL mutation** (`deleteReports(reportKeys: [...])`): A user can delete another user's documents because the mutation trusts supplied keys without verifying ownership.
-
-Use these scenarios when describing impact and when designing dynamic validation tests.
-```
-
-5. After writing `{{ REPORTS_ROOT }}/08_idor.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/08_batch_*.md`).
+Every finding block carries: classification tag, file/lines, endpoint, issue, impact, proof (code path from route to DB query highlighting the missing or weak check), remediation, and a dynamic test (curl or step-by-step instructions to confirm cross-user access on the live app, using placeholder tokens like `<USER_B_TOKEN>` and `<USER_A_RESOURCE_ID>`).
 
 ***
 
@@ -815,16 +645,10 @@ If the response contains User A's data (or a success response to a mutation on U
 ## Important Reminders
 [ref: #idor-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 candidates per subagent**. If there are 1-3 candidates total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned candidates' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
 - Focus on **horizontal privilege escalation** (user-to-user). Vertical escalation (user-to-admin) is a different skill.
 - Function-level privilege escalation findings belong to scan 10 / `[ref: #missingauth-detection]` — do not classify them here.
 - Subagents are read-only. They must **never modify project source code or configuration**; they may only write audit report files under `{{ REPORTS_ROOT }}/`.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
 - Trace the full code path: route → middleware → controller → service → data access. Authorization can happen at any layer.
 - Pay attention to framework conventions. In Rails, `current_user.orders.find(id)` is safe. In Express, just having `auth` middleware doesn't mean ownership is checked.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/08_recon.md` and all `{{ REPORTS_ROOT }}/08_batch_*.md` files after the final `{{ REPORTS_ROOT }}/08_idor.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `08_recon.md`, `08_batch_*.md`, and `08_verify_*.md`; only the final `{{ REPORTS_ROOT }}/08_idor.md` persists.

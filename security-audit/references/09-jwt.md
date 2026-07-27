@@ -1,10 +1,10 @@
 ---
-subject: "JWT vulnerability detection reference for SAST subagents: OWASP API2 context, insecure-implementation definition, CWE table, 15 weakness classes and exclusions, prevention patterns, per-stack vulnerable/secure recipes incl. FastAPI and modern jjwt/golang-jwt, kid/JWK/JKU injection, URL/storage/refresh/binding/JWE secondary patterns, three-phase execution."
+subject: "JWT vulnerability detection reference for SAST subagents: OWASP API2 context, insecure-implementation definition, CWE table, 15 weakness classes and exclusions, prevention patterns, per-stack vulnerable/secure recipes incl. FastAPI and modern jjwt/golang-jwt, kid/JWK/JKU injection, URL/storage/refresh/binding/JWE secondary patterns, shared-protocol execution parameters."
 index:
   - anchor: jwt-detection
-    what: "Focused JWT weakness detection role using the three-phase subagent approach — lifecycle recon, batched verify, merge — gated on the architecture report."
+    what: "Focused JWT weakness detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — lifecycle recon, batched verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic sweep of every token verification, issuance, and storage site, yet unstructured hunting misses weak validators and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "JWT scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "JWT scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual JWT knowledge is needed, not execution."
     expected: "Verified JWT findings consolidated into the module report with false positives filtered."
   - anchor: jwt-owasp-context
@@ -50,11 +50,11 @@ index:
     avoid_when: "Weakness-class catalog is the question — see the scope-in anchor; conceptual definitions wanted."
     expected: "Stack-specific dangerous calls flagged; hardened verification verified."
   - anchor: jwt-execution
-    what: "Three-phase execution: JWT lifecycle mapping recon with a zero-usage early-exit gate, batched verify per verification site, merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the JWT scan execution; dispatching or reviewing any phase."
-    avoid_when: "Conceptual JWT knowledge is the need — see definition and examples anchors."
-    expected: "All three phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of JWT lifecycle sites, per-candidate verify checklist, classification rubric, and the finding-field set with dynamic tests."
+    problem: "JWT hunting without precise domain criteria lets recon miss decode-only paths and verify apply generic checklists that overlook library-version traps; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current JWT weakness classes."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual JWT knowledge is the need — see definition and examples anchors."
+    expected: "Stage subagents apply exact JWT criteria without inheriting generic templates."
   - anchor: jwt-references
     what: "External link list for JWT concepts, library docs, and attack tooling."
     problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification is required; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, rfc pages."
@@ -73,7 +73,7 @@ index:
 
 [ref: #jwt-detection]
 
-You are performing a focused security assessment to find insecure JSON Web Token (JWT) implementations, mapped to **API2:2023 Broken Authentication** in the OWASP API Security Top 10 2023. This skill uses a three-phase approach with subagents: **recon** (map the full JWT lifecycle — issuance, verification, and configuration), **batched verify** (one focused analysis subagent per verification site), and **merge** (consolidate all findings into the final report).
+You are performing a focused security assessment to find insecure JSON Web Token (JWT) implementations, mapped to **API2:2023 Broken Authentication** in the OWASP API Security Top 10 2023. This skill uses a three-stage pipeline with subagents: **recon** (map the full JWT lifecycle — issuance, verification, and configuration), **batched verify** (in parallel batches of 3), and **merge** (consolidate all findings into the final report).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -632,261 +632,108 @@ const jwe = await new EncryptJWT(payload)
 ## Execution
 [ref: #jwt-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/09_jwt.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-> **Subagent constraint reminder**: Subagents must NOT modify project source code. They may only write report files under `{{ REPORTS_ROOT }}/`.
+### Recon catalog
 
-### Phase 1: Map the JWT Lifecycle
+Map how the application creates, transmits, and verifies JWTs: identify every JWT issuance and verification site, the library used, the signing algorithm and key/secret configuration, and the claims used for authorization. Search for:
 
-Launch a subagent with the following instructions:
+1. **JWT library imports** — identify which JWT library is in use:
+   - Python: `import jwt`, `from jose import`, `from authlib import`, `import python_jose`
+   - Node.js: `require('jsonwebtoken')`, `import jwt from 'jsonwebtoken'`, `jose`, `@nestjs/jwt`
+   - Java: `io.jsonwebtoken`, `com.auth0.jwt`, `nimbus-jose-jwt`
+   - Go: `github.com/golang-jwt/jwt`, `github.com/dgrijalva/jwt-go` (archived — CVE-2020-26160; flag the import itself), `github.com/lestrrat-go/jwx`
+   - Ruby: `jwt` gem (`require 'jwt'`)
+   - PHP: `firebase/php-jwt`, `lcobucci/jwt`
+   - C#: `System.IdentityModel.Tokens.Jwt`, `Microsoft.AspNetCore.Authentication.JwtBearer`
 
-> **Goal**: Map how the application creates, transmits, and verifies JWTs. Identify every JWT issuance and verification site, the library used, the signing algorithm and key/secret configuration, and the claims that are used for authorization. Write results to `{{ REPORTS_ROOT }}/09_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, authentication layer, and middleware patterns.
->
-> **What to search for**:
->
-> **1. JWT library imports** — identify which JWT library is in use:
-> - Python: `import jwt`, `from jose import`, `from authlib import`, `import python_jose`
-> - Node.js: `require('jsonwebtoken')`, `import jwt from 'jsonwebtoken'`, `jose`, `@nestjs/jwt`
-> - Java: `io.jsonwebtoken`, `com.auth0.jwt`, `nimbus-jose-jwt`
-> - Go: `github.com/golang-jwt/jwt`, `github.com/dgrijalva/jwt-go` (archived — CVE-2020-26160; flag the import itself), `github.com/lestrrat-go/jwx`
-> - Ruby: `jwt` gem (`require 'jwt'`)
-> - PHP: `firebase/php-jwt`, `lcobucci/jwt`
-> - C#: `System.IdentityModel.Tokens.Jwt`, `Microsoft.AspNetCore.Authentication.JwtBearer`
->
-> **2. JWT signing / issuance sites** — where tokens are created:
-> - `jwt.encode(...)`, `jwt.sign(...)`, `Jwts.builder().signWith(...)`, `JWT.create().sign(...)`
-> - Note the algorithm used (`HS256`, `RS256`, etc.) and where the secret/key comes from (env var, config, hardcoded)
->
-> **3. JWT verification / decoding sites** — where tokens are consumed:
-> - `jwt.decode(...)`, `jwt.verify(...)`, `Jwts.parserBuilder()...parseClaimsJws(...)`, `JWT::decode(...)`
-> - Note what options are passed: `algorithms`, `options`, `verify_signature`, `verify_exp`
-> - Note if it's a raw `decode` (no verification) vs. a `verify` call
->
-> **4. Token extraction** — where the token is read from the incoming request:
-> - Authorization header: `request.headers.get("Authorization")`, `req.headers['authorization']`
-> - Cookie: `request.cookies.get("token")`, `req.cookies.token`
-> - Query parameter: `request.args.get("token")`, `req.query.token`
->
-> **5. Authorization middleware / decorators** — centralized JWT checks:
-> - `@jwt_required`, `@login_required`, `requireAuth`, `JwtAuthGuard`, `[Authorize]`, middleware functions
-> - Note which routes are protected and which are unprotected
->
-> **6. Signing secret / key configuration**:
-> - Where the HMAC secret or RSA/EC key is defined and loaded (env var, config file, hardcoded string)
-> - Whether it looks strong (long random string) or weak (short, common word)
->
-> **7. Claim usage**:
-> - Which claims are extracted and used for authorization (`user_id`, `role`, `permissions`, `sub`)
-> - Whether `exp`, `iss`, `aud`, `nbf` are checked
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/09_recon.md`:
->
-> ```markdown
-> # JWT Recon: [Project Name]
->
-> ## Summary
-> JWT is [used / not used] in this codebase.
-> Library: [library name and version if visible]
-> Algorithm(s): [HS256 / RS256 / etc.]
->
-> ## Issuance Sites
->
-> ### 1. [Descriptive name — e.g., "Token generation in login endpoint"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: [function name or route]
-> - **Algorithm**: [e.g., HS256]
-> - **Secret/key source**: [env var name / hardcoded string / config key]
-> - **Claims set**: [list of claims added to the payload]
-> - **Code snippet**:
->   ```
->   [the signing call]
->   ```
->
-> ## Verification Sites
->
-> ### 1. [Descriptive name — e.g., "Token verification in auth middleware"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / middleware**: [function name]
-> - **Verification call**: [jwt.decode / jwt.verify / parseClaimsJws / etc.]
-> - **Algorithm restriction**: [algorithms=["HS256"] / no restriction / unknown]
-> - **Signature verification**: [enabled / disabled / unclear]
-> - **Claims validated**: [exp / iss / aud / none / unknown]
-> - **Token source**: [Authorization header / cookie / query param]
-> - **kid/jwk/jku used**: [yes — describe how / no]
-> - **Code snippet**:
->   ```
->   [the verification call and surrounding context]
->   ```
->
-> ## Secret / Key Configuration
-> - **Secret source**: [env var / hardcoded / config file]
-> - **Apparent strength**: [strong (long random) / weak (short/common) / unknown]
-> - **Code snippet** (if hardcoded or suspicious):
->   ```
->   [relevant code]
->   ```
->
-> ## Authorization Middleware Coverage
-> - **Protected routes**: [list or description]
-> - **Unprotected routes**: [list or "none observed"]
-> ```
+2. **JWT signing / issuance sites** — where tokens are created:
+   - `jwt.encode(...)`, `jwt.sign(...)`, `Jwts.builder().signWith(...)`, `JWT.create().sign(...)`
+   - Note the algorithm used (`HS256`, `RS256`, etc.) and where the secret/key comes from (env var, config, hardcoded)
 
-### After Phase 1: Check for JWT Usage Before Proceeding
+3. **JWT verification / decoding sites** — where tokens are consumed:
+   - `jwt.decode(...)`, `jwt.verify(...)`, `Jwts.parserBuilder()...parseClaimsJws(...)`, `JWT::decode(...)`
+   - Note what options are passed: `algorithms`, `options`, `verify_signature`, `verify_exp`
+   - Note if it's a raw `decode` (no verification) vs. a `verify` call
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/09_recon.md`. If the summary states JWT is **not used** (no issuance or verification sites were found), **skip Phases 2 and 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/09_jwt.md` and stop:
+4. **Token extraction** — where the token is read from the incoming request:
+   - Authorization header: `request.headers.get("Authorization")`, `req.headers['authorization']`
+   - Cookie: `request.cookies.get("token")`, `req.cookies.token`
+   - Query parameter: `request.args.get("token")`, `req.query.token`
 
-```markdown
-# JWT Analysis Results
+5. **Authorization middleware / decorators** — centralized JWT checks:
+   - `@jwt_required`, `@login_required`, `requireAuth`, `JwtAuthGuard`, `[Authorize]`, middleware functions
+   - Note which routes are protected and which are unprotected
 
-No JWT usage detected in this codebase.
-```
+6. **Signing secret / key configuration**:
+   - Where the HMAC secret or RSA/EC key is defined and loaded (env var, config file, hardcoded string)
+   - Whether it looks strong (long random string) or weak (short, common word)
 
-Only proceed to Phase 2 if Phase 1 found at least one JWT verification site.
+7. **Claim usage**:
+   - Which claims are extracted and used for authorization (`user_id`, `role`, `permissions`, `sub`)
+   - Whether `exp`, `iss`, `aud`, `nbf` are checked
 
-### Phase 2: Batched Verify — Analyze Each Verification Site
+### Verify checklist
 
-For **each** JWT verification site listed in `{{ REPORTS_ROOT }}/09_recon.md`, launch a separate subagent with the following instructions. Number batch files sequentially: `{{ REPORTS_ROOT }}/09_batch_1.md`, `{{ REPORTS_ROOT }}/09_batch_2.md`, etc.
+For each candidate verification site, check:
 
-> **Goal**: Analyze the single JWT verification site assigned to you. Determine whether it is exploitable. Check for algorithm confusion, missing signature verification, weak secrets, header injection attacks, missing claim validation, token leakage, insecure storage, refresh token reuse, and JWKS trust confusion. Write results to `{{ REPORTS_ROOT }}/09_batch_N.md`.
->
-> **Context**: You will be given the project's architecture summary and the Phase 1 recon output. Focus only on the verification site assigned to you.
->
-> **Checks to perform**:
->
-> **Check 1 — Algorithm restriction**
-> - Is the allowed algorithm explicitly specified in the verification call?
-> - If no algorithm restriction is present, can the token's `alg` header be set to `none` to skip signature verification?
-> - If the server uses an asymmetric algorithm (RS256, ES256), does the verification code also accept HMAC algorithms (HS256)? If so, the server may be vulnerable to the RS256→HS256 confusion attack.
->
-> **Check 2 — Signature verification enabled**
-> - Is the token passed through a verify/parse call that actually checks the signature, or only through a decode-only call?
-> - Look for options like `verify_signature: False`, `complete=False`, or the use of `jwt.decode()` (Node.js) instead of `jwt.verify()`
-> - Manual base64-decode of the payload without any signature check is always vulnerable
->
-> **Check 3 — HMAC secret strength**
-> - Is the secret hardcoded in source code? If so, is it a common word or short string?
-> - Is the secret loaded from an environment variable or config? Even then, note if the default or example value is weak
-> - A secret shorter than 32 characters or composed of dictionary words is likely brute-forceable
->
-> **Check 4 — Embedded JWK / JKU / X5U header injection**
-> - Does the verification code read the `jwk` field from the token header and use it to verify the same token?
-> - Does the code fetch a key from a URL specified in the `jku` or `x5u` header without validating the URL against an allowlist?
-> - If either is true, the verification is fully bypassable
->
-> **Check 5 — `kid` header injection**
-> - Is the `kid` header value extracted from the token before verification and used to look up a key?
-> - Is the `kid` value interpolated into a SQL query without parameterization? → SQL injection
-> - Is the `kid` value used to construct a file path without sanitization? → path traversal / key substitution
->
-> **Check 6 — Claim validation**
-> - Is `exp` (expiry) checked? If not, expired tokens are valid forever
-> - Is `iss` (issuer) checked? If not, tokens from other issuers are accepted
-> - Is `aud` (audience) checked? If not, tokens for other services are accepted
-> - Are security-sensitive claims like `role` or `permissions` present but not validated against a server-side source?
->
-> **Check 7 — Token revocation**
-> - Is there a token blacklist, revocation endpoint, or short-lived token + refresh-token pattern?
-> - If tokens are long-lived (hours or more) with no revocation mechanism, stolen tokens remain valid
->
-> **Check 8 — Token leakage and storage**
-> - Is the token ever read from a URL query parameter?
-> - Is the token stored in `localStorage` or `sessionStorage` on the frontend?
->
-> **Check 9 — Refresh token rotation**
-> - Are refresh tokens rotated and invalidated after use?
-> - Is reuse of an already-rotated refresh token detected and rejected?
->
-> **Check 10 — JWKS endpoint trust**
-> - If the site fetches keys from a JWKS URL, is the URL pinned or allowlisted?
-> - Is TLS certificate validation performed?
->
-> **Classification**:
-> - **[VULNERABLE]**: The weakness is clearly present with no effective mitigation — the attack path is directly exploitable.
-> - **[LIKELY VULNERABLE]**: The weakness is probably present but requires confirming a secondary condition (e.g., library version behavior, default option value).
-> - **[NOT VULNERABLE]**: The implementation correctly addresses this check.
-> - **[NEEDS MANUAL REVIEW]**: Cannot determine the vulnerability status with confidence from static analysis alone.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/09_batch_N.md`:
->
-> ```markdown
-> # JWT Batch Analysis: [Site Name]
->
-> ## Site
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / middleware**: [function name]
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **Vulnerability class**: [e.g., "Missing signature verification" / "alg:none accepted" / "Weak HMAC secret" / "JWK header injection" / "kid SQL injection" / "Missing exp validation"]
-> - **Issue**: [Clear description of what is wrong]
-> - **Attack scenario**: [Step-by-step: what the attacker does, what token they craft or modify, what access they gain]
-> - **Impact**: [What an attacker can achieve — forge arbitrary identity, escalate privileges, access other users' data, etc.]
-> - **Remediation**: [Specific fix — add algorithms restriction, enable verify_signature, load secret from env, pin JWKS URL, parameterize kid lookup, add exp validation, etc.]
-> - **Dynamic Test**:
->   ```
->   [Proof-of-concept using jwt_tool, hashcat, or curl.
->    Show the exact command to reproduce the issue.
->    Examples:
->    - jwt_tool <token> -X a   (test alg:none)
->    - jwt_tool <token> -X s   (test RS256→HS256 confusion)
->    - hashcat -a 0 -m 16500 <token> wordlist.txt   (brute-force HMAC secret)
->    - Manual: modify payload, set alg:none, send to endpoint]
->   ```
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **Vulnerability class**: [class]
-> - **Issue**: [What appears to be wrong]
-> - **Uncertainty**: [What needs to be confirmed — e.g., "Library version determines default behavior"]
-> - **Remediation**: [Fix]
-> - **Dynamic Test**:
->   ```
->   [payload or command to attempt exploitation]
->   ```
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **Reason**: [e.g., "Algorithm restricted to HS256 with strong env-loaded secret; exp validated"]
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **Uncertainty**: [Why the vulnerability status cannot be determined statically]
-> - **Suggestion**: [What to inspect manually — e.g., "Confirm what JWT library version is installed; older versions of PyJWT accept alg:none by default"]
-> ```
+1. **Algorithm restriction**
+   - Is the allowed algorithm explicitly specified in the verification call?
+   - If no algorithm restriction is present, can the token's `alg` header be set to `none` to skip signature verification?
+   - If the server uses an asymmetric algorithm (RS256, ES256), does the verification code also accept HMAC algorithms (HS256)? If so, the server may be vulnerable to the RS256→HS256 confusion attack.
 
-### Phase 3: Merge Batch Findings into the Final Report
+2. **Signature verification enabled**
+   - Is the token passed through a verify/parse call that actually checks the signature, or only through a decode-only call?
+   - Look for options like `verify_signature: False`, `complete=False`, or the use of `jwt.decode()` (Node.js) instead of `jwt.verify()`
+   - Manual base64-decode of the payload without any signature check is always vulnerable
 
-After all Phase 2 subagents complete, read every `{{ REPORTS_ROOT }}/09_batch_*.md` file and consolidate them into `{{ REPORTS_ROOT }}/09_jwt.md`.
+3. **HMAC secret strength**
+   - Is the secret hardcoded in source code? If so, is it a common word or short string?
+   - Is the secret loaded from an environment variable or config? Even then, note if the default or example value is weak
+   - A secret shorter than 32 characters or composed of dictionary words is likely brute-forceable
 
-The merged report must include:
+4. **Embedded JWK / JKU / X5U header injection**
+   - Does the verification code read the `jwk` field from the token header and use it to verify the same token?
+   - Does the code fetch a key from a URL specified in the `jku` or `x5u` header without validating the URL against an allowlist?
+   - If either is true, the verification is fully bypassable
 
-```markdown
-# JWT Analysis Results: [Project Name]
+5. **`kid` header injection**
+   - Is the `kid` header value extracted from the token before verification and used to look up a key?
+   - Is the `kid` value interpolated into a SQL query without parameterization? → SQL injection
+   - Is the `kid` value used to construct a file path without sanitization? → path traversal / key substitution
 
-## Executive Summary
-- Verification sites analyzed: [N]
-- [VULNERABLE]: [N]
-- [LIKELY VULNERABLE]: [N]
-- [NOT VULNERABLE]: [N]
-- [NEEDS MANUAL REVIEW]: [N]
+6. **Claim validation**
+   - Is `exp` (expiry) checked? If not, expired tokens are valid forever
+   - Is `iss` (issuer) checked? If not, tokens from other issuers are accepted
+   - Is `aud` (audience) checked? If not, tokens for other services are accepted
+   - Are security-sensitive claims like `role` or `permissions` present but not validated against a server-side source?
 
-## Findings
+7. **Token revocation**
+   - Is there a token blacklist, revocation endpoint, or short-lived token + refresh-token pattern?
+   - If tokens are long-lived (hours or more) with no revocation mechanism, stolen tokens remain valid
 
-[paste findings from each batch file, grouped by verification site]
+8. **Token leakage and storage**
+   - Is the token ever read from a URL query parameter?
+   - Is the token stored in `localStorage` or `sessionStorage` on the frontend?
 
-## Secondary Patterns Checked
-- Token leakage in URL query parameters: [yes / no — details]
-- Insecure token storage (`localStorage`, missing `httpOnly`): [yes / no — details]
-- Refresh token rotation / reuse detection: [yes / no — details]
-- Token binding (TLS / device): [yes / no — details]
-- JWKS endpoint trust / key rotation: [yes / no — details]
-- JWE weak encryption: [yes / no — details]
+9. **Refresh token rotation**
+   - Are refresh tokens rotated and invalidated after use?
+   - Is reuse of an already-rotated refresh token detected and rejected?
 
-## Recommendations
-- Prioritize [VULNERABLE] findings first.
-- Treat [LIKELY VULNERABLE] findings as high priority until confirmed.
-- For [NEEDS MANUAL REVIEW] findings, note the missing information and assign for manual verification.
-```
+10. **JWKS endpoint trust**
+    - If the site fetches keys from a JWKS URL, is the URL pinned or allowlisted?
+    - Is TLS certificate validation performed?
+
+### Classification
+
+- **[VULNERABLE]**: The weakness is clearly present with no effective mitigation — the attack path is directly exploitable.
+- **[LIKELY VULNERABLE]**: The weakness is probably present but requires confirming a secondary condition (e.g., library version behavior, default option value).
+- **[NOT VULNERABLE]**: The implementation correctly addresses this check.
+- **[NEEDS MANUAL REVIEW]**: Cannot determine the vulnerability status with confidence from static analysis alone.
+
+### Finding fields
+
+Every finding block carries: classification tag, file/lines, function or middleware, vulnerability class (e.g., "Missing signature verification" / "alg:none accepted" / "Weak HMAC secret" / "JWK header injection" / "kid SQL injection" / "Missing exp validation"), issue, attack scenario (step-by-step: what the attacker does, what token they craft or modify, what access they gain), impact, remediation, and a dynamic test (proof-of-concept using `jwt_tool`, `hashcat`, or `curl` — e.g. `jwt_tool <token> -X a` for alg:none, `jwt_tool <token> -X s` for RS256→HS256 confusion, `hashcat -a 0 -m 16500 <token> wordlist.txt` for brute-forcing the HMAC secret, or a manual payload-modify-and-send walkthrough). `[LIKELY VULNERABLE]` blocks add an uncertainty note, `[NOT VULNERABLE]` blocks carry a reason, and `[NEEDS MANUAL REVIEW]` blocks carry the uncertainty plus a suggestion of what to inspect manually. Merge extension: the final report also carries a "Secondary Patterns Checked" section covering token leakage in URL query parameters, insecure token storage (`localStorage`, missing `httpOnly`), refresh token rotation / reuse detection, token binding (TLS / device), JWKS endpoint trust / key rotation, and JWE weak encryption.
 
 ***
 
@@ -917,13 +764,9 @@ The merged report must include:
 ## Important Reminders
 [ref: #jwt-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Subagents must NOT modify project source code; they may only write report files under `{{ REPORTS_ROOT }}/`.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete.
-- **Phase 1 is purely discovery**: locate every JWT issuance, verification, and configuration site. Do not attempt to assess security in Phase 1 — that is Phase 2's job.
-- **Phase 2 is purely analysis**: for each verification site found in Phase 1, systematically check every vulnerability class. Do not search for new sites in Phase 2 — focus on what Phase 1 found.
-- If no JWT usage is found in Phase 1, skip Phases 2 and 3 entirely and write a "No JWT usage detected" result file.
+- **The recon stage is purely discovery**: locate every JWT issuance, verification, and configuration site. Do not attempt to assess security in the recon stage — that is the verify stage's job.
+- **The verify stage is purely analysis**: for each verification site found in the recon stage, systematically check every vulnerability class. Do not search for new sites in the verify stage — focus on what the recon stage found.
 - The most critical checks are: signature verification disabled, algorithm not restricted (alg:none / RS256→HS256 confusion), and weak or hardcoded HMAC secret. These lead directly to full authentication bypass.
 - `jwt.decode()` in Node.js's `jsonwebtoken` library is a decode-only function — it never verifies the signature. Only `jwt.verify()` validates the signature. Confusing the two is a common and critical mistake.
 - In Python's PyJWT, versions before 2.0 accepted `alg: none` by default and did not require an `algorithms` parameter. If the codebase does not pin the version or restrict algorithms, flag it.
@@ -931,3 +774,4 @@ The merged report must include:
 - `kid` injection is often overlooked: always check how the key lookup is implemented when `kid` is present in the token header.
 - Do not forget secondary patterns: tokens in URLs, insecure storage, refresh token reuse, and JWKS trust confusion can be just as impactful as algorithm confusion.
 - When in doubt, classify as `[NEEDS MANUAL REVIEW]` rather than `[NOT VULNERABLE]`. False negatives are worse than false positives in security assessment.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `09_recon.md`, `09_batch_*.md`, and `09_verify_*.md`; only the final `{{ REPORTS_ROOT }}/09_jwt.md` persists.

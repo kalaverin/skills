@@ -1,10 +1,10 @@
 ---
-subject: "Improper inventory management detection reference for SAST subagents; three-phase detection prompt, `API9:2023` definition with documentation and data-flow blindspots plus coverage boundaries, vulnerable/secure example cards incl. MCP/AI agent endpoints and `FastAPI` docs exposure, execution with zero-candidate early-exit gate, prevention guidance, references incl. `MCP09:2025` and `RFC 8594`, operational reminders."
+subject: "Improper inventory management detection reference for SAST subagents; shared-protocol execution parameters, `API9:2023` definition with documentation and data-flow blindspots plus coverage boundaries, vulnerable/secure example cards incl. MCP/AI agent endpoints and `FastAPI` docs exposure, prevention guidance, references incl. `MCP09:2025` and `RFC 8594`, operational reminders."
 index:
   - anchor: inventory-detection
-    what: "Focused inventory-management detection role using the three-phase subagent approach — recon for API hosts, versions, routes, docs, debug endpoints, serverless functions, feature flags, gateway routes, and third-party integrations, batched verify, merge — gated on the architecture report."
+    what: "Focused inventory-management detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon for API hosts, versions, routes, docs, debug endpoints, serverless functions, feature flags, gateway routes, and third-party integrations, batched verify, merge — gated on the architecture report."
     problem: "Codebase and deployments need systematic sweep of every host, version, route, and integration for inventory visibility, yet unstructured hunting misses shadow deployment paths and drowns reviewers in unverified asset candidates; detection orchestration, asset discovery, audit rigor, candidate flood, coverage goal, methodical triage, shadow surface."
-    use_when: "Inventory scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Inventory scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual inventory knowledge is needed, not execution."
     expected: "Confirmed inventory-gap findings consolidated into one module report with false positives filtered."
   - anchor: inventory-api9-2023
@@ -20,11 +20,11 @@ index:
     avoid_when: "Conceptual scope boundaries are the question — see the `API9:2023` definition card; auth semantics of documented endpoints belong to `10-missingauth.md`; response property leaks belong to `16-bopla.md`."
     expected: "Framework-specific inventory gaps confirmed with matching secure counterpart; compliant configurations verified as properly managed."
   - anchor: inventory-execution
-    what: "Three-phase execution: recon discovering API assets across ten categories with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three with per-item classification, orchestrator merge with intermediate-file cleanup."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the inventory scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
-    avoid_when: "Conceptual definitions are the need — see the `API9:2023` card; concrete stack idioms wanted — see the examples card."
-    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of API asset categories, per-candidate verify checklist, classification rubric, and the finding-field set with dynamic tests."
+    problem: "Inventory hunting without precise domain criteria lets recon miss shadow deployment paths and verify apply generic checklists that overlook undocumented or unmanaged assets; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current inventory-gap vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definitions belong to the `API9:2023` card; stack idioms belong to the examples card."
+    expected: "Stage subagents apply exact inventory criteria without inheriting generic templates."
   - anchor: inventory-prevention-guidance
     what: "Layered defense checklist: full host and version inventory, documented data flows with owners and approval, automated spec generation with CI drift checks, restricted documentation access, equal controls on deprecated versions, sunset/EOL process returning `410 Gone`, non-production data isolation, serverless and gateway assets treated as first-class inventory entries."
     problem: "Remediation advice scattered across guides leaves gaps, and one missed control lets deprecated hosts, stale specs, or unmonitored integrations persist after fixes ship; remediation checklist, defense layers, control mapping, gap elimination, hardening steps, closure guarantee, mitigation breadth, fix completeness."
@@ -49,7 +49,7 @@ index:
 
 [ref: #inventory-detection]
 
-You are performing a focused security assessment to find **Improper Inventory Management** vulnerabilities in a codebase and its deployments. This skill uses a three-phase approach with subagents: **recon** (discover API hosts, versions, routes, docs, debug endpoints, serverless functions, feature flags, API gateways, and third-party integrations), **batched verify** (check reachability, spec accuracy, and data exposure in parallel batches of 3), and **merge** (consolidate results).
+You are performing a focused security assessment to find **Improper Inventory Management** vulnerabilities in a codebase and its deployments. This skill uses a three-stage pipeline with subagents: **recon** (discover API hosts, versions, routes, docs, debug endpoints, serverless functions, feature flags, API gateways, and third-party integrations), **batched verify** (check reachability, spec accuracy, and data exposure in parallel batches of 3), and **merge** (consolidate results).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -581,288 +581,100 @@ Note: unapproved MCP deployments are a recognized shadow-API risk — OWASP MCP 
 ## Execution
 [ref: #inventory-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/18_inventory.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-> **Subagent constraints reminder**: All subagents used in this skill are **read-only**. They must never modify project source code, configuration files, CI/CD pipelines, or deployment manifests. Subagents only analyze, classify, and report.
+### Recon catalog
 
-### Phase 1: Recon — Discover API Assets
+Search for these API assets across ten categories:
 
-Launch a subagent with the following instructions:
+1. **API hosts and environments**
+   - Configuration files: `.env`, `config.py`, `settings.yaml`, Terraform, Helm, Docker Compose
+   - Hostnames, base URLs, environment variables (`API_HOST`, `BASE_URL`, `ALLOWED_HOSTS`)
+   - Distinguish production, staging, dev, test, beta, demo
 
-> **Goal**: Discover all API hosts, versions, routes, documentation, debug endpoints, serverless functions, feature flags, API gateway routes, and third-party integrations. Write results to `{{ REPORTS_ROOT }}/18_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, frameworks, route definitions, deployment model, and known environments.
->
-> **What to search for**:
->
-> 1. **API hosts and environments**
->    - Configuration files: `.env`, `config.py`, `settings.yaml`, Terraform, Helm, Docker Compose
->    - Hostnames, base URLs, environment variables (`API_HOST`, `BASE_URL`, `ALLOWED_HOSTS`)
->    - Distinguish production, staging, dev, test, beta, demo
->
-> 2. **API versions**
->    - URL prefixes: `/api/v1/`, `/v2/`, `/api/v1beta1/`
->    - Version headers or content negotiation
->    - Retirement plans or deprecation notices
->
-> 3. **Route definitions**
->    - All framework routes, controllers, handlers, resource definitions
->    - GraphQL schemas and resolver maps
->    - gRPC `.proto` services
->
-> 4. **Documentation and specs**
->    - `openapi.yaml`, `swagger.json`, `schema.graphql`, proto files
->    - Inline documentation tools (FastAPI, Springdoc, Swashbuckle, NSwag, etc.)
->    - CI steps that generate or validate specs
->
-> 5. **Debug / diagnostic / development endpoints**
->    - `/debug`, `/dev`, `/test`, `/swagger-ui`, `/actuator`, `/_debug`, GraphQL introspection
->    - `DEBUG = True`, `app.debug`, `ENV=development`
->    - Health checks that leak debug info
->
-> 6. **Serverless function URLs**
->    - AWS Lambda function URLs (`url: true` or `url.authorizer` in `serverless.yml`/`template.yml`)
->    - Azure Function Apps HTTP triggers (`function.json`)
->    - Google Cloud Functions (`main.py` + `functions-framework`, `gcloud functions deploy`)
->    - Serverless framework config files (`serverless.yml`, `serverless.yaml`, `serverless.json`)
->
-> 7. **Feature flags gating routes or endpoints**
->    - LaunchDarkly (`launchdarkly-client`, `ldclient`)
->    - Split (`splitio`, `@splitsoftware/splitio`)
->    - Unleash (`unleash-client`)
->    - Custom flag checks (`isFeatureEnabled`, `feature_flag`, `FLAGS.*`, `config.*_enabled`)
->    - Flags that enable admin, beta, partner, or internal routes
->
-> 8. **API gateway route definitions**
->    - Kong (`kong.yml`, `kong.yaml`, declarative config)
->    - AWS API Gateway (`AWS::ApiGateway::Resource`, `AWS::ApiGatewayV2::Route`, `api.yaml`)
->    - Azure API Management (`apim.json`, `api-management` resources)
->    - NGINX ingress (`Ingress` resources, `nginx.conf`)
->    - Ambassador (`Mapping` resources)
->    - Istio (`VirtualService`, `Gateway` resources)
->
-> 9. **Third-party integrations and data flows**
->    - Outgoing HTTP clients, SDKs, webhooks
->    - External API keys, service tokens
->    - Data classification or sharing statements
->
-> 10. **AI agent / MCP endpoints**
->    - MCP server config blocks: `.mcp.json`, `mcp.json`, `mcp_servers` entries
->    - Network transports: `/sse` (deprecated since MCP spec 2025-03-26, Streamable HTTP replaced it, but still found exposed) and Streamable HTTP (often `/mcp`)
->    - Agent tool endpoints mounted outside the main router
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/18_recon.md`:
->
-> ```markdown
-> # Improper Inventory Management Recon: [Project Name]
->
-> ## Summary
-> Discovered [N] API hosts, [N] versions, [N] routes, [N] docs/specs, [N] debug endpoints, [N] serverless functions, [N] feature flags, [N] gateway routes, [N] third-party integrations, [N] MCP/AI agent endpoints.
->
-> ## API Hosts
->
-> ### 1. [environment] [hostname/base URL]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Environment**: [production / staging / dev / beta / unknown]
-> - **Network access**: [public / internal / partner-only / unknown]
-> - **Notes**: [any known details]
->
-> ## API Versions
->
-> ### 1. [version prefix or header]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Status**: [current / deprecated / beta / unknown]
-> - **Retirement plan**: [yes / no / unknown]
->
-> ## Routes
->
-> ### 1. [METHOD /path]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Version**: [v1 / v2 / unversioned]
-> - **Auth required**: [yes / no / unknown]
-> - **Notes**: [public / admin / debug / etc.]
->
-> ## Documentation / Specs
->
-> ### 1. [spec name]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Type**: [OpenAPI / Swagger / GraphQL schema / proto / README]
-> - **Generated automatically**: [yes / no / unknown]
-> - **Last updated / CI check**: [yes / no / unknown]
->
-> ## Debug / Dev Endpoints
->
-> ### 1. [endpoint or config]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Type**: [debug route / admin panel / swagger-ui / actuator / introspection]
-> - **Enabled in production**: [yes / no / conditional / unknown]
->
-> ## Serverless Function URLs
->
-> ### 1. [function / URL name]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Provider**: [AWS Lambda / Azure Function / Google Cloud Function]
-> - **Auth level**: [public / IAM / function key / anonymous]
-> - **Inventory entry found**: [yes / no / unknown]
->
-> ## Feature Flags Gating Routes
->
-> ### 1. [flag name]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Provider**: [LaunchDarkly / Split / Unleash / custom]
-> - **Gated route(s)**: [list]
-> - **Default in production**: [on / off / unknown]
->
-> ## API Gateway Routes
->
-> ### 1. [route name / path]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Gateway**: [Kong / AWS API Gateway / Azure APIM / NGINX / Ambassador / Istio]
-> - **Reflected in OpenAPI/inventory**: [yes / no / unknown]
->
-> ## Third-Party Integrations
->
-> ### 1. [service name]
-> - **Source**: `path/to/file` (lines X-Y)
-> - **Role**: [analytics / payment / notification / etc.]
-> - **Data exchanged**: [PII / financial / logs / unknown]
-> - **Inventory entry found**: [yes / no / unknown]
-> ```
+2. **API versions**
+   - URL prefixes: `/api/v1/`, `/v2/`, `/api/v1beta1/`
+   - Version headers or content negotiation
+   - Retirement plans or deprecation notices
 
-### After Phase 1: Check for Candidates Before Proceeding
+3. **Route definitions**
+   - All framework routes, controllers, handlers, resource definitions
+   - GraphQL schemas and resolver maps
+   - gRPC `.proto` services
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/18_recon.md`. If the recon found **zero items** across all categories (the summary reports zero hosts, versions, routes, specs, debug endpoints, serverless functions, feature flags, gateway routes, third-party integrations, and MCP/AI agent endpoints), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/18_inventory.md`, **delete** `{{ REPORTS_ROOT }}/18_recon.md`, and stop:
+4. **Documentation and specs**
+   - `openapi.yaml`, `swagger.json`, `schema.graphql`, proto files
+   - Inline documentation tools (FastAPI, Springdoc, Swashbuckle, NSwag, etc.)
+   - CI steps that generate or validate specs
 
-```markdown
-# Improper Inventory Management Results: [Project Name]
+5. **Debug / diagnostic / development endpoints**
+   - `/debug`, `/dev`, `/test`, `/swagger-ui`, `/actuator`, `/_debug`, GraphQL introspection
+   - `DEBUG = True`, `app.debug`, `ENV=development`
+   - Health checks that leak debug info
 
-## Executive Summary
-- Assets analyzed: 0
-- Scope reviewed: [API hosts, versions, routes, documentation/specs, debug endpoints, serverless functions, feature flags, gateway routes, third-party integrations, and MCP/AI agent endpoints reviewed]
-- No API inventory gaps were found: no undocumented, deprecated, debug, shadow, or unmanaged assets identified in the reviewed scope.
-```
+6. **Serverless function URLs**
+   - AWS Lambda function URLs (`url: true` or `url.authorizer` in `serverless.yml`/`template.yml`)
+   - Azure Function Apps HTTP triggers (`function.json`)
+   - Google Cloud Functions (`main.py` + `functions-framework`, `gcloud functions deploy`)
+   - Serverless framework config files (`serverless.yml`, `serverless.yaml`, `serverless.json`)
 
-Only proceed to Phase 2 if Phase 1 found at least one item.
+7. **Feature flags gating routes or endpoints**
+   - LaunchDarkly (`launchdarkly-client`, `ldclient`)
+   - Split (`splitio`, `@splitsoftware/splitio`)
+   - Unleash (`unleash-client`)
+   - Custom flag checks (`isFeatureEnabled`, `feature_flag`, `FLAGS.*`, `config.*_enabled`)
+   - Flags that enable admin, beta, partner, or internal routes
 
-### Phase 2: Verify — Validate Inventory Gaps (Batched)
+8. **API gateway route definitions**
+   - Kong (`kong.yml`, `kong.yaml`, declarative config)
+   - AWS API Gateway (`AWS::ApiGateway::Resource`, `AWS::ApiGatewayV2::Route`, `api.yaml`)
+   - Azure API Management (`apim.json`, `api-management` resources)
+   - NGINX ingress (`Ingress` resources, `nginx.conf`)
+   - Ambassador (`Mapping` resources)
+   - Istio (`VirtualService`, `Gateway` resources)
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/18_recon.md` and split the discovered items into **batches of up to 3 items each**. Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned items and writes results to its own batch file.
+9. **Third-party integrations and data flows**
+   - Outgoing HTTP clients, SDKs, webhooks
+   - External API keys, service tokens
+   - Data classification or sharing statements
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+10. **AI agent / MCP endpoints**
+   - MCP server config blocks: `.mcp.json`, `mcp.json`, `mcp_servers` entries
+   - Network transports: `/sse` (deprecated since MCP spec 2025-03-26, Streamable HTTP replaced it, but still found exposed) and Streamable HTTP (often `/mcp`)
+   - Agent tool endpoints mounted outside the main router
 
-1. Read `{{ REPORTS_ROOT }}/18_recon.md` and count the numbered sections across all categories.
-2. Divide them into batches of up to 3. For example, 8 items → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned items.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/18_batch_N.md` where N is the 1-based batch number.
+### Verify checklist
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+Focus on visibility and control gaps:
 
-> **Goal**: Verify the following inventory management findings and determine whether undocumented/debug/deprecated/assets, serverless functions, feature-flag-gated routes, or API gateway routes are reachable, specs are accurate, or non-production hosts expose production data. Write results to `{{ REPORTS_ROOT }}/18_batch_[N].md`.
->
-> **Your assigned items** (from the recon phase):
->
-> [Paste the full text of the assigned sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand deployment, routing, and environment handling.
->
-> **Improper Inventory Management Reference — What to look for**:
->
-> Focus on visibility and control gaps:
-> - Assets that exist in code or deployments but are not documented or inventoried
-> - Deprecated versions or debug endpoints reachable without the same security controls as production
-> - OpenAPI/specs that are missing, manually maintained, or out of sync with code
-> - Non-production hosts that use production data or are exposed to unauthorized networks
-> - Third-party data flows that lack inventory, approval, or monitoring
-> - Serverless function URLs, feature-flag-gated routes, and API gateway routes not reflected in inventory
->
-> **Classification**:
-> - **Vulnerable**: An undocumented/deprecated/debug endpoint is reachable, a spec is missing or inaccurate, a non-production host exposes production data, a third-party integration lacks inventory/approval, or a serverless/gateway/flag-gated route is exposed without inventory.
-> - **Likely Vulnerable**: A strong indicator exists but reachability or data classification cannot be confirmed from code alone.
-> - **Not Vulnerable**: Asset is documented, version is current/retired, debug endpoints disabled in production, specs are generated and accurate, non-prod hosts are isolated.
-> - **Needs Manual Review**: Cannot determine with confidence (e.g., deployment configuration is external, host reachability must be tested live, data classification is not in code).
->
-> **For each assigned item, check**:
->
-> 1. **Is the asset documented in an inventory, OpenAPI spec, or runbook?**
-> 2. **If it is a deprecated version or debug endpoint, is it disabled or protected in production?**
-> 3. **If it is a non-production host, does it use production data or production credentials?**
-> 4. **If documentation/spec exists, does it match the implemented routes?**
-> 5. **Is there CI/CD automation that generates or validates the spec?**
-> 6. **For third-party integrations, is there evidence of approval, data-flow inventory, or monitoring?**
-> 7. **For serverless functions, feature flags, or gateway routes, are they listed in the API inventory and protected appropriately?**
-> 8. **For MCP/AI agent endpoints, are they inventoried, authenticated, and bound to the intended network?**
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/18_batch_[N].md`:
->
-> ```markdown
-> # Improper Inventory Management Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Finding name
-> - **File/Location**: `path/to/file` (lines X-Y) or `[deployment/external]`
-> - **Issue**: [Clear description of the inventory gap]
-> - **Impact**: [What an attacker or incident can cause — access via deprecated endpoint, data leak from staging, etc.]
-> - **Proof**: [Show the code, config, or deployment evidence]
-> - **Remediation**: [Specific fix — remove/disable, add to inventory, generate docs, isolate data, etc.]
-> - **Dynamic Test**:
->   ```
->   [curl command, nmap command, DNS lookup, or step-by-step instructions to confirm this finding.
->    Include exact host/endpoint, headers, and expected evidence.
->    Use placeholders like <HOST>, <TOKEN>.]
->   ```
->
-> ### [LIKELY VULNERABLE] Finding name
-> - **File/Location**: `path/to/file` (lines X-Y) or `[deployment/external]`
-> - **Issue**: [What indicator was found]
-> - **Impact**: [Probable consequence]
-> - **Proof**: [Evidence found]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [Step-by-step or command to confirm]
->   ```
->
-> ### [NOT VULNERABLE] Asset name
-> - **File/Location**: `path/to/file` (lines X-Y) or `[deployment/external]`
-> - **Protection**: [Why it is properly managed]
->
-> ### [NEEDS MANUAL REVIEW] Asset name
-> - **File/Location**: `path/to/file` (lines X-Y) or `[deployment/external]`
-> - **Uncertainty**: [Why automated analysis couldn't determine the status]
-> - **Suggestion**: [What to check manually]
-> ```
+- Assets that exist in code or deployments but are not documented or inventoried
+- Deprecated versions or debug endpoints reachable without the same security controls as production
+- OpenAPI/specs that are missing, manually maintained, or out of sync with code
+- Non-production hosts that use production data or are exposed to unauthorized networks
+- Third-party data flows that lack inventory, approval, or monitoring
+- Serverless function URLs, feature-flag-gated routes, and API gateway routes not reflected in inventory
 
-### Phase 3: Merge — Consolidate Batch Results
+For each candidate, check:
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/18_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/18_inventory.md`. You (the orchestrator) do this directly — no subagent needed.
+1. **Is the asset documented in an inventory, OpenAPI spec, or runbook?**
+2. **If it is a deprecated version or debug endpoint, is it disabled or protected in production?**
+3. **If it is a non-production host, does it use production data or production credentials?**
+4. **If documentation/spec exists, does it match the implemented routes?**
+5. **Is there CI/CD automation that generates or validates the spec?**
+6. **For third-party integrations, is there evidence of approval, data-flow inventory, or monitoring?**
+7. **For serverless functions, feature flags, or gateway routes, are they listed in the API inventory and protected appropriately?**
+8. **For MCP/AI agent endpoints, are they inventoried, authenticated, and bound to the intended network?**
 
-**Merge procedure**:
+### Classification
 
-1. Read all `{{ REPORTS_ROOT }}/18_batch_1.md`, `{{ REPORTS_ROOT }}/18_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/18_inventory.md` using this format:
+- **Vulnerable**: An undocumented/deprecated/debug endpoint is reachable, a spec is missing or inaccurate, a non-production host exposes production data, a third-party integration lacks inventory/approval, or a serverless/gateway/flag-gated route is exposed without inventory.
+- **Likely Vulnerable**: A strong indicator exists but reachability or data classification cannot be confirmed from code alone.
+- **Not Vulnerable**: Asset is documented, version is current/retired, debug endpoints disabled in production, specs are generated and accurate, non-prod hosts are isolated.
+- **Needs Manual Review**: Cannot determine with confidence (e.g., deployment configuration is external, host reachability must be tested live, data classification is not in code).
 
-```markdown
-# Improper Inventory Management Results: [Project Name]
+### Finding fields
 
-## Executive Summary
-- Assets analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
-
-## Findings
-
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
-
-5. After writing `{{ REPORTS_ROOT }}/18_inventory.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/18_batch_*.md`).
+Every finding block carries: classification tag, file/location (or `[deployment/external]`), issue, impact, proof (code, config, or deployment evidence), remediation, and a dynamic test (curl command, nmap command, DNS lookup, or step-by-step instructions to confirm the finding against the live host).
 
 ***
 
@@ -896,13 +708,7 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 ## Important Reminders
 [ref: #inventory-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 items per subagent**. If there are 1–3 items total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned items' text from the recon file, not the entire recon file. This keeps each batch subagent's context small and focused.
 - **All subagents are read-only**. They must never modify project source code, configuration, CI/CD pipelines, deployment manifests, or any other file in the repository.
 - Inventory management is a **discovery-oriented** assessment. False negatives are common when assets are outside the codebase (CDNs, partner gateways, serverless functions). Mark external or unclear assets as "Needs Manual Review".
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". Missing assets are harder to prove than present ones.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/18_recon.md` and all `{{ REPORTS_ROOT }}/18_batch_*.md` files after the final `{{ REPORTS_ROOT }}/18_inventory.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `18_recon.md`, `18_batch_*.md`, and `18_verify_*.md`; only the final `{{ REPORTS_ROOT }}/18_inventory.md` persists.

@@ -1,10 +1,10 @@
 ---
-subject: "Missing authentication and BFLA detection reference for SAST subagents: OWASP API2/API5 mapping, coverage scope and exclusions, CWE table, 7 vulnerability classes, prevention patterns and checklist, per-stack vulnerable/secure recipes incl. FastAPI, 10 modern bypass patterns, three-phase execution."
+subject: "Missing authentication and BFLA detection reference for SAST subagents: OWASP API2/API5 mapping, coverage scope and exclusions, CWE table, 7 vulnerability classes, prevention patterns and checklist, per-stack vulnerable/secure recipes incl. FastAPI, 10 modern bypass patterns, shared-protocol execution parameters."
 index:
   - anchor: missingauth-detection
-    what: "Focused missing-authentication and function-level authorization detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    what: "Focused missing-authentication and function-level authorization detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic sweep of every endpoint for authentication and role enforcement, yet unstructured hunting misses unguarded handlers and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "Missing-auth scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Missing-auth scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual knowledge is needed, not execution."
     expected: "Verified auth and authz findings consolidated into the module report with false positives filtered."
   - anchor: missingauth-owasp-mapping
@@ -56,11 +56,11 @@ index:
     avoid_when: "Basic guard analysis unfinished — cover the examples first; stack recipes wanted."
     expected: "Exotic bypass paths are checked before declaring enforcement sound."
   - anchor: missingauth-execution
-    what: "Three-phase execution: endpoint-and-permission recon with a zero-candidate early-exit gate, batched verify in groups of three, merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the scan execution; dispatching or reviewing any phase."
-    avoid_when: "Conceptual knowledge is the need — see scope and examples anchors."
-    expected: "All three phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of endpoint, permission-system, and authentication-control sites, per-candidate verify checklist, classification rubric, and the finding-field set with dynamic tests."
+    problem: "Missing-auth hunting without precise domain criteria lets recon miss unguarded handlers and verify apply generic checklists that overlook middleware-ordering and stack quirks; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current missing-auth and BFLA vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual scope and boundaries belong to the scope anchor."
+    expected: "Stage subagents apply exact missing-auth criteria without inheriting generic templates."
   - anchor: missingauth-important-reminders
     what: "Closing operational reminders: phase ordering, batch discipline, auth-layer tracing, and cleanup rules."
     problem: "Modules close with inconsistent final guidance, letting misrouted classes or weak proof slip into reports and client deliverables; closing rules, quality floor, consistency, final reminders, weak evidence, uniform endings, wrap discipline, audit closure."
@@ -85,7 +85,7 @@ index:
 
 [ref: #missingauth-detection]
 
-You are performing a focused security assessment to find missing authentication and broken function-level authorization vulnerabilities in a codebase, mapping to OWASP API Security Top 10 2023 **API2:2023 Broken Authentication** and **API5:2023 Broken Function Level Authorization**. This skill uses a three-phase approach with subagents: **recon** (map endpoints and the permission system), **batched verify** (check authentication and authorization in parallel batches of 3 endpoints each), and **merge** (consolidate batch results into the final report).
+You are performing a focused security assessment to find missing authentication and broken function-level authorization vulnerabilities in a codebase, mapping to OWASP API Security Top 10 2023 **API2:2023 Broken Authentication** and **API5:2023 Broken Function Level Authorization**. This skill uses a three-stage pipeline with subagents: **recon** (map endpoints and the permission system), **batched verify** (check authentication and authorization in parallel batches of 3 endpoints each), and **merge** (consolidate batch results into the final report).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -826,299 +826,140 @@ If any variant bypasses the gateway authz layer, the origin endpoint is **Likely
 ## Execution
 [ref: #missingauth-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/10_missingauth.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Recon — Map Endpoints and Permission System
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Search for these endpoint, permission-system, and authentication-control sites:
 
-> **Goal**: Build a complete map of (1) all application endpoints/routes and their current authentication/authorization posture, and (2) the role/permission system. Write results to `{{ REPORTS_ROOT }}/10_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, frameworks, route definitions, and the auth/authz strategy.
->
-> **What to search for**:
->
-> 1. **All route/endpoint definitions** — collect every HTTP handler, REST endpoint, GraphQL mutation/query, RPC method, or WebSocket handler:
->    - Express/Koa: `router.get/post/put/delete/patch/use`
->    - Django: `urlpatterns`, `path()`, `re_path()`
->    - Flask: `@app.route`, `@blueprint.route`
->    - Rails: `routes.rb` — `get`, `post`, `resources`, `namespace`
->    - Spring: `@GetMapping`, `@PostMapping`, `@RequestMapping`, `@DeleteMapping`, `@PutMapping`
->    - Go/Chi: `r.Get`, `r.Post`, `r.Delete`, `r.Handle`
->    - Laravel: `Route::get/post/put/delete`
->    - FastAPI: `@router.get/post/put/delete`
->    - ASP.NET: `[HttpGet]`, `[HttpPost]`, `[HttpDelete]`, `[HttpPut]`
->
-> 2. **Authentication middleware and decorators** currently applied:
->    - Identify the pattern used: `@login_required`, `auth` middleware, `[Authorize]`, `authenticate_user!`, JWT verification middleware, session checks
->    - Note which routes or route groups they are applied to
->    - Note any routes explicitly excluded from auth (e.g., `except: [:index, :show]`)
->
-> 3. **Role/permission system** — identify how roles are defined and checked:
->    - Role constants/enums: `ROLE_ADMIN`, `'admin'`, `UserRole.ADMIN`, `is_staff`, `is_superuser`
->    - Permission decorators: `@admin_required`, `@roles_required`, `@PreAuthorize`, `requireRole()`
->    - Middleware: `AdminOnly`, `requireAdmin`, `role:admin`
->    - Policy/Gate/Ability objects: `Gate::define`, `Policy`, `CanCanCan`, `Pundit`
->    - In-handler checks: `if user.role != 'admin'`, `if not current_user.is_admin`
->
-> 4. **Sensitive/privileged endpoints** to flag — any endpoint that:
->    - Has an `/admin`, `/management`, `/internal`, `/api/admin`, `/superadmin`, `/system`, `/ops` path prefix
->    - Performs user management: create/update/delete users, change roles, reset passwords for others
->    - Manages application configuration: settings, feature flags, SMTP, secrets, environment variables
->    - Accesses financial/billing data: invoices, payments, subscriptions for all users
->    - Triggers system actions: sending emails to all users, running background jobs, clearing caches
->    - Returns aggregate or sensitive data: all users, all orders, audit logs, error logs
->
-> 5. **For each endpoint, note**:
->    - Whether an auth middleware/decorator is present
->    - Whether a role/permission check is present
->    - The HTTP method(s) it handles
->    - Whether it reads, writes, or deletes data
->
-> 6. **Authentication endpoints and anti-brute-force controls** — locate login, password recovery / forgot-password, and password-reset endpoints; note whether they implement:
->    - Rate limiting stricter than general API limits
->    - Account lockout after repeated failures
->    - CAPTCHA or other human-verification challenges
->    - Weak-password policy checks (length, complexity, breach-list screening)
->
-> 7. **Sensitive-operation endpoints** — locate functions that change account ownership or security settings:
->    - Email address change, password change, 2FA/OTP / phone-number update, API key regeneration
->    - Note whether the handler requires re-authentication (current password, MFA, step-up token) before executing
->
-> 8. **Token authenticity and validation logic** — locate JWT/API-key/token verification code:
->    - Rejection of `{"alg":"none"}` and other unsafe algorithms
->    - Validation of `exp`, `nbf`, `iss`, `aud`, and signature
->    - Strength of signing/encryption keys (no weak/default keys)
->
-> 9. **Microservice / internal service communication** — locate service-to-service endpoints and clients:
->    - Internal APIs, sidecar proxies, gRPC/HTTP service calls, background-job callbacks
->    - Whether caller authentication is enforced
->    - Whether service tokens are static/hardcoded/predictable or rotated and scoped
->    - Whether service accounts follow least-privilege and are not shared across environments
->
-> **What to ignore**:
-> - Publicly intended endpoints: login, register, password reset request, public content (blog posts, product listings)
-> - Static asset serving, health-check endpoints (`/health`, `/ping`, `/status`)
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/10_recon.md`:
->
-> ```markdown
-> # Missing Auth Recon: [Project Name]
->
-> ## Permission System Summary
-> - Roles identified: [list roles, e.g. admin, moderator, user]
-> - Auth mechanism: [JWT / session / API key / OAuth]
-> - Auth decorators/middleware: [list names, e.g. @login_required, auth, requireAdmin]
->
-> ## Endpoint Inventory
->
-> ### 1. [Endpoint name / description]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path`
-> - **Operation**: [read / write / delete / admin-action]
-> - **Auth present**: [yes / no]
-> - **Role check present**: [yes / no / partial]
-> - **Code snippet**:
->   ```
->   [route registration + handler signature]
->   ```
->
-> [Repeat for each endpoint]
-> ```
+1. **All route/endpoint definitions** — collect every HTTP handler, REST endpoint, GraphQL mutation/query, RPC method, or WebSocket handler:
+   - Express/Koa: `router.get/post/put/delete/patch/use`
+   - Django: `urlpatterns`, `path()`, `re_path()`
+   - Flask: `@app.route`, `@blueprint.route`
+   - Rails: `routes.rb` — `get`, `post`, `resources`, `namespace`
+   - Spring: `@GetMapping`, `@PostMapping`, `@RequestMapping`, `@DeleteMapping`, `@PutMapping`
+   - Go/Chi: `r.Get`, `r.Post`, `r.Delete`, `r.Handle`
+   - Laravel: `Route::get/post/put/delete`
+   - FastAPI: `@router.get/post/put/delete`
+   - ASP.NET: `[HttpGet]`, `[HttpPost]`, `[HttpDelete]`, `[HttpPut]`
 
-### After Phase 1: Check for Candidates Before Proceeding
+2. **Authentication middleware and decorators** currently applied:
+   - Identify the pattern used: `@login_required`, `auth` middleware, `[Authorize]`, `authenticate_user!`, JWT verification middleware, session checks
+   - Note which routes or route groups they are applied to
+   - Note any routes explicitly excluded from auth (e.g., `except: [:index, :show]`)
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/10_recon.md`. If the recon found **zero candidate endpoints** (the endpoint inventory is empty, or every entry already has both authentication and role checks documented), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/10_missingauth.md`, **delete** `{{ REPORTS_ROOT }}/10_recon.md`, and stop:
+3. **Role/permission system** — identify how roles are defined and checked:
+   - Role constants/enums: `ROLE_ADMIN`, `'admin'`, `UserRole.ADMIN`, `is_staff`, `is_superuser`
+   - Permission decorators: `@admin_required`, `@roles_required`, `@PreAuthorize`, `requireRole()`
+   - Middleware: `AdminOnly`, `requireAdmin`, `role:admin`
+   - Policy/Gate/Ability objects: `Gate::define`, `Policy`, `CanCanCan`, `Pundit`
+   - In-handler checks: `if user.role != 'admin'`, `if not current_user.is_admin`
 
-```markdown
-# Missing Auth/Authz Analysis Results
+4. **Sensitive/privileged endpoints** to flag — any endpoint that:
+   - Has an `/admin`, `/management`, `/internal`, `/api/admin`, `/superadmin`, `/system`, `/ops` path prefix
+   - Performs user management: create/update/delete users, change roles, reset passwords for others
+   - Manages application configuration: settings, feature flags, SMTP, secrets, environment variables
+   - Accesses financial/billing data: invoices, payments, subscriptions for all users
+   - Triggers system actions: sending emails to all users, running background jobs, clearing caches
+   - Returns aggregate or sensitive data: all users, all orders, audit logs, error logs
 
-No vulnerabilities found.
-```
+5. **For each endpoint, note**:
+   - Whether an auth middleware/decorator is present
+   - Whether a role/permission check is present
+   - The HTTP method(s) it handles
+   - Whether it reads, writes, or deletes data
 
-Only proceed to Phase 2 if Phase 1 found at least one candidate endpoint.
+6. **Authentication endpoints and anti-brute-force controls** — locate login, password recovery / forgot-password, and password-reset endpoints; note whether they implement:
+   - Rate limiting stricter than general API limits
+   - Account lockout after repeated failures
+   - CAPTCHA or other human-verification challenges
+   - Weak-password policy checks (length, complexity, breach-list screening)
 
-### Phase 2: Verify — Check Authentication and Authorization (Batched)
+7. **Sensitive-operation endpoints** — locate functions that change account ownership or security settings:
+   - Email address change, password change, 2FA/OTP / phone-number update, API key regeneration
+   - Note whether the handler requires re-authentication (current password, MFA, step-up token) before executing
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/10_recon.md` and split the endpoint inventory into **batches of up to 3 endpoints each** (each numbered `### N.` under **Endpoint Inventory**). Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned endpoints and writes results to its own batch file.
+8. **Token authenticity and validation logic** — locate JWT/API-key/token verification code:
+   - Rejection of `{"alg":"none"}` and other unsafe algorithms
+   - Validation of `exp`, `nbf`, `iss`, `aud`, and signature
+   - Strength of signing/encryption keys (no weak/default keys)
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+9. **Microservice / internal service communication** — locate service-to-service endpoints and clients:
+   - Internal APIs, sidecar proxies, gRPC/HTTP service calls, background-job callbacks
+   - Whether caller authentication is enforced
+   - Whether service tokens are static/hardcoded/predictable or rotated and scoped
+   - Whether service accounts follow least-privilege and are not shared across environments
 
-1. Read `{{ REPORTS_ROOT }}/10_recon.md` and count the numbered endpoint sections under **Endpoint Inventory** (`### 1.`, `### 2.`, etc.).
-2. Divide them into batches of up to 3. For example, 8 endpoints → 3 batches (1–3, 4–6, 7–8).
-3. For each batch, extract the full text of those endpoint sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned endpoints.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/10_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project uses Python/Django, include only the "Python — Django" (and if relevant, Flask) examples. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+**Recon exclusions** — do not report:
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+- Publicly intended endpoints: login, register, password reset request, public content (blog posts, product listings)
+- Static asset serving, health-check endpoints (`/health`, `/ping`, `/status`)
 
-> **Goal**: Verify the following endpoints for missing authentication and broken function-level authorization vulnerabilities. Write results to `{{ REPORTS_ROOT }}/10_batch_[N].md`.
->
-> **Your assigned endpoints** (from the recon phase):
->
-> [Paste the full text of the assigned endpoint sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the middleware ordering, role definitions, and auth patterns.
->
-> **Missing auth / broken function-level auth — what to look for**:
->
-> - **Missing authentication**: Sensitive action with no login/session/token required.
-> - **Broken function-level authorization**: Authentication is required but no role/permission check on a privileged endpoint (vertical escalation).
->
-> **What this skill is NOT** — do not flag these here:
-> - **IDOR / horizontal escalation**: User A accessing user B's resource by changing an ID → covered by the IDOR skill.
-> - **JWT crypto/verification bugs** → covered by sast-jwt.
->
-> **Authorization patterns that PREVENT issues** — if you see these, the endpoint is likely safe:
-> 1. **Authentication + role-check middleware on a route group** (e.g., `router.use('/admin', auth, requireRole('admin'))`)
-> 2. **Declarative role annotations** (e.g., `@PreAuthorize("hasRole('ADMIN')")`)
-> 3. **In-handler role check** before sensitive action
-> 4. **Middleware gate on entire prefix** (e.g., Chi `r.Group` with `AdminOnly`)
-> 5. **Policy/Gate** objects enforcing privileged actions
->
-> **Vulnerable vs. Secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **For each assigned endpoint, evaluate**:
->
-> 1. **Authentication check** — is a valid login/session/token required?
->    - Is there an auth middleware, decorator, or guard on this route or its parent group?
->    - Trace the middleware chain — confirm the auth middleware runs BEFORE the handler, not after
->    - Check if the route is accidentally mounted outside an auth-protected group
->
-> 2. **Role/permission check** — if the endpoint is privileged, is a role or permission verified?
->    - Look for: `is_admin`, `is_staff`, `role == 'admin'`, `hasRole('ADMIN')`, `@PreAuthorize`, `requireRole`, `can?(:manage, ...)`, `Gate::allows`, `authorize('admin-action')`
->    - Verify the check runs on every HTTP method — a DELETE may be unguarded even if GET is protected
->    - Check that the role comparison is not inverted or trivially bypassable
->
-> 3. **Edge cases**:
->    - Is the check conditional on a user-controlled header, parameter, or query string?
->    - Does the auth gate apply to the route group but the specific route is excluded via an `except` list?
->    - Is there a secondary unauthenticated path to the same function (e.g., an internal API alias)?
->    - Does the middleware apply only to some environments (e.g., skipped in test mode)?
->
-> 4. **Privilege identification**:
->    - Does the endpoint path suggest it is admin/privileged (`/admin/`, `/manage/`, `/internal/`)?
->    - Does the operation affect other users' data, system configuration, or aggregate records?
->    - If yes to either, a role/permission check should be present
->
-> 5. **Authentication endpoint protections** — for login, forgot-password, and password-reset endpoints:
->    - Is there stricter rate limiting or account lockout on this endpoint compared to general API routes?
->    - Is there a CAPTCHA or human-verification challenge after repeated failures?
->    - Are weak passwords accepted (no length/complexity/breach checks)?
->    - Classify as Vulnerable if credential stuffing or brute force is possible without effective mitigation.
->
-> 6. **Sensitive-operation re-authentication** — for email change, password change, 2FA/OTP update, API key regeneration:
->    - Does the handler require the current password, MFA code, or a step-up token before making the change?
->    - Classify as Vulnerable if a stolen session token alone is sufficient to change ownership/security settings.
->
-> 7. **Token authenticity checks** — for token verification middleware or handlers:
->    - Are unsigned JWTs (`{"alg":"none"}`) rejected?
->    - Are `exp`, `nbf`, `iss`, `aud` claims validated, and is the signature verified?
->    - Is the signing/encryption key strong and not a default/weak value?
->    - Classify as Vulnerable if any of these checks are missing or weak.
->
-> 8. **Microservice-to-microservice authentication** — for internal/service endpoints and clients:
->    - Does the service endpoint require caller authentication, or can any internal caller invoke it?
->    - Are service tokens static, hardcoded, predictable, or shared across services/environments?
->    - Are service accounts scoped to least privilege and are rotated regularly?
->    - Classify as Vulnerable if services trust each other implicitly or use weak/static credentials.
->
-> **Classification**:
-> - **Vulnerable**: No authentication required; authenticated but role check is entirely absent on a privileged endpoint; authentication endpoints lack brute-force/lockout/CAPTCHA protection or weak-password checks; sensitive operations lack re-authentication; token verification accepts unsafe tokens; service endpoints trust any internal caller or use weak/static credentials.
-> - **Likely Vulnerable**: Auth and/or role check exists but appears incomplete, bypassable, or misapplied (e.g., wrong role, wrong HTTP method, conditional skip); anti-brute-force or re-auth controls are present but weak or easily bypassed; token validation is partial; service tokens are long-lived or broadly scoped.
-> - **Not Vulnerable**: Proper authentication, role/permission, anti-brute-force, re-authentication, token authenticity, and service-to-service checks are in place.
-> - **Needs Manual Review**: Cannot determine with confidence (e.g., complex middleware chain, dynamic role loading, authorization delegated to a service layer, rate limiting enforced outside the codebase).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/10_batch_[N].md`:
->
-> ```markdown
-> # Missing Auth Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path`
-> - **Issue**: [Missing authentication / Missing role check for privileged action]
-> - **Impact**: [What an unauthenticated or low-privilege attacker can do]
-> - **Proof**: [Show the route definition and handler — highlight the missing check]
-> - **Remediation**: [Specific fix — add auth middleware, add role decorator, etc.]
-> - **Dynamic Test**:
->   ```
->   [curl command or step-by-step to confirm on the live app.
->    For missing auth: show the request with NO token succeeding.
->    For missing role: show the request with a regular user token succeeding on an admin endpoint.
->    Use placeholders like <REGULAR_USER_TOKEN>, <ADMIN_ENDPOINT>.]
->   ```
->
-> ### [LIKELY VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path`
-> - **Issue**: [What's incomplete about the check]
-> - **Concern**: [Why this might still be exploitable]
-> - **Proof**: [Show the code path with the weak/partial check]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [curl command or step-by-step instructions to confirm this finding on the live app.]
->   ```
->
-> ### [NOT VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path`
-> - **Protection**: [How it's protected — auth middleware + role decorator / @PreAuthorize / Gate, etc.]
->
-> ### [NEEDS MANUAL REVIEW] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path`
-> - **Uncertainty**: [Why automated analysis couldn't determine the status]
-> - **Suggestion**: [What to look at manually]
-> ```
+### Verify checklist
 
-### Phase 3: Merge — Consolidate Batch Results
+For each candidate endpoint, evaluate:
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/10_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/10_missingauth.md`. You (the orchestrator) do this directly — no subagent needed.
+1. **Authentication check** — is a valid login/session/token required?
+   - Is there an auth middleware, decorator, or guard on this route or its parent group?
+   - Trace the middleware chain — confirm the auth middleware runs BEFORE the handler, not after
+   - Check if the route is accidentally mounted outside an auth-protected group
 
-**Merge procedure**:
+2. **Role/permission check** — if the endpoint is privileged, is a role or permission verified?
+   - Look for: `is_admin`, `is_staff`, `role == 'admin'`, `hasRole('ADMIN')`, `@PreAuthorize`, `requireRole`, `can?(:manage, ...)`, `Gate::allows`, `authorize('admin-action')`
+   - Verify the check runs on every HTTP method — a DELETE may be unguarded even if GET is protected
+   - Check that the role comparison is not inverted or trivially bypassable
 
-1. Read all `{{ REPORTS_ROOT }}/10_batch_1.md`, `{{ REPORTS_ROOT }}/10_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/10_missingauth.md` using this format:
+3. **Edge cases**:
+   - Is the check conditional on a user-controlled header, parameter, or query string?
+   - Does the auth gate apply to the route group but the specific route is excluded via an `except` list?
+   - Is there a secondary unauthenticated path to the same function (e.g., an internal API alias)?
+   - Does the middleware apply only to some environments (e.g., skipped in test mode)?
 
-```markdown
-# Missing Auth/Authz Analysis Results: [Project Name]
+4. **Privilege identification**:
+   - Does the endpoint path suggest it is admin/privileged (`/admin/`, `/manage/`, `/internal/`)?
+   - Does the operation affect other users' data, system configuration, or aggregate records?
+   - If yes to either, a role/permission check should be present
 
-## Executive Summary
-- Endpoints analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+5. **Authentication endpoint protections** — for login, forgot-password, and password-reset endpoints:
+   - Is there stricter rate limiting or account lockout on this endpoint compared to general API routes?
+   - Is there a CAPTCHA or human-verification challenge after repeated failures?
+   - Are weak passwords accepted (no length/complexity/breach checks)?
+   - Classify as Vulnerable if credential stuffing or brute force is possible without effective mitigation.
 
-## Findings
+6. **Sensitive-operation re-authentication** — for email change, password change, 2FA/OTP update, API key regeneration:
+   - Does the handler require the current password, MFA code, or a step-up token before making the change?
+   - Classify as Vulnerable if a stolen session token alone is sufficient to change ownership/security settings.
 
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
+7. **Token authenticity checks** — for token verification middleware or handlers:
+   - Are unsigned JWTs (`{"alg":"none"}`) rejected?
+   - Are `exp`, `nbf`, `iss`, `aud` claims validated, and is the signature verified?
+   - Is the signing/encryption key strong and not a default/weak value?
+   - Classify as Vulnerable if any of these checks are missing or weak.
 
-5. After writing `{{ REPORTS_ROOT }}/10_missingauth.md`, **delete all intermediate files**: `{{ REPORTS_ROOT }}/10_recon.md` and `{{ REPORTS_ROOT }}/10_batch_*.md`.
+8. **Microservice-to-microservice authentication** — for internal/service endpoints and clients:
+   - Does the service endpoint require caller authentication, or can any internal caller invoke it?
+   - Are service tokens static, hardcoded, predictable, or shared across services/environments?
+   - Are service accounts scoped to least privilege and are rotated regularly?
+   - Classify as Vulnerable if services trust each other implicitly or use weak/static credentials.
+
+### Classification
+
+- **Vulnerable**: No authentication required; authenticated but role check is entirely absent on a privileged endpoint; authentication endpoints lack brute-force/lockout/CAPTCHA protection or weak-password checks; sensitive operations lack re-authentication; token verification accepts unsafe tokens; service endpoints trust any internal caller or use weak/static credentials.
+- **Likely Vulnerable**: Auth and/or role check exists but appears incomplete, bypassable, or misapplied (e.g., wrong role, wrong HTTP method, conditional skip); anti-brute-force or re-auth controls are present but weak or easily bypassed; token validation is partial; service tokens are long-lived or broadly scoped.
+- **Not Vulnerable**: Proper authentication, role/permission, anti-brute-force, re-authentication, token authenticity, and service-to-service checks are in place.
+- **Needs Manual Review**: Cannot determine with confidence (e.g., complex middleware chain, dynamic role loading, authorization delegated to a service layer, rate limiting enforced outside the codebase).
+
+### Finding fields
+
+Every finding block carries: classification tag, file/lines, endpoint, issue, impact, proof (route definition and handler highlighting the missing check), remediation, and a dynamic test (curl or step-by-step instructions to confirm on the live app — for missing auth, show the request with NO token succeeding; for missing role, show a regular user token succeeding on an admin endpoint; use placeholders like `<REGULAR_USER_TOKEN>`, `<ADMIN_ENDPOINT>`).
 
 ***
 
 ## Important Reminders
 [ref: #missingauth-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 endpoints per subagent**. If there are 1–3 endpoints total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned endpoints' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
+- The verify stage must run AFTER the recon stage completes — it depends on the recon output.
+- The merge stage must run AFTER all verify-stage batches complete — it depends on all batch outputs.
 - Focus on **vertical privilege escalation** (user → admin) and **unauthenticated access**. Horizontal escalation (user A → user B's resource) is covered by the IDOR skill.
 - Authentication (you are who you say you are) and authorization (you are allowed to do this) are separate concerns — check both.
 - Middleware order matters: a middleware registered after the route handler will NOT protect the route.
@@ -1126,7 +967,7 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
 - Pay attention to route grouping: a `use('/admin', adminRouter)` pattern protects all routes in `adminRouter`, but routes mounted outside that group are not protected.
 - Authentication endpoint protections (rate limiting, lockout, CAPTCHA, weak-password checks), sensitive-operation re-authentication, token authenticity (`alg: none`, expired/weakly signed tokens), and microservice-to-microservice authentication are all in scope for this skill.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/10_recon.md` and all `{{ REPORTS_ROOT }}/10_batch_*.md` files after the final `{{ REPORTS_ROOT }}/10_missingauth.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `10_recon.md`, `10_batch_*.md`, and `10_verify_*.md`; only the final `{{ REPORTS_ROOT }}/10_missingauth.md` persists.
 
 ## References
 [ref: #missingauth-references]

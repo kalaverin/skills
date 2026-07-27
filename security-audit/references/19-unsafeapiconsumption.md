@@ -1,10 +1,10 @@
 ---
-subject: "Unsafe consumption of APIs detection reference for SAST subagents; three-phase detection prompt, `API10:2023` definition with IS/IS-NOT boundaries, vulnerability conditions, prevention patterns, three OWASP attack scenarios, per-stack recipes incl. LLM API output and `RestTemplate` maintenance note, execution with zero-candidate early-exit gate, prevention guidance, references incl. `LLM01:2025` `LLM05:2025`, operational reminders."
+subject: "Unsafe consumption of APIs detection reference for SAST subagents; shared-protocol execution parameters, `API10:2023` definition with IS/IS-NOT boundaries, vulnerability conditions, prevention patterns, three OWASP attack scenarios, per-stack recipes incl. LLM API output and `RestTemplate` maintenance note, prevention guidance, references incl. `LLM01:2025` `LLM05:2025`, operational reminders."
 index:
   - anchor: unsafeapiconsumption-detection
-    what: "Focused unsafe-API-consumption detection role using the three-phase subagent approach — recon for outbound third-party API consumers, incoming webhooks, and supply-chain integrations, batched verify of third-party data flows, merge — gated on the architecture report."
+    what: "Focused unsafe-API-consumption detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon for outbound third-party API consumers, incoming webhooks, and supply-chain integrations, batched verify of third-party data flows, merge — gated on the architecture report."
     problem: "Codebase and integrations need systematic sweep of every outbound call, webhook endpoint, and registry interaction for over-trust, yet unstructured hunting misses stored-then-reused third-party values and buries reviewers in unverified integration candidates; detection orchestration, trust audit, discovery discipline, candidate flood, coverage goal, methodical triage, shadow consumers."
-    use_when: "Unsafe-consumption scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Unsafe-consumption scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual knowledge of third-party trust risks is needed, not execution."
     expected: "Confirmed unsafe-integration findings consolidated into one module report with false positives filtered."
   - anchor: unsafeapiconsumption-what-is
@@ -22,15 +22,15 @@ index:
   - anchor: unsafeapiconsumption-vulnerable-vs-secure-examples
     what: "Per-stack vulnerable/secure recipe pairs — Python `requests` incl. sensitive-POST redirect replay, repo-name SQLi, and LLM API output handling, Node.js `fetch`/`axios`, Java Spring `RestTemplate`/`WebClient` with maintenance-mode currency note, Go `net/http`, C# `HttpClient`, Ruby `Net::HTTP`/`Faraday`, PHP `curl_exec`/`Guzzle` — covering TLS flags, redirect control, timeouts, schema validation, parameterized sinks."
     problem: "Consumption weaknesses look different per HTTP client, and generic trust rules miss stack-specific redirect defaults, certificate-verification switches, and timeout idioms that decide exploitability; stack recipes, secure idioms, precise detection, pattern matching, framework diversity, api quirks, handler review, exploit signal."
-    use_when: "Target project uses one of the covered stacks; reviewing outbound call sites, webhook handlers, or registry integrations for concrete idioms; verify batch subagent needs `[TECH-STACK EXAMPLES]` selection."
+    use_when: "Target project uses one of the covered stacks; reviewing outbound call sites, webhook handlers, or registry integrations for concrete idioms; verify stage applies the file's per-stack examples when judging candidates."
     avoid_when: "Conceptual scope boundaries are the question — see the `API10:2023` definition card; direct user-input injection semantics belong to `02-sqli.md`; dependency-tree and typosquatting risk belongs to `23-dependencies.md`."
     expected: "Stack-specific unsafe integrations confirmed with matching secure counterpart; hardened call sites verified per client library."
   - anchor: unsafeapiconsumption-execution
-    what: "Three-phase execution: recon discovering outbound consumers, webhooks, and supply-chain interactions with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three tracing third-party data flows, orchestrator merge with intermediate-file cleanup."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the unsafe-consumption scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
-    avoid_when: "Conceptual definitions are the need — see the `API10:2023` card; concrete client idioms wanted — see the examples card."
-    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+    what: "Domain execution parameters for the shared three-stage protocol: three recon categories — outbound third-party API consumers, incoming webhooks, and supply-chain/package-manager interactions — plus a per-candidate verify checklist, classification rubric, and the finding-field set with a required taint trace from third-party response to dangerous sink."
+    problem: "Unsafe-consumption hunting without precise domain criteria lets recon miss stored-then-reused third-party values and shadow consumers while verify applies generic checklists that overlook redirect, webhook, and supply-chain quirks; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current unsafe-consumption vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definition belongs to the `API10:2023` definition card."
+    expected: "Stage subagents apply exact unsafe-consumption criteria without inheriting generic templates."
   - anchor: unsafeapiconsumption-prevention-guidance
     what: "Layered defense checklist: provider security-posture assessment, TLS everywhere with certificate validation, strict schema validation and output encoding, redirect allowlisting, timeouts with response-size caps and bounded retries, no raw response forwarding, webhook signature plus idempotency verification, third-party identifier validation."
     problem: "Remediation advice scattered across guides leaves gaps, and one missed control lets blind redirects, cleartext transports, or unvalidated payloads persist after fixes ship; remediation checklist, defense layers, control mapping, gap elimination, hardening steps, closure guarantee, mitigation breadth, fix completeness."
@@ -55,7 +55,7 @@ index:
 
 [ref: #unsafeapiconsumption-detection]
 
-You are performing a focused security assessment to find **Unsafe Consumption of APIs** vulnerabilities in a codebase. This assessment maps to **OWASP API Security Top 10 2023 — API10:2023 Unsafe Consumption of APIs**. This skill uses a three-phase approach with subagents: **recon** (find all outbound third-party API consumers, incoming webhooks, and supply-chain integrations), **batched verify** (trace how third-party data is consumed, in parallel batches of 3), and **merge** (consolidate batch reports into one file).
+You are performing a focused security assessment to find **Unsafe Consumption of APIs** vulnerabilities in a codebase. This assessment maps to **OWASP API Security Top 10 2023 — API10:2023 Unsafe Consumption of APIs**. This skill uses a three-stage pipeline with subagents: **recon** (find all outbound third-party API consumers, incoming webhooks, and supply-chain integrations), **batched verify** (trace how third-party data is consumed, in parallel batches of 3), and **merge** (consolidate batch reports into one file).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -500,316 +500,148 @@ $stmt->execute();
 ## Execution
 [ref: #unsafeapiconsumption-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/19_unsafeapiconsumption.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Recon — Find Third-Party API Consumers
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Search for these unsafe-consumption candidates in three categories — (a) third-party API consumers, (b) incoming webhooks, and (c) supply-chain/package-manager interactions. Record each call site, its transport configuration, and how the response is used.
 
-> **Goal**: Find every location in the codebase where the application consumes a third-party API or external service, receives incoming webhooks, or interacts with package/artifact registries. Record the call site, transport configuration, and how the response is used. Write results to `{{ REPORTS_ROOT }}/19_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, HTTP client libraries, integrations, webhook endpoints, and any data-enrichment or CI/CD components.
->
-> **What to search for — third-party API consumers**:
->
-> 1. **Outbound HTTP client calls** to external domains (not internal service mesh/localhost):
->    - Python: `requests.get/post/put`, `httpx`, `aiohttp`, `urllib`, LLM SDKs (`openai`, `anthropic`, `litellm`)
->    - Node.js: `fetch`, `axios.*`, `http.request`, `https.request`, `got`, `superagent`
->    - Java: `RestTemplate`, `RestClient`, `WebClient`, `OkHttp`, `HttpURLConnection`, `Apache HttpClient`
->    - Go: `net/http.Get/Post`, `resty`
->    - C#: `HttpClient`, `WebRequest`, `WebClient`
->    - Ruby: `Net::HTTP`, `Faraday`, `HTTParty`
->    - PHP: `curl_exec`, `Guzzle`, `file_get_contents` with remote URL
->
-> 2. **Transport security configuration**:
->    - URLs using `http://` instead of `https://`
->    - `verify=False` (Python requests/httpx)
->    - `rejectUnauthorized: false` (Node.js)
->    - Disabled certificate pinning or custom `TrustManager` that accepts all certificates (Java)
->    - `CURLOPT_SSL_VERIFYPEER => false` (PHP cURL)
->    - `InsecureSkipVerify: true` (Go)
->
-> 3. **Redirect handling**:
->    - `allow_redirects=True` (Python default) without destination validation
->    - `maxRedirects` > 0 without allowlist (Node.js)
->    - Default redirect following in `RestTemplate`/`WebClient` without validation
->    - `CURLOPT_FOLLOWLOCATION => true` (PHP) without allowlist
->    - `AllowAutoRedirect = true` (C#) without validation
->
-> 4. **Timeout and resource limits**:
->    - Missing `timeout` argument
->    - Missing `maxBodyLength` / `maxContentLength`
->    - Missing connection/read timeouts in Spring `ClientHttpRequestFactory`
->    - Missing `http.Client.Timeout` (Go)
->    - Missing `HttpClient.Timeout` (C#)
->
-> 5. **Consumption of third-party responses**:
->    - Passed to SQL/query builders (string concatenation, `.format`, f-strings, template literals)
->    - Passed to template engines (`render`, `render_template`, `res.render`)
->    - Passed to `eval`, `exec`, `Function`, `setTimeout`/`setInterval` with string
->    - Passed to deserialization: `pickle.loads`, `yaml.unsafe_load`, `ObjectInputStream.readObject`, `JSON.parse` → `new Function`, `Marshal.load`, `unserialize`
->    - Passed to downstream API calls or internal microservices without re-validation
->    - LLM/AI model output passed to SQL, shell commands, templates, `eval`, or downstream APIs
->    - Returned raw to the client
->
-> 6. **Third-party data stored and later used**:
->    - Values from external APIs saved to databases, caches, or files and later consumed in security-sensitive operations.
->
-> **What to search for — incoming webhooks**:
->
-> 1. **Webhook endpoints** accepting POST/PUT/PATCH from third parties (Stripe, GitHub, Twilio, etc.).
-> 2. **Missing signature verification**:
->    - No `stripe-signature`, `X-Hub-Signature-256`, `X-Twilio-Signature`, or equivalent header check.
->    - No HMAC comparison using a shared secret.
-> 3. **Replay / idempotency issues**:
->    - No idempotency key tracking (`Idempotency-Key`, `X-Idempotency-Key`).
->    - No timestamp/nonce validation allowing old events to be replayed.
-> 4. **Webhook endpoints without authentication**:
->    - Publicly exposed routes that accept webhook payloads with only source-IP trust or no authentication.
-> 5. **Trusting webhook metadata for security decisions**:
->    - Using `event_type`, `action`, or other payload metadata to skip authentication/authorization.
-> 6. **Webhook payloads reaching dangerous sinks**:
->    - Webhook body inserted into SQL/templates/eval/deserialization.
->    - Webhook payload passed to `os.system`, `exec`, `eval`, or shell commands.
->
-> **What to search for — supply-chain and package-manager API interactions**:
->
-> 1. **Registry/client calls**:
->    - `npm install`, `pip install`, `gem install`, `cargo install`, `nuget install` or library equivalents driven by user/third-party input.
->    - HTTP clients calling npm, PyPI, RubyGems, Cargo, NuGet, or private artifact registry APIs.
-> 2. **Git-clone integrations**:
->    - `git clone <user_input>` or library equivalent.
->    - Repository URL/name from a third-party API used in `git` commands.
-> 3. **CI/CD API calls**:
->    - Build parameters from third-party APIs or webhooks reaching shell commands (`os.system`, `exec`, backticks).
-> 4. **Artifact repository downloads**:
->    - Downloaded blobs deserialized with `pickle.load`, `ObjectInputStream`, `Marshal.load`, `yaml.unsafe_load`, etc.
-> 5. **Typosquatting / dependency confusion signals**:
->    - Package names in `package.json`, `requirements.txt`, `Cargo.toml`, `Gemfile`, `*.csproj` that are close to well-known package names but not the canonical name.
->
-> **What to skip**:
-> - Internal service-to-service calls inside the same trust boundary (unless they cross unencrypted channels or follow redirects).
-> - Fully hardcoded, HTTPS-only calls whose responses are validated before use and that have timeouts.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/19_recon.md`:
->
-> ```markdown
-> # Unsafe Consumption of APIs Recon: [Project Name]
->
-> ## Summary
-> Found [N] third-party API consumers.
->
-> ## Third-Party API Consumers
->
-> ### 1. [Descriptive name — e.g., "Payment service lookup"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: [function name or route]
-> - **Library / method**: [requests.get / axios.get / RestTemplate.getForObject / etc.]
-> - **Destination**: `url_expression`
-> - **TLS**: [ok / http / verify disabled / certificate validation bypassed]
-> - **Redirects**: [disabled / allowed without allowlist / unknown]
-> - **Timeouts / limits**: [configured / missing]
-> - **Response usage**: [SQL / template / eval / deserialization / downstream API / raw return / stored / validated]
-> - **Code snippet**:
->   ```
->   [the outbound call and the lines immediately before/after showing configuration and response use]
->   ```
->
-> [Repeat for each consumer]
->
-> ## Incoming Webhooks
->
-> ### 1. [Webhook name]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: [route]
-> - **Signature verification**: [present / missing]
-> - **Authentication**: [present / missing / ip-based only]
-> - **Idempotency / replay protection**: [present / missing]
-> - **Dangerous sinks reached**: [SQL / template / eval / command / deserialization / none]
-> - **Code snippet**:
->   ```
->   [webhook handler and payload usage]
->   ```
->
-> [Repeat for each webhook]
->
-> ## Supply-Chain / Package-Manager Interactions
->
-> ### 1. [Integration name]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Integration type**: [registry call / git clone / CI/CD API / artifact download / dependency declaration]
-> - **Third-party identifier**: [package name / repo URL / artifact URL expression]
-> - **Dangerous sink**: [SQL / command / deserialization / none]
-> - **Code snippet**:
->   ```
->   [integration code]
->   ```
->
-> [Repeat for each integration]
-> ```
+**Third-party API consumers**
 
-### After Phase 1: Check for Candidates Before Proceeding
+1. **Outbound HTTP client calls** to external domains (not internal service mesh/localhost):
+   - Python: `requests.get/post/put`, `httpx`, `aiohttp`, `urllib`, LLM SDKs (`openai`, `anthropic`, `litellm`)
+   - Node.js: `fetch`, `axios.*`, `http.request`, `https.request`, `got`, `superagent`
+   - Java: `RestTemplate`, `RestClient`, `WebClient`, `OkHttp`, `HttpURLConnection`, `Apache HttpClient`
+   - Go: `net/http.Get/Post`, `resty`
+   - C#: `HttpClient`, `WebRequest`, `WebClient`
+   - Ruby: `Net::HTTP`, `Faraday`, `HTTParty`
+   - PHP: `curl_exec`, `Guzzle`, `file_get_contents` with remote URL
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/19_recon.md`. If the recon found **zero third-party API consumers, incoming webhooks, and supply-chain interactions** (the summary reports "Found 0" or all relevant sections are empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/19_unsafeapiconsumption.md`, **delete** `{{ REPORTS_ROOT }}/19_recon.md`, and stop:
+2. **Transport security configuration**:
+   - URLs using `http://` instead of `https://`
+   - `verify=False` (Python requests/httpx)
+   - `rejectUnauthorized: false` (Node.js)
+   - Disabled certificate pinning or custom `TrustManager` that accepts all certificates (Java)
+   - `CURLOPT_SSL_VERIFYPEER => false` (PHP cURL)
+   - `InsecureSkipVerify: true` (Go)
 
-```markdown
-# Unsafe Consumption of APIs Analysis Results: [Project Name]
+3. **Redirect handling**:
+   - `allow_redirects=True` (Python default) without destination validation
+   - `maxRedirects` > 0 without allowlist (Node.js)
+   - Default redirect following in `RestTemplate`/`WebClient` without validation
+   - `CURLOPT_FOLLOWLOCATION => true` (PHP) without allowlist
+   - `AllowAutoRedirect = true` (C#) without validation
 
-## Executive Summary
-- Candidates analyzed: 0
-- Scope reviewed: [third-party API consumers, incoming webhooks, and supply-chain interactions reviewed]
-- No unsafe-consumption candidates were found: no unencrypted transports, blind redirect following, missing timeouts, unverified webhooks, or unvalidated third-party data flows identified in the reviewed scope.
-```
+4. **Timeout and resource limits**:
+   - Missing `timeout` argument
+   - Missing `maxBodyLength` / `maxContentLength`
+   - Missing connection/read timeouts in Spring `ClientHttpRequestFactory`
+   - Missing `http.Client.Timeout` (Go)
+   - Missing `HttpClient.Timeout` (C#)
 
-Only proceed to Phase 2 if Phase 1 found at least one candidate.
+5. **Consumption of third-party responses**:
+   - Passed to SQL/query builders (string concatenation, `.format`, f-strings, template literals)
+   - Passed to template engines (`render`, `render_template`, `res.render`)
+   - Passed to `eval`, `exec`, `Function`, `setTimeout`/`setInterval` with string
+   - Passed to deserialization: `pickle.loads`, `yaml.unsafe_load`, `ObjectInputStream.readObject`, `JSON.parse` → `new Function`, `Marshal.load`, `unserialize`
+   - Passed to downstream API calls or internal microservices without re-validation
+   - LLM/AI model output passed to SQL, shell commands, templates, `eval`, or downstream APIs
+   - Returned raw to the client
 
-### Phase 2: Verify — Trace Third-Party Data Flows (Batched)
+6. **Third-party data stored and later used**:
+   - Values from external APIs saved to databases, caches, or files and later consumed in security-sensitive operations.
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/19_recon.md` and split the candidates into **batches of up to 3 sites each**. Launch **one subagent per batch in parallel**. Each subagent traces data flows only for its assigned consumers and writes results to its own batch file.
+**Incoming webhooks**
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+1. **Webhook endpoints** accepting POST/PUT/PATCH from third parties (Stripe, GitHub, Twilio, etc.).
+2. **Missing signature verification**:
+   - No `stripe-signature`, `X-Hub-Signature-256`, `X-Twilio-Signature`, or equivalent header check.
+   - No HMAC comparison using a shared secret.
+3. **Replay / idempotency issues**:
+   - No idempotency key tracking (`Idempotency-Key`, `X-Idempotency-Key`).
+   - No timestamp/nonce validation allowing old events to be replayed.
+4. **Webhook endpoints without authentication**:
+   - Publicly exposed routes that accept webhook payloads with only source-IP trust or no authentication.
+5. **Trusting webhook metadata for security decisions**:
+   - Using `event_type`, `action`, or other payload metadata to skip authentication/authorization.
+6. **Webhook payloads reaching dangerous sinks**:
+   - Webhook body inserted into SQL/templates/eval/deserialization.
+   - Webhook payload passed to `os.system`, `exec`, `eval`, or shell commands.
 
-1. Read `{{ REPORTS_ROOT }}/19_recon.md` and count the numbered consumer sections (### 1., ### 2., etc.) across all three categories (outbound consumers, incoming webhooks, supply-chain interactions).
-2. Divide them into batches of up to 3. For example, 8 candidates → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those candidate sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned candidates.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/19_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+**Supply-chain and package-manager API interactions**
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+1. **Registry/client calls**:
+   - `npm install`, `pip install`, `gem install`, `cargo install`, `nuget install` or library equivalents driven by user/third-party input.
+   - HTTP clients calling npm, PyPI, RubyGems, Cargo, NuGet, or private artifact registry APIs.
+2. **Git-clone integrations**:
+   - `git clone <user_input>` or library equivalent.
+   - Repository URL/name from a third-party API used in `git` commands.
+3. **CI/CD API calls**:
+   - Build parameters from third-party APIs or webhooks reaching shell commands (`os.system`, `exec`, backticks).
+4. **Artifact repository downloads**:
+   - Downloaded blobs deserialized with `pickle.load`, `ObjectInputStream`, `Marshal.load`, `yaml.unsafe_load`, etc.
+5. **Typosquatting / dependency confusion signals**:
+   - Package names in `package.json`, `requirements.txt`, `Cargo.toml`, `Gemfile`, `*.csproj` that are close to well-known package names but not the canonical name.
 
-> **Goal**: For each assigned third-party API consumer, webhook, or supply-chain interaction, determine whether the integration is unsafe: unencrypted transport, blind redirect following, missing timeouts/limits, missing webhook verification, or third-party response data reaching dangerous sinks without validation. Write results to `{{ REPORTS_ROOT }}/19_batch_[N].md`.
->
-> **Your assigned candidates** (from the recon phase):
->
-> [Paste the full text of the assigned candidate sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand entry points, data flows, validation helpers, and dangerous sinks.
->
-> **Unsafe Consumption of APIs reference — what to look for**:
->
-> This vulnerability is about trusting third-party APIs too much. Focus on these areas:
->
-> 1. **Transport security**
->    - Is the destination `http://` or `https://`?
->    - Is TLS certificate validation disabled (`verify=False`, `rejectUnauthorized: false`, permissive `TrustManager`, `InsecureSkipVerify`, `CURLOPT_SSL_VERIFYPEER => false`)?
->
-> 2. **Redirect handling**
->    - Does the client follow redirects automatically?
->    - Is there an allowlist of permitted redirect destinations?
->    - Could a compromised or malicious third party redirect the request to an attacker-controlled server?
->    - For POST requests with sensitive bodies, could a 308 redirect cause the body to be replayed to an attacker?
->
-> 3. **Validation and sanitization of third-party data**
->    - Is the response parsed and validated against a strict schema?
->    - Is any part of the response inserted into SQL, templates, `eval`, command execution, deserialization, or passed to downstream APIs without validation?
->    - Is LLM/AI output treated as untrusted (indirect prompt injection) before SQL, shell, template, or downstream use?
->    - Is raw response data returned to the client?
->
-> 4. **Timeouts and resource limits**
->    - Are connection and read timeouts set?
->    - Are response body size limits enforced?
->    - Are retry/back-off policies bounded?
->
-> 5. **Incoming webhooks**
->    - Is the webhook signature verified with a shared secret?
->    - Is there idempotency/replay protection?
->    - Is the webhook endpoint authenticated beyond source-IP trust?
->    - Is `event_type` or other metadata trusted to make security decisions?
->    - Does the payload reach SQL, templates, `eval`, command execution, or deserialization?
->
-> 6. **Supply-chain integrations**
->    - Do package/repo/artifact identifiers from third parties reach SQL, shell commands, templates, or deserialization?
->    - Are downloaded artifacts verified (checksums, signatures) before deserialization or execution?
->
-> **What Unsafe Consumption is NOT** — do not flag these:
-> - **SSRF**: User-controlled destination of an outbound request → classify under API7:2023 SSRF unless the dominant issue is unsafe handling of an intended integration.
-> - **Open redirects to the browser** → separate class.
-> - **Fully validated HTTPS calls with no dangerous sinks** → not vulnerable.
->
-> **Vulnerable vs. Secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **Classification**:
-> - **Vulnerable**: A clear unsafe pattern is present (unencrypted transport, disabled cert validation, blind redirect following, third-party data reaches a dangerous sink without validation, missing webhook verification, or missing timeouts/limits in a way that enables DoS or data exposure).
-> - **Likely Vulnerable**: An unsafe pattern probably exists but the full data flow could not be confirmed (e.g., response stored in a variable and later used in a sink not visible in the immediate snippet).
-> - **Not Vulnerable**: HTTPS with cert validation enabled, redirects disabled or allowlisted, response validated before use, timeouts and limits configured, webhooks verified and idempotent.
-> - **Needs Manual Review**: Cannot determine the configuration or data flow with confidence (opaque helpers, external libraries, complex conditional flows).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/19_batch_[N].md`:
->
-> ```markdown
-> # Unsafe Consumption of APIs Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Issue**: [e.g., "Third-party JSON inserted into SQL via f-string" or "HTTP redirect following enabled with no allowlist"]
-> - **Taint trace**: [Step-by-step from third-party response to the dangerous sink]
-> - **Impact**: [What an attacker can do — SQL injection, XSS, data exfiltration via redirect, DoS, etc.]
-> - **Mitigation present**: [None / partial — explain why insufficient]
-> - **Remediation**: [Enforce TLS, validate response schema, disable/allowlist redirects, add timeouts/limits]
-> - **Dynamic Test**:
->   ```
->   [curl command, payload, or step-by-step instructions to confirm the finding.
->    Example: supply a third-party response payload or use a local redirect server.]
->   ```
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Issue**: [What's probably unsafe]
-> - **Concern**: [Why it's still a risk]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [payload or step to attempt]
->   ```
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Protection**: [e.g., "HTTPS with cert validation, redirects disabled, response validated against AddressSchema, timeouts configured"]
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Uncertainty**: [Why the configuration or data flow could not be determined]
-> - **Suggestion**: [What to trace manually]
-> ```
+**Recon exclusions** — do not report:
 
-### Phase 3: Merge — Consolidate Batch Results
+- Internal service-to-service calls inside the same trust boundary (unless they cross unencrypted channels or follow redirects).
+- Fully hardcoded, HTTPS-only calls whose responses are validated before use and that have timeouts.
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/19_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/19_unsafeapiconsumption.md`. You (the orchestrator) do this directly — no subagent needed.
+### Verify checklist
 
-**Merge procedure**:
+For each candidate, determine whether the integration is unsafe: unencrypted transport, blind redirect following, missing timeouts/limits, missing webhook verification, or third-party response data reaching dangerous sinks without validation. Check:
 
-1. Read all `{{ REPORTS_ROOT }}/19_batch_1.md`, `{{ REPORTS_ROOT }}/19_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/19_unsafeapiconsumption.md` using this format:
+1. **Transport security**
+   - Is the destination `http://` or `https://`?
+   - Is TLS certificate validation disabled (`verify=False`, `rejectUnauthorized: false`, permissive `TrustManager`, `InsecureSkipVerify`, `CURLOPT_SSL_VERIFYPEER => false`)?
 
-```markdown
-# Unsafe Consumption of APIs Analysis Results: [Project Name]
+2. **Redirect handling**
+   - Does the client follow redirects automatically?
+   - Is there an allowlist of permitted redirect destinations?
+   - Could a compromised or malicious third party redirect the request to an attacker-controlled server?
+   - For POST requests with sensitive bodies, could a 308 redirect cause the body to be replayed to an attacker?
 
-## Executive Summary
-- Third-party API consumers, webhooks, and supply-chain interactions analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+3. **Validation and sanitization of third-party data**
+   - Is the response parsed and validated against a strict schema?
+   - Is any part of the response inserted into SQL, templates, `eval`, command execution, deserialization, or passed to downstream APIs without validation?
+   - Is LLM/AI output treated as untrusted (indirect prompt injection) before SQL, shell, template, or downstream use?
+   - Is raw response data returned to the client?
 
-## Findings
+4. **Timeouts and resource limits**
+   - Are connection and read timeouts set?
+   - Are response body size limits enforced?
+   - Are retry/back-off policies bounded?
 
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
+5. **Incoming webhooks**
+   - Is the webhook signature verified with a shared secret?
+   - Is there idempotency/replay protection?
+   - Is the webhook endpoint authenticated beyond source-IP trust?
+   - Is `event_type` or other metadata trusted to make security decisions?
+   - Does the payload reach SQL, templates, `eval`, command execution, or deserialization?
 
-5. After writing `{{ REPORTS_ROOT }}/19_unsafeapiconsumption.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/19_batch_*.md`).
+6. **Supply-chain integrations**
+   - Do package/repo/artifact identifiers from third parties reach SQL, shell commands, templates, or deserialization?
+   - Are downloaded artifacts verified (checksums, signatures) before deserialization or execution?
+
+**Do not flag**:
+
+- **SSRF**: User-controlled destination of an outbound request → classify under API7:2023 SSRF unless the dominant issue is unsafe handling of an intended integration.
+- **Open redirects to the browser** → separate class.
+- **Fully validated HTTPS calls with no dangerous sinks** → not vulnerable.
+
+### Classification
+
+- **Vulnerable**: A clear unsafe pattern is present (unencrypted transport, disabled cert validation, blind redirect following, third-party data reaches a dangerous sink without validation, missing webhook verification, or missing timeouts/limits in a way that enables DoS or data exposure).
+- **Likely Vulnerable**: An unsafe pattern probably exists but the full data flow could not be confirmed (e.g., response stored in a variable and later used in a sink not visible in the immediate snippet).
+- **Not Vulnerable**: HTTPS with cert validation enabled, redirects disabled or allowlisted, response validated before use, timeouts and limits configured, webhooks verified and idempotent.
+- **Needs Manual Review**: Cannot determine the configuration or data flow with confidence (opaque helpers, external libraries, complex conditional flows).
+
+### Finding fields
+
+Every finding block carries: classification tag, file/lines, endpoint or function, issue, impact, mitigation present (none, or partial with an explanation of why it is insufficient), remediation, and a dynamic test (curl command, payload, or step-by-step instructions to confirm the finding — e.g., supply a third-party response payload or use a local redirect server).
+
+Required extra field (protocol extension point — extra required finding fields): **taint trace** — a step-by-step path from the third-party response, webhook payload, or supply-chain identifier to the dangerous sink.
 
 ***
 
@@ -853,19 +685,13 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 ## Important Reminders
 [ref: #unsafeapiconsumption-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Subagents must NOT modify project source code.** Subagents must only write report files under `{{ REPORTS_ROOT }}` and must not edit, patch, or commit any source file in the project.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 candidates per subagent**. If there are 1-3 candidates total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned candidates' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
-- **Phase 1 is purely structural**: flag any third-party API consumer, webhook, or supply-chain interaction, regardless of whether the response reaches a dangerous sink. Do not attempt full taint analysis in Phase 1 — that is Phase 2's job.
-- **Phase 2 is purely data-flow analysis**: for each candidate in its batch, trace how the response is used and whether transport/redirect/timeout/webhook/supply-chain configuration is unsafe.
+- **The recon stage is purely structural**: flag any third-party API consumer, webhook, or supply-chain interaction, regardless of whether the response reaches a dangerous sink. Do not attempt full taint analysis in the recon stage — that is the verify stage's job.
+- **The verify stage is purely data-flow analysis**: for each candidate, trace how the response is used and whether transport/redirect/timeout/webhook/supply-chain configuration is unsafe.
 - **Blocklists are not mitigations**: IP blocklists do not fix unsafe consumption; the issue is trust in the third-party API and handling of its data.
 - **Stored third-party data is tainted**: if a response value is saved and later consumed, trace the later consumption. Lack of validation at either storage or later use makes it vulnerable.
 - **Subprocess curl/wget to third parties counts too**: shell-outs that fetch external data and then process it are subject to the same risks.
 - **Incoming webhooks are third-party data**: a webhook payload must be validated exactly like an outbound API response before it reaches any dangerous sink.
 - **Supply-chain identifiers are third-party data**: repository names, package names, and artifact URLs from external APIs must be validated before use in SQL, commands, or deserialization.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/19_recon.md` and all `{{ REPORTS_ROOT }}/19_batch_*.md` files after the final `{{ REPORTS_ROOT }}/19_unsafeapiconsumption.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `19_recon.md`, `19_batch_*.md`, and `19_verify_*.md`; only the final `{{ REPORTS_ROOT }}/19_unsafeapiconsumption.md` persists.

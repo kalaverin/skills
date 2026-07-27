@@ -1,10 +1,10 @@
 ---
-subject: "Business logic vulnerability detection reference for SAST subagents: OWASP API6 mapping, CWE table, definition and exclusions, 13 attack categories, dynamic scenario generation, per-stack vulnerable/secure recipes incl. FastAPI, prevention guidance, compensating-controls detection, three-phase execution."
+subject: "Business logic vulnerability detection reference for SAST subagents: OWASP API6 mapping, CWE table, definition and exclusions, 13 attack categories, dynamic scenario generation, per-stack vulnerable/secure recipes incl. FastAPI, prevention guidance, compensating-controls detection, shared-protocol execution parameters."
 index:
   - anchor: businesslogic-detection
-    what: "Focused business-logic detection role using the three-phase subagent approach — domain recon, batched scenario verify, merge — gated on the architecture report."
+    what: "Focused business-logic detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — domain recon, batched scenario verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic sweep of every money, entitlement, and state flow for rule enforcement, yet unstructured hunting misses logic gaps and drowns reviewers in unverified scenarios; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "Business-logic scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Business-logic scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual knowledge is needed, not execution."
     expected: "Verified logic findings consolidated into the module report with false positives filtered."
   - anchor: businesslogic-owasp-mapping
@@ -50,11 +50,11 @@ index:
     avoid_when: "No control evidence exists at all — classify directly; prevention checklist wanted."
     expected: "Findings confirmed only after compensating controls are searched and excluded."
   - anchor: businesslogic-execution
-    what: "Three-phase execution: domain recon generating attack scenarios with a zero-scenario early-exit gate, batched verify in groups of three, merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the logic scan execution; dispatching or reviewing any phase."
-    avoid_when: "Conceptual knowledge is the need — see definition and categories anchors."
-    expected: "All three phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of domain analysis and attack-scenario generation, per-candidate verify checklist, classification rubric, and the finding-field set with dynamic tests."
+    problem: "Business-logic hunting without precise domain criteria lets recon miss domain-specific abuse flows and verify apply generic checklists that overlook stack-specific enforcement gaps; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current business-logic abuse vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual knowledge belongs to the definition and categories anchors."
+    expected: "Stage subagents apply exact business-logic criteria without inheriting generic templates."
   - anchor: businesslogic-references
     what: "External link list for business-logic abuse concepts, OWASP material, and case studies."
     problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification is required; further reading, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, owasp pages."
@@ -73,7 +73,7 @@ index:
 
 [ref: #businesslogic-detection]
 
-You are performing a focused security assessment to find business logic vulnerabilities in a codebase. This skill maps directly to **OWASP API Security Top 10 2023 — API6:2023 Unrestricted Access to Sensitive Business Flows**: automated or excessive access to business flows that should be protected against abuse. This skill uses a three-phase approach with subagents: **reconnaissance** (understand the domain and generate attack scenarios), **batched verify** (check whether scenarios are vulnerable in parallel batches of 3), and **merge** (consolidate batch results).
+You are performing a focused security assessment to find business logic vulnerabilities in a codebase. This skill maps directly to **OWASP API Security Top 10 2023 — API6:2023 Unrestricted Access to Sensitive Business Flows**: automated or excessive access to business flows that should be protected against abuse. This skill uses a three-stage pipeline with subagents: **reconnaissance** (understand the domain and generate attack scenarios), **batched verify** (check whether scenarios are vulnerable in parallel batches of 3), and **merge** (consolidate batch results).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -1091,252 +1091,104 @@ Classify compensating-control gaps using the same labels:
 ## Execution
 [ref: #businesslogic-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/13_businesslogic.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-**Subagent constraint**: All subagents must treat this assessment as read-only. They must write findings only to the report files specified below and must **never modify project source code**.
+### Recon catalog
 
-### Phase 1: Reconnaissance — Domain Analysis & Attack Scenario Generation
+Recon here is domain analysis plus attack-scenario generation: understand the business domain and its features, then generate a concrete, prioritized list of business logic attack scenarios specific to this application. Focus entirely on understanding the domain — do not verify vulnerabilities yet.
 
-Launch a subagent with the following instructions:
+**Step 1 — Identify the business domain and features**:
 
-> **Goal**: Analyze the codebase to understand its business domain and generate a concrete, prioritized list of business logic attack scenarios specific to this application. Write results to `{{ REPORTS_ROOT }}/13_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand what the application does, what features it has, and what business rules it is supposed to enforce. Focus entirely on understanding the domain — do not verify vulnerabilities yet.
->
-> **Constraints**: Do not modify project source code. Write findings only to `{{ REPORTS_ROOT }}/13_recon.md`.
->
-> **Step 1 — Identify the business domain and features**:
->
-> Read `{{ REPORTS_ROOT }}/01_architecture.md` and then explore the codebase to answer:
-> - What does this application do? (e-commerce, marketplace, SaaS, social platform, fintech, gaming, booking, etc.)
-> - What financial or transactional features exist? (payments, subscriptions, credits, tokens, wallets, invoices, refunds)
-> - What quantitative limits or rules exist? (ratings, scores, quantities, usage limits, quotas)
-> - What multi-step workflows exist? (checkout, onboarding, KYC, booking, auctions)
-> - What promotional or reward features exist? (coupons, referrals, loyalty points, bonuses, vouchers)
-> - What role or tier distinctions exist? (free vs. paid, user vs. premium, trial vs. full)
-> - What inventory or capacity constraints exist? (stock, seats, slots, bandwidth)
->
-> To discover features, search for:
-> - Route/endpoint definitions and their names
-> - Model/entity names (Order, Payment, Subscription, Coupon, Wallet, Bid, etc.)
-> - Business-rule-related field names (price, quantity, balance, rating, score, limit, quota, expiry, status)
-> - Validation logic or constraint-related code
->
-> **Step 2 — Generate attack scenarios**:
->
-> For each relevant business domain area found, generate specific attack scenarios. Each scenario must be:
-> - **Specific to this codebase** — name the actual endpoint, model, or feature involved
-> - **Actionable** — describe exactly what an attacker would send/do
-> - **Grounded** — reference the code or data model that makes this scenario plausible
->
-> Use the attack categories below as a checklist. Only include categories that are relevant to this application:
->
-> - **Price/payment manipulation**: Can a user send an arbitrary price in the request? Is price trusted from client?
-> - **Quantity/value out of range**: Can a user send negative quantities, zero, or values exceeding defined limits?
-> - **Workflow bypass**: Can a user skip a mandatory step in a multi-step process?
-> - **Coupon/discount abuse**: Can a coupon be used multiple times or after expiration?
-> - **Race conditions**: Are there check-then-act patterns on shared resources (inventory, balance, coupon usage)?
-> - **Refund abuse**: Can a refund be requested after the product is consumed?
-> - **Reward/referral abuse**: Can referral or signup bonuses be farmed?
-> - **Entitlement bypass**: Are premium features checked at access time or only at subscription time?
-> - **Transfer/balance logic**: Can negative transfers or self-transfers be made?
-> - **Time/date logic**: Are time-limited offers enforced server-side?
-> - **Inventory logic**: Is stock validated atomically before reservation?
-> - **Automated abuse of sensitive business flows**: Are high-value flows (purchase, booking, referral, content access) protected against bots, scripts, and coordinated abuse?
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/13_recon.md`:
->
-> ```markdown
-> # Business Logic Threat Model: [Project Name]
->
-> ## Application Domain
-> [2–3 sentence summary of what the application does and its key business features]
->
-> ## Business Features Identified
-> - [Feature 1]: [brief description, relevant models/endpoints]
-> - [Feature 2]: ...
->
-> ## Attack Scenarios
->
-> ### 1. [Short title, e.g. "Negative quantity purchase for credit"]
-> - **Category**: [e.g. Quantity & Numeric Limit Violations]
-> - **Target**: [Endpoint or feature, e.g. `POST /api/orders`]
-> - **Description**: [What an attacker would do and what outcome they expect]
-> - **Relevant code**: [File and line range where the relevant logic lives]
-> - **Business rule that should be enforced**: [What the application is supposed to do]
-> - **Risk level**: [High / Medium / Low]
->
-> ### 2. ...
->
-> [Use sequential numbering ### 3., ### 4., ... for every scenario — required for batching in Phase 2.]
->
-> ## Categories Not Applicable
-> [List any categories from the checklist that are not relevant to this application and why]
-> ```
+Explore the codebase to answer:
+- What does this application do? (e-commerce, marketplace, SaaS, social platform, fintech, gaming, booking, etc.)
+- What financial or transactional features exist? (payments, subscriptions, credits, tokens, wallets, invoices, refunds)
+- What quantitative limits or rules exist? (ratings, scores, quantities, usage limits, quotas)
+- What multi-step workflows exist? (checkout, onboarding, KYC, booking, auctions)
+- What promotional or reward features exist? (coupons, referrals, loyalty points, bonuses, vouchers)
+- What role or tier distinctions exist? (free vs. paid, user vs. premium, trial vs. full)
+- What inventory or capacity constraints exist? (stock, seats, slots, bandwidth)
 
-### After Phase 1: Check for Scenarios Before Proceeding
+To discover features, search for:
+- Route/endpoint definitions and their names
+- Model/entity names (Order, Payment, Subscription, Coupon, Wallet, Bid, etc.)
+- Business-rule-related field names (price, quantity, balance, rating, score, limit, quota, expiry, status)
+- Validation logic or constraint-related code
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/13_recon.md`. If the recon produced **zero attack scenarios** (the scenario list is empty and every category is listed as not applicable), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/13_businesslogic.md`, **delete** `{{ REPORTS_ROOT }}/13_recon.md`, and stop:
+**Step 2 — Generate attack scenarios**:
 
-```markdown
-# Business Logic Analysis Results
+For each relevant business domain area found, generate specific attack scenarios. Each scenario must be:
+- **Specific to this codebase** — name the actual endpoint, model, or feature involved
+- **Actionable** — describe exactly what an attacker would send/do
+- **Grounded** — reference the code or data model that makes this scenario plausible
 
-No vulnerabilities found.
-```
+Use the attack categories below as a checklist. Only include categories that are relevant to this application:
+- **Price/payment manipulation**: Can a user send an arbitrary price in the request? Is price trusted from client?
+- **Quantity/value out of range**: Can a user send negative quantities, zero, or values exceeding defined limits?
+- **Workflow bypass**: Can a user skip a mandatory step in a multi-step process?
+- **Coupon/discount abuse**: Can a coupon be used multiple times or after expiration?
+- **Race conditions**: Are there check-then-act patterns on shared resources (inventory, balance, coupon usage)?
+- **Refund abuse**: Can a refund be requested after the product is consumed?
+- **Reward/referral abuse**: Can referral or signup bonuses be farmed?
+- **Entitlement bypass**: Are premium features checked at access time or only at subscription time?
+- **Transfer/balance logic**: Can negative transfers or self-transfers be made?
+- **Time/date logic**: Are time-limited offers enforced server-side?
+- **Inventory logic**: Is stock validated atomically before reservation?
+- **Automated abuse of sensitive business flows**: Are high-value flows (purchase, booking, referral, content access) protected against bots, scripts, and coordinated abuse?
 
-Only proceed to Phase 2 if Phase 1 produced at least one attack scenario.
+### Verify checklist
 
-### Phase 2: Verify — Check Whether Scenarios Are Vulnerable (Batched)
+**What business logic flaws are NOT** — do not flag these here:
+- **SQL injection, XSS, RCE, XXE, SSRF, SSTI**: separate skills
+- **Missing authentication**: Unauthenticated Access
+- **IDOR**: another access-control class
+- **Generic brute-force** unless it clearly circumvents a business rule
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/13_recon.md` and split the attack scenarios into **batches of up to 3 scenarios each**. Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned scenarios and writes results to its own batch file.
+For each candidate scenario, trace the code paths it references — the architecture context shows validation patterns, ORM usage, and where business rules are typically enforced — and perform the following checks:
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+**1. Is the business rule enforced server-side?**
+- Is the constraint validated in the backend handler, service layer, or ORM/database?
+- Or is it only validated client-side (frontend form validation, JavaScript min/max attributes)?
+- Client-side-only validation = vulnerable.
 
-1. Read `{{ REPORTS_ROOT }}/13_recon.md` and count the numbered scenario sections (`### 1.`, `### 2.`, etc.).
-2. Divide them into batches of up to 3. For example, 8 scenarios → 3 batches (1–3, 4–6, 7–8).
-3. For each batch, extract the full text of those scenario sections from the threats file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned scenarios.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/13_batch_N.md` where N is the 1-based batch number.
+**2. Is the validation complete and covers all edge cases?**
+- Does it check for negative values where applicable?
+- Does it check upper bounds, not just lower bounds?
+- Does it handle concurrent requests (is the check atomic, or is there a TOCTOU window)?
+- Does it re-validate at the point of use, not just at an earlier step?
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+**3. For workflow bypass scenarios**:
+- Does each step verify that previous required steps were completed?
+- Are step completion flags stored server-side (not just in a cookie or session that can be replayed)?
+- Can a terminal endpoint be called directly without going through earlier steps?
 
-> **Goal**: For each assigned attack scenario, determine whether the business rule is properly enforced in code or whether the scenario is vulnerable. Our goal is to find business logic vulnerabilities. Write results to `{{ REPORTS_ROOT }}/13_batch_[N].md`.
->
-> **Your assigned scenarios** (from the threat modeling phase):
->
-> [Paste the full text of the assigned scenario sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand validation patterns, ORM usage, and where business rules are typically enforced. Trace the code paths referenced in each scenario.
->
-> **Constraints**: Do not modify project source code. Write findings only to `{{ REPORTS_ROOT }}/13_batch_[N].md`.
->
-> **What business logic flaws are NOT** — do not flag these here:
-> - **SQL injection, XSS, RCE, XXE, SSRF, SSTI**: separate skills
-> - **Missing authentication**: Unauthenticated Access
-> - **IDOR**: another access-control class
-> - **Generic brute-force** unless it clearly circumvents a business rule
->
-> **For each scenario, perform the following checks**:
->
-> **1. Is the business rule enforced server-side?**
-> - Is the constraint validated in the backend handler, service layer, or ORM/database?
-> - Or is it only validated client-side (frontend form validation, JavaScript min/max attributes)?
-> - Client-side-only validation = vulnerable.
->
-> **2. Is the validation complete and covers all edge cases?**
-> - Does it check for negative values where applicable?
-> - Does it check upper bounds, not just lower bounds?
-> - Does it handle concurrent requests (is the check atomic, or is there a TOCTOU window)?
-> - Does it re-validate at the point of use, not just at an earlier step?
->
-> **3. For workflow bypass scenarios**:
-> - Does each step verify that previous required steps were completed?
-> - Are step completion flags stored server-side (not just in a cookie or session that can be replayed)?
-> - Can a terminal endpoint be called directly without going through earlier steps?
->
-> **4. For coupon/voucher scenarios**:
-> - Is the coupon marked as used atomically with the transaction (in the same DB transaction)?
-> - Is concurrent redemption protected (SELECT FOR UPDATE, optimistic locking, atomic compare-and-swap)?
-> - Is the expiry date checked server-side at redemption time?
->
-> **5. For race condition scenarios**:
-> - Is stock/balance check and decrement done atomically (in a single DB transaction or with row-level locking)?
-> - Is there any idempotency key or deduplication logic to prevent duplicate concurrent requests?
->
-> **6. For entitlement/subscription scenarios**:
-> - Is the user's current plan/tier checked at the point of feature access?
-> - Or is it cached at login/session start and never re-evaluated?
->
-> **7. For transfer/balance scenarios**:
-> - Is there a server-side check that the transfer amount is positive?
-> - Is there a server-side check that the sender has sufficient balance?
-> - Are these checks done within a database transaction to prevent race conditions?
->
-> **Classification**:
-> - **Vulnerable**: The business rule is absent, bypassable, or only enforced client-side.
-> - **Likely Vulnerable**: The rule exists but has gaps (race condition window, missing edge case, bypassable condition).
-> - **Not Vulnerable**: Proper server-side enforcement exists and covers edge cases.
-> - **Needs Manual Review**: Cannot determine with confidence (complex logic, external service dependency, etc.).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/13_batch_[N].md`:
->
-> ```markdown
-> # Business Logic Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Scenario title
-> - **Category**: [Attack category]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path`
-> - **Business Rule Violated**: [What rule the application should enforce]
-> - **Issue**: [Clear description of what validation is missing or broken]
-> - **Impact**: [What an attacker can achieve — free goods, financial loss, unfair advantage, etc.]
-> - **Proof**: [Show the code path demonstrating the missing enforcement]
-> - **Remediation**: [Specific fix for this scenario]
-> - **Dynamic Test**:
->   ```
->   [Step-by-step instructions or curl commands to confirm the finding on the live app.
->    Include exact HTTP method, endpoint, headers, and request body.
->    Describe what response or side effect confirms the vulnerability.]
->   ```
->
-> ### [LIKELY VULNERABLE] Scenario title
-> - **Category**: [Attack category]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint**: `METHOD /path`
-> - **Business Rule Violated**: [What rule should be enforced]
-> - **Issue**: [What enforcement gap or race condition exists]
-> - **Concern**: [Why this is likely vulnerable despite partial enforcement]
-> - **Proof**: [Show the code path with the weak/partial check]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [Step-by-step instructions or curl commands, e.g. two concurrent requests, to confirm.]
->   ```
->
-> ### [NOT VULNERABLE] Scenario title
-> - **Category**: [Attack category]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Business Rule**: [What the application is supposed to enforce]
-> - **Protection**: [How it is enforced — server-side validation, DB constraint, atomic transaction, etc.]
->
-> ### [NEEDS MANUAL REVIEW] Scenario title
-> - **Category**: [Attack category]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Uncertainty**: [Why automated analysis couldn't determine the status]
-> - **Suggestion**: [What to examine manually or test dynamically]
-> ```
+**4. For coupon/voucher scenarios**:
+- Is the coupon marked as used atomically with the transaction (in the same DB transaction)?
+- Is concurrent redemption protected (SELECT FOR UPDATE, optimistic locking, atomic compare-and-swap)?
+- Is the expiry date checked server-side at redemption time?
 
-### Phase 3: Merge — Consolidate Batch Results
+**5. For race condition scenarios**:
+- Is stock/balance check and decrement done atomically (in a single DB transaction or with row-level locking)?
+- Is there any idempotency key or deduplication logic to prevent duplicate concurrent requests?
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/13_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/13_businesslogic.md`. You (the orchestrator) do this directly — no subagent needed.
+**6. For entitlement/subscription scenarios**:
+- Is the user's current plan/tier checked at the point of feature access?
+- Or is it cached at login/session start and never re-evaluated?
 
-**Merge procedure**:
+**7. For transfer/balance scenarios**:
+- Is there a server-side check that the transfer amount is positive?
+- Is there a server-side check that the sender has sufficient balance?
+- Are these checks done within a database transaction to prevent race conditions?
 
-1. Read all `{{ REPORTS_ROOT }}/13_batch_1.md`, `{{ REPORTS_ROOT }}/13_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/13_businesslogic.md` using this format:
+### Classification
 
-```markdown
-# Business Logic Analysis Results: [Project Name]
+- **Vulnerable**: The business rule is absent, bypassable, or only enforced client-side.
+- **Likely Vulnerable**: The rule exists but has gaps (race condition window, missing edge case, bypassable condition).
+- **Not Vulnerable**: Proper server-side enforcement exists and covers edge cases.
+- **Needs Manual Review**: Cannot determine with confidence (complex logic, external service dependency, etc.).
 
-## Executive Summary
-- Scenarios analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+### Finding fields
 
-## Findings
-
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
-
-5. After writing `{{ REPORTS_ROOT }}/13_businesslogic.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/13_batch_*.md`).
+Every finding block carries: classification tag, attack category, file/lines, endpoint, the business rule violated, issue (plus a concern field for `[LIKELY VULNERABLE]` findings), impact, proof (code path), remediation, and a dynamic test — step-by-step instructions or curl commands with the exact HTTP method, endpoint, headers, and request body, describing the response or side effect that confirms the vulnerability.
 
 ***
 
@@ -1360,17 +1212,11 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 ## Important Reminders
 [ref: #businesslogic-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run **after** Phase 1 completes — it depends on the threat model output.
-- Phase 3 must run **after** all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 scenarios per subagent**. If there are 1–3 scenarios total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned scenarios' text from the threats file, not the entire threats file. This keeps each subagent's context small and focused.
 - Focus strictly on **business logic flaws** — do not flag injection bugs, auth bypass, or IDOR issues here.
-- Threat modeling in Phase 1 should be **application-specific**: generic scenarios not grounded in the actual codebase are not useful.
+- Threat modeling in the recon stage should be **application-specific**: generic scenarios not grounded in the actual codebase are not useful.
 - Server-side validation is the only valid protection. Client-side validation, frontend form constraints, and API documentation that says "must be positive" are not security controls.
 - Race conditions on financial operations are high-severity even if they appear to require exact timing — automated tools (Turbo Intruder, concurrent curl) make them trivial to exploit.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives in a security assessment are worse than false positives.
 - Pay attention to ORM and database-level constraints (CHECK constraints, unique indexes, transactions with locking) — these can provide enforcement that is not visible in application code alone.
 - **Do not modify project source code.** This reference is read-only. Subagents must write all findings to `{{ REPORTS_ROOT }}/` report files and leave the codebase untouched.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/13_recon.md` and all `{{ REPORTS_ROOT }}/13_batch_*.md` files after the final `{{ REPORTS_ROOT }}/13_businesslogic.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `13_recon.md`, `13_batch_*.md`, and `13_verify_*.md`; only the final `{{ REPORTS_ROOT }}/13_businesslogic.md` persists.

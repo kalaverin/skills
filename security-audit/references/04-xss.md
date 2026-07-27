@@ -1,10 +1,10 @@
 ---
-subject: "XSS detection reference for SAST subagents: definition, types, scope boundaries, API-specific contexts, prevention patterns incl. Trusted Types and Sanitizer API, context-aware output encoding, advanced variants, per-stack vulnerable/secure recipes across web frameworks and frontend stacks, three-phase execution prompts, OWASP mapping, CSP guidance, CWE."
+subject: "XSS detection reference for SAST subagents: definition, types, scope boundaries, API-specific contexts, prevention patterns incl. Trusted Types and Sanitizer API, context-aware output encoding, advanced variants, per-stack vulnerable/secure recipes across web frameworks and frontend stacks, shared-protocol execution parameters, OWASP mapping, CSP guidance, CWE."
 index:
   - anchor: xss-detection
-    what: "Focused XSS detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    what: "Focused XSS detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic script-injection sweep across every rendering path, yet unstructured hunting misses dangerous sinks and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "XSS scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "XSS scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual XSS knowledge is needed, not execution."
     expected: "Verified XSS findings consolidated into the module report with false positives filtered."
   - anchor: xss-definition
@@ -163,36 +163,12 @@ index:
     use_when: "Target is a JSON API consumed by browsers; assessing shared responsibility."
     avoid_when: "Server-rendered stacks — see their recipes; clients known to escape."
     expected: "Unescaped-content responses documented with downstream rendering assessed."
-  - anchor: xss-execution-intro
-    what: "Execution overview: three phases run by subagents with the architecture report passed as context to each."
-    problem: "Detection work without orchestration structure duplicates effort and loses batch boundaries across phases; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, coordination, uniform."
-    use_when: "Starting the XSS scan execution; deciding how to dispatch subagents."
-    avoid_when: "Specific phase prompts are needed — jump to phase anchors."
-    expected: "All three phases dispatched with shared architecture context."
-  - anchor: xss-phase1-recon
-    what: "Recon prompt instructing the subagent to find every sink site with per-engine patterns and skip lists."
-    problem: "Unstructured searching misses sinks or floods candidates with auto-escaped code, so recon needs explicit patterns and exclusions; site discovery, skip rules, candidate quality, coverage discipline, grep scope, noise control, thorough sweep, broad net."
-    use_when: "Launching the recon subagent; reviewing recon completeness."
-    avoid_when: "Candidates already gathered — proceed to verify; conceptual knowledge wanted."
-    expected: "Complete, de-duplicated candidate list of sink sites."
-  - anchor: xss-phase1-gate
-    what: "Zero-candidate short-circuit: emit a clean no-findings stub and stop when recon finds nothing."
-    problem: "Pipeline without early exit wastes verify batches on empty candidate sets and leaves missing artifacts; empty recon, pipeline efficiency, artifact completeness, stop rule, graceful halt, zero results, skipped verify, idle batches."
-    use_when: "Recon returned zero candidates."
-    avoid_when: "Candidates exist — proceed to batched verification."
-    expected: "No-findings stub written and the scan stops gracefully."
-  - anchor: xss-phase2-verify
-    what: "Batched taint-tracing prompt linking user input to sinks, with the mitigation decision list and classification labels."
-    problem: "Unverified candidates are noise, and defenses from escaping to CSP differ in strength, so decision-list verification is required; taint tracing, batch processing, parallel analysis, evidence demand, defense tiers, label assignment, trace completeness, site verdicts."
-    use_when: "Candidates confirmed present; dispatching verify subagents in batches of three."
-    avoid_when: "Recon incomplete; merge stage is the need."
-    expected: "Every candidate classified against its mitigation with traced evidence."
-  - anchor: xss-phase3-merge
-    what: "Merge procedure consolidating batch reports into the final module report with dedup and the output template."
-    problem: "Parallel batch outputs overlap and diverge, and without merge discipline final reports duplicate or lose findings; result merging, dedup, consolidation, final template, partial results, report integrity, clean handoff, overlap removal, single output."
-    use_when: "All verify batches finished; producing `04_xss.md`."
-    avoid_when: "Batches still running; recon stage not done."
-    expected: "Single consolidated module report with unique, classified findings."
+  - anchor: xss-execution
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of template, DOM, JS-execution, and API-specific sink patterns with skip lists, per-candidate verify checklist covering taint sources and mitigation checks, classification rubric, and the finding-field set with dynamic tests."
+    problem: "XSS hunting without precise domain criteria lets recon miss dangerous sinks or flood candidates with auto-escaped code, and lets verify apply generic checklists that overlook output-context encoding quirks; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current XSS vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definition belongs to the definition anchor."
+    expected: "Stage subagents apply exact XSS criteria without inheriting generic templates."
   - anchor: xss-owasp-mapping
     what: "Mapping of XSS findings to OWASP API 2023 risks, routed via API8 and API10 since 2023 has no XSS category."
     problem: "Findings need correct 2023-era taxonomy, and assuming dedicated injection categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, compliance notes, risk labels."
@@ -223,7 +199,7 @@ index:
 
 [ref: #xss-detection]
 
-You are performing a focused security assessment to find Cross-Site Scripting vulnerabilities in a codebase. This skill uses a three-phase approach with subagents: **recon** (find sink sites), **batched verify** (trace taint for parallel batches of up to 3 sinks each), and **merge** (consolidate batch results into one report).
+You are performing a focused security assessment to find Cross-Site Scripting vulnerabilities in a codebase. This skill uses a three-stage pipeline with subagents: **recon** (find sink sites), **batched verify** (trace taint for parallel batches of up to 3 sinks each), and **merge** (consolidate batch results into one report).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -745,272 +721,120 @@ element.textContent = data.message;
 ***
 
 ## Execution
-[ref: #xss-execution-intro]
+[ref: #xss-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/04_xss.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Find XSS Sink Sites
-[ref: #xss-phase1-recon]
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Flag ANY dynamic variable passed to a dangerous output sink. Recon does not check whether the variable is user-controlled — that is verify's job. Search for these vulnerable sink patterns:
 
-> **Goal**: Find every location in the codebase where data is rendered into HTML, JavaScript, or the DOM in a way that could allow script injection — any unescaped or explicitly-marked-safe output, any dangerous DOM property assignment, any JavaScript execution sink. Write results to `{{ REPORTS_ROOT }}/04_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the frontend stack, template engines, server-side rendering frameworks, and any client-side JavaScript patterns.
->
-> **What to search for — vulnerable sink patterns**:
->
-> Flag ANY dynamic variable passed to a dangerous output sink. You are not yet checking whether the variable is user-controlled — that is Phase 2's job.
->
-> **1. Server-side template unescaped output**:
->    - Jinja2/Django: `{{ var | safe }}`, `{% autoescape off %}`, `Markup(var)`, `mark_safe(var)`, `format_html(...)` with direct user-controlled format args
->    - EJS: `<%- var %>`
->    - Handlebars/Mustache: `{{{ var }}}`
->    - Pug: `!{var}`
->    - Thymeleaf: `th:utext="${var}"`, `[(${var})]`
->    - Twig: `{{ var | raw }}`
->    - Blade (Laravel): `{!! $var !!}`
->    - Rails ERB: `raw(var)`, `var.html_safe`, `<%= raw var %>`
->    - PHP: `echo $var`, `print $var`, `<?= $var ?>` without `htmlspecialchars()`
->    - Go: `template.HTML(var)`, `template.JS(var)`, `template.URL(var)`, usage of `text/template` for HTML output
->    - C#/Razor: `@Html.Raw(var)`, `MvcHtmlString.Create(var)`
->
-> **2. Direct HTML string construction in server-side code**:
->    - String concatenation or interpolation building an HTML response: `res.send("<p>" + var + "</p>")`, `f"<h1>{var}</h1>"`, `"<div>" + var + "</div>"`
->    - `render_template_string(f"...{var}...")` in Flask
->
-> **3. Client-side DOM sinks**:
->    - `element.innerHTML = var`
->    - `element.outerHTML = var`
->    - `document.write(var)`, `document.writeln(var)`
->    - `element.insertAdjacentHTML(position, var)`
->    - jQuery: `$(el).html(var)`, `$(el).append(var)`, `$('<tag>' + var + '</tag>')`, `$.parseHTML(var)` passed to DOM
->    - React: `dangerouslySetInnerHTML={{ __html: var }}`
->    - Angular: `[innerHTML]="var"`, `bypassSecurityTrustHtml(var)`, `bypassSecurityTrustScript(var)`, `bypassSecurityTrustUrl(var)`, `bypassSecurityTrustStyle(var)`, `bypassSecurityTrustResourceUrl(var)`
->    - Vue: `v-html="var"`
->
-> **4. JavaScript execution sinks**:
->    - `eval(var)`
->    - `setTimeout(var, ...)` / `setInterval(var, ...)` where `var` is a string variable (not a function reference)
->    - `new Function(var)()`
->    - `scriptElement.text = var`, `scriptElement.textContent = var`
->    - `element.setAttribute('onclick', var)`, `element.setAttribute('href', 'javascript:' + var)`, and similar event-handler attribute assignments
->    - URL-based sinks where `javascript:` URIs could execute: `location.href = var`, `location.replace(var)`, `element.src = var`, `element.action = var`
->
-> **5. DOM-based XSS patterns** — client-side code reading from attacker-controlled sources and passing to any sink above:
->    - Reading from: `location.search`, `location.hash`, `location.href`, `document.referrer`, `document.URL`, `document.cookie`, `window.name`, `postMessage` handler (`event.data`), `URLSearchParams`
->    - Then passing to an HTML or JS sink without escaping
->
-> **6. API-specific XSS contexts**:
->    - JSON responses that contain HTML/JS strings later rendered by a browser client via `innerHTML`, `dangerouslySetInnerHTML`, `v-html`, or `[innerHTML]`
->    - OpenAPI/Swagger UI parameter descriptions, examples, or spec content derived from user input
->    - GraphQL introspection or Playground UI descriptions/default values derived from user input
->    - API error pages that echo `request.path`, `request.url`, headers, or query parameters
->    - Markdown rendering endpoints that return unsanitized HTML
->    - File upload endpoints serving SVG, HTML, or PDF with inline disposition or wrong MIME type
->
-> **What to skip** (these are safe output patterns — do not flag):
-> - Auto-escaped template output: `{{ var }}` in Jinja2 (auto-escape on), `<%= var %>` in EJS, `{{ var }}` in Handlebars double-brace, `@var` in Razor, `th:text` in Thymeleaf
-> - `element.textContent = var` and `element.innerText = var` — no HTML parsing, safe
-> - React JSX `{var}` — auto-escaped
-> - Angular `{{ var }}` interpolation — auto-escaped
-> - Vue `{{ var }}` interpolation — auto-escaped
-> - `DOMPurify.sanitize(var)` wrapping an innerHTML assignment — typically safe (verify config)
-> - `sanitize-html`, `xss`, or similar allowlist sanitizer library wrapping output
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/04_recon.md`:
->
-> ```markdown
-> # XSS Recon: [Project Name]
->
-> ## Summary
-> Found [N] locations where data is rendered into HTML/JS/DOM without guaranteed escaping.
->
-> ## Sink Sites
->
-> ### 1. [Descriptive name — e.g., "innerHTML assignment in search results handler"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint / component**: [function name, route, or component]
-> - **Sink type**: [server-side template / HTML string concat / DOM innerHTML / eval / JS execution sink / DOM-based source-to-sink / API-specific]
-> - **Sink call**: [the exact API or property used — e.g., `innerHTML`, `mark_safe()`, `<%- %>`]
-> - **Interpolated variable(s)**: `var_name` — [brief note, e.g., "unknown origin" or "looks like user profile field"]
-> - **Output context**: [HTML body / HTML attribute / JS string / URL / CSS / JSON / Markdown]
-> - **XSS type**: [Reflected / Stored / DOM-based / API-specific — best guess at this stage]
-> - **Code snippet**:
->   ```
->   [the vulnerable sink code]
->   ```
->
-> [Repeat for each site]
-> ```
+1. **Server-side template unescaped output**:
+   - Jinja2/Django: `{{ var | safe }}`, `{% autoescape off %}`, `Markup(var)`, `mark_safe(var)`, `format_html(...)` with direct user-controlled format args
+   - EJS: `<%- var %>`
+   - Handlebars/Mustache: `{{{ var }}}`
+   - Pug: `!{var}`
+   - Thymeleaf: `th:utext="${var}"`, `[(${var})]`
+   - Twig: `{{ var | raw }}`
+   - Blade (Laravel): `{!! $var !!}`
+   - Rails ERB: `raw(var)`, `var.html_safe`, `<%= raw var %>`
+   - PHP: `echo $var`, `print $var`, `<?= $var ?>` without `htmlspecialchars()`
+   - Go: `template.HTML(var)`, `template.JS(var)`, `template.URL(var)`, usage of `text/template` for HTML output
+   - C#/Razor: `@Html.Raw(var)`, `MvcHtmlString.Create(var)`
 
-### After Phase 1: Check for Candidates Before Proceeding
-[ref: #xss-phase1-gate]
+2. **Direct HTML string construction in server-side code**:
+   - String concatenation or interpolation building an HTML response: `res.send("<p>" + var + "</p>")`, `f"<h1>{var}</h1>"`, `"<div>" + var + "</div>"`
+   - `render_template_string(f"...{var}...")` in Flask
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/04_recon.md`. If the recon found **zero sink sites** (the summary reports "Found 0" or the "Sink Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/04_xss.md` and stop (you may delete `{{ REPORTS_ROOT }}/04_recon.md` after writing):
+3. **Client-side DOM sinks**:
+   - `element.innerHTML = var`
+   - `element.outerHTML = var`
+   - `document.write(var)`, `document.writeln(var)`
+   - `element.insertAdjacentHTML(position, var)`
+   - jQuery: `$(el).html(var)`, `$(el).append(var)`, `$('<tag>' + var + '</tag>')`, `$.parseHTML(var)` passed to DOM
+   - React: `dangerouslySetInnerHTML={{ __html: var }}`
+   - Angular: `[innerHTML]="var"`, `bypassSecurityTrustHtml(var)`, `bypassSecurityTrustScript(var)`, `bypassSecurityTrustUrl(var)`, `bypassSecurityTrustStyle(var)`, `bypassSecurityTrustResourceUrl(var)`
+   - Vue: `v-html="var"`
 
-```markdown
-# XSS Analysis Results
+4. **JavaScript execution sinks**:
+   - `eval(var)`
+   - `setTimeout(var, ...)` / `setInterval(var, ...)` where `var` is a string variable (not a function reference)
+   - `new Function(var)()`
+   - `scriptElement.text = var`, `scriptElement.textContent = var`
+   - `element.setAttribute('onclick', var)`, `element.setAttribute('href', 'javascript:' + var)`, and similar event-handler attribute assignments
+   - URL-based sinks where `javascript:` URIs could execute: `location.href = var`, `location.replace(var)`, `element.src = var`, `element.action = var`
 
-No vulnerabilities found.
-```
+5. **DOM-based XSS patterns** — client-side code reading from attacker-controlled sources and passing to any sink above:
+   - Reading from: `location.search`, `location.hash`, `location.href`, `document.referrer`, `document.URL`, `document.cookie`, `window.name`, `postMessage` handler (`event.data`), `URLSearchParams`
+   - Then passing to an HTML or JS sink without escaping
 
-Only proceed to Phase 2 if Phase 1 found at least one sink site.
+6. **API-specific XSS contexts**:
+   - JSON responses that contain HTML/JS strings later rendered by a browser client via `innerHTML`, `dangerouslySetInnerHTML`, `v-html`, or `[innerHTML]`
+   - OpenAPI/Swagger UI parameter descriptions, examples, or spec content derived from user input
+   - GraphQL introspection or Playground UI descriptions/default values derived from user input
+   - API error pages that echo `request.path`, `request.url`, headers, or query parameters
+   - Markdown rendering endpoints that return unsanitized HTML
+   - File upload endpoints serving SVG, HTML, or PDF with inline disposition or wrong MIME type
 
-### Phase 2: Verify — Trace User Input to Sinks (Batched)
-[ref: #xss-phase2-verify]
+**Recon exclusions** — do not flag (safe output patterns):
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/04_recon.md` and split the sink sites into **batches of up to 3 sink sites each**. Launch **one subagent per batch in parallel**. Each subagent traces taint only for its assigned sinks and writes results to its own batch file.
+- Auto-escaped template output: `{{ var }}` in Jinja2 (auto-escape on), `<%= var %>` in EJS, `{{ var }}` in Handlebars double-brace, `@var` in Razor, `th:text` in Thymeleaf
+- `element.textContent = var` and `element.innerText = var` — no HTML parsing, safe
+- React JSX `{var}` — auto-escaped
+- Angular `{{ var }}` interpolation — auto-escaped
+- Vue `{{ var }}` interpolation — auto-escaped
+- `DOMPurify.sanitize(var)` wrapping an innerHTML assignment — typically safe (verify config)
+- `sanitize-html`, `xss`, or similar allowlist sanitizer library wrapping output
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+### Verify checklist
 
-1. Read `{{ REPORTS_ROOT }}/04_recon.md` and count the numbered sink sections (### 1., ### 2., etc.).
-2. Divide them into batches of up to 3. For example, 8 sinks → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those sink sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned sinks.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/04_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project uses React with an Express API, include the relevant Node.js and React examples. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+For each sink site, trace the interpolated variable(s) backwards to their origin. User-controlled sources to look for:
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+1. **HTTP request sources** (server-side):
+   - Query parameters: `request.GET.get(...)`, `req.query.x`, `params[:x]`, `$_GET['x']`, `c.Query("x")`, `r.URL.Query().Get("x")`
+   - Path parameters: `request.path_params['id']`, `req.params.id`, `params[:id]`, `$_GET['id']`
+   - Request body / form fields: `request.POST.get(...)`, `req.body.x`, `request.form.get(...)`, `$_POST['x']`
+   - HTTP headers: `request.headers.get(...)`, `req.headers['x']`, `$_SERVER['HTTP_X_CUSTOM']`
+   - Cookies: `request.COOKIES.get(...)`, `req.cookies.x`, `$_COOKIE['x']`
+   - File upload filenames or content: `request.files['x'].filename`
 
-> **Goal**: For each assigned XSS sink site, determine whether a user-supplied value reaches the output variable. Write results to `{{ REPORTS_ROOT }}/04_batch_[N].md`.
->
-> **Your assigned sink sites** (from the recon phase):
->
-> [Paste the full text of the assigned sink sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand request entry points, data flows, middleware, and client-side data sources.
->
-> **For each sink site, trace the interpolated variable(s) backwards to their origin**:
->
-> **User-controlled sources to look for:**
->
-> 1. **HTTP request sources** (server-side):
->    - Query parameters: `request.GET.get(...)`, `req.query.x`, `params[:x]`, `$_GET['x']`, `c.Query("x")`, `r.URL.Query().Get("x")`
->    - Path parameters: `request.path_params['id']`, `req.params.id`, `params[:id]`, `$_GET['id']`
->    - Request body / form fields: `request.POST.get(...)`, `req.body.x`, `request.form.get(...)`, `$_POST['x']`
->    - HTTP headers: `request.headers.get(...)`, `req.headers['x']`, `$_SERVER['HTTP_X_CUSTOM']`
->    - Cookies: `request.COOKIES.get(...)`, `req.cookies.x`, `$_COOKIE['x']`
->    - File upload filenames or content: `request.files['x'].filename`
->
-> 2. **Attacker-controlled DOM sources** (client-side / DOM-based XSS):
->    - `location.search`, `location.hash`, `location.href`, `document.referrer`, `document.URL`
->    - `window.name`, `document.cookie`
->    - `postMessage` event: `window.addEventListener('message', (e) => { ... e.data ... })`
->    - `URLSearchParams` values derived from `location.search`
->    - `localStorage` / `sessionStorage` values written from URL or postMessage
->
-> 3. **Stored (second-order) input** — the variable is read from persistent storage (database, file, cache), but the stored value originally came from user input:
->    - Find the write path: where was this field stored? Was it user-supplied at write time?
->    - Was any escaping or sanitization applied at write time? (Note: HTML-escaping at write time is fragile — it may be double-encoded or stripped elsewhere)
->    - Stored XSS is still a vulnerability even if it was validated or stored safely; track whether the read-back path escapes before rendering
->
-> 4. **Third-party / integrated API data** (API10:2023 Unsafe Consumption of APIs):
->    - Data returned from external APIs, webhooks, or upstream services that is forwarded to DOM/template sinks
->    - Treat this as user-controlled unless the API contract proves otherwise
->
-> 5. **Server-side / hardcoded value** — the variable comes from config, environment, a hardcoded constant, or server-side logic with no user influence — this site is NOT exploitable.
->
-> **For each sink site, also check for mitigations that would prevent exploitation**:
-> - Is the output explicitly escaped with a safe function just before the sink? (`htmlspecialchars()`, `escapeHtml()`, `h()`, `fn:escapeXml()`)
-> - Is a sanitization library applied with a strict allowlist config? (`DOMPurify.sanitize(input)` — check if the config strips scripts)
-> - Is the HTTP response `Content-Type` set to `application/json` or `text/plain` (no HTML rendering)?
-> - Is a Content Security Policy header present that blocks inline scripts? (CSP reduces impact but is not a full fix)
-> - Is there a WAF or input validation that strictly allowlists the expected format (e.g., a numeric ID)?
-> - Does the output context require a different encoding than the one applied? (e.g., HTML-escaping applied to a JS string literal is insufficient)
->
-> **Vulnerable vs. Secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **Classification**:
-> - **Vulnerable**: User input demonstrably reaches the sink with no effective escaping or sanitization.
-> - **Likely Vulnerable**: User input probably reaches the sink (indirect/stored flow) or only weak mitigation is present (CSP-only, WAF-only, partial sanitization, incomplete allowlist).
-> - **Not Vulnerable**: The variable is server-side only with no user influence, OR proper context-aware escaping is applied immediately before the sink.
-> - **Needs Manual Review**: Cannot determine the variable's origin with confidence (opaque helpers, complex conditional flows, external libraries, or cross-service data flows).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/04_batch_[N].md`:
->
-> ```markdown
-> # XSS Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function / component**: [route, function, or component name]
-> - **XSS type**: [Reflected / Stored / DOM-based / API-specific]
-> - **Output context**: [HTML body / HTML attribute / JS string / URL / CSS / JSON / Markdown]
-> - **Issue**: [e.g., "HTTP query param `q` flows directly into innerHTML without escaping"]
-> - **Taint trace**: [Step-by-step from source to sink — e.g., "req.query.q → query → `<h1>${query}</h1>` → res.send()"]
-> - **CWE mapping**: [e.g., CWE-79, CWE-80, CWE-116, CWE-692]
-> - **Impact**: [What an attacker can do — session hijacking, credential theft, keylogging, defacement, redirects to malicious sites, etc.]
-> - **Remediation**: [Specific fix — escape with the correct function for the context, switch to textContent, use auto-escaping template syntax, apply DOMPurify, validate URL scheme, set correct Content-Type]
-> - **Dynamic Test**:
->   ```
->   [curl command or browser payload to confirm the finding.
->    Show the exact parameter, payload, and what to observe.
->    Example: curl "https://app.example.com/search?q=<script>alert(1)</script>"
->    Or: Visit https://app.example.com/#<img src=x onerror=alert(1)> and observe alert box]
->   ```
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function / component**: [route, function, or component name]
-> - **XSS type**: [Reflected / Stored / DOM-based / API-specific]
-> - **Output context**: [HTML body / HTML attribute / JS string / URL / CSS / JSON / Markdown]
-> - **Issue**: [e.g., "Stored user bio likely rendered via innerHTML; write path confirmed from user input"]
-> - **Taint trace**: [Best-effort trace, with uncertain steps identified]
-> - **Concern**: [Why it's still a risk — e.g., "Sanitization library present but configured to allow script-capable tags"]
-> - **CWE mapping**: [e.g., CWE-79, CWE-692]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [payload to attempt]
->   ```
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function / component**: [route, function, or component name]
-> - **Reason**: [e.g., "Output wrapped in htmlspecialchars() before echo" or "Variable is a hardcoded server constant"]
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function / component**: [route, function, or component name]
-> - **Uncertainty**: [Why the variable's origin or escaping status could not be determined]
-> - **Suggestion**: [What to trace manually — e.g., "Follow `buildProfileHtml()` in utils.js to check where its return value originates"]
-> ```
+2. **Attacker-controlled DOM sources** (client-side / DOM-based XSS):
+   - `location.search`, `location.hash`, `location.href`, `document.referrer`, `document.URL`
+   - `window.name`, `document.cookie`
+   - `postMessage` event: `window.addEventListener('message', (e) => { ... e.data ... })`
+   - `URLSearchParams` values derived from `location.search`
+   - `localStorage` / `sessionStorage` values written from URL or postMessage
 
-### Phase 3: Merge — Consolidate Batch Results
-[ref: #xss-phase3-merge]
+3. **Stored (second-order) input** — the variable is read from persistent storage (database, file, cache), but the stored value originally came from user input:
+   - Find the write path: where was this field stored? Was it user-supplied at write time?
+   - Was any escaping or sanitization applied at write time? (Note: HTML-escaping at write time is fragile — it may be double-encoded or stripped elsewhere)
+   - Stored XSS is still a vulnerability even if it was validated or stored safely; track whether the read-back path escapes before rendering
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/04_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/04_xss.md`. You (the orchestrator) do this directly — no subagent needed.
+4. **Third-party / integrated API data** (API10:2023 Unsafe Consumption of APIs):
+   - Data returned from external APIs, webhooks, or upstream services that is forwarded to DOM/template sinks
+   - Treat this as user-controlled unless the API contract proves otherwise
 
-**Merge procedure**:
+5. **Server-side / hardcoded value** — the variable comes from config, environment, a hardcoded constant, or server-side logic with no user influence — this site is NOT exploitable.
 
-1. Read all `{{ REPORTS_ROOT }}/04_batch_1.md`, `{{ REPORTS_ROOT }}/04_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary (total sink sites analyzed equals the number from recon; counts per classification sum across batches).
-4. Write the merged report to `{{ REPORTS_ROOT }}/04_xss.md` using this format:
+Also check for mitigations that would prevent exploitation:
 
-```markdown
-# XSS Analysis Results: [Project Name]
+- Is the output explicitly escaped with a safe function just before the sink? (`htmlspecialchars()`, `escapeHtml()`, `h()`, `fn:escapeXml()`)
+- Is a sanitization library applied with a strict allowlist config? (`DOMPurify.sanitize(input)` — check if the config strips scripts)
+- Is the HTTP response `Content-Type` set to `application/json` or `text/plain` (no HTML rendering)?
+- Is a Content Security Policy header present that blocks inline scripts? (CSP reduces impact but is not a full fix)
+- Is there a WAF or input validation that strictly allowlists the expected format (e.g., a numeric ID)?
+- Does the output context require a different encoding than the one applied? (e.g., HTML-escaping applied to a JS string literal is insufficient)
 
-## Executive Summary
-- Sink sites analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+### Classification
 
-## Findings
+- **Vulnerable**: User input demonstrably reaches the sink with no effective escaping or sanitization.
+- **Likely Vulnerable**: User input probably reaches the sink (indirect/stored flow) or only weak mitigation is present (CSP-only, WAF-only, partial sanitization, incomplete allowlist).
+- **Not Vulnerable**: The variable is server-side only with no user influence, OR proper context-aware escaping is applied immediately before the sink.
+- **Needs Manual Review**: Cannot determine the variable's origin with confidence (opaque helpers, complex conditional flows, external libraries, or cross-service data flows).
 
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
+### Finding fields
 
-5. After writing `{{ REPORTS_ROOT }}/04_xss.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/04_batch_*.md`).
+Every finding block carries: classification tag, file/lines, endpoint or function or component, XSS type (Reflected / Stored / DOM-based / API-specific), output context (HTML body / HTML attribute / JS string / URL / CSS / JSON / Markdown), issue, taint trace (step-by-step from source to sink), CWE mapping, impact, remediation, and a dynamic test (curl command or browser payload with the exact parameter, payload, and what to observe).
 
 ***
 
@@ -1060,14 +884,8 @@ CSP is a defense-in-depth measure, not a substitute for proper encoding or sanit
 ## Important Reminders
 [ref: #xss-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 sink sites per subagent**. If there are 1-3 sinks total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned sinks' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
-- **Phase 1 is purely structural**: flag any dynamic variable passed to an HTML/JS/DOM sink, regardless of origin. Do not attempt to trace user input in Phase 1 — that is Phase 2's job.
-- **Phase 2 is purely taint analysis**: for each sink found in Phase 1, trace the variable back to its origin. If it comes from a user-controlled source with no effective escaping, the site is a real vulnerability.
+- **The recon stage is purely structural**: flag any dynamic variable passed to an HTML/JS/DOM sink, regardless of origin — tracing belongs to the verify stage.
+- **The verify stage is purely taint analysis**: for each sink found by recon, trace the variable back to its origin. If it comes from a user-controlled source with no effective escaping, the site is a real vulnerability.
 - Context matters: the same variable may be safe in one output context (HTML body with escaping) and dangerous in another (JavaScript string literal, URL attribute, or event handler attribute). Check the exact rendering context.
 - Custom sanitization (homegrown regex stripping, blacklisting `<script>`, etc.) is **not** sufficient — flag as Likely Vulnerable. Only DOMPurify with a strict config or equivalent allowlist library is acceptable.
 - Stored XSS is easy to miss: trace the write path to confirm the field is user-supplied, then separately verify the read/render path lacks escaping. Both legs must be true for the vulnerability to be exploitable.
@@ -1078,4 +896,4 @@ CSP is a defense-in-depth measure, not a substitute for proper encoding or sanit
 - Angular's `DomSanitizer.bypassSecurityTrust*` methods are always suspicious — flag them whenever the argument is not a hardcoded constant.
 - For JavaScript execution sinks (`eval`, `setTimeout` with string arg), even seemingly innocuous data (error messages, IDs) can be dangerous if an attacker can influence them.
 - Subagents must not modify project source code. They scan, trace, and report only.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/04_recon.md` and all `{{ REPORTS_ROOT }}/04_batch_*.md` files after the final `{{ REPORTS_ROOT }}/04_xss.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `04_recon.md`, `04_batch_*.md`, and `04_verify_*.md`; only the final `{{ REPORTS_ROOT }}/04_xss.md` persists.

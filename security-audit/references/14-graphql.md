@@ -1,10 +1,10 @@
 ---
-subject: "GraphQL injection detection reference for SAST subagents: document-assembly definition with scope exclusions, surface-issues table, per-stack vulnerable/secure recipes incl. FastAPI, prevention patterns and guidance, CWE list, three-phase execution with early-exit gates, advanced patterns incl. MCP/AI exposure, OWASP API mapping."
+subject: "GraphQL injection detection reference for SAST subagents: document-assembly definition with scope exclusions, surface-issues table, per-stack vulnerable/secure recipes incl. FastAPI, prevention patterns and guidance, CWE list, shared-protocol execution parameters, advanced patterns incl. MCP/AI exposure, OWASP API mapping."
 index:
   - anchor: graphql-detection
-    what: "Focused GraphQL-injection detection role using the three-phase subagent approach — technology recon, batched taint verify, merge — gated on the architecture report."
+    what: "Focused GraphQL-injection detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — technology recon, batched taint verify, merge — gated on the architecture report."
     problem: "Codebase may assemble GraphQL operation documents from user input anywhere across servers, gateways, and BFF proxies, and unstructured hunting misses assembly sites while flooding reviewers with unverified candidates; detection orchestration, phase pipeline, document taint, audit rigor, coverage goal, methodical triage, reviewer fatigue."
-    use_when: "GraphQL scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "GraphQL scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture summary absent — run the analysis module first; only conceptual knowledge is needed, not execution."
     expected: "Verified injection findings consolidated into the module report with false positives filtered."
   - anchor: graphql-definition
@@ -28,7 +28,7 @@ index:
   - anchor: graphql-surface-issues
     what: "Twelve-row surface-issue table: introspection, field suggestions, debug UIs, depth and complexity abuse, batching, resolver and subscription auth gaps, directive injection, CSRF, uploads, federation trust, cache poisoning, MCP/AI exposure — each with detection focus and OWASP mapping."
     problem: "Recon focused only on document assembly misses hardening gaps that let attackers map schemas, bypass rate limits, or reach resolvers sideways, leaving reports blind to non-injection GraphQL risk; schema mapping, sideways access, visibility gaps, exposure inventory, adjacent risk, recon breadth, limit evasion."
-    use_when: "Phase 1 recon must record GraphQL-specific surface findings; reviewing whether a hardening gap belongs in the report."
+    use_when: "The recon stage must record GraphQL-specific surface findings; reviewing whether a hardening gap belongs in the report."
     avoid_when: "Injection candidate hunting is the current step — see scope anchors; remediation checklist wanted."
     expected: "Recon records every applicable surface issue with classification and evidence."
   - anchor: graphql-prevention-patterns
@@ -56,11 +56,11 @@ index:
     avoid_when: "OWASP risk framing is the question — see the OWASP anchor."
     expected: "Each finding carries the most specific applicable CWE."
   - anchor: graphql-execution
-    what: "Three-phase execution: technology recon with dual early-exit gates (no GraphQL, zero candidates), batched taint verify in groups of three sites, orchestrator merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges findings inconsistently; execution model, phase overview, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity, gate logic."
-    use_when: "Starting the GraphQL scan execution; dispatching or reviewing any phase or gate."
-    avoid_when: "Conceptual knowledge is the need — see definition and scope anchors."
-    expected: "All phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of GraphQL document-assembly sites plus security surface issues, per-candidate taint verify checklist, classification rubric, and the finding-field set with dynamic tests."
+    problem: "GraphQL hunting without precise domain criteria lets recon miss hidden assembly paths and verify apply generic checklists that overlook parser entry points and stack idioms; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current GraphQL injection vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definition belongs to the definition and scope anchors."
+    expected: "Stage subagents apply exact GraphQL injection criteria without inheriting generic templates."
   - anchor: graphql-advanced-patterns
     what: "Less-obvious attack patterns: cost-analysis abuse, live query and subscription leaks, federation stitching trust, GET-based CSRF, multipart uploads, cache poisoning, directive injection, alias overloading, MCP/AI tool exposure, engine-level CVEs."
     problem: "Standard sweeps catch obvious string assembly yet miss quiet vectors where expensive resolvers, trusted gateways, or AI tool bridges expose data without any injected syntax; second-order abuse, federation risks, cost evasion, cache risks, exotic paths, resolver strain."
@@ -91,7 +91,7 @@ index:
 
 [ref: #graphql-detection]
 
-You are performing a focused security assessment to find GraphQL injection vulnerabilities and related GraphQL security weaknesses. This skill uses a three-phase approach with subagents: **recon** (confirm GraphQL usage, find every location where a GraphQL operation document is assembled unsafely, and record GraphQL-specific security surface issues), **batched verify** (trace whether user-supplied input reaches those assembly sites, in parallel batches of up to 3 sites each), and **merge** (consolidate batch results and surface findings into the final report).
+You are performing a focused security assessment to find GraphQL injection vulnerabilities and related GraphQL security weaknesses. This skill uses a three-stage pipeline with subagents: **recon** (confirm GraphQL usage, find every location where a GraphQL operation document is assembled unsafely, and record GraphQL-specific security surface issues), **batched verify** (trace whether user-supplied input reaches those assembly sites, in parallel batches of up to 3 sites each), and **merge** (consolidate batch results and surface findings into the final report).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -407,275 +407,92 @@ val result = Executor.execute(
 ## Execution
 [ref: #graphql-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/14_graphql.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: GraphQL Technology Recon and Injection Candidate Sites
+### Recon catalog
 
-Launch a subagent with the following instructions:
+**Goal**: (1) Determine whether this codebase uses GraphQL at all. (2) If it does, find every location where a GraphQL **operation document** (query/mutation/subscription source string) is built using string concatenation, interpolation, formatting, or dynamic assembly such that a variable could change the **document text** (not merely `variables` JSON). (3) Record GraphQL-specific security surface issues.
 
-> **Goal**: (1) Determine whether this codebase uses GraphQL at all. (2) If it does, find every location where a GraphQL **operation document** (query/mutation/subscription source string) is built using string concatenation, interpolation, formatting, or dynamic assembly such that a variable could change the **document text** (not merely `variables` JSON). (3) Record GraphQL-specific security surface issues. Write results to `{{ REPORTS_ROOT }}/14_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it for stack, API layout, and BFF/gateway patterns.
->
-> **Constraint**: You are **read-only**. Do not modify project source code, configuration files, tests, or dependencies. Do not run `git commit`, `git push`, package installs, or any destructive commands.
->
-> **Part A — Is GraphQL used?**
->
-> Search for:
-> - Dependencies: `graphql` (graphql-js; v17 released 2026-06, v16 still widespread), `@apollo/server` (v5 current; v4 EOL 2026-01-26), `@as-integrations/express4` / `@as-integrations/express5`, `apollo-server-express` (legacy, EOL 2024-10-22), `@nestjs/graphql`, `graphql-yoga`, `@graphql-yoga/node`, `mercurius`, `strawberry-graphql`, `graphene`, `ariadne`, `sangria`, `gqlgen`, `async-graphql`, `juniper`, `graphql-ruby`, Hot Chocolate / `GraphQL.Server`, Spring for GraphQL (`spring-boot-starter-graphql`), Apollo MCP Server, etc.
-> - Schema artifacts: `*.graphql`, `*.graphqls`, codegen config (e.g. GraphQL Code Generator)
-> - Server routes or plugins mounting `/graphql` or similar
->
-> Set the summary to exactly one of:
-> - `GraphQL is used in this codebase.` (list libraries and main entry points)
-> - `GraphQL is not used in this codebase.`
->
-> **Part B — Injection candidate sites (only if GraphQL is used)**
->
-> If GraphQL is **not** used, omit the "Injection Candidate Sites" section or state there are none. Do not invent candidates.
->
-> If GraphQL **is** used, search for **unsafe document construction**:
->
-> 1. **String concatenation / interpolation into operation text**:
->    - `` `query { ... ${x} ...}` ``, `"mutation { " + userFragment + " }"`
->    - `sprintf`, `format`, `%` formatting, `.format()` building `query` or `source` arguments
->
-> 2. **Calls where the document argument is not a compile-time constant**:
->    - `graphql(schema, dynamicString, ...)`, `execute({ schema, document: parsedDynamic, ...})` where the string feeding `parse` or `execute` is built from non-static parts
->    - `graphqlHTTP({ schema, rootValue, context: (req) => ({ query: req.body.query + something }) })` patterns that **mutate** or **wrap** the query string with user data
->
-> 3. **HTTP clients forwarding a constructed GraphQL body**:
->    - `JSON.stringify({ query: \`...${userPart}...\` })`, `axios.post(url, { query: builtFromInput })`
->
-> 4. **Unsafe persisted / stored query lookup**:
->    - Operation text loaded by key from user input without allowlist → file path or DB value becomes document source
->
-> **What to skip** (do not flag as Phase 1 candidates):
-> - Fully static `source` / `query` strings; only `variableValues` / `variables` come from the request
-> - Schema definition with `buildSchema` / SDL files with no user interpolation
-> - Resolver implementations that only use args with parameterized DB APIs (optional: note "resolver uses ORM" but not a GraphQL injection candidate unless the **document** is built unsafely)
->
-> **Part C — GraphQL-specific security surface findings (only if GraphQL is used)**
->
-> Record findings under "GraphQL Surface Findings" using the classification labels. For each issue, state whether it is present, absent, or uncertain. If present, include file/config location and impact.
->
-> - Introspection enabled in production
-> - Field suggestions enabled
-> - GraphiQL / Playground / Apollo Sandbox exposed
-> - Missing query depth / complexity / cost limits
-> - Batching / alias overloading accepted without limits
-> - Resolver-level authorization gaps on sensitive queries, mutations, or subscriptions
-> - Subscription / WebSocket authentication gaps
-> - Custom directive injection candidates
-> - CSRF-vulnerable mutation handling
-> - File upload via multipart without limits
-> - Federation / gateway trust issues
-> - Cache poisoning risk from query-shape cache keys
-> - MCP / AI agent exposure (unauthenticated MCP endpoint, introspection-driven tool generation, over-broad persisted-query manifest)
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/14_recon.md`:
->
-> ```markdown
-> # GraphQL Recon: [Project Name]
->
-> ## Summary
-> GraphQL is [used / not used] in this codebase.
-> [If used: libraries, main server files, typical endpoint paths]
-> Found [N] injection candidate site(s) where operation documents may be built unsafely. [If not used, say N/A or 0 and skip candidate list]
-> Found [M] GraphQL-specific surface finding(s).
->
-> ## GraphQL Surface (only if used)
-> - **Libraries / frameworks**: ...
-> - **Entry points**: ...
-> - **Notable files**: ...
->
-> ## Injection Candidate Sites
->
-> ### 1. [Descriptive name]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: ...
-> - **Execution / call pattern**: [graphql.execute / fetch with body / gql template / etc.]
-> - **Construction pattern**: [concat / template literal / format / forwarded body mutation]
-> - **Interpolated variable(s)**: ...
-> - **Code snippet**:
->   ```
->   ...
->   ```
->
-> [Repeat for each site; if none, write "No injection candidate sites found." under the heading]
->
-> ## GraphQL Surface Findings
->
-> ### [LIKELY VULNERABLE] Introspection enabled in production
-> - **File / config**: ...
-> - **Issue**: ...
-> - **Evidence**: ...
-> - **Remediation**: disable introspection in production
->
-> [Repeat for each surface finding; if none, write "No surface findings."]
-> ```
+**Part A — Is GraphQL used?** Search for:
 
-### After Phase 1: Gates Before Phase 2
+- Dependencies: `graphql` (graphql-js; v17 released 2026-06, v16 still widespread), `@apollo/server` (v5 current; v4 EOL 2026-01-26), `@as-integrations/express4` / `@as-integrations/express5`, `apollo-server-express` (legacy, EOL 2024-10-22), `@nestjs/graphql`, `graphql-yoga`, `@graphql-yoga/node`, `mercurius`, `strawberry-graphql`, `graphene`, `ariadne`, `sangria`, `gqlgen`, `async-graphql`, `juniper`, `graphql-ruby`, Hot Chocolate / `GraphQL.Server`, Spring for GraphQL (`spring-boot-starter-graphql`), Apollo MCP Server, etc.
+- Schema artifacts: `*.graphql`, `*.graphqls`, codegen config (e.g. GraphQL Code Generator)
+- Server routes or plugins mounting `/graphql` or similar
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/14_recon.md`.
+The recon summary states whether GraphQL is used, with libraries and main entry points. If GraphQL is **not** used, there are no candidates — do not invent any.
 
-**Gate 1 — No GraphQL technology**
+**Part B — Injection candidate sites** — search for **unsafe document construction**:
 
-If the summary states GraphQL is **not used** (or equivalent: no GraphQL libraries, no schema, no server — clear absence), **skip Phases 2 and 3**. Write the following to `{{ REPORTS_ROOT }}/14_graphql.md` and stop:
+1. **String concatenation / interpolation into operation text**:
+   - `` `query { ... ${x} ...}` ``, `"mutation { " + userFragment + " }"`
+   - `sprintf`, `format`, `%` formatting, `.format()` building `query` or `source` arguments
 
-```markdown
-# GraphQL Injection Analysis Results
+2. **Calls where the document argument is not a compile-time constant**:
+   - `graphql(schema, dynamicString, ...)`, `execute({ schema, document: parsedDynamic, ...})` where the string feeding `parse` or `execute` is built from non-static parts
+   - `graphqlHTTP({ schema, rootValue, context: (req) => ({ query: req.body.query + something }) })` patterns that **mutate** or **wrap** the query string with user data
 
-No GraphQL technology detected in this codebase.
-```
+3. **HTTP clients forwarding a constructed GraphQL body**:
+   - `JSON.stringify({ query: \`...${userPart}...\` })`, `axios.post(url, { query: builtFromInput })`
 
-**Gate 2 — GraphQL used but no injection candidates**
+4. **Unsafe persisted / stored query lookup**:
+   - Operation text loaded by key from user input without allowlist → file path or DB value becomes document source
 
-If GraphQL **is** used but there are **zero** injection candidate sites (summary reports 0 candidates, or the "Injection Candidate Sites" section states none found / is empty), **skip Phases 2 and 3**. Still include any surface findings from Phase 1 in `{{ REPORTS_ROOT }}/14_graphql.md`. If there are no surface findings either, write:
+**Recon exclusions** — do not report as candidates:
 
-```markdown
-# GraphQL Injection Analysis Results
+- Fully static `source` / `query` strings; only `variableValues` / `variables` come from the request
+- Schema definition with `buildSchema` / SDL files with no user interpolation
+- Resolver implementations that only use args with parameterized DB APIs (optional: note "resolver uses ORM" but not a GraphQL injection candidate unless the **document** is built unsafely)
 
-No vulnerabilities found.
-```
+**Part C — GraphQL-specific security surface findings** — record alongside candidates under "GraphQL Surface Findings" using the classification labels. For each issue, state whether it is present, absent, or uncertain. If present, include file/config location and impact.
 
-**Otherwise** proceed to Phase 2.
+- Introspection enabled in production
+- Field suggestions enabled
+- GraphiQL / Playground / Apollo Sandbox exposed
+- Missing query depth / complexity / cost limits
+- Batching / alias overloading accepted without limits
+- Resolver-level authorization gaps on sensitive queries, mutations, or subscriptions
+- Subscription / WebSocket authentication gaps
+- Custom directive injection candidates
+- CSRF-vulnerable mutation handling
+- File upload via multipart without limits
+- Federation / gateway trust issues
+- Cache poisoning risk from query-shape cache keys
+- MCP / AI agent exposure (unauthenticated MCP endpoint, introspection-driven tool generation, over-broad persisted-query manifest)
 
-### Phase 2: Trace User Input to Injection Candidate Sites (Batched)
+### Verify checklist
 
-After Phase 1 completes and both gates pass (GraphQL used and at least one candidate site), read `{{ REPORTS_ROOT }}/14_recon.md` and split the **Injection Candidate Sites** into **batches of up to 3 sites each** (each `### N.` section is one site). Launch **one subagent per batch in parallel**. Each subagent traces taint only for its assigned sites and writes results to its own batch file.
+For each candidate, determine whether user-supplied data can reach the dynamic part of the operation document. User-controlled data must not alter the **GraphQL document text** (query/mutation/subscription source) except through bound **variables** on a static document. Flag when taint reaches string assembly of the operation.
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+Do not flag these here:
 
-1. Read `{{ REPORTS_ROOT }}/14_recon.md` and count the numbered candidate sections under "Injection Candidate Sites" (`### 1.`, `### 2.`, etc.).
-2. Divide them into batches of up to 3. For example, 8 sites → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those candidate sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned candidate sections (plus architecture context).
-5. Each subagent writes to `{{ REPORTS_ROOT }}/14_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project uses Node.js, include the "Node.js — dynamic document for downstream API" and "Apollo Server" examples; if Python, include "Python — string format into execute", "Strawberry", and "Graphene". Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+- **SQL/NoSQL injection in resolvers** — other SAST skills
+- **IDOR with static document + variables** — authorization, not document injection
+- **Normal variable binding** on a fixed document string
+- **Introspection enabled** — unless the finding is specifically operation-string injection
+- **Query depth/complexity DoS** — different class
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+Mitigations that reduce risk:
 
-> **Goal**: For each assigned injection candidate site, determine whether user-supplied data can reach the dynamic part of the operation document. Our goal is to find GraphQL injection vulnerabilities. Write results to `{{ REPORTS_ROOT }}/14_batch_[N].md`.
->
-> **Constraint**: You are **read-only**. Do not modify source code, configuration, tests, or dependencies. Do not run destructive commands.
->
-> **Your assigned candidate sites** (from the recon phase):
->
-> [Paste the full text of the assigned candidate sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it for API layout, request handling, and BFF/gateway patterns.
->
-> **GraphQL injection reference — What to look for**:
->
-> User-controlled data must not alter the **GraphQL document text** (query/mutation/subscription source) except through bound **variables** on a static document. Flag when taint reaches string assembly of the operation.
->
-> **What GraphQL injection is NOT** — do not flag these here:
-> - **SQL/NoSQL injection in resolvers** — other SAST skills
-> - **IDOR with static document + variables** — authorization, not document injection
-> - **Normal variable binding** on a fixed document string
-> - **Introspection enabled** — unless the finding is specifically operation-string injection
-> - **Query depth/complexity DoS** — different class
->
-> **Mitigations that reduce risk**:
-> - Allowlist of fields or operation IDs before any string assembly
-> - Parser validation that rejects unexpected definitions (still prefer no user-controlled document structure)
->
-> **Vulnerable vs. secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **For each assigned site, trace dynamic values backward**:
->
-> 1. **Direct user input** — query params, path params, JSON body fields (including nested `query` if re-wrapped), headers, cookies
-> 2. **Indirect user input** — helpers, middleware, context builders
-> 3. **Second-order** — stored preferences or DB fields later used to build a document; trace write path
-> 4. **Server-only** — config, env, hardcoded fragments — not exploitable from the client
->
-> **Classification**:
-> - **Vulnerable**: User-controlled data reaches document construction with no effective mitigation
-> - **Likely Vulnerable**: Probable taint or weak sanitization
-> - **Not Vulnerable**: Server-side-only or effective allowlist / static document path
-> - **Needs Manual Review**: Opaque flow
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/14_batch_[N].md`:
->
-> ```markdown
-> # GraphQL Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: ...
-> - **Issue**: ...
-> - **Taint trace**: ...
-> - **Impact**: [e.g., unauthorized fields, gateway bypass, SSRF-style behavior to internal GraphQL]
-> - **Remediation**: [static operations; variables only; persisted query allowlist]
-> - **Dynamic Test**:
->   ```
->   [curl or in-browser GraphQL request showing injected fragment/directive/field]
->   ```
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **File**: ...
-> - **Endpoint / function**: ...
-> - **Issue**: ...
-> - **Taint trace**: ...
-> - **Concern**: ...
-> - **Remediation**: ...
-> - **Dynamic Test**:
->   ```
->   ...
->   ```
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **File**: ...
-> - **Endpoint / function**: ...
-> - **Reason**: ...
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **File**: ...
-> - **Endpoint / function**: ...
-> - **Uncertainty**: ...
-> - **Suggestion**: ...
-> ```
+- Allowlist of fields or operation IDs before any string assembly
+- Parser validation that rejects unexpected definitions (still prefer no user-controlled document structure)
 
-### Phase 3: Merge — Consolidate Batch Results
+Trace dynamic values backward through:
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/14_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/14_graphql.md`. You (the orchestrator) do this directly — no subagent needed.
+1. **Direct user input** — query params, path params, JSON body fields (including nested `query` if re-wrapped), headers, cookies
+2. **Indirect user input** — helpers, middleware, context builders
+3. **Second-order** — stored preferences or DB fields later used to build a document; trace write path
+4. **Server-only** — config, env, hardcoded fragments — not exploitable from the client
 
-**Merge procedure**:
+### Classification
 
-1. Read all `{{ REPORTS_ROOT }}/14_batch_1.md`, `{{ REPORTS_ROOT }}/14_batch_2.md`, ... files.
-2. Read the Phase 1 surface findings from `{{ REPORTS_ROOT }}/14_recon.md`.
-3. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-4. Count totals across all batches for the executive summary.
-5. Write the merged report to `{{ REPORTS_ROOT }}/14_graphql.md` using this format:
+- **Vulnerable**: User-controlled data reaches document construction with no effective mitigation
+- **Likely Vulnerable**: Probable taint or weak sanitization
+- **Not Vulnerable**: Server-side-only or effective allowlist / static document path
+- **Needs Manual Review**: Opaque flow
 
-```markdown
-# GraphQL Injection Analysis Results: [Project Name]
+### Finding fields
 
-## Executive Summary
-- Candidate sites analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
-- Surface findings from Phase 1: [M]
-
-## Findings
-
-[All injection findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-
-## GraphQL Surface Findings
-
-[All Phase 1 surface findings, grouped and classified.]
-```
-
-6. After writing `{{ REPORTS_ROOT }}/14_graphql.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/14_batch_*.md`).
+Every finding block carries: classification tag, file/lines, endpoint or function, issue, taint trace, impact, remediation, and a dynamic test (curl or in-browser GraphQL request showing the injected fragment, directive, or field on the live app). GraphQL surface findings carry classification tag, file/config location, issue, evidence, and remediation instead of a taint trace; the final report keeps them in a separate "GraphQL Surface Findings" section alongside the injection findings.
 
 ***
 
@@ -718,19 +535,12 @@ This scan supports the following OWASP API Security Top 10 2023 risks:
 ## Subagent Constraints and Important Reminders
 [ref: #graphql-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- **Subagents are read-only**. They must not modify project source code, configuration files, tests, or dependencies. They must not run `git commit`, `git push`, package installs, or any destructive commands.
-- **If Phase 1 finds no GraphQL technology, skip Phases 2 and 3** — write the "No GraphQL technology detected" results file.
-- **If GraphQL is used but Phase 1 finds no injection candidates, skip Phases 2 and 3** — include any surface findings in `{{ REPORTS_ROOT }}/14_graphql.md`; if none, write "No vulnerabilities found."
-- Phase 2 must run **after** Phase 1 completes — it depends on the recon output.
-- Phase 3 must run **after** all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 candidate sites per subagent**. If there are 1-3 sites total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned candidates' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
-- Phase 1 does **not** trace taint; Phase 2 does.
+- **If the recon stage finds no GraphQL technology, the scan ends there** — write the "No GraphQL technology detected" results file.
+- **If GraphQL is used but the recon stage finds no injection candidates, the scan ends there** — include any surface findings in `{{ REPORTS_ROOT }}/14_graphql.md`; if none, write "No vulnerabilities found."
+- The recon stage does **not** trace taint; the verify stage does.
 - Resolver-layer SQL/NoSQL issues belong to other skills; this skill targets **operation document** construction.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable".
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/14_recon.md` and all `{{ REPORTS_ROOT }}/14_batch_*.md` files after the final `{{ REPORTS_ROOT }}/14_graphql.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `14_recon.md`, `14_batch_*.md`, and `14_verify_*.md`; only the final `{{ REPORTS_ROOT }}/14_graphql.md` persists.
 
 ***
 

@@ -26,11 +26,11 @@ index:
     avoid_when: "Module-level verdict tagging belongs to module files 02–24; design-gap `FAIL` severities follow the Low/Medium rule inside the output template; scan selection belongs to `00-screener.md`."
     expected: "Every finding carries one justified tier; tied items ordered consistently; list sorted Critical-first."
   - anchor: report-execution
-    what: "Six-step in-session execution with no subagents: discover module outputs plus `manifest.md` and `01_architecture.md` context, extract per-family findings, deduplicate by file path/endpoint/sink keeping highest severity with `Cross-references` field, score and sort Critical-first by confidentiality, run completeness checklist against `00_plan.md`, then write the mandated fenced template — header, executive-summary severity counts, OWASP API 2023 coverage heatmap, top-three risk scores, remediation SLA timeline, vulnerability index, tiered finding blocks, design-gap section, scan-coverage and manual-review appendices."
-    problem: "Consolidation attempted ad hoc skips result files, double-counts shared vulnerable locations, orders tiers inconsistently, and ships deliverables whose summary tallies disagree with detail rows or omit required appendices; workflow canon, step sequence, evidence gathering, cross-scan overlap, coverage audit, template fidelity, structural completeness."
-    use_when: "Running the consolidation end to end after module scans complete; grouping same-location findings before scoring; validating deliverable completeness against the plan; writing or reviewing `{{ REPORTS_ROOT }}/report.md` structure."
+    what: "Two-stage map-reduce consolidation: parallel extractor subagents normalize each module report into compact `NN_findings.yaml` cards, then one consolidator dedups by location keeping highest severity with `Cross-references`, scores and sorts Critical-first by confidentiality, validates completeness against `00_plan.md`, writes the mandated fenced template — header, severity counts, OWASP heatmap, top-three risks, SLA timeline, vulnerability index, tiered findings, design gaps, both appendices — and deletes the cards."
+    problem: "Single-context consolidation forces one agent to ingest every module report verbatim with no truncation allowed, while ad hoc merging skips files, double-counts shared locations, and breaks tally consistency; context ceiling, workflow canon, evidence gathering, cross-scan overlap, coverage audit, template fidelity, staged extraction."
+    use_when: "Running consolidation after all module scans complete; grouping same-location findings before scoring; validating completeness against the plan; writing or reviewing `{{ REPORTS_ROOT }}/report.md` structure."
     avoid_when: "Any module scan still pending — finish module files 02–24 or `90-design-checklist.md` first; scan selection belongs to `00-screener.md`; recon and architecture work belong to `01-analysis.md`; classification-tag rules alone wanted — see the inclusion card."
-    expected: "`{{ REPORTS_ROOT }}/report.md` written with header metadata, heatmap, tiered findings, dedup cross-references, and both appendices present; checklist items all verified."
+    expected: "`{{ REPORTS_ROOT }}/report.md` written with header metadata, heatmap, tiered findings, dedup cross-references, and both appendices present; no `NN_findings.yaml` left behind."
   - anchor: report-important-reminders
     what: "Closing operational reminders: family-correct tag enforcement with ⚠ likely markers preserved per family, original labels kept for modules 21–23 rather than re-labeled, full detail preservation without truncating Proof/Remediation/Dynamic Test, `manifest.md` header reflection, `01_architecture.md`-enriched severity rationale, empty-tier section omission, single-file write confinement, post-write memory persistence via `[ref: #serena-memory-mutation]`."
     problem: "Final pass without fixed wrap-up rules lets likely-verdict markers vanish, module-specific labels get flattened into generic tags, proof details get truncated, or stray writes touch project files; closing rules, quality floor, marker hygiene, exit discipline, audit closure, scope restraint, uniform endings."
@@ -50,7 +50,7 @@ You are consolidating all completed SAST vulnerability scan results into a singl
 ## Subagent Constraints
 [ref: #report-subagent-constraints]
 
-The report subagent must **only** write `{{ REPORTS_ROOT }}/report.md`. It must **never** edit project source code, configuration files, tests, build scripts, or any file outside `{{ REPORTS_ROOT }}`.
+The report subagent writes only `{{ REPORTS_ROOT }}/report.md` and deletes the `NN_findings.yaml` cards after the report is written. It must **never** edit project source code, configuration files, tests, build scripts, or any file outside `{{ REPORTS_ROOT }}`.
 
 ***
 
@@ -115,99 +115,68 @@ Assign each finding a severity tier — **Critical**, **High**, **Medium**, or *
 ## Execution
 [ref: #report-execution]
 
-Perform all steps in-session (no subagents needed).
+Consolidation runs in two map-reduce stages — no single context ever reads every module report at once.
 
-### Step 1: Discover result files and context
+### Stage 1: Extract finding cards (parallel subagents)
 
-1. Read `{{ REPORTS_ROOT }}/manifest.md`. Use the `entity` field (`project-level` or a specific entity name) in the report header.
-2. Read `{{ REPORTS_ROOT }}/01_architecture.md` if it exists (use it for the project name, application context, and severity rationale).
-3. Check which of these files exist in `{{ REPORTS_ROOT }}/`:
-   - `02_sqli.md`
-   - `03_ssrf.md`
-   - `04_xss.md`
-   - `05_rce.md`
-   - `06_ssti.md`
-   - `07_xxe.md`
-   - `08_idor.md`
-   - `09_jwt.md`
-   - `10_missingauth.md`
-   - `11_fileupload.md`
-   - `12_pathtraversal.md`
-   - `13_businesslogic.md`
-   - `14_graphql.md`
-   - `15_hardcodedsecrets.md`
-   - `16_bopla.md`
-   - `17_resourceconsumption.md`
-   - `18_inventory.md`
-   - `19_unsafeapiconsumption.md`
-   - `20_misconfiguration.md`
-   - `21_backdoors.md`
-   - `22_obfuscation.md`
-   - `23_dependencies.md`
-   - `24_jvm_anomalies.md`
-   - `90_design_checklist.md`
+For each existing module report (`NN_<name>.md` for scans 02–24, and `90_design_checklist.md`), dispatch one `coder` subagent with: this reference file's path, that module report's path, and `{{ REPORTS_ROOT }}`. It writes `{{ REPORTS_ROOT }}/NN_findings.yaml`:
 
-### Step 2: Read and extract findings
+- For scans 02–24: one card per finding carrying an include tag of the module's classification family (see What to Include). Excluded tags are skipped; `[NEEDS MANUAL REVIEW]` items go to a separate `manual_review:` list.
+- For module 90: one card per `FAIL` item; `NEEDS_MANUAL_REVIEW` items go to `manual_review:`.
 
-Read each existing result file. For every finding classified with an include tag from the file's tag family — `[VULNERABLE]`/`[LIKELY VULNERABLE]` (modules 02–20 and 24), `[CONFIRMED BACKDOOR]`/`[LIKELY BACKDOOR]` (`21_backdoors.md`), `[MALICIOUS OBFUSCATION]`/`[LIKELY MALICIOUS]` (`22_obfuscation.md`), `[CONFIRMED THREAT]`/`[LIKELY THREAT]` (`23_dependencies.md`) — extract:
-- Finding title
-- Vulnerability type (derived from the source file)
-- OWASP API 2023 risk mapping (e.g., API1:2023 Broken Object Level Authorization)
-- File / endpoint affected
-- Issue description
-- Impact description
-- Proof / code path
-- Remediation
-- Dynamic test steps (if present)
+Card format (one YAML list item per finding):
 
-For `90_design_checklist.md`, extract every `FAIL` item instead of `[VULNERABLE]`/`[LIKELY VULNERABLE]`. Capture:
-- Finding title (from the checklist item)
-- Checklist item reference
-- Risk
-- Evidence
-- Remediation
+```yaml
+- id: "16-3"                      # scan id + finding number in source order
+  source_scan: "16_bopla"
+  classification: "[LIKELY VULNERABLE]"
+  title: "Booking PATCH accepts total_stay_price"
+  owasp_risk: "API3:2023 Broken Object Property Level Authorization"
+  location: "api/bookings.py:88-104"
+  endpoint: "PATCH /api/bookings/{id}"
+  dedup_key: "api/bookings.py::BookingViewSet.partial_update"
+  severity_hint: "High"           # per the Severity Ranking baseline
+  summary: "Update serializer accepts any writable model field; price overwrite confirmed."
+  evidence_ref: "16_bopla.md: finding block 3"
+manual_review:
+  - title: "..."
+    location: "..."
+    justification: "..."
+```
 
-Skip `PASS`, `NOT_APPLICABLE`, and `NEEDS_MANUAL_REVIEW` entries in the main report body, but count `NEEDS_MANUAL_REVIEW` in the summary.
+The extractor never re-analyzes code and never re-judges verdicts: it normalizes the module report's own text into cards.
 
-### Step 3: Deduplicate and cross-reference
+Extraction rules:
 
-A single vulnerable location can appear in multiple scan reports (e.g., an IDOR object-access flaw that also enables a sensitive-business-flow bypass). Before scoring:
+- The extractor ALWAYS writes `NN_findings.yaml`, even with zero include-tag findings: an empty findings list plus `scanned: true` and the module id — a clean scan must stay distinguishable from a not-run scan.
+- For module 90: `classification: FAIL`, `endpoint: null`, `owasp_risk` from the checklist's own OWASP alignment table, no `severity_hint` (the consolidator assigns Low/Medium to design gaps), no `dedup_key` (design gaps never participate in dedup), and the card carries the `PASS`/`FAIL`/`NOT_APPLICABLE`/`NEEDS_MANUAL_REVIEW` tallies for the Design & Operational Control Gaps section header.
+- If a finding block lacks an OWASP risk, the extractor falls back to the module's registry-row mapping in `references/registry.md`.
 
-1. Group findings by file path, endpoint, and vulnerable code location / sink.
-2. For each group, keep the highest severity among the contributing findings.
-3. Use the OWASP API 2023 risk from the highest-severity contributor as the primary risk.
-4. In the finding block, add a **Cross-references** field listing the other contributing scans and their OWASP risk mappings.
-5. Preserve all distinct proof-of-concept payloads and remediation actions as sub-bullets under **Proof** and **Remediation**.
+### Stage 2: Consolidate (one subagent)
 
-If a finding is unique, omit the **Cross-references** field.
+Dispatch one `coder` subagent with this reference file's path and `{{ REPORTS_ROOT }}`. It:
 
-### Step 4: Score and sort
-
-Assign each finding a severity level (Critical / High / Medium / Low) using the table above. Sort all findings:
-
-1. Critical first, then High, Medium, Low
-2. Within each tier, sort by confidentiality impact (highest first)
-
-### Step 5: Completeness validation checklist
-
-Before finalizing `{{ REPORTS_ROOT }}/report.md`, verify:
-
-- [ ] All scans selected in `{{ REPORTS_ROOT }}/00_plan.md` are represented in the report.
-- [ ] Scans 15–24 and `90_design_checklist.md` are included if selected in the plan.
-- [ ] Every finding uses its module's classification tags (backdoor, obfuscation, and threat tag families for modules 21–23).
-- [ ] Every `[VULNERABLE]` and `[LIKELY VULNERABLE]` finding has a severity, OWASP risk, location, proof, and remediation.
-- [ ] `[NEEDS MANUAL REVIEW]` items are listed in the appendix with location and justification.
-- [ ] Duplicate findings are deduplicated with cross-references.
-- [ ] `manifest.md` metadata is reflected in the report header.
-- [ ] Only `{{ REPORTS_ROOT }}/report.md` is written; no project source files were modified.
-
-### Step 6: Write `{{ REPORTS_ROOT }}/report.md`
-
-Use exactly this output format:
+1. Reads `manifest.md`, `01_architecture.md` (context for severity rationale), and every `NN_findings.yaml` — never the module reports at this step. Cards cross-referenced against `00_plan.md` determine each scan's coverage status: `Scanned` (ran with at least one surviving finding) / `No findings` / `Not selected`.
+2. **Deduplicates** by `dedup_key` (plus file/endpoint/sink equivalence): groups cards, keeps the highest severity per group, takes the OWASP risk of the highest-severity contributor as primary, and records the other contributors in a **Cross-references** field; distinct PoC payloads and remediations are preserved as sub-bullets. Unique findings omit the field.
+3. **Scores and sorts** per the Severity Ranking table: baseline + context adjustment; Critical → High → Medium → Low; within a tier, higher confidentiality impact first.
+4. **Pulls full detail** for each surviving finding from its source module report — issue, impact, proof, remediation, dynamic test — preserved verbatim, never summarized or truncated.
+5. **Validates completeness** against `00_plan.md`: every selected scan is represented (or its clean result is noted); `90_design_checklist.md` is included when selected; every surviving finding has severity, OWASP risk, location, proof, and remediation; every finding uses its module's classification tags; manual-review items land in the appendix with location and justification; duplicates carry cross-references; `manifest.md` metadata appears in the header; no project source files were modified.
+6. Writes `{{ REPORTS_ROOT }}/report.md` using exactly this output format, then **deletes all `NN_findings.yaml` cards**.
 
 ***
 
 ```markdown
+---
+title: Security Assessment Final Report
+created_at: [current date UTC ISO 8601]
+updated_at: [current date UTC ISO 8601]
+repo: [entity name or "generic"]
+branch: [target repo branch]
+commit: [target repo short hash]
+committed_at: [target repo commit UTC ISO 8601]
+source: [project root]
+---
+
 # Security Assessment Final Report
 
 **Entity / Project**: [value from `manifest.md` `entity` field, or name from `01_architecture.md`, or infer from codebase]
@@ -280,7 +249,7 @@ Rank the top three OWASP API 2023 risks by combined severity score (Critical=4, 
 
 #### [Finding Title] — [Vuln Type] ⚠ Likely Vulnerable
 
-- **Source scan**: `{{ REPORTS_ROOT }}/N_NAME.md` (e.g., `02_sqli.md`)
+- **Source scan**: `{{ REPORTS_ROOT }}/NN_<name>.md` (e.g., `02_sqli.md`)
 - **Classification**: Vulnerable *(or "Likely Vulnerable")*
 - **Endpoint / File**: ...
 - **Risk rating**: [OWASP API 2023 risk, e.g., API1:2023 Broken Object Level Authorization]
@@ -319,6 +288,8 @@ Rank the top three OWASP API 2023 risks by combined severity score (Critical=4, 
 ---
 
 ## Design & Operational Control Gaps
+
+Checklist tallies from the module-90 card: PASS: N / FAIL: N / NOT_APPLICABLE: N / NEEDS_MANUAL_REVIEW: N.
 
 List each `FAIL` finding from `{{ REPORTS_ROOT }}/90_design_checklist.md` in this
 section. Assign a severity of **Low** or **Medium** based on the described risk;
@@ -384,8 +355,8 @@ For every `[NEEDS MANUAL REVIEW]` item in any result file, include:
 - Mark the family-appropriate "likely" findings clearly: append **⚠ Likely Vulnerable** (or the family's likely label) after the finding title.
 - Findings from modules 21–23 keep their original classification labels in the report — a `[CONFIRMED BACKDOOR]` is reported as such, not re-labeled `[VULNERABLE]`; the ⚠ marker applies to the family-appropriate "likely" tag (`[LIKELY VULNERABLE]`, `[LIKELY BACKDOOR]`, `[LIKELY MALICIOUS]`, `[LIKELY THREAT]`).
 - Preserve all details from the original findings — do not summarize or truncate Proof, Remediation, or Dynamic Test sections.
-- Read `{{ REPORTS_ROOT }}/manifest.md` first and reflect the entity name / `project-level` flag in the report header.
+- Read `{{ REPORTS_ROOT }}/manifest.md` first and reflect the `entity` value (`project-level` or a specific name) in the report header.
 - If `{{ REPORTS_ROOT }}/01_architecture.md` exists, use it to enrich the severity rationale with application-specific context (e.g., "this endpoint handles payment data, making confidentiality impact Critical").
 - Omit severity sections entirely (e.g., the `### Low` heading) if no findings fall in that tier.
-- This subagent must only write `{{ REPORTS_ROOT }}/report.md` and must not modify any project source code or configuration.
+- This subagent writes only `{{ REPORTS_ROOT }}/report.md` (deleting the `NN_findings.yaml` cards afterward) and must not modify any project source code or configuration.
 - After `{{ REPORTS_ROOT }}/report.md` is written, the ROOT agent persists per `serena-protocol` `[ref: #serena-memory-mutation]` so the audit artifacts are persisted with the rest of Serena memory.

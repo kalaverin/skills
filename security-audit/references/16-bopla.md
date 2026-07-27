@@ -1,10 +1,10 @@
 ---
-subject: "BOPLA detection reference for SAST subagents: three-phase orchestration prompt, `API3:2023` definition with IS/IS-NOT boundaries plus prevention patterns, per-stack vulnerable/secure recipes incl. `FastAPI` and `Laravel`, advanced patterns incl. LLM tool-argument mass assignment, prevention guidance, OWASP mapping, references, reminders."
+subject: "BOPLA detection reference for SAST subagents: shared-protocol execution parameters, `API3:2023` definition with IS/IS-NOT boundaries plus prevention patterns, per-stack vulnerable/secure recipes incl. `FastAPI` and `Laravel`, advanced patterns incl. LLM tool-argument mass assignment, prevention guidance, OWASP mapping, references, reminders."
 index:
   - anchor: bopla-detection
-    what: "Focused BOPLA detection role using the three-phase subagent approach — recon for serialization and mass-assignment sites, batched verify, merge — gated on the architecture report and mapped to `API3:2023`."
+    what: "Focused BOPLA detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched verify, merge — gated on the architecture report and mapped to `API3:2023`."
     problem: "Codebase needs systematic sweep of every serializer, binder, and endpoint for property-level authorization, yet unstructured hunting misses auto-binding paths and drowns reviewers in unverified exposure candidates; detection orchestration, phase pipeline, verified findings, audit rigor, candidate flood, coverage goal, methodical sweep."
-    use_when: "BOPLA scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "BOPLA scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture summary absent — run the analysis module first; only conceptual property-level knowledge is needed, not execution."
     expected: "Verified BOPLA findings consolidated into the module report with false positives filtered."
   - anchor: bopla-what-is-bopla
@@ -26,11 +26,11 @@ index:
     avoid_when: "Basic whole-entity exposure or request-body binding is the question — start with definition and examples anchors."
     expected: "Every non-obvious variant class gets at least one evaluated check during verification."
   - anchor: bopla-execution
-    what: "Three-phase execution: recon over serialization and mass-assignment sites with a zero-candidate early-exit gate, batched verify in groups of three with per-stack examples injected, orchestrator merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the BOPLA scan execution; dispatching or reviewing any phase, batch, or gate."
-    avoid_when: "Conceptual knowledge is the need — see definition and examples anchors."
-    expected: "All phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of serialization and mass-assignment sites, per-candidate verify checklist, classification rubric, and the finding-field set with dynamic tests."
+    problem: "BOPLA hunting without precise domain criteria lets recon miss auto-binding paths and verify apply generic checklists that overlook stack quirks; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current BOPLA vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definition belongs to the what-is anchor."
+    expected: "Stage subagents apply exact BOPLA criteria without inheriting generic templates."
   - anchor: bopla-prevention-guidance
     what: "Layered defense checklist: explicit request and response allowlists, separate read/write DTOs, unknown-field rejection (`additionalProperties: false`, `unknown = EXCLUDE`), hardened PATCH handling, enforced response schema validation, no direct entity binding, non-serializable internal fields, forbidden-field regression tests."
     problem: "Remediation advice scattered across framework docs leaves gaps that let one missed control keep privileged fields writable or readable; remediation checklist, control mapping, defense completeness, gap elimination, hardening steps, systematic mitigation, closure guarantee."
@@ -61,7 +61,7 @@ index:
 
 [ref: #bopla-detection]
 
-You are performing a focused security assessment to find Broken Object Property Level Authorization (BOPLA) vulnerabilities in a codebase. This skill uses a three-phase approach with subagents: **recon** (find serialization/auto-binding/mass-assignment sites), **batched verify** (check property-level authorization in parallel batches of 3), and **merge** (consolidate results).
+You are performing a focused security assessment to find Broken Object Property Level Authorization (BOPLA) vulnerabilities in a codebase. This skill uses a three-stage pipeline with subagents: **recon** (find serialization/auto-binding/mass-assignment sites), **batched verify** (check property-level authorization in parallel batches of 3), and **merge** (consolidate results).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -676,259 +676,95 @@ LLM agents emit structured arguments for external tools (function calling). When
 ## Execution
 [ref: #bopla-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/16_bopla.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Recon — Find Serialization and Mass-Assignment Sites
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Search for these serialization and mass-assignment sites:
 
-> **Goal**: Find every location in the codebase where an API response may expose too many object properties, or where client input may be auto-bound/mass-assigned to internal objects. Write results to `{{ REPORTS_ROOT }}/16_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, frameworks, serializers, and request-handling patterns.
->
-> **Subagent constraint**: You are read-only. Do not modify project source code, tests, configuration, or dependencies under any circumstances. Record findings in the report only.
->
-> **What to search for**:
->
-> 1. **Generic serialization / response leakage**:
->    - Returning whole ORM models/entities: `res.json(model)`, `jsonify(obj)`, `render json: @obj`, `model_to_dict(...)`, `to_json`, `to_dict`, `serialize()`
->    - FastAPI path operations returning ORM/Pydantic models without `response_model`; whole-model `model_dump()` returned to the client
->    - GraphQL resolvers returning full objects by default
->    - Response objects that include fields like `password`, `password_hash`, `role`, `is_admin`, `is_superuser`, `internal_notes`, `blocked`, `total_stay_price`, `secrets`, `tokens`
->
-> 2. **Mass assignment / auto-binding of request input**:
->    - Direct spread/merge of request body into a model: `Object.assign(entity, req.body)`, `{ ...req.body }`, `**request.data`, `**request.POST`
->    - ORM create/update with unfiltered input: `Model.create(req.body)`, `Model.update(req.body)`, `user.update(request.json)`, `User.objects.create(**request.POST)`
->    - Framework auto-binding of request JSON to entities: `@RequestBody User user`, `@ModelAttribute`, Rails `update(params)` without `permit`
->    - Serializers/forms that do not explicitly list fields or that allow unknown fields
->    - Laravel mass assignment: `Model::create($request->all())`, `->update($request->all())`, `$guarded = []`
->    - FastAPI blind unpacking of request models: `Model(**body.model_dump())`, `UserInDB(**user_in.model_dump())`
->    - LLM/AI agent tool handlers forwarding model-produced arguments into ORM/object updates: `update_user(**args)`, `Object.assign(doc, toolArgs)`
->
-> 3. **Sensitive property writes via request body**:
->    - Request handlers accepting fields such as `role`, `is_admin`, `is_superuser`, `blocked`, `total_stay_price`, `owner_id`, `created_at`, `id`, `password`, `permissions`
->    - Code that iterates `for key in request.body` and assigns to the model
->
-> 4. **Weak or missing schema validation**:
->    - Serializers with `unknown=INCLUDE` or no `unknown` setting
->    - JSON Schema without `additionalProperties: false`
->    - Jackson `@JsonIgnoreProperties(ignoreUnknown = true)` on entity used for writes
->
-> 5. **Advanced patterns**:
->    - JSON:API sparse fieldsets parsed from query parameters without server-side allowlist
->    - Nested object assignment (recursive spread/merge into child objects)
->    - GraphQL fragment access to sensitive fields, whole-object resolvers, mutations writing arbitrary input
->    - ORM lazy-loading / eager relation leakage
->    - PATCH / JSON Patch endpoints applied directly to persistence entities
->    - OpenAPI response schemas that are documented but not enforced
->    - LLM/AI agent tool arguments mass-assigned into objects (see Advanced Patterns)
->
-> **What to ignore**:
-> - Endpoints that are intentionally public and read-only (e.g., public listings)
-> - Admin-only endpoints where admin access is already verified by role-based checks
-> - Fields explicitly intended to be user-writable for that endpoint
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/16_recon.md`:
->
-> ```markdown
-> # BOPLA Recon: [Project Name]
->
-> ## Summary
-> Found [N] candidate sites with potential property-level authorization issues.
->
-> ## Candidates
->
-> ### 1. [Descriptive name]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Issue type**: [response exposure / mass assignment / both / advanced pattern]
-> - **Object / model**: [model name]
-> - **Sensitive properties involved**: [e.g., role, is_admin, password_hash]
-> - **Code snippet**:
->   ```
->   [relevant code]
->   ```
->
-> [Repeat for each candidate]
-> ```
+1. **Generic serialization / response leakage**:
+   - Returning whole ORM models/entities: `res.json(model)`, `jsonify(obj)`, `render json: @obj`, `model_to_dict(...)`, `to_json`, `to_dict`, `serialize()`
+   - GraphQL resolvers returning full objects by default
+   - Response objects that include fields like `password`, `password_hash`, `role`, `is_admin`, `is_superuser`, `internal_notes`, `blocked`, `total_stay_price`, `secrets`, `tokens`
+   - FastAPI path operations returning ORM/Pydantic models without `response_model`; whole-model `model_dump()` returned to the client
 
-### After Phase 1: Check for Candidates Before Proceeding
+2. **Mass assignment / auto-binding of request input**:
+   - Direct spread/merge of request body into a model: `Object.assign(entity, req.body)`, `{ ...req.body }`, `**request.data`, `**request.POST`
+   - ORM create/update with unfiltered input: `Model.create(req.body)`, `Model.update(req.body)`, `user.update(request.json)`, `User.objects.create(**request.POST)`
+   - Framework auto-binding of request JSON to entities: `@RequestBody User user`, `@ModelAttribute`, Rails `update(params)` without `permit`
+   - Serializers/forms that do not explicitly list fields or that allow unknown fields
+   - Laravel mass assignment: `Model::create($request->all())`, `->update($request->all())`, `$guarded = []`
+   - FastAPI blind unpacking of request models: `Model(**body.model_dump())`, `UserInDB(**user_in.model_dump())`
+   - LLM/AI agent tool handlers forwarding model-produced arguments into ORM/object updates: `update_user(**args)`, `Object.assign(doc, toolArgs)`
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/16_recon.md`. If the recon found **zero candidates** (the summary reports "Found 0" or the "Candidates" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/16_bopla.md`, **delete** `{{ REPORTS_ROOT }}/16_recon.md`, and stop:
+3. **Sensitive property writes via request body**:
+   - Request handlers accepting fields such as `role`, `is_admin`, `is_superuser`, `blocked`, `total_stay_price`, `owner_id`, `created_at`, `id`, `password`, `permissions`
+   - Code that iterates `for key in request.body` and assigns to the model
 
-```markdown
-# BOPLA Analysis Results: [Project Name]
+4. **Weak or missing schema validation**:
+   - Serializers with `unknown=INCLUDE` or no `unknown` setting
+   - JSON Schema without `additionalProperties: false`
+   - Jackson `@JsonIgnoreProperties(ignoreUnknown = true)` on entity used for writes
 
-## Executive Summary
-- Candidates analyzed: 0
-- Scope reviewed: [endpoints, serializers, and models reviewed]
-- No BOPLA candidates were found: no excessive data exposure or mass-assignment sites identified in the reviewed scope.
-```
+5. **Advanced patterns**:
+   - JSON:API sparse fieldsets parsed from query parameters without server-side allowlist
+   - Nested object assignment (recursive spread/merge into child objects)
+   - GraphQL fragment access to sensitive fields, whole-object resolvers, mutations writing arbitrary input
+   - ORM lazy-loading / eager relation leakage
+   - PATCH / JSON Patch endpoints applied directly to persistence entities
+   - OpenAPI response schemas that are documented but not enforced
+   - LLM/AI agent tool arguments mass-assigned into objects (see Advanced Patterns)
 
-Only proceed to Phase 2 if Phase 1 found at least one candidate.
+**Recon exclusions** — do not report:
 
-### Phase 2: Verify — Check Property-Level Authorization (Batched)
+- Endpoints that are intentionally public and read-only (e.g., public listings)
+- Admin-only endpoints where admin access is already verified by role-based checks
+- Fields explicitly intended to be user-writable for that endpoint
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/16_recon.md` and split the candidates into **batches of up to 3 candidates each**. Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned candidates and writes results to its own batch file.
+### Verify checklist
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+For each candidate, check:
 
-1. Read `{{ REPORTS_ROOT }}/16_recon.md` and count the numbered candidate sections (### 1., ### 2., etc.).
-2. Divide them into batches of up to 3. For example, 8 candidates → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those candidate sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned candidates.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/16_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+1. **Response exposure**:
+   - Does the response construction use a generic serializer or return the whole entity?
+   - Are sensitive fields (`role`, `is_admin`, `password_hash`, `internal_notes`, `blocked`, `total_stay_price`, etc.) reachable in a normal API response?
+   - Is there a response schema / DTO that strips them?
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+2. **Mass assignment / input binding**:
+   - Does the handler accept a request body and assign it wholesale to the model (`**body`, `Object.assign`, `@RequestBody Entity`, `update(params[:user])`)?
+   - Are sensitive fields accepted and persisted if the client sends them?
+   - Is there an allowlist of writable fields (serializer Meta.fields, strong parameters, explicit `$set`, DTO)?
 
-> **Goal**: Verify the following Broken Object Property Level Authorization (BOPLA) candidates and determine whether the endpoint properly restricts exposed and modifiable object properties. Write results to `{{ REPORTS_ROOT }}/16_batch_[N].md`.
->
-> **Your assigned candidates** (from the recon phase):
->
-> [Paste the full text of the assigned candidate sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the serializers, request-handling layer, and authorization patterns.
->
-> **Subagent constraint**: You are read-only. Do not modify project source code, tests, configuration, or dependencies under any circumstances. Record findings in the report only.
->
-> **BOPLA Reference — What to look for**:
->
-> BOPLA occurs when an API:
-> 1. Returns sensitive object properties that the caller should not see (excessive data exposure), or
-> 2. Allows the caller to write object properties that should be read-only or restricted (mass assignment).
->
-> **What BOPLA is NOT** — do not flag these as BOPLA:
-> - Changing an object ID to access another user's data → that's IDOR/BOLA
-> - Missing authentication on an endpoint → that's Unauthenticated Access
-> - Untrusted input in SQL strings → that's SQLi
-> - Stored scripts rendered unescaped → that's XSS
->
-> **Protection patterns that PREVENT BOPLA** — if you see these, the site is likely safe:
-> 1. **Explicit response allowlist / DTO**: only intended fields are returned
-> 2. **Explicit request allowlist / strong parameters / serializer fields**: only intended fields are accepted
-> 3. **Schema-based response validation**: responses are validated against a schema
-> 4. **Deny unknown fields**: serializer/schema rejects unexpected properties
-> 5. **Separate read and write DTOs**
-> 6. **Field-level guards on GraphQL types and sensitive ORM relations**
->
-> **Vulnerable vs. Secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **For each candidate, check**:
->
-> 1. **Response exposure**:
->    - Does the response construction use a generic serializer or return the whole entity?
->    - Are sensitive fields (`role`, `is_admin`, `password_hash`, `internal_notes`, `blocked`, `total_stay_price`, etc.) reachable in a normal API response?
->    - Is there a response schema / DTO that strips them?
->
-> 2. **Mass assignment / input binding**:
->    - Does the handler accept a request body and assign it wholesale to the model (`**body`, `Object.assign`, `@RequestBody Entity`, `update(params[:user])`)?
->    - Are sensitive fields accepted and persisted if the client sends them?
->    - Is there an allowlist of writable fields (serializer Meta.fields, strong parameters, explicit `$set`, DTO)?
->
-> 3. **Unknown-field handling**:
->    - Does the serializer/schema reject unexpected keys, or silently ignore/accept them?
->    - Is `ignoreUnknown=true` or `additionalProperties: true` used on write paths?
->
-> 4. **PATCH / partial update abuse**:
->    - Is the PATCH or JSON Patch handler applied directly to a persistence entity?
->    - Is there a dedicated DTO or allowlist that limits which fields the patch can affect?
->
-> 5. **GraphQL specifics** (if applicable):
->    - Are all object fields resolvable by default?
->    - Are mutations writing arbitrary input fields to the backing object?
->    - Are sensitive fields protected by type splitting or field-level authorization?
->
-> 6. **Advanced patterns**:
->    - JSON:API sparse fieldsets without server-side allowlist
->    - Nested object mass assignment
->    - GraphQL fragment abuse for sensitive fields
->    - ORM lazy-loading / eager relation leakage
->    - OpenAPI response schemas that are documented but not enforced
->
-> **Classification**:
-> - **Vulnerable**: Sensitive properties are exposed, or client input can overwrite read-only/sensitive properties, with no effective allowlist or schema protection.
-> - **Likely Vulnerable**: An allowlist or schema exists but appears incomplete, bypassable, or only partially applied (e.g., ignored for certain content types, or missing on one mutation).
-> - **Not Vulnerable**: Explicit response and request allowlists are in place, or the endpoint uses separate read/write DTOs with unknown-field rejection.
-> - **Needs Manual Review**: Cannot determine with confidence (e.g., custom serialization framework, complex middleware, authorization delegated to an uninspectable layer).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/16_batch_[N].md`:
->
-> ```markdown
-> # BOPLA Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / Function**: `METHOD /path` or function name
-> - **Issue**: [Clear description of the property-level authorization failure]
-> - **Impact**: [What an attacker can do — read sensitive fields, escalate privileges, modify prices, unblock content, etc.]
-> - **Proof**: [Show the code path: response construction or input binding that exposes/accepts the sensitive property]
-> - **Remediation**: [Specific fix for this endpoint — use a DTO, add an allowlist, enforce schema validation, deny unknown fields]
-> - **Dynamic Test**:
->   ```
->   [curl command or step-by-step instructions to confirm this finding on the live app.
->    Include the exact endpoint, HTTP method, headers, and payload.
->    For exposure: show which sensitive field appears in the response.
->    For mass assignment: show the extra field sent and how the response/state changes.]
->   ```
->
-> ### [LIKELY VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / Function**: `METHOD /path` or function name
-> - **Issue**: [What's incomplete about the protection]
-> - **Impact**: [Why this might still be exploitable]
-> - **Proof**: [Show the code path with the partial/weak protection]
-> - **Remediation**: [Specific fix]
-> - **Dynamic Test**:
->   ```
->   [payload to attempt property exposure or assignment]
->   ```
->
-> ### [NOT VULNERABLE] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / Function**: `METHOD /path` or function name
-> - **Protection**: [How it's protected — response allowlist, request allowlist, DTOs, schema validation]
->
-> ### [NEEDS MANUAL REVIEW] Endpoint name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / Function**: `METHOD /path` or function name
-> - **Uncertainty**: [Why automated analysis couldn't determine the status]
-> - **Suggestion**: [What to look at manually]
-> ```
+3. **Unknown-field handling**:
+   - Does the serializer/schema reject unexpected keys, or silently ignore/accept them?
+   - Is `ignoreUnknown=true` or `additionalProperties: true` used on write paths?
 
-### Phase 3: Merge — Consolidate Batch Results
+4. **PATCH / partial update abuse**:
+   - Is the PATCH or JSON Patch handler applied directly to a persistence entity?
+   - Is there a dedicated DTO or allowlist that limits which fields the patch can affect?
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/16_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/16_bopla.md`. You (the orchestrator) do this directly — no subagent needed.
+5. **GraphQL specifics** (if applicable):
+   - Are all object fields resolvable by default?
+   - Are mutations writing arbitrary input fields to the backing object?
+   - Are sensitive fields protected by type splitting or field-level authorization?
 
-**Merge procedure**:
+6. **Advanced patterns**:
+   - JSON:API sparse fieldsets without server-side allowlist
+   - Nested object mass assignment
+   - GraphQL fragment abuse for sensitive fields
+   - ORM lazy-loading / eager relation leakage
+   - OpenAPI response schemas that are documented but not enforced
 
-1. Read all `{{ REPORTS_ROOT }}/16_batch_1.md`, `{{ REPORTS_ROOT }}/16_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/16_bopla.md` using this format:
+### Classification
 
-```markdown
-# BOPLA Analysis Results: [Project Name]
+- **Vulnerable**: Sensitive properties are exposed, or client input can overwrite read-only/sensitive properties, with no effective allowlist or schema protection.
+- **Likely Vulnerable**: An allowlist or schema exists but appears incomplete, bypassable, or only partially applied (e.g., ignored for certain content types, or missing on one mutation).
+- **Not Vulnerable**: Explicit response and request allowlists are in place, or the endpoint uses separate read/write DTOs with unknown-field rejection.
+- **Needs Manual Review**: Cannot determine with confidence (e.g., custom serialization framework, complex middleware, authorization delegated to an uninspectable layer).
 
-## Executive Summary
-- Candidates analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+### Finding fields
 
-## Findings
-
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
-
-5. After writing `{{ REPORTS_ROOT }}/16_bopla.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/16_batch_*.md`).
+Every finding block carries: classification tag, file/lines, endpoint or function, issue, impact, proof (code path), remediation, and a dynamic test (curl or step-by-step instructions to confirm the exposure or the assignment on the live app).
 
 ***
 
@@ -996,17 +832,11 @@ This scan maps to:
 ## Important Reminders
 [ref: #bopla-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Subagents must not modify project source code.** They analyze and report only.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 candidates per subagent**. If there are 1-3 candidates total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned candidates' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
 - Distinguish BOPLA from IDOR/BOLA: BOPLA is about properties of an object, not access to the object itself.
 - Focus on both directions: what the API returns (exposure) and what the API accepts (mass assignment).
 - Generic serialization is a strong signal; treat whole-entity responses as likely vulnerable until proven otherwise.
 - Unknown-field acceptance is a strong signal for mass assignment.
 - PATCH / partial-update endpoints and GraphQL whole-object resolvers are high-risk patterns; scrutinize them carefully.
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/16_recon.md` and all `{{ REPORTS_ROOT }}/16_batch_*.md` files after the final `{{ REPORTS_ROOT }}/16_bopla.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `16_recon.md`, `16_batch_*.md`, and `16_verify_*.md`; only the final `{{ REPORTS_ROOT }}/16_bopla.md` persists.

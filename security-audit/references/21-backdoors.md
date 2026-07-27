@@ -1,10 +1,10 @@
 ---
-subject: "Backdoor and malicious-implant detection reference for SAST subagents; three-phase detection prompt, IS/IS-NOT definition with prevention patterns, vulnerable/secure examples per technique, ten-row taxonomy incl. supply-chain implants, per-category heuristics, execution with zero-candidate early-exit gate, `API8:2023`/`API10:2023` mapping, CWE list incl. `CWE-511`, operational reminders, references incl. XZ `CVE-2024-3094`, tj-actions."
+subject: "Backdoor and malicious-implant detection reference for SAST subagents; shared-protocol execution parameters, IS/IS-NOT definition with prevention patterns, vulnerable/secure examples per technique, ten-row taxonomy incl. supply-chain implants, per-category heuristics, `API8:2023`/`API10:2023` mapping, CWE list incl. `CWE-511`, operational reminders, references incl. XZ `CVE-2024-3094`, tj-actions."
 index:
   - anchor: backdoors-detection
-    what: "Focused deliberate-malicious-code detection role using the three-phase subagent approach — recon for suspicious construction sites across eleven categories, batched verify separating genuine implants from legitimate patterns, merge — gated on the architecture report."
+    what: "Focused deliberate-malicious-code detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon for suspicious construction sites across eleven categories, batched verify separating genuine implants from legitimate patterns, merge — gated on the architecture report."
     problem: "Codebase may hide intentionally planted adversarial code rather than accidental flaws, and unstructured hunting conflates legitimate dynamic loading with covert implants while burying reviewers in unverified candidates; detection orchestration, implant sweep, intent judgment, candidate flood, coverage goal, methodical triage, covert capability."
-    use_when: "Backdoor scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Backdoor scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual implant knowledge is needed, not execution."
     expected: "Confirmed backdoor findings consolidated into one module report with legitimate patterns filtered out."
   - anchor: backdoors-what-is
@@ -16,7 +16,7 @@ index:
   - anchor: backdoors-vulnerable-vs-secure-examples
     what: "Six vulnerable/secure code pairs — dynamic loading from `X-Module` header versus fixed allowlist, reflective invocation versus enum dispatch, runtime hex-decrypted command versus signed config, CI-marker environment trigger versus explicit deploy gating, date-based time bomb versus audited maintenance windows, C2 beaconing versus schema-bound telemetry — across Python, Java, and JavaScript."
     problem: "Implants look different per technique, and generic suspicion rules miss whether constructed module paths, reflected method names, decoded blobs, or gated triggers actually decide malicious intent; technique recipes, hardened idioms, precise detection, pattern matching, stack quirks, payload signals, verdict support, exploit shape."
-    use_when: "Verify batch subagent needs `[TECH-STACK EXAMPLES]` selection; target project uses one of the covered languages; contrasting observed construct against known-good counterpart."
+    use_when: "Verify stage applies the file's per-stack examples when judging candidates; target project uses one of the covered languages; contrasting observed construct against known-good counterpart."
     avoid_when: "Conceptual IS/IS-NOT boundaries are the question — see the definition card; category catalog needed — see the taxonomy card; plain injection-sink semantics belong to `05-rce.md`."
     expected: "Each suspicious site matched against its vulnerable pattern and secure counterpart; matching idioms cited in batch findings."
   - anchor: backdoors-taxonomy
@@ -32,11 +32,11 @@ index:
     avoid_when: "Category catalog without procedure is the need — see the taxonomy card; pure packing or obfuscation analysis belongs to `22-obfuscation.md`; dependency-tree CVE risk belongs to `23-dependencies.md`."
     expected: "Every category checked with its concrete tells; each signal class inspected before verdict."
   - anchor: backdoors-execution
-    what: "Three-phase execution: recon discovering suspicious construction sites across eleven categories incl. agent-tooling channels with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three with four-question intent test and four-level classification, orchestrator merge with intermediate-file cleanup."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the backdoor scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
-    avoid_when: "Conceptual intent boundaries are the need — see the definition card; concrete per-category tells wanted — see the heuristics card."
-    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of suspicious construction sites across eleven categories incl. supply-chain and agent-tooling channels, four-question intent verify checklist, backdoor-family classification rubric, and the finding-field set with OWASP API 2023 root-cause risk (`API8:2023`/`API10:2023`) and CWE fields."
+    problem: "Backdoor hunting without precise domain criteria lets recon conflate legitimate dynamic loading with covert implants and verify apply generic checklists that skip intent judgment; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current implant vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual intent boundaries belong to the definition card."
+    expected: "Stage subagents apply exact backdoor criteria without inheriting generic templates."
   - anchor: backdoors-owasp-mapping
     what: "Two-row OWASP root-cause mapping: `API8:2023` Security Misconfiguration for hidden endpoints, unauthorized dynamic loading, and weak build-pipeline controls; `API10:2023` Unsafe Consumption of APIs for third-party abuse, external C2 beaconing, and reflective loading of untrusted code."
     problem: "Findings must carry root-cause risk labels, yet reviewers guess between misconfiguration and unsafe-consumption framings or skip mapping entirely, weakening report credibility; taxonomy tagging, risk attribution, mapping choice, report compliance, framing consistency, required field, dual applicability."
@@ -67,7 +67,7 @@ index:
 
 [ref: #backdoors-detection]
 
-You are performing a focused security assessment to find **deliberately planted malicious code** in a codebase. Unlike accidental vulnerabilities, backdoors and implants are intentionally inserted by an adversary (external attacker, compromised maintainer, or insider) to provide covert access, exfiltrate data, or trigger destructive behavior. This skill uses a three-phase approach with subagents: **recon** (find suspicious construction sites), **batched verify** (determine whether each site is a genuine backdoor or a legitimate pattern, in parallel batches of 3), and **merge** (consolidate results).
+You are performing a focused security assessment to find **deliberately planted malicious code** in a codebase. Unlike accidental vulnerabilities, backdoors and implants are intentionally inserted by an adversary (external attacker, compromised maintainer, or insider) to provide covert access, exfiltrate data, or trigger destructive behavior. This skill uses a three-stage pipeline with subagents: **recon** (find suspicious construction sites), **batched verify** (determine whether each site is a genuine backdoor or a legitimate pattern, in parallel batches of 3), and **merge** (consolidate results).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -310,225 +310,89 @@ send_telemetry(endpoint=config.TELEMETRY_URL, schema=TELEMETRY_SCHEMA)
 ## Execution
 [ref: #backdoors-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/21_backdoors.md`; classification family: **backdoor** (`[CONFIRMED BACKDOOR]` / `[LIKELY BACKDOOR]`).
 
-### Phase 1: Recon — Find Suspicious Construction Sites
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Search for these suspicious construction sites:
 
-> **Goal**: Find every location in the codebase that looks like deliberately planted malicious code: dynamic loading, reflective invocation, runtime string decryption, environment triggers, time bombs, dead-code activation, anti-debug checks, DGA patterns, or beaconing/C2 callbacks. Write results to `{{ REPORTS_ROOT }}/21_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, language, frameworks, build pipeline, and normal plugin/extension mechanisms.
->
-> **What to search for**:
->
-> 1. **Dynamic loading**:
->    - Python: `importlib.import_module(var)`, `__import__(var)`, `imp.load_source`, `ctypes.CDLL` with variable paths.
->    - Node.js: `require(pathVar)`, `import(pathVar)`, `vm.runInNewContext`, `eval` of module code.
->    - Java: `Class.forName(var)`, `Method.invoke` with dynamic names, `URLClassLoader` with constructed URLs.
->    - C#: `Assembly.Load(byte[])`, `Activator.CreateInstance` with dynamic types, reflection on user input.
->    - Go: `plugin.Open` with variable paths, `dlopen`/`dlsym` via cgo.
->    - Native: `dlopen`, `LoadLibrary`, `dlsym`, `GetProcAddress` with non-constant arguments.
->
-> 2. **Reflective invocation**:
->    - `java.lang.reflect.*`, `System.Reflection.*`, `getattr`/`setattr` with request-derived names, `call_user_func(var)`.
->
-> 3. **Runtime string decryption**:
->    - Large base64/hex literals, XOR/AES/rot loops, custom `decode`/`decrypt`/`unpack` functions whose output reaches `exec`, `eval`, `system`, `subprocess`, `fetch`, or `requests`.
->
-> 4. **Environment triggers**:
->    - Checks for debuggers, VMs, sandboxes, CI flags, or specific files before executing sensitive logic.
->
-> 5. **Time bombs**:
->    - Hardcoded dates/timestamps, countdowns, or invocation counters that gate destructive behavior.
->
-> 6. **Dead-code activation**:
->    - Functions/classes with no normal call sites but reachable via reflection, eval, string dispatch, or build hooks (`postinstall`, `setup.py`, cron, init scripts).
->
-> 7. **Anti-debug / anti-analysis**:
->    - `IsDebuggerPresent`, `NtQueryInformationProcess`, `/proc/self/status` TracerPID, `ptrace`, VM/sandbox artifacts, timing checks.
->
-> 8. **DGA patterns**:
->    - Code that generates many candidate domains from a seed.
->
-> 9. **Beaconing / C2**:
->    - Timers or loops that call external domains/IPs and exfiltrate host or user data.
->
-> 10. **Supply-chain insertion channels**:
->    - Build/install hooks (`package.json` scripts, `setup.py`, Makefile, CI workflow steps) with network calls or encoded payloads.
->    - CI actions pinned by tag instead of full-length commit SHA.
->    - Recent maintainer/ownership changes on critical dependencies.
->    - Test artifacts that influence the build (build-time injection).
->
-> 11. **Agent tooling as implant channel**:
->    - `.mcp.json`, `mcp.json`, agent skill/extension directories, and AI-agent tool configs that invoke external code (shadow MCP servers, OWASP MCP09:2025).
->
-> **What to skip**:
-> - Static imports and normal dependency usage.
-> - Documented, authenticated admin features.
-> - Signed/allowlisted plugin systems.
-> - KMS-backed secret retrieval.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/21_recon.md`:
->
-> ```markdown
-> # Backdoor / Malicious Code Recon: [Project Name]
->
-> ## Summary
-> Found [N] suspicious construction sites: [X] dynamic loading, [Y] reflective invocation, [Z] string decryption, etc.
->
-> ## Suspicious Construction Sites
->
-> ### 1. [Descriptive name]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: [name]
-> - **Category**: [dynamic loading / reflective invocation / string decryption / environment trigger / time bomb / dead code / anti-debug / DGA / beaconing]
-> - **Suspicious pattern**: [the call or construct]
-> - **Code snippet**:
->   ```
->   [relevant code]
->   ```
-> - **Why it may be malicious**: [one-line rationale]
->
-> [Repeat for each site]
-> ```
+1. **Dynamic loading**:
+   - Python: `importlib.import_module(var)`, `__import__(var)`, `imp.load_source`, `ctypes.CDLL` with variable paths.
+   - Node.js: `require(pathVar)`, `import(pathVar)`, `vm.runInNewContext`, `eval` of module code.
+   - Java: `Class.forName(var)`, `Method.invoke` with dynamic names, `URLClassLoader` with constructed URLs.
+   - C#: `Assembly.Load(byte[])`, `Activator.CreateInstance` with dynamic types, reflection on user input.
+   - Go: `plugin.Open` with variable paths, `dlopen`/`dlsym` via cgo.
+   - Native: `dlopen`, `LoadLibrary`, `dlsym`, `GetProcAddress` with non-constant arguments.
 
-### After Phase 1: Check for Candidates Before Proceeding
+2. **Reflective invocation**:
+   - `java.lang.reflect.*`, `System.Reflection.*`, `getattr`/`setattr` with request-derived names, `call_user_func(var)`.
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/21_recon.md`. If the recon found **zero suspicious sites** (the summary reports "Found 0" or the "Suspicious Construction Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/21_backdoors.md`, **delete** `{{ REPORTS_ROOT }}/21_recon.md`, and stop:
+3. **Runtime string decryption**:
+   - Large base64/hex literals, XOR/AES/rot loops, custom `decode`/`decrypt`/`unpack` functions whose output reaches `exec`, `eval`, `system`, `subprocess`, `fetch`, or `requests`.
 
-```markdown
-# Backdoor / Malicious Code Analysis Results: [Project Name]
+4. **Environment triggers**:
+   - Checks for debuggers, VMs, sandboxes, CI flags, or specific files before executing sensitive logic.
 
-## Executive Summary
-- Candidates analyzed: 0
-- Scope reviewed: [dynamic loading sites, reflective invocations, string decryption, triggers, build hooks, CI actions, and agent tooling reviewed]
-- No backdoor candidates were found: no deliberately planted malicious code indicators identified in the reviewed scope.
-```
+5. **Time bombs**:
+   - Hardcoded dates/timestamps, countdowns, or invocation counters that gate destructive behavior.
 
-Only proceed to Phase 2 if Phase 1 found at least one suspicious site.
+6. **Dead-code activation**:
+   - Functions/classes with no normal call sites but reachable via reflection, eval, string dispatch, or build hooks (`postinstall`, `setup.py`, cron, init scripts).
 
-### Phase 2: Verify — Determine Genuine Backdoors (Batched)
+7. **Anti-debug / anti-analysis**:
+   - `IsDebuggerPresent`, `NtQueryInformationProcess`, `/proc/self/status` TracerPID, `ptrace`, VM/sandbox artifacts, timing checks.
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/21_recon.md` and split the sites into **batches of up to 3 sites each**. Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned sites and writes results to its own batch file.
+8. **DGA patterns**:
+   - Code that generates many candidate domains from a seed.
 
-**Batching procedure**:
+9. **Beaconing / C2**:
+   - Timers or loops that call external domains/IPs and exfiltrate host or user data.
 
-1. Read `{{ REPORTS_ROOT }}/21_recon.md` and count the numbered site sections (`### 1.`, `### 2.`, etc.).
-2. Divide them into batches of up to 3. For example, 8 sites → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those site sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned sites.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/21_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+10. **Supply-chain insertion channels**:
+    - Build/install hooks (`package.json` scripts, `setup.py`, Makefile, CI workflow steps) with network calls or encoded payloads.
+    - CI actions pinned by tag instead of full-length commit SHA.
+    - Recent maintainer/ownership changes on critical dependencies.
+    - Test artifacts that influence the build (build-time injection).
 
-Give each batch subagent the following instructions:
+11. **Agent tooling as implant channel**:
+    - `.mcp.json`, `mcp.json`, agent skill/extension directories, and AI-agent tool configs that invoke external code (shadow MCP servers, OWASP MCP09:2025).
 
-> **Goal**: For each assigned suspicious construction site, determine whether it is a deliberately planted backdoor or implant, or whether it has a legitimate explanation. Write results to `{{ REPORTS_ROOT }}/21_batch_[N].md`.
->
-> **Your assigned sites** (from the recon phase):
->
-> [Paste the full text of the assigned site sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, normal plugin/extension mechanisms, and authorized administrative features.
->
-> **Backdoor reference — what to look for**:
->
-> For each site, answer these questions:
->
-> 1. **Is the code required for the application's documented behavior?**
->    - Does the feature make sense in the file where it appears?
->    - Is it reachable through normal user flows, or only through reflection, hidden headers, or build hooks?
-> 2. **Does the code hide its intent?**
->    - Are strings encrypted or encoded?
->    - Is the control flow obfuscated?
->    - Are there anti-debug or anti-sandbox checks?
-> 3. **Does the code contact external infrastructure?**
->    - Is the destination owned by the organization?
->    - Is it an IP address, dynamic DNS, or DGA-style domain?
->    - Does it exfiltrate data?
-> 4. **Does the code have a destructive or unauthorized trigger?**
->    - Time bomb, environment trigger, absence trigger, counter trigger?
->    - Can it delete data, execute OS commands, or disable security controls?
->
-> **Vulnerable vs. secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **Classification**:
-> - **Confirmed Backdoor / Implant**: Code has no legitimate purpose and is designed to provide covert access, exfiltrate data, or trigger malicious behavior.
-> - **Likely Backdoor / Implant**: Strong adversarial indicators but some uncertainty about intent or reachability.
-> - **Suspicious but Legitimate**: Unusual pattern but has a plausible product purpose (e.g., documented plugin system, license enforcement, diagnostic feature).
-> - **Needs Manual Review**: Cannot determine intent from code alone; requires maintainer interview or runtime analysis.
->
-> **Required fields for every finding**:
-> - **OWASP API 2023 root-cause risk**: choose API8:2023 Security Misconfiguration and/or API10:2023 Unsafe Consumption of APIs, and explain why.
-> - **CWE**: map to the most specific CWE from the reference (e.g., CWE-912, CWE-78, CWE-94, CWE-506, CWE-507).
-> - **Dynamic test / verification**: describe a safe, read-only check to confirm the behavior (e.g., inspect decoded strings, review git history of the insertion, check domain ownership).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/21_batch_[N].md`:
->
-> ```markdown
-> # Backdoor / Malicious Code Batch [N] Results
->
-> ## Findings
->
-> ### [CONFIRMED BACKDOOR] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [name]
-> - **OWASP API 2023 root-cause risk**: [API8 / API10 / both]
-> - **CWE**: [CWE-912 / CWE-78 / CWE-94 / CWE-506 / CWE-507 / ...]
-> - **Issue**: [e.g., "Runtime-decrypted shell command executed from X-Module header"]
-> - **Taint trace / trigger**: [how the backdoor is reached and what activates it]
-> - **Impact**: [covert access, data exfiltration, destructive payload, etc.]
-> - **Evidence**:
->   ```
->   [code snippet]
->   ```
-> - **Remediation**: [remove the implant, rotate secrets, audit access, report incident]
-> - **Verification Steps**:
->   ```
->   [safe read-only confirmation steps]
->   ```
->
-> ### [LIKELY BACKDOOR] Descriptive name
-> ...
->
-> ### [SUSPICIOUS BUT LEGITIMATE] Descriptive name
-> ...
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> ...
-> ```
+**Recon exclusions** — do not report:
 
-### Phase 3: Merge — Consolidate Batch Results
+- Static imports and normal dependency usage.
+- Documented, authenticated admin features.
+- Signed/allowlisted plugin systems.
+- KMS-backed secret retrieval.
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/21_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/21_backdoors.md`. You (the orchestrator) do this directly — no subagent needed.
+### Verify checklist
 
-**Merge procedure**:
+For each candidate, answer these four intent questions:
 
-1. Read all `{{ REPORTS_ROOT }}/21_batch_1.md`, `{{ REPORTS_ROOT }}/21_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/21_backdoors.md` using this format:
+1. **Is the code required for the application's documented behavior?**
+   - Does the feature make sense in the file where it appears?
+   - Is it reachable through normal user flows, or only through reflection, hidden headers, or build hooks?
+2. **Does the code hide its intent?**
+   - Are strings encrypted or encoded?
+   - Is the control flow obfuscated?
+   - Are there anti-debug or anti-sandbox checks?
+3. **Does the code contact external infrastructure?**
+   - Is the destination owned by the organization?
+   - Is it an IP address, dynamic DNS, or DGA-style domain?
+   - Does it exfiltrate data?
+4. **Does the code have a destructive or unauthorized trigger?**
+   - Time bomb, environment trigger, absence trigger, counter trigger?
+   - Can it delete data, execute OS commands, or disable security controls?
 
-```markdown
-# Backdoor / Malicious Code Analysis Results: [Project Name]
+### Classification
 
-## Executive Summary
-- Suspicious sites analyzed: [total across all batches]
-- Confirmed Backdoor / Implant: [N]
-- Likely Backdoor / Implant: [N]
-- Suspicious but Legitimate: [N]
-- Needs Manual Review: [N]
+- **Confirmed Backdoor / Implant**: Code has no legitimate purpose and is designed to provide covert access, exfiltrate data, or trigger malicious behavior.
+- **Likely Backdoor / Implant**: Strong adversarial indicators but some uncertainty about intent or reachability.
+- **Suspicious but Legitimate**: Unusual pattern but has a plausible product purpose (e.g., documented plugin system, license enforcement, diagnostic feature).
+- **Needs Manual Review**: Cannot determine intent from code alone; requires maintainer interview or runtime analysis.
 
-## Findings
+### Finding fields
 
-[All findings from all batches, grouped by classification:
- CONFIRMED BACKDOOR first, then LIKELY BACKDOOR, then NEEDS MANUAL REVIEW, then SUSPICIOUS BUT LEGITIMATE.
- Preserve every field from the batch results exactly as written.]
-```
-
-5. After writing `{{ REPORTS_ROOT }}/21_backdoors.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/21_batch_*.md`).
+Every finding block carries: classification tag, file/lines, endpoint or function, issue, impact, evidence (code snippet), taint trace / trigger (how the backdoor is reached and what activates it), remediation, safe read-only verification steps (string decoding, static analysis, domain ownership lookup, git-history review), plus two required extra fields — **OWASP API 2023 root-cause risk** (`API8:2023` Security Misconfiguration and/or `API10:2023` Unsafe Consumption of APIs, with one-line justification) and **CWE** (most specific of CWE-912 / CWE-78 / CWE-94 / CWE-506 / CWE-507 / CWE-510 / CWE-511).
 
 ***
 
@@ -567,6 +431,7 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 - Preserve evidence before remediation: screenshots, commit hashes, decoded strings, and file hashes.
 - If a confirmed backdoor is found, treat it as an **incident**: rotate credentials, audit access, review build pipeline integrity, and notify stakeholders.
 - Subagents are read-only: they must not modify project source code, commit changes, or run potentially malicious code.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `21_recon.md`, `21_batch_*.md`, and `21_verify_*.md`; only the final `{{ REPORTS_ROOT }}/21_backdoors.md` persists.
 
 ***
 

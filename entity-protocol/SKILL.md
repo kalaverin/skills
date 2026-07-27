@@ -73,6 +73,8 @@ All Serena memory namespaces/scopes are defined HERE — the single normative so
 | `templates/` | `templates/<topic>` | Repo-card templates. |
 | `repos/` | `repos/<repo>/...` | Canonical repo cards (`overview`) and repo analysis (`business`, `dependencies`, `glossary`, split-model subdirs). No findings. |
 | `standard/` | `standard/<family>/<family>_<id>.md` | Fetch-once archive of authoritative standards (full raw bodies). Families: `rfc`, `std`, `bcp`, `pep`, `aip`, `owasp`, `w3c`, `whatwg`, `zmpc`, `cwe`. |
+| `audit/` | `audit/[<entity>/]<sast_suffix>/` | SAST audit artifact trees (manifest, plan, architecture, module reports, validation, final report). Owner: `security-audit`. |
+| `review/` | `review/[<entity>/]{feature,project}_<datetime>.md` | Machine-readable code-review reports. Owner: `code-review`. |
 | Findings scopes | `<domain>/<repo>/<topic>` | Repo-scoped findings (`bugs`, `decisions`, `notes`, `style`, `todo`, `plans`, `proposals`, `reports`, `deprecations`) — semantics in the subsection below. |
 
 **Strict routing rules:**

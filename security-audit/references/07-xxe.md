@@ -1,10 +1,10 @@
 ---
-subject: "XXE detection reference for SAST subagents: definition, scope boundaries, CWE-611/776/827, attack surface beyond REST XML (SOAP, SAML, SVG, Office), per-stack vulnerable/secure parser recipes, prevention patterns and guidance, dynamic payloads incl. blind OOB, three-phase execution, OWASP mapping."
+subject: "XXE detection reference for SAST subagents: definition, scope boundaries, CWE-611/776/827, attack surface beyond REST XML (SOAP, SAML, SVG, Office), per-stack vulnerable/secure parser recipes, prevention patterns and guidance, dynamic payloads incl. blind OOB, shared-protocol execution parameters, OWASP mapping."
 index:
   - anchor: xxe-detection
-    what: "Focused XXE detection role using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    what: "Focused XXE detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic sweep of every XML parser for entity-resolution hardening, yet unstructured hunting misses parsing sites and drowns reviewers in unverified candidates; detection orchestration, phase pipeline, verified findings, audit rigor, methodical triage, candidate flood, coverage goal."
-    use_when: "XXE scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "XXE scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual XXE knowledge is needed, not execution."
     expected: "Verified XXE findings consolidated into the module report with false positives filtered."
   - anchor: xxe-definition
@@ -50,11 +50,11 @@ index:
     avoid_when: "Attack-surface enumeration is the question — see that anchor; conceptual definitions wanted."
     expected: "Stack-specific dangerous calls flagged; hardened configurations verified."
   - anchor: xxe-execution
-    what: "Three-phase execution: structural recon for unhardened parsers, batched taint verify in groups of three, merge into the final module report."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, and merges findings inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the XXE scan execution; dispatching or reviewing any phase."
-    avoid_when: "Conceptual XXE knowledge is the need — see definition and examples anchors."
-    expected: "All three phases run with shared architecture context into one consolidated report."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of unhardened XML parsing sites per stack, per-candidate taint verify checklist, classification rubric, and the finding-field set with dynamic tests."
+    problem: "XXE hunting without precise domain criteria lets recon miss parsing sites and verify apply generic checklists that overlook stack-specific parser flags; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current XXE vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definition belongs to the definition anchor."
+    expected: "Stage subagents apply exact XXE criteria without inheriting generic templates."
   - anchor: xxe-owasp-mapping
     what: "Mapping of XXE findings to OWASP API 2023 risks, routed via API8 and API10 with upload cross-mapping."
     problem: "Findings need correct 2023-era taxonomy for reporting, and assuming dedicated injection categories mislabels everything downstream; taxonomy mapping, risk routing, classification accuracy, edition awareness, correct tagging, traceability, category shift, risk labels."
@@ -85,7 +85,7 @@ index:
 
 [ref: #xxe-detection]
 
-You are performing a focused security assessment to find XXE vulnerabilities in a codebase. This skill uses a three-phase approach with subagents: **recon** (find XML parsing sites where external entities are not safely disabled), **batched verify** (trace whether user-supplied input reaches those parsers, in parallel batches of 3), and **merge** (consolidate batch results into one report).
+You are performing a focused security assessment to find XXE vulnerabilities in a codebase. This skill uses a three-stage pipeline with subagents: **recon** (find XML parsing sites where external entities are not safely disabled), **batched verify** (trace whether user-supplied input reaches those parsers, in parallel batches of 3), and **merge** (consolidate batch results into one report).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -477,267 +477,108 @@ func parseXML(data []byte) {
 ## Execution
 [ref: #xxe-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/07_xxe.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Find Vulnerable XML Parsing Sites
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Flag any XML parsing call where there is **no adjacent, paired hardening** (disabling DTD / external entity features). You are not yet tracing whether the input is user-controlled; that is the verify stage's job. For each site, record: file/lines, function or endpoint, parser/library, the missing hardening, input variable(s) and their apparent origin, and a code snippet.
 
-> **Goal**: Find every location in the codebase where XML is parsed without external entity resolution being explicitly disabled. Write results to `{{ REPORTS_ROOT }}/07_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, XML libraries in use, and any XML-accepting endpoints.
->
-> **What to search for — vulnerable XML parsing patterns**:
->
-> Flag any XML parsing call where there is **no adjacent, paired hardening** (disabling DTD / external entity features). You are not yet tracing whether the input is user-controlled; that is Phase 2's job.
->
-> 1. **Python — stdlib parsers (flag unless defusedxml is used as a drop-in)**:
->    - `xml.etree.ElementTree.parse(...)`, `ET.fromstring(...)`, `ET.iterparse(...)`
->    - `xml.dom.minidom.parseString(...)`, `xml.dom.minidom.parse(...)`
->    - `xml.sax.parseString(...)`, `xml.sax.parse(...)`
->    - `xmltodict.parse(...)` (backed by expat — generally safe for entity expansion, but flag for review)
->
-> 2. **Python — lxml (flag unless `resolve_entities=False` and `no_network=True` are set)**:
->    - `etree.parse(...)`, `etree.fromstring(...)`, `etree.XML(...)`
->    - `etree.XMLParser(...)` without `resolve_entities=False`
->    - `objectify.parse(...)`, `objectify.fromstring(...)`
->
-> 3. **Java — flag any instantiation of these without the matching hardening features set**:
->    - `DocumentBuilderFactory.newInstance()` → `newDocumentBuilder()` → `parse(...)`
->    - `SAXParserFactory.newInstance()` → `newSAXParser()` → `parse(...)`
->    - `XMLInputFactory.newInstance()` → `createXMLStreamReader(...)`
->    - `TransformerFactory.newInstance()` → `newTransformer()` used with XML source
->    - `SchemaFactory.newInstance(...)` → `newSchema(...)`
->    - Spring: `MarshallingHttpMessageConverter` with `Jaxb2Marshaller` if entity expansion not disabled
->
-> 4. **PHP — flag any of these without `libxml_disable_entity_loader(true)` immediately before (PHP 7.x), or without `LIBXML_NONET` flag (PHP 8.x)**:
->    - `simplexml_load_string(...)`, `simplexml_load_file(...)`
->    - `DOMDocument::loadXML(...)`, `DOMDocument::load(...)`
->    - `xml_parse(...)` with `xml_parser_create()`
->    - `SimpleXMLElement::__construct(...)` with raw string
->
-> 5. **.NET — flag any of these without `DtdProcessing.Prohibit` and `XmlResolver = null`**:
->    - `new XmlDocument()` followed by `.Load(...)` or `.LoadXml(...)`
->    - `new XmlTextReader(...)` (legacy — DTD on by default in older .NET)
->    - `XPathDocument(...)`, `XDocument.Load(...)`, `XElement.Load(...)`
->    - `XmlReader.Create(...)` without `XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit }`
->
-> 6. **Node.js — flag these libraries when parsing untrusted input**:
->    - `libxmljs.parseXmlString(...)`, `libxmljs.parseXml(...)`
->    - `@xmldom/xmldom` `DOMParser.parseFromString(...)` — does not reliably disable entities
->    - `node-expat` parser instantiation
->    - `sax.createStream(...)` / `sax.parser(...)` — check if entity expansion is used
->    - `xml2js.parseString(...)` — generally safe in v0.5+; flag only if `explicitArray` or other options suggest an older version or entity expansion is re-enabled
->
-> 7. **Ruby — flag these when used with options that enable entity expansion**:
->    - `Nokogiri::XML(input) { |config| config.noent }` — `noent` enables entity substitution
->    - `REXML::Document.new(input)` — REXML is vulnerable to entity expansion DoS; check for entity expansion usage
->    - `LibXML::XML::Document.string(input)` — check entity options
->
-> 8. **Go — flag third-party XML libraries that support entity resolution**:
->    - `github.com/beevik/etree` usage — check if network/entity resolution is configured
->    - Standard `encoding/xml` is generally safe (does not resolve external entities) — flag only if combined with custom entity handling
->
-> **What to skip** (these are safe patterns — do not flag):
-> - `import defusedxml` used as the XML parser (Python)
-> - `etree.XMLParser(resolve_entities=False, no_network=True)` (lxml)
-> - Java `DocumentBuilderFactory` with `disallow-doctype-decl` feature set to `true`
-> - Java `XMLInputFactory` with `IS_SUPPORTING_EXTERNAL_ENTITIES = false`
-> - .NET `XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null }`
-> - Nokogiri default usage without `noent` or other entity-expansion options
-> - Parsing of fully static, bundled, non-user-influenced XML files (e.g. reading config from disk at startup with no user input involved)
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/07_recon.md`:
->
-> ```markdown
-> # XXE Recon: [Project Name]
->
-> ## Summary
-> Found [N] XML parsing sites without explicit external entity hardening.
->
-> ## Vulnerable Parsing Sites
->
-> ### 1. [Descriptive name — e.g., "lxml.etree.fromstring without resolve_entities=False in upload handler"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: [function name or route]
-> - **Parser / library**: [e.g., lxml etree / Java DocumentBuilder / PHP DOMDocument]
-> - **Missing hardening**: [what protection is absent — e.g., "resolve_entities not set to False", "disallow-doctype-decl feature not set"]
-> - **Input variable(s)**: `var_name` — [brief note on what it appears to be, e.g., "HTTP request body" or "file upload content" or "unknown origin"]
-> - **Code snippet**:
->   ```
->   [the XML parsing call and surrounding context]
->   ```
->
-> [Repeat for each site]
-> ```
+1. **Python — stdlib parsers (flag unless defusedxml is used as a drop-in)**:
+   - `xml.etree.ElementTree.parse(...)`, `ET.fromstring(...)`, `ET.iterparse(...)`
+   - `xml.dom.minidom.parseString(...)`, `xml.dom.minidom.parse(...)`
+   - `xml.sax.parseString(...)`, `xml.sax.parse(...)`
+   - `xmltodict.parse(...)` (backed by expat — generally safe for entity expansion, but flag for review)
 
-### Between Phases: Check Recon Results
+2. **Python — lxml (flag unless `resolve_entities=False` and `no_network=True` are set)**:
+   - `etree.parse(...)`, `etree.fromstring(...)`, `etree.XML(...)`
+   - `etree.XMLParser(...)` without `resolve_entities=False`
+   - `objectify.parse(...)`, `objectify.fromstring(...)`
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/07_recon.md`. If the summary states zero vulnerable parsing sites were found (or the file contains no entries under "Vulnerable Parsing Sites"), **do not launch Phase 2 or Phase 3**. Instead, write the following to `{{ REPORTS_ROOT }}/07_xxe.md`, **delete** `{{ REPORTS_ROOT }}/07_recon.md`, and stop:
+3. **Java — flag any instantiation of these without the matching hardening features set**:
+   - `DocumentBuilderFactory.newInstance()` → `newDocumentBuilder()` → `parse(...)`
+   - `SAXParserFactory.newInstance()` → `newSAXParser()` → `parse(...)`
+   - `XMLInputFactory.newInstance()` → `createXMLStreamReader(...)`
+   - `TransformerFactory.newInstance()` → `newTransformer()` used with XML source
+   - `SchemaFactory.newInstance(...)` → `newSchema(...)`
+   - Spring: `MarshallingHttpMessageConverter` with `Jaxb2Marshaller` if entity expansion not disabled
 
-```markdown
-# XXE Analysis Results: [Project Name]
+4. **PHP — flag any of these without `libxml_disable_entity_loader(true)` immediately before (PHP 7.x), or without `LIBXML_NONET` flag (PHP 8.x)**:
+   - `simplexml_load_string(...)`, `simplexml_load_file(...)`
+   - `DOMDocument::loadXML(...)`, `DOMDocument::load(...)`
+   - `xml_parse(...)` with `xml_parser_create()`
+   - `SimpleXMLElement::__construct(...)` with raw string
 
-## Executive Summary
-- Parsing sites analyzed: 0
-- Vulnerable: 0
-- Likely Vulnerable: 0
-- Not Vulnerable: 0
-- Needs Manual Review: 0
+5. **.NET — flag any of these without `DtdProcessing.Prohibit` and `XmlResolver = null`**:
+   - `new XmlDocument()` followed by `.Load(...)` or `.LoadXml(...)`
+   - `new XmlTextReader(...)` (legacy — DTD on by default in older .NET)
+   - `XPathDocument(...)`, `XDocument.Load(...)`, `XElement.Load(...)`
+   - `XmlReader.Create(...)` without `XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit }`
 
-## Findings
+6. **Node.js — flag these libraries when parsing untrusted input**:
+   - `libxmljs.parseXmlString(...)`, `libxmljs.parseXml(...)`
+   - `@xmldom/xmldom` `DOMParser.parseFromString(...)` — does not reliably disable entities
+   - `node-expat` parser instantiation
+   - `sax.createStream(...)` / `sax.parser(...)` — check if entity expansion is used
+   - `xml2js.parseString(...)` — generally safe in v0.5+; flag only if `explicitArray` or other options suggest an older version or entity expansion is re-enabled
 
-No XML parsing sites without explicit external-entity hardening were identified in this codebase.
+7. **Ruby — flag these when used with options that enable entity expansion**:
+   - `Nokogiri::XML(input) { |config| config.noent }` — `noent` enables entity substitution
+   - `REXML::Document.new(input)` — REXML is vulnerable to entity expansion DoS; check for entity expansion usage
+   - `LibXML::XML::Document.string(input)` — check entity options
 
-## Remediation
-No XXE remediation required. Continue to ensure that any future XML parsers disable DTD and external entity processing, prefer non-XML formats where possible, and limit outbound connectivity from XML-processing services.
-```
+8. **Go — flag third-party XML libraries that support entity resolution**:
+   - `github.com/beevik/etree` usage — check if network/entity resolution is configured
+   - Standard `encoding/xml` is generally safe (does not resolve external entities) — flag only if combined with custom entity handling
 
-Only proceed to Phase 2 if at least one vulnerable parsing site was identified in the recon output.
+**Recon exclusions** — do not flag (safe patterns):
 
-### Phase 2: Verify — Trace User Input (Batched)
+- `import defusedxml` used as the XML parser (Python)
+- `etree.XMLParser(resolve_entities=False, no_network=True)` (lxml)
+- Java `DocumentBuilderFactory` with `disallow-doctype-decl` feature set to `true`
+- Java `XMLInputFactory` with `IS_SUPPORTING_EXTERNAL_ENTITIES = false`
+- .NET `XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null }`
+- Nokogiri default usage without `noent` or other entity-expansion options
+- Parsing of fully static, bundled, non-user-influenced XML files (e.g. reading config from disk at startup with no user input involved)
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/07_recon.md` and split the entries under "Vulnerable Parsing Sites" into **batches of up to 3 sites each** (use the numbered `###` sections: ### 1., ### 2., etc.). Launch **one subagent per batch in parallel**. Each subagent traces taint only for its assigned sites and writes results to its own batch file.
+### Verify checklist
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+User-controlled XML must not reach a parser that allows external entity resolution without hardening. For each candidate, trace the XML input variable(s) backwards to their origin:
 
-1. Read `{{ REPORTS_ROOT }}/07_recon.md` and count the numbered site sections (### 1., ### 2., etc.).
-2. Divide them into batches of up to 3. For example, 8 sites → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those site sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned sites.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/07_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project uses Java with DocumentBuilder, include only the Java-related examples. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+1. **Direct user input** — the XML content is assigned directly from a request source:
+   - HTTP request body (especially `Content-Type: application/xml` or `text/xml` endpoints): `request.body`, `req.body`, `request.data`, `php://input`, `HttpContext.Request.Body`
+   - File uploads: `request.FILES`, `req.file`, `multipart/form-data` fields
+   - HTTP query params or form fields containing XML snippets
+   - URL path parameters that reference XML resources
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+2. **Indirect user input** — the XML is derived from user input through transformations or intermediate steps:
+   - A file path supplied by the user is used to open and parse a file
+   - A URL supplied by the user is fetched and the response is parsed as XML
+   - User input is embedded into an XML template before parsing (potential injection into the XML structure itself)
+   - Variable passed through helper functions — trace the full call chain
 
-> **Goal**: For each assigned vulnerable XML parsing site, determine whether a user-supplied value reaches the XML parser. Our goal is to find XXE vulnerabilities. Write results to `{{ REPORTS_ROOT }}/07_batch_[N].md`.
->
-> **Your assigned parsing sites** (from the recon phase):
->
-> [Paste the full text of the assigned site sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand request entry points, middleware, file upload handlers, and how data flows through the application.
->
-> **XXE reference — What to look for**:
->
-> User-controlled XML must not reach a parser that allows external entity resolution without hardening. Trace each site's XML input back to its origin.
->
-> **For each parsing site, trace the XML input variable(s) backwards to their origin**:
->
-> 1. **Direct user input** — the XML content is assigned directly from a request source:
->    - HTTP request body (especially `Content-Type: application/xml` or `text/xml` endpoints): `request.body`, `req.body`, `request.data`, `php://input`, `HttpContext.Request.Body`
->    - File uploads: `request.FILES`, `req.file`, `multipart/form-data` fields
->    - HTTP query params or form fields containing XML snippets
->    - URL path parameters that reference XML resources
->
-> 2. **Indirect user input** — the XML is derived from user input through transformations or intermediate steps:
->    - A file path supplied by the user is used to open and parse a file
->    - A URL supplied by the user is fetched and the response is parsed as XML
->    - User input is embedded into an XML template before parsing (potential injection into the XML structure itself)
->    - Variable passed through helper functions — trace the full call chain
->
-> 3. **Second-order input** — the XML content was stored (e.g., in the DB or filesystem) from a prior user-controlled upload or input, and is now being parsed:
->    - Find where the stored content was originally written — was it user-supplied at that point?
->    - Was it validated or sanitized at write time?
->
-> 4. **Server-side / hardcoded source** — the XML comes from a bundled resource, config file loaded at startup, or server-generated content with no user influence — this site is NOT exploitable as XXE from user input.
->
-> **For each parsing site, also assess exploitability**:
-> - Is the response returned to the caller? (Reflected XXE — attacker can read file contents directly)
-> - Is the response not returned, but side effects are observable? (Blind XXE — exfiltration via DNS/HTTP OOB or error messages)
-> - Is the application behind authentication? (Reduces severity but does not eliminate the vulnerability)
-> - Is the parser used in a context where only specific XML schemas are accepted? (e.g., SOAP envelope validation — still exploitable if DTD processing is on)
->
-> **Vulnerable vs. Secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **Classification**:
-> - **Vulnerable**: User input demonstrably reaches the XML parser and the parser has no external entity hardening. Response or out-of-band channel allows exfiltration.
-> - **Likely Vulnerable**: User input probably reaches the parser (indirect flow), or the parser is unhardened but the exploitation path is partially obscured.
-> - **Not Vulnerable**: The XML source is fully server-controlled, OR the parser has proper hardening in place (DTD disabled, external entities disabled).
-> - **Needs Manual Review**: Cannot determine the input source with confidence, or the hardening configuration is complex and requires runtime verification.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/07_batch_[N].md`:
->
-> ```markdown
-> # XXE Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [function name or route]
-> - **Issue**: [e.g., "HTTP request body flows directly into lxml etree.fromstring without resolve_entities=False"]
-> - **Taint trace**: [Step-by-step from entry point to the parsing call — e.g., "request.body → xml_data → etree.fromstring(xml_data)"]
-> - **Parser**: [library and version if known]
-> - **Exploitability**: [Reflected / Blind OOB / Error-based / DoS only — describe what the attacker can achieve]
-> - **Impact**: [e.g., "Read arbitrary local files via file:// entity", "SSRF to internal services via http:// entity", "DoS via entity expansion"]
-> - **Remediation**: [Specific fix — e.g., "Use defusedxml", "Set resolve_entities=False and no_network=True", "Set disallow-doctype-decl feature to true"]
-> - **Dynamic Test**:
->   ```
->   [curl command or payload to confirm the finding.
->    Show the exact endpoint, Content-Type header, and XXE payload.
->    Example:
->    curl -X POST https://app.example.com/api/import \
->      -H "Content-Type: application/xml" \
->      -d '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>'
->    Look for /etc/passwd content in the response body.]
->   ```
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Issue**: [e.g., "XML source likely comes from user-uploaded file via helper function" or "Parser unhardened but input path partially unclear"]
-> - **Taint trace**: [Best-effort trace with the uncertain step identified]
-> - **Concern**: [Why it's still a risk despite uncertainty]
-> - **Remediation**: [Apply appropriate parser hardening]
-> - **Dynamic Test**:
->   ```
->   [payload to attempt]
->   ```
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Reason**: [e.g., "XML is read from a bundled config file at startup with no user influence" or "defusedxml is used as the parser"]
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Uncertainty**: [Why the input source or parser configuration could not be determined]
-> - **Suggestion**: [What to trace manually — e.g., "Follow `load_document()` in xml_utils.py to confirm whether its argument comes from a user request"]
-> ```
+3. **Second-order input** — the XML content was stored (e.g., in the DB or filesystem) from a prior user-controlled upload or input, and is now being parsed:
+   - Find where the stored content was originally written — was it user-supplied at that point?
+   - Was it validated or sanitized at write time?
 
-### Phase 3: Merge — Consolidate Batch Results
+4. **Server-side / hardcoded source** — the XML comes from a bundled resource, config file loaded at startup, or server-generated content with no user influence — this site is NOT exploitable as XXE from user input.
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/07_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/07_xxe.md`. You (the orchestrator) do this directly — no subagent needed.
+For each candidate, also assess exploitability:
 
-**Merge procedure**:
+- Is the response returned to the caller? (Reflected XXE — attacker can read file contents directly)
+- Is the response not returned, but side effects are observable? (Blind XXE — exfiltration via DNS/HTTP OOB or error messages)
+- Is the application behind authentication? (Reduces severity but does not eliminate the vulnerability)
+- Is the parser used in a context where only specific XML schemas are accepted? (e.g., SOAP envelope validation — still exploitable if DTD processing is on)
 
-1. Read all `{{ REPORTS_ROOT }}/07_batch_1.md`, `{{ REPORTS_ROOT }}/07_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/07_xxe.md` using this format:
+### Classification
 
-```markdown
-# XXE Analysis Results: [Project Name]
+- **Vulnerable**: User input demonstrably reaches the XML parser and the parser has no external entity hardening. Response or out-of-band channel allows exfiltration.
+- **Likely Vulnerable**: User input probably reaches the parser (indirect flow), or the parser is unhardened but the exploitation path is partially obscured.
+- **Not Vulnerable**: The XML source is fully server-controlled, OR the parser has proper hardening in place (DTD disabled, external entities disabled).
+- **Needs Manual Review**: Cannot determine the input source with confidence, or the hardening configuration is complex and requires runtime verification.
 
-## Executive Summary
-- Parsing sites analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+### Finding fields
 
-## Findings
-
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
-
-5. After writing `{{ REPORTS_ROOT }}/07_xxe.md`, **delete all intermediate files**: `{{ REPORTS_ROOT }}/07_recon.md` and `{{ REPORTS_ROOT }}/07_batch_*.md`.
+Every finding block carries: classification tag, file/lines, endpoint or function, issue, taint trace (step-by-step from entry point to the parsing call), parser (library and version if known), exploitability (reflected / blind OOB / error-based / DoS only — what the attacker can achieve), impact, remediation, and a dynamic test (curl command or payload showing the exact endpoint, `Content-Type` header, and XXE payload — see Dynamic Test Payloads).
 
 ***
 
@@ -851,15 +692,9 @@ The parser fetches `evil.dtd`, reads `/etc/passwd`, and issues an HTTP request t
 ## Important Reminders
 [ref: #xxe-important-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Subagents MUST NOT modify project source code.** They may only read code and write report files.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 parsing sites per subagent**. If there are 1-3 sites total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned sites' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
-- **Phase 1 is purely structural**: flag any XML parsing call that lacks explicit external entity hardening, regardless of where the input comes from. Do not attempt to trace user input in Phase 1 — that is Phase 2's job.
-- **Phase 2 is purely taint analysis**: for each site found in Phase 1, trace the XML input back to its origin. If it comes from a user-controlled source, the site is a real vulnerability.
+- **The recon stage is purely structural**: flag any XML parsing call that lacks explicit external entity hardening, regardless of where the input comes from. Do not attempt to trace user input in the recon stage — that is the verify stage's job.
+- **The verify stage is purely taint analysis**: for each site found in the recon stage, trace the XML input back to its origin. If it comes from a user-controlled source, the site is a real vulnerability.
 - **Parser defaults matter**: Java DOM/SAX, PHP SimpleXML/DOMDocument, and lxml all resolve external entities by default — they require explicit hardening. Python's `defusedxml` and Go's `encoding/xml` are safe by default.
 - **Do not confuse `LIBXML_NOENT` with protection**: in PHP, `LIBXML_NOENT` **expands** entities into their values — it does NOT disable entity loading. Only `libxml_disable_entity_loader(true)` (PHP 7.x; deprecated in PHP 8.0) or `LIBXML_NONET` provides network-entity protection; on PHP 8.0+ external entity loading is off by default unless `LIBXML_NOENT` or a custom loader opts back in.
 - **XInclude is a separate vector**: if `XIncludeAware` processing is enabled on Java parsers or `xi:include` is processed elsewhere, flag it separately — it can read local files without a classic `ENTITY` declaration.
@@ -867,4 +702,4 @@ The parser fetches `evil.dtd`, reads `/etc/passwd`, and issues an HTTP request t
 - Taint can flow indirectly: a file upload may be saved to disk in one handler, then parsed in another background job. Trace the full chain including asynchronous processing paths.
 - Error-based XXE can leak data through verbose parser errors. Do not dismiss a finding just because the response does not echo the entity directly.
 - Blind XXE (no output in response) is still exploitable via DNS or HTTP callbacks to attacker-controlled servers. Do not dismiss a finding just because the parsed XML is not echoed back.
-- Clean up intermediate files: after the final `{{ REPORTS_ROOT }}/07_xxe.md` is written, ensure `{{ REPORTS_ROOT }}/07_recon.md` and all `{{ REPORTS_ROOT }}/07_batch_*.md` files are deleted (on the zero-findings early exit, only `{{ REPORTS_ROOT }}/07_recon.md` is deleted).
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `07_recon.md`, `07_batch_*.md`, and `07_verify_*.md`; only the final `{{ REPORTS_ROOT }}/07_xxe.md` persists.

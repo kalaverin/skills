@@ -7,10 +7,10 @@ triggers:
     files: "test -d .serena/memories"
     request: "pytest bootstrap, bootstrap tests, generate test prompt, test agent prompt, pytest-planner, test planning bootstrap, master test plan, план покрытия, бутстрап тестов, сгенерируй промпт тестов, промпт для тестов, промпт pytest, планирование тестов, feature coverage plan, coverage plan, diff coverage plan, feature test plan, branch coverage plan, feature testing, branch coverage, план покрытия фичи, покрытие фичи, план покрытия ветки, покрытие диффа, тестирование фичи, покрытие ветки"
 requires:
-  - business-audit
+  - entity-protocol
   - frontmatter-protocol
-  - project-audit
   - pytest-design
+  - repo-audit
   - serena-protocol
   - subagents-protocol
   - todo-protocol

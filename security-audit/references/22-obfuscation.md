@@ -1,10 +1,10 @@
 ---
-subject: "Obfuscated-code detection reference for SAST subagents; three-phase detection prompt, obfuscation IS/IS-NOT definition with risk-reduction patterns, vulnerable/secure examples per technique, seven-row taxonomy incl. packing/virtualization, per-technique heuristics incl. entropy checks, execution with zero-candidate early-exit gate, `API8:2023`/`API10:2023` mapping, CWE list incl. `CWE-912`, operational reminders, references incl. `T1027`."
+subject: "Obfuscated-code detection reference for SAST subagents; shared-protocol execution parameters, obfuscation IS/IS-NOT definition with risk-reduction patterns, vulnerable/secure examples per technique, seven-row taxonomy incl. packing/virtualization, per-technique heuristics incl. entropy checks, `API8:2023`/`API10:2023` mapping, CWE list incl. `CWE-912`, operational reminders, references incl. `T1027`."
 index:
   - anchor: obfuscation-detection
-    what: "Focused obfuscated-code detection role using the three-phase subagent approach — recon for obfuscated construction sites across seven techniques, batched verify separating malicious concealment from legitimate protection, merge — gated on the architecture report."
+    what: "Focused obfuscated-code detection role executed through the shared three-stage pipeline (`execution-protocol.md`) — recon for obfuscated construction sites across seven techniques, batched verify separating malicious concealment from legitimate protection, merge — gated on the architecture report."
     problem: "Codebase may conceal attacker payloads behind deliberate unreadability rather than accidental flaws, and unstructured hunting conflates minified bundles with hostile concealment while burying reviewers in unverified candidates; detection orchestration, payload sweep, candidate flood, coverage goal, methodical triage, hidden intent, opaque logic."
-    use_when: "Obfuscation scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "Obfuscation scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual obfuscation knowledge is needed, not execution."
     expected: "Confirmed malicious-obfuscation findings consolidated into one module report with legitimate protection filtered out."
   - anchor: obfuscation-what-is
@@ -16,7 +16,7 @@ index:
   - anchor: obfuscation-vulnerable-vs-secure-examples
     what: "Six vulnerable/secure code pairs — base64/hex concatenation reassembling URLs versus explicit config endpoints, dispatcher-driven state machines versus named control flow, always-true opaque conditions versus meaningful environment checks, XOR loops feeding `eval` versus allowlisted command dispatch, hardcoded-key AES blobs versus signed artifact fetching, mangled identifiers with dynamic `getattr` versus explicit API calls — across JavaScript and Python."
     problem: "Concealment looks different per technique, and generic suspicion rules miss whether split encoded fragments, flattened dispatchers, decoded blobs, or mangled dynamic access actually decide malicious purpose; technique recipes, hardened idioms, precise detection, pattern matching, stack quirks, payload signals, verdict support, exploit shape."
-    use_when: "Verify batch subagent needs `[TECH-STACK EXAMPLES]` selection; target project uses one of the covered languages; contrasting observed construct against known-good counterpart."
+    use_when: "Verify stage applies the file's per-stack examples when judging candidates; target project uses one of the covered languages; contrasting observed construct against known-good counterpart."
     avoid_when: "Conceptual IS/IS-NOT boundaries are the question — see the definition card; category catalog needed — see the taxonomy card; plain injection-sink semantics belong to `05-rce.md`."
     expected: "Each suspicious site matched against its vulnerable pattern and secure counterpart; matching idioms cited in batch findings."
   - anchor: obfuscation-taxonomy
@@ -32,11 +32,11 @@ index:
     avoid_when: "Technique catalog without procedure is the need — see the taxonomy card; pure implant-intent judgment belongs to `21-backdoors.md`; dependency-tree CVE risk belongs to `23-dependencies.md`."
     expected: "Every technique checked with its concrete tells; each signal class inspected before verdict."
   - anchor: obfuscation-execution
-    what: "Three-phase execution: recon discovering obfuscated construction sites across seven techniques incl. `.wasm` and install hooks with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three with three-question decode-flow-legitimacy analysis and four-level classification, orchestrator merge with intermediate-file cleanup."
-    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
-    use_when: "Starting the obfuscation scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
-    avoid_when: "Conceptual scope boundaries are the need — see the definition card; concrete per-technique tells wanted — see the heuristics card."
-    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of obfuscated construction sites across seven techniques incl. `.wasm` and install hooks, per-candidate verify checklist of three intent questions, obfuscation-family classification rubric (`[MALICIOUS OBFUSCATION]` / `[LIKELY MALICIOUS]`), and the finding-field set with `OWASP API 2023 root-cause risk` (API8/API10) and `CWE` (CWE-912/94/78/506/507) fields."
+    problem: "Obfuscation hunting without precise domain criteria lets recon miss packing and virtualization channels and verify apply generic checklists that overlook intent evidence; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current obfuscation vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual scope boundaries belong to the definition card; concrete per-technique tells belong to the heuristics card."
+    expected: "Stage subagents apply exact obfuscation criteria without inheriting generic templates."
   - anchor: obfuscation-owasp-mapping
     what: "Two-row OWASP root-cause mapping: `API8:2023` Security Misconfiguration for obfuscation hiding backdoors, unauthorized endpoints, and insecure build-pipeline practices; `API10:2023` Unsafe Consumption of APIs for obfuscated payloads concealing third-party abuse, C2 callbacks, and data exfiltration."
     problem: "Findings must carry root-cause risk labels, yet reviewers guess between misconfiguration and unsafe-consumption framings or skip mapping entirely, weakening report credibility; taxonomy tagging, risk attribution, mapping choice, report compliance, framing consistency, required field, dual applicability."
@@ -67,7 +67,7 @@ index:
 
 [ref: #obfuscation-detection]
 
-You are performing a focused security assessment to find **obfuscated code** that may conceal malicious payloads, backdoors, or unauthorized behavior. Obfuscation is not a vulnerability by itself — it is a signal that requires investigation. This skill uses a three-phase approach with subagents: **recon** (find obfuscated construction sites), **batched verify** (determine whether obfuscation hides malicious behavior, in parallel batches of 3), and **merge** (consolidate results).
+You are performing a focused security assessment to find **obfuscated code** that may conceal malicious payloads, backdoors, or unauthorized behavior. Obfuscation is not a vulnerability by itself — it is a signal that requires investigation. This skill uses a three-stage pipeline with subagents: **recon** (find obfuscated construction sites), **batched verify** (determine whether obfuscation hides malicious behavior, in parallel batches of 3), and **merge** (consolidate results).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -283,206 +283,71 @@ subprocess.run(["id"], capture_output=True)
 ## Execution
 [ref: #obfuscation-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/22_obfuscation.md`; classification family: **obfuscation** (`[MALICIOUS OBFUSCATION]` / `[LIKELY MALICIOUS]`).
 
-### Phase 1: Recon — Find Obfuscated Construction Sites
+### Recon catalog
 
-Launch a subagent with the following instructions:
+Search for these obfuscated construction sites:
 
-> **Goal**: Find every location in the codebase where obfuscation techniques are used to hide strings, control flow, or payloads. Write results to `{{ REPORTS_ROOT }}/22_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, build pipeline, and whether commercial obfuscators or minifiers are expected.
->
-> **What to search for**:
->
-> 1. **Base64 / hex concatenation**:
->    - Strings split and joined before `atob`, `b64decode`, `Buffer.from`, `bytes.fromhex`, `base64.b64decode`.
->    - Decoded strings that look like URLs, commands, or secrets.
->
-> 2. **Control-flow flattening**:
->    - `while(true)` with `switch(state)` dispatchers.
->    - Obfuscator-specific patterns (ConfuserEx, Skidfuscator, Zelix, O-LLVM).
->
-> 3. **Opaque predicates**:
->    - Always-true or always-false conditions that guard sensitive code.
->
-> 4. **String decryption loops**:
->    - XOR/rot/substitution/AES loops over byte arrays that produce strings.
->    - Output reaching `eval`, `exec`, `system`, `fetch`, `requests`, reflection, etc.
->
-> 5. **Encrypted payloads**:
->    - Large high-entropy literals or resource files.
->    - Crypto routines with hardcoded keys.
->
-> 6. **Identifier mangling + dynamic access**:
->    - Random hex identifiers, single-letter names, `eval`/`getattr`/`call_user_func` with constructed names.
->
-> 7. **Packing / virtualization**:
->    - Packer signatures and tool markers (UPX, Themida, VMProtect, KoiVM, ConfuserEx), high-entropy sections, unusual entry points.
->    - `WebAssembly.instantiate` calls or embedded `*.wasm` payloads not produced by the documented build.
->    - Install hooks that fetch or reconstruct payloads at install time.
->
-> **What to skip**:
-> - Standard minified frontend bundles with source maps.
-> - Documented commercial obfuscators used for license protection.
-> - Non-sensitive base64/hex data such as public keys, icons, hashes.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/22_recon.md`:
->
-> ```markdown
-> # Obfuscation Recon: [Project Name]
->
-> ## Summary
-> Found [N] obfuscated construction sites: [X] encoding/concatenation, [Y] control-flow flattening, [Z] string decryption, etc.
->
-> ## Obfuscated Construction Sites
->
-> ### 1. [Descriptive name]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: [name]
-> - **Technique**: [base64 concat / flattening / opaque predicate / decryption loop / encrypted payload / mangling / packing / virtualization]
-> - **Obfuscation signal**: [the pattern found]
-> - **Code snippet**:
->   ```
->   [relevant code]
->   ```
-> - **Why it matters**: [what the obfuscation might hide]
->
-> [Repeat for each site]
-> ```
+1. **Base64 / hex concatenation**:
+   - Strings split and joined before `atob`, `b64decode`, `Buffer.from`, `bytes.fromhex`, `base64.b64decode`.
+   - Decoded strings that look like URLs, commands, or secrets.
 
-### After Phase 1: Check for Candidates Before Proceeding
+2. **Control-flow flattening**:
+   - `while(true)` with `switch(state)` dispatchers.
+   - Obfuscator-specific patterns (ConfuserEx, Skidfuscator, Zelix, O-LLVM).
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/22_recon.md`. If the recon found **zero obfuscated sites** (the summary reports "Found 0" or the "Obfuscated Construction Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/22_obfuscation.md`, **delete** `{{ REPORTS_ROOT }}/22_recon.md`, and stop:
+3. **Opaque predicates**:
+   - Always-true or always-false conditions that guard sensitive code.
 
-```markdown
-# Obfuscated Code Analysis Results: [Project Name]
+4. **String decryption loops**:
+   - XOR/rot/substitution/AES loops over byte arrays that produce strings.
+   - Output reaching `eval`, `exec`, `system`, `fetch`, `requests`, reflection, etc.
 
-## Executive Summary
-- Candidates analyzed: 0
-- Scope reviewed: [encoded strings, control-flow structures, embedded payloads, packed modules, and build/install hooks reviewed]
-- No obfuscation candidates were found: no malicious-obfuscation indicators identified in the reviewed scope.
-```
+5. **Encrypted payloads**:
+   - Large high-entropy literals or resource files.
+   - Crypto routines with hardcoded keys.
 
-Only proceed to Phase 2 if Phase 1 found at least one obfuscated site.
+6. **Identifier mangling + dynamic access**:
+   - Random hex identifiers, single-letter names, `eval`/`getattr`/`call_user_func` with constructed names.
 
-### Phase 2: Verify — Determine What Obfuscation Hides (Batched)
+7. **Packing / virtualization**:
+   - Packer signatures and tool markers (UPX, Themida, VMProtect, KoiVM, ConfuserEx), high-entropy sections, unusual entry points.
+   - `WebAssembly.instantiate` calls or embedded `*.wasm` payloads not produced by the documented build.
+   - Install hooks that fetch or reconstruct payloads at install time.
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/22_recon.md` and split the sites into **batches of up to 3 sites each**. Launch **one subagent per batch in parallel**. Each subagent analyzes only its assigned sites and writes results to its own batch file.
+**Recon exclusions** — do not report:
 
-**Batching procedure**:
+- Standard minified frontend bundles with source maps.
+- Documented commercial obfuscators used for license protection.
+- Non-sensitive base64/hex data such as public keys, icons, hashes.
 
-1. Read `{{ REPORTS_ROOT }}/22_recon.md` and count the numbered site sections (`### 1.`, `### 2.`, etc.).
-2. Divide them into batches of up to 3.
-3. For each batch, extract the full text of those site sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned sites.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/22_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+### Verify checklist
 
-Give each batch subagent the following instructions:
+For each candidate, answer:
 
-> **Goal**: For each assigned obfuscated construction site, determine whether the obfuscation hides malicious behavior or has a legitimate purpose. Write results to `{{ REPORTS_ROOT }}/22_batch_[N].md`.
->
-> **Your assigned sites** (from the recon phase):
->
-> [Paste the full text of the assigned site sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand normal build tools, obfuscators, and protection mechanisms in use.
->
-> **Obfuscation reference — what to look for**:
->
-> For each site, answer:
->
-> 1. **What is being hidden?**
->    - Decode/decrypt the string or payload if the key is recoverable.
->    - Determine whether the hidden content is a URL, command, key, or executable code.
-> 2. **Where does the decrypted content flow?**
->    - Does it reach `eval`, `exec`, `system`, `subprocess`, `fetch`, `requests`, `Assembly.Load`, reflection, or the filesystem?
-> 3. **Is the obfuscation legitimate?**
->    - Is it produced by a documented build tool or commercial protector?
->    - Is there a source map or original source available?
->    - Does it protect intellectual property, or does it hide malicious behavior?
->
-> **Vulnerable vs. secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **Classification**:
-> - **Malicious Obfuscation**: Obfuscation hides malicious strings, commands, C2 addresses, or unauthorized dynamic execution.
-> - **Likely Malicious**: Strong indicators but uncertainty about the hidden payload or intent.
-> - **Legitimate Obfuscation**: Documented, expected protection (e.g., license obfuscation, minification with source maps).
-> - **Needs Manual Review**: Cannot determine intent from static analysis alone; requires runtime inspection or maintainer input.
->
-> **Required fields for every finding**:
-> - **OWASP API 2023 root-cause risk**: choose API8:2023 Security Misconfiguration and/or API10:2023 Unsafe Consumption of APIs, and explain why.
-> - **CWE**: map to the most specific CWE from the reference (e.g., CWE-912, CWE-94, CWE-78, CWE-506).
-> - **Deobfuscation notes**: describe how the string/payload was decoded or what prevents decoding.
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/22_batch_[N].md`:
->
-> ```markdown
-> # Obfuscation Batch [N] Results
->
-> ## Findings
->
-> ### [MALICIOUS OBFUSCATION] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [name]
-> - **OWASP API 2023 root-cause risk**: [API8 / API10 / both]
-> - **CWE**: [CWE-912 / CWE-94 / CWE-78 / CWE-506 / ...]
-> - **Issue**: [e.g., "Base64-encoded shell command decoded and passed to eval"]
-> - **Hidden content**: [decoded URL, command, or payload summary]
-> - **Taint trace**: [from encoded string to execution sink]
-> - **Impact**: [what an attacker can do]
-> - **Evidence**:
->   ```
->   [code snippet]
->   ```
-> - **Remediation**: [remove obfuscation, replace with explicit configuration, rotate exposed secrets]
-> - **Deobfuscation / verification**:
->   ```
->   [steps to safely reproduce decoding]
->   ```
->
-> ### [LIKELY MALICIOUS] Descriptive name
-> ...
->
-> ### [LEGITIMATE OBFUSCATION] Descriptive name
-> ...
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> ...
-> ```
+1. **What is being hidden?**
+   - Decode/decrypt the string or payload if the key is recoverable.
+   - Determine whether the hidden content is a URL, command, key, or executable code.
 
-### Phase 3: Merge — Consolidate Batch Results
+2. **Where does the decrypted content flow?**
+   - Does it reach `eval`, `exec`, `system`, `subprocess`, `fetch`, `requests`, `Assembly.Load`, reflection, or the filesystem?
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/22_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/22_obfuscation.md`. You (the orchestrator) do this directly — no subagent needed.
+3. **Is the obfuscation legitimate?**
+   - Is it produced by a documented build tool or commercial protector?
+   - Is there a source map or original source available?
+   - Does it protect intellectual property, or does it hide malicious behavior?
 
-**Merge procedure**:
+### Classification
 
-1. Read all `{{ REPORTS_ROOT }}/22_batch_1.md`, `{{ REPORTS_ROOT }}/22_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary.
-4. Write the merged report to `{{ REPORTS_ROOT }}/22_obfuscation.md` using this format:
+- **Malicious Obfuscation**: Obfuscation hides malicious strings, commands, C2 addresses, or unauthorized dynamic execution.
+- **Likely Malicious**: Strong indicators but uncertainty about the hidden payload or intent.
+- **Legitimate Obfuscation**: Documented, expected protection (e.g., license obfuscation, minification with source maps).
+- **Needs Manual Review**: Cannot determine intent from static analysis alone; requires runtime inspection or maintainer input.
 
-```markdown
-# Obfuscated Code Analysis Results: [Project Name]
+### Finding fields
 
-## Executive Summary
-- Obfuscated sites analyzed: [total across all batches]
-- Malicious Obfuscation: [N]
-- Likely Malicious: [N]
-- Needs Manual Review: [N]
-- Legitimate Obfuscation: [N]
-
-## Findings
-
-[All findings from all batches, grouped by classification:
- MALICIOUS first, then LIKELY MALICIOUS, then NEEDS MANUAL REVIEW, then LEGITIMATE.
- Preserve every field from the batch results exactly as written.]
-```
-
-5. After writing `{{ REPORTS_ROOT }}/22_obfuscation.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/22_batch_*.md`).
+Every finding block carries: classification tag, file/lines, endpoint or function, issue, impact, hidden-content summary (decoded URL, command, or payload), taint trace (from encoded string to execution sink), evidence (original obfuscated snippet plus decoded content), remediation, and deobfuscation notes (how the string/payload was decoded or what prevents decoding). Required extra fields: **OWASP API 2023 root-cause risk** (API8:2023 Security Misconfiguration and/or API10:2023 Unsafe Consumption of APIs, with justification) and **CWE** (most specific from the CWE reference — e.g., CWE-912, CWE-94, CWE-78, CWE-506, CWE-507).
 
 ***
 
@@ -521,6 +386,7 @@ CWE-912 is the parent weakness for findings where obfuscation hides malicious be
 - In .NET/Java binaries, high confidence obfuscation may require decompiler output review; note when decompilation fails or produces garbage.
 - Subagents are read-only: they must not modify project source code, commit changes, or run potentially malicious code.
 - Preserve the original obfuscated snippet and the decoded content (if any) as evidence.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `22_recon.md`, `22_batch_*.md`, and `22_verify_*.md`; only the final `{{ REPORTS_ROOT }}/22_obfuscation.md` persists.
 
 ***
 

@@ -1,10 +1,10 @@
 ---
-subject: "SSRF detection reference for SAST subagents: definition and scope boundaries, prevention patterns incl. resolve-and-pin, per-stack vulnerable/secure recipes (Python, FastAPI, Node.js, Rails, PHP, Java, Go, C#), LLM agent and MCP fetch surface, OWASP API7 mandatory test cases, bypass catalog, cloud metadata endpoints, blind SSRF techniques, webhook bypasses, three-phase execution prompts, references."
+subject: "SSRF detection reference for SAST subagents: definition and scope boundaries, prevention patterns incl. resolve-and-pin, per-stack vulnerable/secure recipes (Python, FastAPI, Node.js, Rails, PHP, Java, Go, C#), LLM agent and MCP fetch surface, OWASP API7 mandatory test cases, bypass catalog, cloud metadata endpoints, blind SSRF techniques, webhook bypasses, shared-protocol execution parameters, references."
 index:
   - anchor: ssrf-detection
-    what: "Focused SSRF detection role mapped to OWASP API7:2023, using the three-phase subagent approach — recon, batched verify, merge — gated on the architecture report."
+    what: "Focused SSRF detection role mapped to OWASP API7:2023, executed through the shared three-stage pipeline (`execution-protocol.md`) — recon, batched verify, merge — gated on the architecture report."
     problem: "Codebase needs systematic request-forgery sweep across every outbound feature, yet unstructured hunting misses call sites and drowns reviewers in unverified candidates; detection orchestration, egress sweep, phase pipeline, verified findings, audit rigor, methodical triage, forgery hunt."
-    use_when: "SSRF scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    use_when: "SSRF scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-stage detection must run."
     avoid_when: "Architecture report missing — run analysis first; only conceptual SSRF knowledge is needed, not execution."
     expected: "Verified SSRF findings consolidated into the module report with false positives filtered."
   - anchor: ssrf-definition
@@ -163,36 +163,12 @@ index:
     use_when: "Writing remediation sections; reviewing an existing defense-in-depth design."
     avoid_when: "Detection mechanics are the question — see execution anchors."
     expected: "Remediation advice covers network, application, and response layers."
-  - anchor: ssrf-execution-intro
-    what: "Execution overview: three phases run by subagents with the architecture report passed as context to each."
-    problem: "Detection work without orchestration structure duplicates effort and loses batch boundaries across phases; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, coordination, uniform."
-    use_when: "Starting the SSRF scan execution; deciding how to dispatch subagents."
-    avoid_when: "Specific phase prompts are needed — jump to phase anchors."
-    expected: "All three phases dispatched with shared architecture context."
-  - anchor: ssrf-phase1-recon
-    what: "Recon prompt instructing the subagent to find every outbound network call site with per-library patterns and skip lists."
-    problem: "Unstructured searching misses call sites or floods candidates with safe code, so recon needs explicit patterns and exclusions; site discovery, skip rules, candidate quality, coverage discipline, grep scope, noise control, thorough sweep."
-    use_when: "Launching the recon subagent; reviewing recon completeness."
-    avoid_when: "Candidates already gathered — proceed to verify; conceptual knowledge wanted."
-    expected: "Complete, de-duplicated candidate list of outbound call sites."
-  - anchor: ssrf-phase1-gate
-    what: "Zero-candidate short-circuit: emit a clean no-findings stub and stop when recon finds nothing."
-    problem: "Pipeline without early exit wastes verify batches on empty candidate sets and leaves missing artifacts; empty recon, pipeline efficiency, artifact completeness, stop rule, graceful halt, zero results, skipped verify, idle batches."
-    use_when: "Recon returned zero candidates."
-    avoid_when: "Candidates exist — proceed to batched verification."
-    expected: "No-findings stub written and the scan stops gracefully."
-  - anchor: ssrf-phase2-verify
-    what: "Batched taint-tracing prompt linking user input to outbound call sites, with safeguard-tier decision rules and classification labels."
-    problem: "Unverified candidates are noise, and safeguard quality varies from strict allowlists to cosmetic blocklists, so tiered verification is required; taint tracing, batch processing, parallel analysis, evidence demand, tier judgment, label assignment, tier mapping, site verdicts."
-    use_when: "Candidates confirmed present; dispatching verify subagents in batches of three."
-    avoid_when: "Recon incomplete; merge stage is the need."
-    expected: "Every candidate classified against its safeguard tier with traced evidence."
-  - anchor: ssrf-phase3-merge
-    what: "Merge procedure consolidating batch reports into the final module report with dedup and the output template."
-    problem: "Parallel batch outputs overlap and diverge, and without merge discipline final reports duplicate or lose findings; result merging, dedup, consolidation, final template, partial results, report integrity, clean handoff, overlap removal, single output."
-    use_when: "All verify batches finished; producing `03_ssrf.md`."
-    avoid_when: "Batches still running; recon stage not done."
-    expected: "Single consolidated module report with unique, classified findings."
+  - anchor: ssrf-execution
+    what: "Domain execution parameters for the shared three-stage protocol: recon catalog of outbound network call sites with per-library patterns, per-candidate verify checklist with taint tracing and safeguard tiers, classification rubric, and the finding-field set with dynamic tests."
+    problem: "SSRF hunting without precise domain criteria lets recon miss outbound call sites and verify apply generic checklists that overlook safeguard tiers and taint nuances; criteria ownership, domain parameters, search catalog, checklist precision, detection quality, class specifics."
+    use_when: "Dispatching or executing any pipeline stage for this scan; reviewing whether recon and verify criteria cover current SSRF vectors."
+    avoid_when: "Stage mechanics — batching, gating, merging — belong to `execution-protocol.md`; conceptual definition belongs to the definition anchor."
+    expected: "Stage subagents apply exact SSRF criteria without inheriting generic templates."
   - anchor: ssrf-references
     what: "External reference list for SSRF concepts, bypass research, and cloud metadata documentation."
     problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content; further reading, research links, external canon, deep dives, vendor documentation, community knowledge, primary material, cited works, owasp pages."
@@ -211,7 +187,7 @@ index:
 
 [ref: #ssrf-detection]
 
-You are performing a focused security assessment to find SSRF vulnerabilities in a codebase. This assessment maps to **OWASP API Security Top 10 2023 — API7:2023 Server Side Request Forgery**. This skill uses a three-phase approach with subagents: **recon** (find all places that make outbound TCP, DNS, or HTTP requests), **batched verify** (trace whether user-supplied input reaches those call sites, in parallel batches of 3), and **merge** (consolidate batch reports into one file).
+You are performing a focused security assessment to find SSRF vulnerabilities in a codebase. This assessment maps to **OWASP API Security Top 10 2023 — API7:2023 Server Side Request Forgery**. This skill uses a three-stage pipeline with subagents: **recon** (find all places that make outbound TCP, DNS, or HTTP requests), **batched verify** (trace whether user-supplied input reaches those call sites, in parallel batches of 3), and **merge** (consolidate batch reports into one file).
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
@@ -698,284 +674,132 @@ Subagents should verify whether the following controls are present and effective
 ***
 
 ## Execution
-[ref: #ssrf-execution-intro]
+[ref: #ssrf-execution]
 
-This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
+This scan runs via the shared three-stage pipeline in `references/execution-protocol.md` (recon+split → per-batch verify → merge, core-dispatched). The domain parameters below plug into its stage contracts. Final artifact: `{{ REPORTS_ROOT }}/03_ssrf.md`; classification family: standard (`[VULNERABLE]` / `[LIKELY VULNERABLE]`).
 
-### Phase 1: Find All Outbound Network Call Sites
-[ref: #ssrf-phase1-recon]
 
-Launch a subagent with the following instructions:
+### Recon catalog
 
-> **Goal**: Find every location in the codebase where the application makes an outbound network request — HTTP, HTTPS, FTP, TCP, UDP, or DNS — regardless of whether that destination is user-controlled. Write results to `{{ REPORTS_ROOT }}/03_recon.md`.
->
-> **Context**: You will be given the project's architecture summary. Use it to understand the tech stack, HTTP client libraries in use, and any networking or webhook-related components.
->
-> **What to search for — outbound request call sites**:
->
-> You are looking for any code that opens a network connection or fetches a remote resource. Flag ANY call where a non-trivially-hardcoded URL, host, or address value is passed as an argument. You are not yet tracing whether that value is user-controlled; that is Phase 2's job.
->
-> 1. **Python HTTP clients**:
->    - `requests.get(url)`, `requests.post(url)`, `requests.put(url)`, `requests.request(method, url)`, `requests.Session().get(url)`
->    - `urllib.request.urlopen(url)`, `urllib2.urlopen(url)` (Python 2 only — dead on any modern codebase; treat its presence as legacy-code signal)
->    - `httpx.get(url)`, `httpx.post(url)`, `httpx.AsyncClient().get(url)`
->    - `aiohttp.ClientSession().get(url)`, `aiohttp.ClientSession().post(url)`
->
-> 2. **Python socket / DNS**:
->    - `socket.connect((host, port))`, `socket.create_connection((host, port))`
->    - `dns.resolver.resolve(name)`, `socket.getaddrinfo(host, ...)`
->
-> 3. **Python file-fetching with remote schemes**:
->    - `urllib.request.urlopen(url)` where url may be http/https/ftp
->    - `open(url)` via `from urllib.request import urlopen` or similar (flag if url may be remote)
->
-> 4. **Node.js / JavaScript HTTP clients**:
->    - `fetch(url)`, `node-fetch(url)`
->    - `axios.get(url)`, `axios.post(url)`, `axios.request({url})`
->    - `http.get(url)`, `https.get(url)`, `http.request(options)`, `https.request(options)`
->    - `got(url)`, `superagent.get(url)`, `needle.get(url)`, `undici.request(url)`
->    - `require('request')(options)`
->
-> 5. **Node.js socket / DNS**:
->    - `net.createConnection({host, port})`, `net.connect(port, host)`
->    - `dns.lookup(hostname, ...)`, `dns.resolve(hostname, ...)`, `dns.resolve4(hostname)`
->
-> 6. **Ruby HTTP clients**:
->    - `Net::HTTP.get(uri)`, `Net::HTTP.start(host, ...)`, `Net::HTTP.get_response(url)`
->    - `URI.open(url)`, `open(url)` (Kernel#open / OpenURI)
->    - `RestClient.get(url)`, `RestClient::Resource.new(url)`
->    - `Faraday.new(url).get(path)`, `HTTParty.get(url)`
->    - `Typhoeus::Request.new(url)`
->
-> 7. **PHP HTTP clients and file functions**:
->    - `curl_setopt($ch, CURLOPT_URL, $url)` followed by `curl_exec($ch)`
->    - `file_get_contents($url)` — flag when `$url` may be an http/https/ftp URL
->    - `fopen($url, 'r')` with a remote URL scheme
->    - `Guzzle`: `$client->request('GET', $url)`, `$client->get($url)`
->    - `Symfony HttpClient`: `$client->request('GET', $url)`
->
-> 8. **Java HTTP clients**:
->    - `new URL(url).openConnection()`, `new URL(url).openStream()`
->    - `HttpURLConnection` / `HttpsURLConnection` with a dynamic URL
->    - `OkHttpClient().newCall(new Request.Builder().url(url)...)`
->    - `RestTemplate.getForObject(url, ...)`, `RestTemplate.getForEntity(url, ...)`
->    - `WebClient.get().uri(url)`, `WebClient.create(url)`
->    - `Apache HttpClient`: `httpClient.execute(new HttpGet(url))`
->
-> 9. **Go HTTP clients and network dials**:
->    - `http.Get(url)`, `http.Post(url, ...)`, `http.NewRequest("GET", url, ...)`
->    - `net.Dial("tcp", addr)`, `net.DialTCP(...)`, `net.DialTimeout("tcp", addr, ...)`
->    - `net.LookupHost(hostname)`, `net.LookupAddr(addr)`, `net.ResolveIPAddr(...)`
->    - `net.ResolveTCPAddr("tcp", addr)`
->
-> 10. **C# / .NET HTTP clients**:
->     - `HttpClient.GetAsync(url)`, `HttpClient.PostAsync(url, ...)`, `HttpClient.SendAsync(request)`
->     - `WebRequest.Create(url)`, `WebClient.DownloadString(url)`, `WebClient.DownloadData(url)`
->     - `HttpWebRequest` with a dynamic URL
->
-> 11. **Shell-out to network tools** (via subprocess, exec, system, etc.):
->     - `subprocess.run(["curl", url, ...])`, `subprocess.Popen(["wget", url, ...])`
->     - `os.system("curl " + url)`, `exec("wget " + url)`
->     - Any `curl`, `wget`, `nc`, `ncat`, `nmap` invocation where the target is a variable
->
-> 12. **Document/media processors that fetch remote resources**:
->     - ImageMagick `convert`, `identify` on a URL
->     - LibreOffice / unoconv on remote documents
->     - FFmpeg on remote streams
->     - PDF generators (wkhtmltopdf, Puppeteer, Playwright) on remote HTML/URLs
->     - DOCX/XLSX renderers that resolve external images/stylesheets
->
-> **What to skip** (these are safe — do not flag):
-> - Calls where the entire URL and hostname are fully hardcoded string literals with no dynamic parts: `requests.get("https://api.example.com/data")`
-> - Internal loopback connections to `localhost` or `127.0.0.1` that are clearly part of service-to-service architecture (e.g., connecting to a local queue) — flag these if the address is dynamic
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/03_recon.md`:
->
-> ```markdown
-> # SSRF Recon: [Project Name]
->
-> ## Summary
-> Found [N] outbound network call sites.
->
-> ## Outbound Call Sites
->
-> ### 1. [Descriptive name — e.g., "HTTP GET in webhook dispatcher"]
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Function / endpoint**: [function name or route]
-> - **Call type**: [HTTP GET / HTTP POST / TCP dial / DNS lookup / subprocess curl / etc.]
-> - **Library / method**: [requests.get / fetch / http.Get / curl_exec / etc.]
-> - **Destination argument**: `var_name` or `url_expression` — [brief note, e.g., "assembled from query param" or "partially hardcoded path with variable host"]
-> - **Code snippet**:
->   ```
->   [the outbound call and the lines immediately before it that construct the destination]
->   ```
->
-> [Repeat for each site]
-> ```
+Search for every location where the application makes an outbound network request — HTTP, HTTPS, FTP, TCP, UDP, or DNS — regardless of whether that destination is user-controlled. You are looking for any code that opens a network connection or fetches a remote resource. Flag ANY call where a non-trivially-hardcoded URL, host, or address value is passed as an argument. You are not yet tracing whether that value is user-controlled; that is the verify stage's job.
 
-### After Phase 1: Check for Candidates Before Proceeding
-[ref: #ssrf-phase1-gate]
+1. **Python HTTP clients**:
+   - `requests.get(url)`, `requests.post(url)`, `requests.put(url)`, `requests.request(method, url)`, `requests.Session().get(url)`
+   - `urllib.request.urlopen(url)`, `urllib2.urlopen(url)` (Python 2 only — dead on any modern codebase; treat its presence as legacy-code signal)
+   - `httpx.get(url)`, `httpx.post(url)`, `httpx.AsyncClient().get(url)`
+   - `aiohttp.ClientSession().get(url)`, `aiohttp.ClientSession().post(url)`
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/03_recon.md`. If the recon found **zero outbound call sites** (the summary reports "Found 0" or the "Outbound Call Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/03_ssrf.md` and stop:
+2. **Python socket / DNS**:
+   - `socket.connect((host, port))`, `socket.create_connection((host, port))`
+   - `dns.resolver.resolve(name)`, `socket.getaddrinfo(host, ...)`
 
-```markdown
-# SSRF Analysis Results
+3. **Python file-fetching with remote schemes**:
+   - `urllib.request.urlopen(url)` where url may be http/https/ftp
+   - `open(url)` via `from urllib.request import urlopen` or similar (flag if url may be remote)
 
-No vulnerabilities found.
-```
+4. **Node.js / JavaScript HTTP clients**:
+   - `fetch(url)`, `node-fetch(url)`
+   - `axios.get(url)`, `axios.post(url)`, `axios.request({url})`
+   - `http.get(url)`, `https.get(url)`, `http.request(options)`, `https.request(options)`
+   - `got(url)`, `superagent.get(url)`, `needle.get(url)`, `undici.request(url)`
+   - `require('request')(options)`
 
-Only proceed to Phase 2 if Phase 1 found at least one outbound call site.
+5. **Node.js socket / DNS**:
+   - `net.createConnection({host, port})`, `net.connect(port, host)`
+   - `dns.lookup(hostname, ...)`, `dns.resolve(hostname, ...)`, `dns.resolve4(hostname)`
 
-### Phase 2: Verify — Trace User Input to Outbound Call Sites (Batched)
-[ref: #ssrf-phase2-verify]
+6. **Ruby HTTP clients**:
+   - `Net::HTTP.get(uri)`, `Net::HTTP.start(host, ...)`, `Net::HTTP.get_response(url)`
+   - `URI.open(url)`, `open(url)` (Kernel#open / OpenURI)
+   - `RestClient.get(url)`, `RestClient::Resource.new(url)`
+   - `Faraday.new(url).get(path)`, `HTTParty.get(url)`
+   - `Typhoeus::Request.new(url)`
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/03_recon.md` and split the outbound call sites into **batches of up to 3 sites each**. Launch **one subagent per batch in parallel**. Each subagent traces taint only for its assigned sites and writes results to its own batch file.
+7. **PHP HTTP clients and file functions**:
+   - `curl_setopt($ch, CURLOPT_URL, $url)` followed by `curl_exec($ch)`
+   - `file_get_contents($url)` — flag when `$url` may be an http/https/ftp URL
+   - `fopen($url, 'r')` with a remote URL scheme
+   - `Guzzle`: `$client->request('GET', $url)`, `$client->get($url)`
+   - `Symfony HttpClient`: `$client->request('GET', $url)`
 
-**Batching procedure** (you, the orchestrator, do this — not a subagent):
+8. **Java HTTP clients**:
+   - `new URL(url).openConnection()`, `new URL(url).openStream()`
+   - `HttpURLConnection` / `HttpsURLConnection` with a dynamic URL
+   - `OkHttpClient().newCall(new Request.Builder().url(url)...)`
+   - `RestTemplate.getForObject(url, ...)`, `RestTemplate.getForEntity(url, ...)`
+   - `WebClient.get().uri(url)`, `WebClient.create(url)`
+   - `Apache HttpClient`: `httpClient.execute(new HttpGet(url))`
 
-1. Read `{{ REPORTS_ROOT }}/03_recon.md` and count the numbered site sections (### 1., ### 2., etc.) under "Outbound Call Sites".
-2. Divide them into batches of up to 3. For example, 8 sites → 3 batches (1-3, 4-6, 7-8).
-3. For each batch, extract the full text of those site sections from the recon file.
-4. Launch all batch subagents **in parallel**, passing each one only its assigned sites.
-5. Each subagent writes to `{{ REPORTS_ROOT }}/03_batch_N.md` where N is the 1-based batch number.
-6. Identify the project's primary language/framework from `{{ REPORTS_ROOT }}/01_architecture.md` and select **only the matching examples** from the "Vulnerable vs. Secure Examples" section above. For example, if the project uses Node.js with fetch/axios, include only the "Node.js — fetch / axios" and "Node.js — http.request" examples. Include these selected examples in each subagent's instructions where indicated by `[TECH-STACK EXAMPLES]` below.
+9. **Go HTTP clients and network dials**:
+   - `http.Get(url)`, `http.Post(url, ...)`, `http.NewRequest("GET", url, ...)`
+   - `net.Dial("tcp", addr)`, `net.DialTCP(...)`, `net.DialTimeout("tcp", addr, ...)`
+   - `net.LookupHost(hostname)`, `net.LookupAddr(addr)`, `net.ResolveIPAddr(...)`
+   - `net.ResolveTCPAddr("tcp", addr)`
 
-Give each batch subagent the following instructions (substitute the batch-specific values):
+10. **C# / .NET HTTP clients**:
+    - `HttpClient.GetAsync(url)`, `HttpClient.PostAsync(url, ...)`, `HttpClient.SendAsync(request)`
+    - `WebRequest.Create(url)`, `WebClient.DownloadString(url)`, `WebClient.DownloadData(url)`
+    - `HttpWebRequest` with a dynamic URL
 
-> **Goal**: For each assigned outbound network call site, determine whether a user-supplied value controls or influences the destination (URL, host, path, port, or scheme). Our goal is to find SSRF vulnerabilities. Write results to `{{ REPORTS_ROOT }}/03_batch_[N].md`.
->
-> **Your assigned outbound call sites** (from the recon phase):
->
-> [Paste the full text of the assigned site sections here, preserving the original numbering]
->
-> **Context**: You will be given the project's architecture summary. Use it to understand entry points, middleware, and how data flows through the application.
->
-> **SSRF reference — what to look for**:
->
-> SSRF occurs when user-controlled input reaches the destination argument of a server-side outbound network call without an effective allowlist on where the server may connect.
->
-> **What SSRF is NOT** — do not flag these as SSRF:
-> - **Open redirects**: HTTP 302 to a user URL — client-side redirect, not a server-side request
-> - **XSS via URL**: User URL rendered in HTML without escaping — XSS
-> - **IDOR**: Object ID tampering — separate class
-> - **Fully hardcoded outbound URLs** with no user influence — not SSRF
->
-> **For each outbound call site, trace the destination argument(s) backwards to their origin**:
->
-> 1. **Direct user input** — the destination is assigned directly from a request source with no transformation:
->    - HTTP query params: `request.GET.get('url')`, `req.query.url`, `params[:url]`, `$_GET['url']`, `c.Query("url")`
->    - Request body / JSON fields: `request.json['webhook_url']`, `req.body.target`, `params[:source]`
->    - Path parameters: `req.params.host`, `params[:endpoint]`
->    - HTTP headers: `request.headers.get('X-Forwarded-For')`, `req.headers['destination']`
->    - Cookies: `req.cookies.redirect_url`
->
-> 2. **Indirect / assembled destination** — the URL is built by concatenating a hardcoded prefix with a user-supplied suffix or path:
->    - `"https://example.com/" + user_path` — may still be exploitable via path traversal or scheme injection depending on the HTTP client
->    - `base_url + user_query` — user controls the query string, potentially injectable
->    - Flag these as Likely Vulnerable and note which portion is user-controlled
->
-> 3. **User input stored and later fetched** — the destination was previously saved from user input (e.g., a stored webhook URL) and is now retrieved from the database to make a request:
->    - Find where the stored value was written — was it accepted from user input without allowlist validation at write time?
->    - Was any validation applied at read time before the request?
->    - If validation happened only at write time, check whether the stored value can be updated later without re-validation.
->
-> 4. **Server-side / hardcoded value** — the destination comes from config, an environment variable, a hardcoded constant, or server-side logic with no user influence — this site is NOT exploitable.
->
-> **For each call site, also check for mitigations**:
-> - **Strict allowlist of hosts/prefixes**: A hardcoded set of permitted hostnames or URL prefixes that the destination is validated against before the request is made — this is an effective mitigation. Mark as Not Vulnerable.
-> - **Scheme-only restriction** (e.g., only allow `https://`): Partial mitigation — reduces impact but does not prevent SSRF to arbitrary HTTPS hosts. Still flag as Likely Vulnerable.
-> - **Blocklist of private IP ranges / metadata endpoints**: `169.254.169.254`, `10.0.0.0/8`, `192.168.0.0/16`, etc. — **not** sufficient. Bypassable via DNS rebinding, alternate IP representations, and redirect chains. Flag as Likely Vulnerable.
-> - **DNS resolution + IP check** (resolve hostname first, then check resolved IP against blocklist): Stronger than a pure blocklist, but still susceptible to DNS rebinding between the check and the request (TOCTOU). Flag as Likely Vulnerable unless the same resolved IP is explicitly pinned for the request.
-> - **Network isolation / no egress to metadata or internal ranges**: Strong compensating control. If proven (e.g., dedicated fetcher subnet, firewall rules), mark as Not Vulnerable or note the control.
-> - **Disabled redirects**: Positive control, but insufficient alone if the original URL is still attacker-controlled. Combine with host allowlist for effective mitigation.
->
-> **Vulnerable vs. secure examples for this project's tech stack**:
->
-> [TECH-STACK EXAMPLES]
->
-> **Classification**:
-> - **Vulnerable**: User input demonstrably reaches the outbound request destination with no effective mitigation (no allowlist or only a blocklist/scheme check).
-> - **Likely Vulnerable**: User input probably reaches the destination (indirect flow or partial construction), or only weak mitigation is present (blocklist, scheme-only check, partial URL prefix).
-> - **Not Vulnerable**: The destination is fully server-side, OR a strict host/prefix allowlist is enforced before the request, OR the fetcher is provably network-isolated from internal/metadata endpoints.
-> - **Needs Manual Review**: Cannot determine the destination's origin with confidence (opaque helpers, complex conditional flows, or external libraries that resolve the URL).
->
-> **Output format** — write to `{{ REPORTS_ROOT }}/03_batch_[N].md`:
->
-> ```markdown
-> # SSRF Batch [N] Results
->
-> ## Findings
->
-> ### [VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Issue**: [e.g., "HTTP query param `url` flows directly into requests.get()"]
-> - **Taint trace**: [Step-by-step from entry point to the call site — e.g., "request.args.get('url') → target_url → requests.get(target_url)"]
-> - **Impact**: [What an attacker can do — access cloud metadata at 169.254.169.254, pivot to internal services, port scan the internal network, exfiltrate data, bypass firewalls, etc.]
-> - **Mitigation present**: [None / Blocklist only / Scheme check only — explain why it's insufficient]
-> - **Remediation**: [Strict host allowlist, or remove user control over destination entirely]
-> - **Dynamic Test**:
->   ```
->   [curl command or payload to confirm the finding.
->    Show the parameter, payload, and what to look for.
->    Example: curl "https://app.example.com/fetch?url=http://169.254.169.254/latest/meta-data/"
->    or for internal pivot: curl "https://app.example.com/fetch?url=http://internal-db:5432/"]
->   ```
->
-> ### [LIKELY VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Issue**: [e.g., "User controls the path portion of a partially hardcoded URL" or "Stored webhook URL accepted without allowlist at write time"]
-> - **Taint trace**: [Best-effort trace with the uncertain or partial-control step identified]
-> - **Concern**: [Why it's still a risk — e.g., "Attacker may be able to redirect to an internal host via path traversal" or "Blocklist is bypassable via DNS rebinding"]
-> - **Remediation**: [Strict allowlist or remove user control]
-> - **Dynamic Test**:
->   ```
->   [payload to attempt — e.g., path traversal or DNS rebinding scenario]
->   ```
->
-> ### [NOT VULNERABLE] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Reason**: [e.g., "URL is fully hardcoded" or "Strict host allowlist enforced before request"]
->
-> ### [NEEDS MANUAL REVIEW] Descriptive name
-> - **File**: `path/to/file.ext` (lines X-Y)
-> - **Endpoint / function**: [route or function name]
-> - **Uncertainty**: [Why the destination's origin could not be determined]
-> - **Suggestion**: [What to trace manually — e.g., "Follow `resolve_target()` in helpers.py to check where the URL originates"]
-> ```
+11. **Shell-out to network tools** (via subprocess, exec, system, etc.):
+    - `subprocess.run(["curl", url, ...])`, `subprocess.Popen(["wget", url, ...])`
+    - `os.system("curl " + url)`, `exec("wget " + url)`
+    - Any `curl`, `wget`, `nc`, `ncat`, `nmap` invocation where the target is a variable
 
-### Phase 3: Merge — Consolidate Batch Results
-[ref: #ssrf-phase3-merge]
+12. **Document/media processors that fetch remote resources**:
+    - ImageMagick `convert`, `identify` on a URL
+    - LibreOffice / unoconv on remote documents
+    - FFmpeg on remote streams
+    - PDF generators (wkhtmltopdf, Puppeteer, Playwright) on remote HTML/URLs
+    - DOCX/XLSX renderers that resolve external images/stylesheets
 
-After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/03_batch_*.md` file and merge them into a single `{{ REPORTS_ROOT }}/03_ssrf.md`. You (the orchestrator) do this directly — no subagent needed.
+**Recon exclusions** — these are safe, do not flag:
 
-**Merge procedure**:
+- Calls where the entire URL and hostname are fully hardcoded string literals with no dynamic parts: `requests.get("https://api.example.com/data")`
+- Internal loopback connections to `localhost` or `127.0.0.1` that are clearly part of service-to-service architecture (e.g., connecting to a local queue) — flag these if the address is dynamic
 
-1. Read all `{{ REPORTS_ROOT }}/03_batch_1.md`, `{{ REPORTS_ROOT }}/03_batch_2.md`, ... files.
-2. Collect all findings from each batch file and combine them into one list, preserving the original classification and all detail fields.
-3. Count totals across all batches for the executive summary (total sites analyzed equals the number from recon / sum of assigned sites).
-4. Write the merged report to `{{ REPORTS_ROOT }}/03_ssrf.md` using this format:
+### Verify checklist
 
-```markdown
-# SSRF Analysis Results: [Project Name]
+**For each outbound call site, trace the destination argument(s) backwards to their origin**:
 
-## Executive Summary
-- Outbound call sites analyzed: [total across all batches]
-- Vulnerable: [N]
-- Likely Vulnerable: [N]
-- Not Vulnerable: [N]
-- Needs Manual Review: [N]
+1. **Direct user input** — the destination is assigned directly from a request source with no transformation:
+   - HTTP query params: `request.GET.get('url')`, `req.query.url`, `params[:url]`, `$_GET['url']`, `c.Query("url")`
+   - Request body / JSON fields: `request.json['webhook_url']`, `req.body.target`, `params[:source]`
+   - Path parameters: `req.params.host`, `params[:endpoint]`
+   - HTTP headers: `request.headers.get('X-Forwarded-For')`, `req.headers['destination']`
+   - Cookies: `req.cookies.redirect_url`
 
-## Findings
+2. **Indirect / assembled destination** — the URL is built by concatenating a hardcoded prefix with a user-supplied suffix or path:
+   - `"https://example.com/" + user_path` — may still be exploitable via path traversal or scheme injection depending on the HTTP client
+   - `base_url + user_query` — user controls the query string, potentially injectable
+   - Flag these as Likely Vulnerable and note which portion is user-controlled
 
-[All findings from all batches, grouped by classification:
- VULNERABLE first, then LIKELY VULNERABLE, then NEEDS MANUAL REVIEW, then NOT VULNERABLE.
- Preserve every field from the batch results exactly as written.]
-```
+3. **User input stored and later fetched** — the destination was previously saved from user input (e.g., a stored webhook URL) and is now retrieved from the database to make a request:
+   - Find where the stored value was written — was it accepted from user input without allowlist validation at write time?
+   - Was any validation applied at read time before the request?
+   - If validation happened only at write time, check whether the stored value can be updated later without re-validation.
 
-5. After writing `{{ REPORTS_ROOT }}/03_ssrf.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/03_batch_*.md`).
+4. **Server-side / hardcoded value** — the destination comes from config, an environment variable, a hardcoded constant, or server-side logic with no user influence — this site is NOT exploitable.
+
+**For each call site, also check for mitigations**:
+
+- **Strict allowlist of hosts/prefixes**: A hardcoded set of permitted hostnames or URL prefixes that the destination is validated against before the request is made — this is an effective mitigation. Mark as Not Vulnerable.
+- **Scheme-only restriction** (e.g., only allow `https://`): Partial mitigation — reduces impact but does not prevent SSRF to arbitrary HTTPS hosts. Still flag as Likely Vulnerable.
+- **Blocklist of private IP ranges / metadata endpoints**: `169.254.169.254`, `10.0.0.0/8`, `192.168.0.0/16`, etc. — **not** sufficient. Bypassable via DNS rebinding, alternate IP representations, and redirect chains. Flag as Likely Vulnerable.
+- **DNS resolution + IP check** (resolve hostname first, then check resolved IP against blocklist): Stronger than a pure blocklist, but still susceptible to DNS rebinding between the check and the request (TOCTOU). Flag as Likely Vulnerable unless the same resolved IP is explicitly pinned for the request.
+- **Network isolation / no egress to metadata or internal ranges**: Strong compensating control. If proven (e.g., dedicated fetcher subnet, firewall rules), mark as Not Vulnerable or note the control.
+- **Disabled redirects**: Positive control, but insufficient alone if the original URL is still attacker-controlled. Combine with host allowlist for effective mitigation.
+
+### Classification
+
+- **Vulnerable**: User input demonstrably reaches the outbound request destination with no effective mitigation (no allowlist or only a blocklist/scheme check).
+- **Likely Vulnerable**: User input probably reaches the destination (indirect flow or partial construction), or only weak mitigation is present (blocklist, scheme-only check, partial URL prefix).
+- **Not Vulnerable**: The destination is fully server-side, OR a strict host/prefix allowlist is enforced before the request, OR the fetcher is provably network-isolated from internal/metadata endpoints.
+- **Needs Manual Review**: Cannot determine the destination's origin with confidence (opaque helpers, complex conditional flows, or external libraries that resolve the URL).
+
+### Finding fields
+
+Every finding block carries: classification tag, file/lines, endpoint or function, issue, taint trace (step-by-step from entry point to the call site), impact, mitigation present (with why it is insufficient for vulnerable verdicts), remediation, and a dynamic test (curl command or payload to confirm the finding, showing the parameter, payload, and what to look for). `[NOT VULNERABLE]` blocks carry the protection reason instead; `[NEEDS MANUAL REVIEW]` blocks carry the uncertainty and a manual-tracing suggestion.
 
 ## References
 [ref: #ssrf-references]
@@ -995,14 +819,8 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/0
 ## Important Reminders
 [ref: #ssrf-reminders]
 
-- Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
-- Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.
-- Phase 3 must run AFTER all Phase 2 batches complete — it depends on all batch outputs.
-- Batch size is **3 outbound call sites per subagent**. If there are 1-3 sites total, use a single subagent. If there are 10, use 4 subagents (3+3+3+1).
-- Launch all batch subagents **in parallel** — do not run them sequentially.
-- Each batch subagent receives only its assigned sites' text from the recon file, not the entire recon file. This keeps each subagent's context small and focused.
-- **Phase 1 is purely structural**: flag any call site where the destination argument is dynamic (a variable, expression, or assembled string), regardless of whether user input flows there. Do not attempt to trace user input in Phase 1 — that is Phase 2's job.
-- **Phase 2 is purely taint analysis**: for each site in its batch, trace the destination argument back to its origin. If it comes from a user-controlled source without an effective allowlist, the site is a real vulnerability.
+- **The recon stage is purely structural**: flag any call site where the destination argument is dynamic (a variable, expression, or assembled string), regardless of whether user input flows there — tracing belongs to the verify stage.
+- **The verify stage is purely taint analysis**: for each assigned site, trace the destination argument back to its origin. If it comes from a user-controlled source without an effective allowlist, the site is a real vulnerability.
 - **Blocklists are not mitigations**: IP blocklists for private ranges and cloud metadata endpoints are easily bypassed. Always classify such sites as Vulnerable or Likely Vulnerable, not as safe.
 - **Partial URL control is still dangerous**: even if the attacker only controls the path or query string portion of the URL, flag it as Likely Vulnerable — depending on the HTTP client behavior, redirect following, and target service, partial control can be enough.
 - **Stored destinations are tainted**: if a URL or hostname was accepted from user input at write time and is later used for an outbound request, trace the write-time acceptance. Lack of allowlist validation at write time makes it SSRF.
@@ -1011,5 +829,4 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/0
 - When in doubt, classify as "Needs Manual Review" rather than "Not Vulnerable". False negatives are worse than false positives in security assessment.
 - DNS rebinding note: for findings where only a DNS-resolution-then-blocklist check is present, note the TOCTOU window explicitly in the finding — this is a known bypass technique.
 - **Do NOT modify project source code. This is a read-only audit.**
-- Preserve intermediate files (`{{ REPORTS_ROOT }}/03_recon.md` and all `{{ REPORTS_ROOT }}/03_batch_*.md`) until the final consolidated report (`{{ REPORTS_ROOT }}/report.md`) has been written. Delete them only after `references/99-report.md` has finished.
-- Clean up intermediate files: delete `{{ REPORTS_ROOT }}/03_recon.md` and all `{{ REPORTS_ROOT }}/03_batch_*.md` files after the final `{{ REPORTS_ROOT }}/report.md` is written.
+- Intermediate-file lifecycle is owned by `execution-protocol.md`: the merge stage deletes `03_recon.md`, `03_batch_*.md`, and `03_verify_*.md`; only the final `{{ REPORTS_ROOT }}/03_ssrf.md` persists.

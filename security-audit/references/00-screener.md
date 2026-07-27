@@ -110,11 +110,11 @@ index:
     avoid_when: "Verdicts and notes already complete — proceed to output template; conceptual trigger detail wanted — that lives in per-risk anchors."
     expected: "All matrix rows carry justified verdicts, user-pinned classes are forced in, and primary language plus scan priorities are recorded."
   - anchor: screener-output-template
-    what: "Exact `00_plan.md` format: selected and skipped scan tables, execution order with parallel batches, notes section, plus the four rationale elements (OWASP risk, trigger indicator, primary or cross-mapped status, scan dependencies)."
+    what: "Exact `00_plan.md` format: machine-readable YAML frontmatter (selected, cross_mapped, skipped, conditional, design_checklist, primary stack) over human-readable selected/skipped tables, execution order with parallel batches, notes section, plus the four rationale elements (OWASP risk, trigger indicator, primary or cross-mapped status, scan dependencies)."
     problem: "Plan document written in ad-hoc format breaks orchestrator parsing and downstream detection phases, so exact table structure and rationale elements matter; output format, plan schema, report template, table layout, orchestrator contract, rationale fields, machine-readable plan."
     use_when: "Verdicts are final and `00_plan.md` must be emitted; rationale needs all four required elements per scan; orchestrator consumes the plan afterward."
     avoid_when: "Verdicts are still being decided — return to the coverage matrix; trigger detail for one risk is wanted — see the per-risk expansion anchors."
-    expected: "`00_plan.md` parses for the orchestrator: per-scan justifications are complete, skips carry one-sentence reasons, and the closing sequence names batch size, checklist, and report steps."
+    expected: "`00_plan.md` frontmatter parses for the orchestrator: every detection ID classified exactly once, skips carry one-sentence reasons, and the closing sequence names batch size, validator, and report steps."
   - anchor: screener-reminders
     what: "Guardrail list: conservative Run/Conditional bias, skip list reserved for explicit absences, no detection or source modification in this phase, and cross-mapped scans treated as distinct angles rather than duplicates."
     problem: "Under time pressure screener skips scans to save effort, runs detection prematurely, or treats cross-mapped entries as redundant, corrupting plan quality; conservatism, scope discipline, redundant-scan fallacy, effort saving trap, phase boundary, quality guardrail, phase overreach."
@@ -136,7 +136,7 @@ Do not perform the scans yourself; produce a rigorous, justified plan.
 
 Read `{{ REPORTS_ROOT }}/01_architecture.md`. If it does not exist, read
 `references/01-analysis.md` and run the analysis phase first to create it, then
-continue.
+continue. The codebase analysis is always required first — it is not a selectable scan and has no row in the coverage matrix below.
 
 ## Coverage decision matrix
 [ref: #screener-coverage-matrix]
@@ -148,7 +148,6 @@ project has zero exposure.
 
 | Scan | Reference | Trigger condition |
 |---|---|---|
-| Codebase analysis | `references/01-analysis.md` | Always required first if `{{ REPORTS_ROOT }}/01_architecture.md` is missing |
 | SQL injection | `references/02-sqli.md` | Relational database usage; raw SQL / ORM raw methods; query builders with string concatenation; stored procedures with dynamic SQL; any SQL sink reachable from request or third-party data |
 | SSRF | `references/03-ssrf.md` | Outbound HTTP/TCP/DNS/subprocess network calls, especially fetching remote resources from user-supplied URLs; webhooks; file fetch from URL; URL preview; custom SSO; cloud/Kubernetes/Docker metadata access; LLM/agent URL-fetch tools, MCP fetch servers, or other AI-agent egress |
 | XSS | `references/04-xss.md` | Web frontend, server-side templates, DOM rendering, or any rendered output that includes user/ third-party data; reflected, stored, or DOM-based contexts; rich-text rendering |
@@ -194,7 +193,7 @@ scans. Select the scan if **any** indicator in the row is true.
 | API5:2023 Broken Function Level Authorization | `10-missingauth.md`, `24-jvm-anomalies.md` | Role/permission model exists; admin endpoints exist; endpoints with mixed regular/admin functions under the same path prefix; HTTP method switching possible (`GET` → `DELETE`/`PUT`/`PATCH`); guessed admin URLs or cross-group endpoint guessing (e.g. `/api/users/export_all`); complex user hierarchies, groups, or sub-users; deny-by-default not enforced. Kotlin/Java reflection, scripting engines, or dynamic dispatch that can reach internal/admin functions without authorization checks. |
 | API6:2023 Unrestricted Access to Sensitive Business Flows | `13-businesslogic.md` | Sensitive flows: purchase/shop (scalping/hoarding), post/comment/vote (spam), book/reserve (slot blocking), referral/loyalty (automated farming), limited-stock, auction, transfer, withdrawal, ticket purchasing, reservation cancellation; any flow whose excessive automated use could harm the business; machine-consumed or B2B APIs lacking anti-automation controls. |
 | API7:2023 Server Side Request Forgery | `03-ssrf.md` | API fetches remote resources from user-supplied URLs; webhooks; file fetch from URL; URL preview; custom SSO; image/document processing from remote URLs; cloud/Kubernetes/Docker metadata services reachable; blind or reflected SSRF possible; outbound traffic allowed to internal destinations. |
-| API8:2023 Security Misconfiguration | `20-misconfiguration.md`, `21-backdoors.md`, `22-obfuscation.md`, `24-jvm-anomalies.md` plus cross-mapped injection scans | Missing hardening across any API stack layer; improperly configured cloud permissions (IAM, S3 ACLs, security groups); missing security patches or outdated components; unnecessary features enabled (HTTP verbs, logging); inconsistent request processing in HTTP server chain; missing TLS; missing/improper CORS; missing security/cache-control headers; verbose errors/stack traces/default credentials; logging with placeholder expansion/JNDI; debug mode enabled; deliberate malicious code or obfuscation hiding backdoors/C2; unsafe JVM deserialization, exposed JNDI/RMI/JMX, enabled Log4j-style lookups, unsigned ClassLoaders, or native library loading. |
+| API8:2023 Security Misconfiguration | `20-misconfiguration.md`, `15-hardcodedsecrets.md`, `21-backdoors.md`, `22-obfuscation.md`, `23-dependencies.md`, `24-jvm-anomalies.md` plus cross-mapped injection scans | Missing hardening across any API stack layer; improperly configured cloud permissions (IAM, S3 ACLs, security groups); missing security patches or outdated components; unnecessary features enabled (HTTP verbs, logging); inconsistent request processing in HTTP server chain; missing TLS; missing/improper CORS; missing security/cache-control headers; verbose errors/stack traces/default credentials; logging with placeholder expansion/JNDI; debug mode enabled; deliberate malicious code or obfuscation hiding backdoors/C2; unsafe JVM deserialization, exposed JNDI/RMI/JMX, enabled Log4j-style lookups, unsigned ClassLoaders, or native library loading. |
 | API9:2023 Improper Inventory Management | `18-inventory.md` | Multiple API versions without retirement plan; microservices/serverless functions; undocumented endpoints; debug/beta/non-production hosts; missing/outdated OpenAPI/GraphQL schemas; third-party integrations without inventory, business justification, or sensitivity classification; feature flags gating admin/endpoints; production data in non-production deployments; host environment or network access scope undocumented. |
 | API10:2023 Unsafe Consumption of APIs | `19-unsafeapiconsumption.md`, `23-dependencies.md`, `24-jvm-anomalies.md` plus cross-mapped injection scans | Outbound HTTP clients; third-party webhooks; package-manager/registry calls; disabled TLS certificate validation; blind redirect following; no timeouts/resource limits on external calls; third-party data reaches SQL/template/eval/deserialization/JNDI/reflection sinks without validation; trust placed in data from integrated APIs without validation; typosquatting, dependency confusion, compromised packages, or vulnerable dependencies; Java/Kotlin deserialization of third-party payloads, or JNDI lookups driven by external data. |
 
@@ -360,9 +359,29 @@ justify the choice in `00_plan.md`.
 ## Output
 [ref: #screener-output-template]
 
-Write the plan to `{{ REPORTS_ROOT }}/00_plan.md` using exactly this format:
+Write the plan to `{{ REPORTS_ROOT }}/00_plan.md` using exactly this format. The YAML frontmatter is the **machine-readable contract** — the orchestrator parses ONLY the frontmatter to build its dispatch queue; the markdown below it is the human-readable layer (same content, plus justifications).
 
 ```markdown
+---
+title: SAST Scan Plan
+created_at: [UTC ISO 8601 timestamp]
+updated_at: [UTC ISO 8601 timestamp]
+repo: [entity name or "generic"]
+branch: [target repo branch]
+commit: [target repo short hash]
+committed_at: [target repo commit UTC ISO 8601]
+source: [project root]
+selected: ["02", "03", "16"]
+cross_mapped: ["04", "05"]
+skipped:
+  "07": "No XML parsing libraries or XML inputs found"
+conditional:
+  "19": "Indirect exposure via shared HTTP client library"
+design_checklist: true
+primary_language: "Python"
+primary_framework: "FastAPI"
+---
+
 # SAST Scan Plan
 
 **Project**: [name from architecture.md]
@@ -383,15 +402,23 @@ Write the plan to `{{ REPORTS_ROOT }}/00_plan.md` using exactly this format:
 
 ## Execution order
 
-1. Run selected technical scans (02–24) in parallel batches of up to 5.
-2. If selected, run `references/90-design-checklist.md` after the technical
-   scans complete.
-3. Finally, run `references/99-report.md`.
+1. Run selected technical scans (02–24) concurrently within the 6-subagent limit.
+2. If selected, run `references/90-design-checklist.md` in parallel with the technical scans (it needs only `01_architecture.md`).
+3. After all scans complete, run `references/98-validator.md` and adjudicate its verdicts.
+4. Finally, run `references/99-report.md`.
 
 ## Notes
 
 [Any conditional scans, prioritization, or special instructions for the orchestrator]
 ```
+
+Frontmatter rules:
+
+- The tracking header fields (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`) follow the frontmatter-protocol tracking extension — `repo` is the audited entity or `generic`; git identity comes from the audited repository. The plan keys below them are the machine-readable contract the orchestrator parses.
+- `selected` lists primary scan IDs (two-digit strings, registry IDs); `cross_mapped` lists scans added by the cross-mapped injection rule; `skipped` maps every skipped ID to its one-sentence justification; `conditional` maps IDs to their indirect-exposure rationale.
+- Every detection ID (02–24) appears in exactly one of `selected`, `cross_mapped`, `skipped`, `conditional` — no omissions.
+- `design_checklist` records the Run/Skip verdict for module 90; `primary_language` and `primary_framework` feed the detection subagents' example selection.
+- Values in `skipped` and `conditional` are single-line strings (no YAML block scalars).
 
 For each selected scan, include in the rationale:
 
@@ -408,5 +435,6 @@ For each selected scan, include in the rationale:
 - Be conservative: when in doubt, mark a scan **Run** or **Conditional**.
 - The skipped list is for explicit absences only; do not use it to save time.
 - Do not perform the actual vulnerability detection in this phase.
-- Do not modify project source code; write only to `{{ REPORTS_ROOT }}/00_plan.md`.
+- Do not modify project source code; write only to `{{ REPORTS_ROOT }}/00_plan.md` (plus the fallback `01_architecture.md` when the input was missing).
+- The coverage matrix is a sanctioned derived copy of the applicability predicates in `references/registry.md` — sync it in the same edit as any registry change.
 - Cross-mapped scans are not duplicates; they look at the same data from a different angle (e.g., untrusted third-party data passed to SQL sinks).
