@@ -19,7 +19,7 @@ One skill, three artifacts: the technical repo card (`repos/<repo>/overview`), t
 
 - **This skill owns** the audit pipeline: gates, wave orchestration, subagent prompts, artifact templates, synthesis, and quality checklists.
 - **This skill does NOT own** the repo concept (definition, prerequisite gate, identity/freshness, `repos/` layout, findings routing, the namespace registry) — that is `entity-protocol`.
-- **This skill OWNS** the type taxonomy/detection and per-type interface exhaustiveness as part of the audit pipeline: `references/analysis/type_detection.md` (`[ref: #repo-type-detection]`, `[ref: #repo-interface-exhaustiveness]`) — currently flagged REWORK-REQUIRED.
+- **This skill OWNS** the type taxonomy/detection (five presets plus open `custom:<slug>` labels) and per-facet interface exhaustiveness as part of the audit pipeline: `references/analysis/type_detection.md` (`[ref: #repo-type-detection]`, `[ref: #repo-interface-exhaustiveness]`).
 - **This skill does NOT own** general memory mechanics (metadata headers, mutation protocol, persistence) — that is `serena-protocol`. Tracking fields are stamped per the frontmatter-protocol tracking extension.
 - **This skill does NOT own** memory reconciliation of unrelated scopes — load `serena-audit` for that.
 - **This skill does NOT own** language-specific coding standards or protocol/schema design. When the audit task also involves editing code or designing/changing `.proto`/OpenAPI definitions, run a CONTEXTUAL RE-EVALUATION of the skill registry for that domain (per the frontmatter-protocol include extension: match the task against every skill's `request` triggers from memory) and load the matching skills before touching those files — `python-lang` for Python code, `protobuf-lang`/`api-design` for proto/OpenAPI design.
@@ -32,7 +32,7 @@ One skill, three artifacts: the technical repo card (`repos/<repo>/overview`), t
 | **PARTIAL** | Card exists; user asks for one artifact (e.g. only dependencies, only business) | Phase 0 gates + HARD freshness gate → only the subagents producing that artifact, fed from fresh memory |
 | **REFRESH** | Any required input is stale (`commit` ≠ HEAD), or the user reports stale cards | Staleness detector → ALWAYS ask the user with metrics → diff-driven surgical update via `.tmp/repo-audit/` |
 
-Mode selection details and all gates: `references/shared/gates.md` (`[ref: #ra-gates]`). REFRESH flow: `references/shared/refresh.md` (`[ref: #ra-refresh]`).
+Mode selection details and all gates: `references/shared/gates.md` (`[ref: #ra-gates-input]`, `[ref: #ra-gates-prerequisite]`, `[ref: #ra-gates-mode]`, `[ref: #ra-gates-freshness]`, `[ref: #ra-gates-naming]`, `[ref: #ra-gates-glossary-seeds]`, `[ref: #ra-gates-memory-paths]`). REFRESH flow: `references/shared/refresh.md` (`[ref: #ra-refresh]`).
 
 ## FULL Mode — Wave Pipeline
 
@@ -46,7 +46,7 @@ Mode selection details and all gates: `references/shared/gates.md` (`[ref: #ra-g
 4. Domain rules (`analysis/domain.md` `[ref: #ra-domain-rules]`).
 5. Domain integrations (`analysis/domain.md` `[ref: #ra-domain-integrations]`).
 
-Every subagent prompt = the common base prompt (`shared/subagent_base.md` `[ref: #ra-subagent-base]`) + its specialization section.
+Every subagent prompt = the common base prompt (`shared/subagent_base.md` — `[ref: #ra-subagent-role]`, `[ref: #ra-subagent-inputs]`, `[ref: #ra-subagent-memory-reading]`, `[ref: #ra-subagent-code-reading]`, `[ref: #ra-subagent-evidence]`, `[ref: #ra-subagent-degradation]`, `[ref: #ra-subagent-ignore]`) + its specialization section.
 
 **Generators wave (4 read-only `explore` subagents in parallel, 3595 s each)** — each receives `preanalysis_reports` (the analysis-wave reports):
 
@@ -55,7 +55,7 @@ Every subagent prompt = the common base prompt (`shared/subagent_base.md` `[ref:
 3. Dependency downstream mapper (`generators/dependencies.md` `[ref: #ra-deps-downstream]`).
 4. Dependency infra & libs catalog (`generators/dependencies.md` `[ref: #ra-deps-infra]`).
 
-**Root synthesis:** generate the directory tree yourself (never delegate) → write `repos/<repo>/overview` (template `templates/overview_card.md`) → write `repos/<repo>/business` (single or split per thresholds; template `templates/business_writer.md`) → write `repos/<repo>/dependencies` and draw the Mermaid diagram yourself (template `templates/dependencies_card.md`) → update both glossaries (`templates/glossary_routing.md`) → route findings (`entity-protocol` `[ref: #entity-namespace-registry]`) → verify read-backs → `just serena-checkpoint`. Synthesis rules: `shared/synthesis.md` (`[ref: #ra-synthesis]`). Conventions (mermaid, exclusions, evidence, dates): `shared/conventions.md` (`[ref: #ra-conventions]`).
+**Root synthesis:** generate the directory tree yourself (never delegate) → write `repos/<repo>/overview` (template `templates/overview_card.md`) → write `repos/<repo>/business` (single or split per thresholds; template `templates/business_writer.md`) → write `repos/<repo>/dependencies` and draw the Mermaid diagram yourself (template `templates/dependencies_card.md`) → update both glossaries (`templates/glossary_routing.md`) → route findings (`entity-protocol` `[ref: #entity-namespace-registry]`) → verify read-backs → `just serena-checkpoint`. Synthesis rules: `shared/synthesis.md` (`[ref: #ra-synthesis]`). Conventions: `shared/conventions.md` (`[ref: #ra-conventions-mermaid]`, `[ref: #ra-conventions-exclusions]`, `[ref: #ra-conventions-evidence]`, `[ref: #ra-conventions-dates-language]`).
 
 In FULL mode the analysis-wave subagents explore the codebase; the generators wave works from `preanalysis_reports` plus targeted code reads. Code covered by a fresh input (`commit == HEAD`) is never re-read.
 
@@ -73,12 +73,12 @@ Do not read every reference file. Extract only the anchors needed, per the front
 
 | Trigger / situation | File | Anchor |
 |---|---|---|
-| Gates, mode selection, freshness gate | `references/shared/gates.md` | `[ref: #ra-gates]` |
-| Type detection and per-type interface exhaustiveness (REWORK-REQUIRED) | `references/analysis/type_detection.md` | `[ref: #repo-type-detection]`, `[ref: #repo-interface-exhaustiveness]` |
+| Gates, mode selection, freshness gate | `references/shared/gates.md` | `[ref: #ra-gates-input]`, `[ref: #ra-gates-prerequisite]`, `[ref: #ra-gates-mode]`, `[ref: #ra-gates-freshness]`, `[ref: #ra-gates-naming]`, `[ref: #ra-gates-glossary-seeds]`, `[ref: #ra-gates-memory-paths]` |
+| Type detection (presets + `custom:<slug>`) and per-facet interface exhaustiveness | `references/analysis/type_detection.md` | `[ref: #repo-type-detection]`, `[ref: #repo-interface-exhaustiveness]` |
 | REFRESH mode: detector, impact map, scratch layout | `references/shared/refresh.md` | `[ref: #ra-refresh]` |
-| Launching any subagent (base prompt) | `references/shared/subagent_base.md` | `[ref: #ra-subagent-base]` |
+| Launching any subagent (base prompt) | `references/shared/subagent_base.md` | `[ref: #ra-subagent-role]`, `[ref: #ra-subagent-inputs]`, `[ref: #ra-subagent-memory-reading]`, `[ref: #ra-subagent-code-reading]`, `[ref: #ra-subagent-evidence]`, `[ref: #ra-subagent-degradation]`, `[ref: #ra-subagent-ignore]` |
 | Synthesis, single/split, persist, summary | `references/shared/synthesis.md` | `[ref: #ra-synthesis]` |
-| Mermaid, exclusions, evidence, dates | `references/shared/conventions.md` | `[ref: #ra-conventions]` |
+| Mermaid, exclusions, evidence, dates | `references/shared/conventions.md` | `[ref: #ra-conventions-mermaid]`, `[ref: #ra-conventions-exclusions]`, `[ref: #ra-conventions-evidence]`, `[ref: #ra-conventions-dates-language]` |
 | Tech explorer subagent | `references/analysis/explorer.md` | `[ref: #ra-explorer]` |
 | Domain subagents (entities, processes, rules, integrations) | `references/analysis/domain.md` | `[ref: #ra-domain-entities]`, `[ref: #ra-domain-processes]`, `[ref: #ra-domain-rules]`, `[ref: #ra-domain-integrations]` |
 | Risks subagent (generators wave) | `references/generators/domain.md` | `[ref: #ra-domain-risks]` |
@@ -87,7 +87,7 @@ Do not read every reference file. Extract only the anchors needed, per the front
 | Business report writer (single/split, anti-patterns) | `references/templates/business_writer.md` | `[ref: #ra-tpl-business-writer]` |
 | Dependency card template (per-repo) | `references/templates/dependencies_card.md` | `[ref: #ra-tpl-deps-card]` |
 | Project-level dependency index | `references/templates/dependencies_project.md` | `[ref: #ra-tpl-deps-project]` |
-| Glossaries and memory routing | `references/templates/glossary_routing.md` | `[ref: #ra-tpl-glossary]` |
+| Glossaries and memory routing | `references/templates/glossary_routing.md` | `[ref: #ra-tpl-glossary-namespace]`, `[ref: #ra-tpl-glossary-synthesis]`, `[ref: #ra-tpl-glossary-risk-routing]`, `[ref: #ra-tpl-glossary-project]`, `[ref: #ra-tpl-glossary-repo]`, `[ref: #ra-tpl-glossary-naming]`, `[ref: #ra-tpl-glossary-metadata]` |
 | Quality checklists (all modes) | `references/checklists.md` | `[ref: #ra-checklists]` |
 
 Extract a section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).

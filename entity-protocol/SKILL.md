@@ -49,6 +49,8 @@ Before creating any repo-scoped memory (`bugs/<repo>/...`, `decisions/<repo>/...
 2. Ask the user to create the repo card via `repo-audit` or confirm the correct repo name from existing cards.
 3. Do NOT create the repo card implicitly and do NOT guess.
 
+**Exemption (FULL repo-audit runs):** artifacts created by a sanctioned FULL `repo-audit` run — including the `repos/<repo>/glossary` seed and any `preanalysis_reports` — MAY be written before the card exists, because the run's own synthesis produces the card. The exemption covers only the run's own intermediate artifacts; any other repo-scoped write still requires the card.
+
 ## 4. One Repo Per Run
 
 [ref: #entity-one-repo-per-run]
@@ -168,7 +170,7 @@ Do not read every reference file. Extract only the sections needed, per the fron
 | The `repo` field: domain axis, legal values, git-anchor chain | `references/repo_memory.md` | `[ref: #entity-repo-field]` |
 | Findings severity/location/hash evidence format | `references/repo_memory.md` | `[ref: #entity-findings-traceability]` |
 | Deprecated repo names and aliases registry | `references/repo_memory.md` | `[ref: #entity-deprecations]` |
-| Type detection and per-type interface exhaustiveness (REWORK-REQUIRED) | `repo-audit/references/analysis/type_detection.md` | `[ref: #repo-type-detection]`, `[ref: #repo-interface-exhaustiveness]` |
+| Type detection (presets + `custom:<slug>`) and per-facet interface exhaustiveness | `repo-audit/references/analysis/type_detection.md` | `[ref: #repo-type-detection]`, `[ref: #repo-interface-exhaustiveness]` |
 
 Extract a section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 

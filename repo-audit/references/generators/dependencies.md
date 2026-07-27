@@ -56,8 +56,8 @@ Identify every public surface this repo exposes and who consumes it.
 
 ### Required inputs (MUST read)
 
-- `repos/<repo>/overview` (technical card) — primary source for the exported interface.
-- `repos/<repo>/business.md` (+ `repos/<repo>/integrations/` split files, if present).
+- `repos/<repo>/overview` (technical card) — primary source for the exported interface (PARTIAL/REFRESH modes; in FULL mode it does not exist yet — created at synthesis; use `preanalysis_reports` as primary instead).
+- `repos/<repo>/business.md` (+ `repos/<repo>/integrations/` split files, if present; PARTIAL/REFRESH modes only).
 - Existing `repos/<repo>/dependencies` (if present).
 - `preanalysis_reports` (FULL mode): the explorer and integrations reports — reuse them instead of re-deriving the interface from scratch; verify with targeted code reads only.
 
@@ -103,8 +103,8 @@ Identify every downstream call, dependency, and integration this repo makes.
 
 ### Required inputs (MUST read)
 
-- `repos/<repo>/overview` (technical card) — the Required resources / suppliers section.
-- `repos/<repo>/business.md` (+ `repos/<repo>/integrations/`, `repos/<repo>/processes/` split files, if present).
+- `repos/<repo>/overview` (technical card) — the Required resources / suppliers section (PARTIAL/REFRESH modes; in FULL mode it does not exist yet — created at synthesis; use `preanalysis_reports` as primary instead).
+- `repos/<repo>/business.md` (+ `repos/<repo>/integrations/`, `repos/<repo>/processes/` split files, if present; PARTIAL/REFRESH modes only).
 - Existing `repos/<repo>/dependencies` (if present).
 - `preanalysis_reports` (FULL mode): the integrations and processes reports — reuse them instead of re-mapping downstreams from scratch; verify with targeted code reads only.
 
@@ -149,8 +149,8 @@ Catalog databases, external integrations, libraries, and infrastructure.
 
 ### Required inputs (MUST read)
 
-- `repos/<repo>/overview` (technical card) — technology stack and required resources.
-- `repos/<repo>/business.md` (+ split files, if present).
+- `repos/<repo>/overview` (technical card) — technology stack and required resources (PARTIAL/REFRESH modes; in FULL mode it does not exist yet — created at synthesis; use `preanalysis_reports` as primary instead).
+- `repos/<repo>/business.md` (+ split files, if present; PARTIAL/REFRESH modes only).
 - Existing `repos/<repo>/dependencies` (if present).
 - `preanalysis_reports` (FULL mode): the explorer report (manifests, lockfiles) — reuse it; verify with targeted code reads only.
 

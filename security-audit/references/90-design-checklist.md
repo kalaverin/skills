@@ -313,6 +313,17 @@ When evidence is partial, prefer `NEEDS_MANUAL_REVIEW` over `FAIL` unless the ga
 Write `{{ REPORTS_ROOT }}/90_design_checklist.md` using exactly this structure:
 
 ```markdown
+---
+title: API Security Design Checklist Results
+created_at: [UTC ISO 8601 timestamp]
+updated_at: [UTC ISO 8601 timestamp]
+repo: [entity name or "generic"]
+branch: [target repo branch]
+commit: [target repo short hash]
+committed_at: [target repo commit UTC ISO 8601]
+source: [project root]
+---
+
 # API Security Design Checklist Results: [Project Name]
 
 ## Executive Summary

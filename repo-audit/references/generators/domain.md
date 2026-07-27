@@ -55,7 +55,7 @@ way where evidence is missing.
 [ref: #ra-domain-risks-inputs]
 
 - `preanalysis_reports` — your primary source (all four analysis-wave reports).
-- `repos/<repo>/overview`, `project/glossary`, `repos/<repo>/glossary`.
+- `repos/<repo>/overview` (PARTIAL/REFRESH modes; in FULL mode it does not exist yet — created at synthesis), `project/glossary`, `repos/<repo>/glossary`.
 - Existing `repos/<repo>/business.md` and split files (if present).
 - Targeted code reads ONLY to verify or fill gaps left by the reports.
 

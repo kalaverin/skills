@@ -65,24 +65,27 @@ substitute (per the code-reading rule in the base prompt).
 
 - `references/templates/overview_card.md`
 
-### 2. Determine the repo type by inspecting the directory:
-   - gRPC API service
-   - REST API gateway
-   - Temporal workflow worker
-   - Infrastructure / GitOps
-   - library
+### 2. Determine the repo type per `references/analysis/type_detection.md` `[ref: #repo-type-detection]` (preset or `custom:<slug>`) and detect the facet vector `[ref: #repo-interface-exhaustiveness]`. For a custom type, STOP and report the proposed slug + detected facets to the root agent for user confirmation before continuing.
 
 ### 3. Explore the codebase thoroughly:
-   - Read `pyproject.toml`, `requirements/*.in`, `requirements/*.txt`, `uv.lock` for versions.
-   - Read `app/`, `worker.py`, `main.py`, `server.py`, routers, servicers, handlers, workflows, activities.
-   - For infra repos, read `apps/base/`, `apps/<env>/`, `clusters/`.
+   - Read the ecosystem's dependency manifests (all that exist):
+     - Python: `pyproject.toml`, `requirements/*.in`, `requirements/*.txt`, `uv.lock`
+     - Kotlin/Java: `build.gradle`, `build.gradle.kts`, `pom.xml`, `gradle.lockfile`
+     - Node.js/TypeScript: `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
+     - Go: `go.mod`, `go.sum`
+     - Rust: `Cargo.toml`, `Cargo.lock`
+     - Ruby: `Gemfile`, `Gemfile.lock`
+     - .NET: `*.csproj`, `*.sln`, `packages.lock.json`
+   - Read the ecosystem's source layout (all that exist): `app/`, `src/`, `src/main/<lang>/`, `cmd/`, `internal/`, `lib/`, `worker.py`, `main.py`, `server.py`, `index.ts`, routers, servicers, handlers, workflows, activities.
+   - For infra repos, read `apps/base/`, `apps/<env>/`, `clusters/`, `deploy/`, `helm/`, `k8s/`.
    - **Do NOT generate a directory tree.** The root agent produces the tree separately, per `subagents-protocol` §13. Only list the paths of meaningful directories/files (one per line, no nesting) so the root agent knows what to annotate.
-   - Search exhaustively for the exported interface:
-     - REST: EVERY route in EVERY FastAPI router.
-     - gRPC: EVERY method in EVERY proto service, including declared-but-unimplemented methods.
-     - Worker (Temporal): EVERY `@workflow.defn` and `@activity.defn`, plus signals/updates/queries/cron. Also capture, per Temporal best practices: retry policies (max attempts, backoff), task queue assignments, schedule specs (flag legacy cron for migration to Schedules), and per-activity idempotency and timeout configuration.
-     - Infra: EVERY HelmRelease per environment/namespace.
-     - Library: EVERY public package/module and its purpose.
+   - Search exhaustively for every interface surface in the facet vector (per `[ref: #repo-interface-exhaustiveness]`):
+     - `http-in`: EVERY route in EVERY router.
+     - `rpc-in`: EVERY method in EVERY proto service, including declared-but-unimplemented methods.
+     - `workflow-pipelines` (Temporal): EVERY `@workflow.defn` and `@activity.defn`, plus signals/updates/queries/cron. Also capture, per Temporal best practices: retry policies (max attempts, backoff), task queue assignments, schedule specs (flag legacy cron for migration to Schedules), and per-activity idempotency and timeout configuration.
+     - `deployment-units` (infra): EVERY HelmRelease per environment/namespace.
+     - `public-api-surface`: EVERY public package/module and its purpose.
+     - Any other facet in the vector: apply its registry rule.
 
 ### 4. Identify standards and protocols actually used (OAuth2, JWT, RSA-PSS, JSON Schema, gRPC/HTTP2, etc.). Verify exact RFC/vendor spec via web search when necessary. Cite the source and the code location (`path:line` + symbol).
 
