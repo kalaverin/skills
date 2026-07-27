@@ -1,3 +1,68 @@
+---
+subject: "Backdoor and malicious-implant detection reference for SAST subagents; three-phase detection prompt, IS/IS-NOT definition with prevention patterns, vulnerable/secure examples per technique, ten-row taxonomy incl. supply-chain implants, per-category heuristics, execution with zero-candidate early-exit gate, `API8:2023`/`API10:2023` mapping, CWE list incl. `CWE-511`, operational reminders, references incl. XZ `CVE-2024-3094`, tj-actions."
+index:
+  - anchor: backdoors-detection
+    what: "Focused deliberate-malicious-code detection role using the three-phase subagent approach — recon for suspicious construction sites across eleven categories, batched verify separating genuine implants from legitimate patterns, merge — gated on the architecture report."
+    problem: "Codebase may hide intentionally planted adversarial code rather than accidental flaws, and unstructured hunting conflates legitimate dynamic loading with covert implants while burying reviewers in unverified candidates; detection orchestration, implant sweep, intent judgment, candidate flood, coverage goal, methodical triage, covert capability."
+    use_when: "Backdoor scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual implant knowledge is needed, not execution."
+    expected: "Confirmed backdoor findings consolidated into one module report with legitimate patterns filtered out."
+  - anchor: backdoors-what-is
+    what: "Backdoor definition — code intentionally inserted to serve attacker rather than application — with IS list (hidden routes, dynamic loading, runtime decryption, triggers, anti-analysis, DGA, exfiltration), IS-NOT list (feature flags, signed plugins, KMS decryption, defensive checks, test hooks, scheduled jobs), and three prevention patterns incl. allowlisted loading, KMS-backed secrets, multi-person review with reproducible builds."
+    problem: "Reviewer cannot tell whether suspicious construct counts as deliberately planted implant without crisp intent boundaries, so authenticated admin features get flagged while dead code reachable only through reflection slips past triage; definition scope, boundary rules, inclusion criteria, exclusion list, classification accuracy, intent framing, false-flag risk, adversary-versus-product test."
+    use_when: "Deciding whether observed construct belongs to the implant risk class; testing IS criteria against code behavior; confirming whether flagged pattern matches documented legitimate mechanisms."
+    avoid_when: "Plain code-injection sinks are the question — route to `05-rce.md`; dependency-tree version and CVE risk belongs to `23-dependencies.md`; packing or obfuscation analysis without intent judgment belongs to `22-obfuscation.md`; config hardening gaps belong to `20-misconfiguration.md`."
+    expected: "Suspicious constructs classified against IS/IS-NOT boundaries with explicit intent reasoning; legitimate mechanisms dismissed with documented rationale."
+  - anchor: backdoors-vulnerable-vs-secure-examples
+    what: "Six vulnerable/secure code pairs — dynamic loading from `X-Module` header versus fixed allowlist, reflective invocation versus enum dispatch, runtime hex-decrypted command versus signed config, CI-marker environment trigger versus explicit deploy gating, date-based time bomb versus audited maintenance windows, C2 beaconing versus schema-bound telemetry — across Python, Java, and JavaScript."
+    problem: "Implants look different per technique, and generic suspicion rules miss whether constructed module paths, reflected method names, decoded blobs, or gated triggers actually decide malicious intent; technique recipes, hardened idioms, precise detection, pattern matching, stack quirks, payload signals, verdict support, exploit shape."
+    use_when: "Verify batch subagent needs `[TECH-STACK EXAMPLES]` selection; target project uses one of the covered languages; contrasting observed construct against known-good counterpart."
+    avoid_when: "Conceptual IS/IS-NOT boundaries are the question — see the definition card; category catalog needed — see the taxonomy card; plain injection-sink semantics belong to `05-rce.md`."
+    expected: "Each suspicious site matched against its vulnerable pattern and secure counterpart; matching idioms cited in batch findings."
+  - anchor: backdoors-taxonomy
+    what: "Ten-row category table — dynamic loading, reflective invocation, runtime string decryption, environment triggers, time bombs, dead-code activation, anti-debug/anti-analysis, DGA patterns, beaconing/C2, supply-chain implants — each with description and typical signals incl. `importlib.import_module(var)`, `Assembly.Load(byte[])`, `IsDebuggerPresent`, `postinstall` hooks, XZ `CVE-2024-3094` build injection."
+    problem: "Recon output and findings need consistent category labels, yet improvised naming fragments reports and leaves supply-chain insertion channels without any bucket; category canon, labeling scheme, signal index, classification vocabulary, report consistency, bucket coverage, naming discipline."
+    use_when: "Assigning canonical labels to recon sites or batch findings; checking which signals typify each implant class; scoping recon search lists across all ten rows."
+    avoid_when: "Per-category hunt procedure is the need — see the heuristics card; conceptual intent boundaries belong to the definition card."
+    expected: "Every site and finding carries one canonical row label; no implant class left unnamed."
+  - anchor: backdoors-detection-heuristics
+    what: "Per-category hunt checklist: dynamic-loading constant checks, reflection with user-controlled names, large base64/hex literals feeding `eval`/`exec`, debugger/VM artifact branching, hardcoded date comparisons, uncalled functions reachable via string dispatch, anti-debug APIs on macOS, DGA entropy traits, periodic outbound loops, and supply-chain channels incl. CI action pin verification, maintainer-change review, build-artifact diffing."
+    problem: "Verifier knows implant categories yet lacks concrete per-category tells, so subtle signals like `TracerPID` reads, movable CI tags, or network-sourced loaded bytes go unchecked during review; hunting rigor, signal checklist, review depth, per-class scrutiny, evidence pointers, inspection steps, overlooked markers, false-negative exposure."
+    use_when: "Recon or verify subagent needs actionable search guidance for one implant class; reviewing build hooks, CI pins, or provenance for supply-chain signals; deciding which artifacts to inspect for time bombs, DGA, or beaconing."
+    avoid_when: "Category catalog without procedure is the need — see the taxonomy card; pure packing or obfuscation analysis belongs to `22-obfuscation.md`; dependency-tree CVE risk belongs to `23-dependencies.md`."
+    expected: "Every category checked with its concrete tells; each signal class inspected before verdict."
+  - anchor: backdoors-execution
+    what: "Three-phase execution: recon discovering suspicious construction sites across eleven categories incl. agent-tooling channels with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three with four-question intent test and four-level classification, orchestrator merge with intermediate-file cleanup."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the backdoor scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
+    avoid_when: "Conceptual intent boundaries are the need — see the definition card; concrete per-category tells wanted — see the heuristics card."
+    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+  - anchor: backdoors-owasp-mapping
+    what: "Two-row OWASP root-cause mapping: `API8:2023` Security Misconfiguration for hidden endpoints, unauthorized dynamic loading, and weak build-pipeline controls; `API10:2023` Unsafe Consumption of APIs for third-party abuse, external C2 beaconing, and reflective loading of untrusted code."
+    problem: "Findings must carry root-cause risk labels, yet reviewers guess between misconfiguration and unsafe-consumption framings or skip mapping entirely, weakening report credibility; taxonomy tagging, risk attribution, mapping choice, report compliance, framing consistency, required field, dual applicability."
+    use_when: "Filling the `OWASP API 2023 root-cause risk` field on batch findings; deciding whether one or both risks apply to confirmed implants."
+    avoid_when: "CWE identifier selection is the need — see the CWE card; broad misconfiguration hardening without implant context belongs to `20-misconfiguration.md`; third-party trust analysis belongs to `19-unsafeapiconsumption.md`."
+    expected: "Each finding cites `API8:2023`, `API10:2023`, or both with one-line justification."
+  - anchor: backdoors-cwe-references
+    what: "CWE identifier list for implant findings: `CWE-912` Hidden Functionality as parent weakness for most scan output, `CWE-78` OS Command Injection, `CWE-94` Code Injection, `CWE-506` Embedded Malicious Code, `CWE-507` Trojan Horse, `CWE-511` Logic/Time Bomb, `CWE-510` Trapdoor, `CWE-509` Replicating Malicious Code."
+    problem: "Findings require precise weakness identifiers, and vague or missing mappings strip reports of remediation routing and trend tracking across scans; weakness taxonomy, mapping precision, report metadata, identifier canon, trend analysis, citation discipline, scan comparability."
+    use_when: "Selecting the most specific CWE for each batch finding; confirming `CWE-912` as default parent when no narrower entry fits."
+    avoid_when: "OWASP risk framing is the need — see the mapping card; external attack-technique context wanted — see the references card."
+    expected: "Every finding maps to the narrowest applicable CWE with `CWE-912` parentage noted."
+  - anchor: backdoors-important-reminders
+    what: "Closing operational reminders: judgment-based `Confirmed Backdoor` reservation, git-history insertion checks via `git log -p --follow` and `git blame`, dependency-provenance and typosquatting verification, read-only verification discipline, evidence preservation before remediation, incident handling with credential rotation, read-only subagent constraint."
+    problem: "Modules close with inconsistent final guidance, letting premature confirmed verdicts, executed payloads, or unpreserved evidence slip into reports and incident response; closing rules, quality floor, final reminders, uniform endings, wrap discipline, audit closure, judgment restraint."
+    use_when: "Finalizing the module report; checking verdict confidence, evidence handling, and cleanup obligations before closing the scan."
+    avoid_when: "Earlier phases are still open — finish those first; injection, obfuscation, dependency, or config routing belongs to `05-rce.md`, `22-obfuscation.md`, `23-dependencies.md`, or `20-misconfiguration.md` cards."
+    expected: "Reports close with uniform final rules applied, evidence preserved, and no malicious code executed."
+  - anchor: backdoors-references
+    what: "External link list: MITRE ATT&CK `T1620` reflective code loading, `T1622` debugger evasion, `T1497` virtualization/sandbox evasion, OWASP `API8:2023` and `API10:2023` pages, `CWE-506`/`CWE-507`/`CWE-510`/`CWE-511`/`CWE-912`, XZ Utils `CVE-2024-3094` supply-chain implant, tj-actions `GHSA-mrrh-fwg8-r2c3` compromise."
+    problem: "Reports need authoritative follow-up sources beyond distilled file content when attack-technique detail, supply-chain incident narratives, or canonical citation is required; further reading, external canon, deep dives, primary material, cited works, incident case studies, reference integrity."
+    use_when: "Primary sources or extended material is needed; findings require links to ATT&CK techniques, CWE entries, or documented supply-chain incidents."
+    avoid_when: "Recipe or orchestration needs route elsewhere — this list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+---
+
 # Deliberate Malicious Code / Backdoor Detection
 
 [ref: #backdoors-detection]
@@ -6,21 +71,8 @@ You are performing a focused security assessment to find **deliberately planted 
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
-## Table of contents
-
-- [What is deliberate malicious code](#what-is-deliberate-malicious-code)
-- [Vulnerable vs. Secure Examples](#vulnerable-vs-secure-examples)
-- [Backdoor / Implant Taxonomy](#backdoor--implant-taxonomy)
-- [Detection heuristics per category](#detection-heuristics-per-category)
-- [Execution](#execution)
-- [OWASP API Security Top 10 2023 mapping](#owasp-api-security-top-10-2023-mapping)
-- [CWE references](#cwe-references)
-- [Important Reminders](#important-reminders)
-- [References](#references)
-
----
-
 ## What is deliberate malicious code
+[ref: #backdoors-what-is]
 
 A backdoor or malicious implant is code intentionally inserted into a project to bypass normal authentication, execute hidden commands, exfiltrate data, establish persistence, or damage systems when a trigger is met. It is not a coding mistake; it is an adversarial capability embedded inside the software supply chain or application source.
 
@@ -70,9 +122,10 @@ secret = kms_client.decrypt(ciphertext_blob=encrypted_secret)["Plaintext"]
 - Build pipelines produce signed, reproducible artifacts.
 - Dependencies are pinned and checksum-verified.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #backdoors-vulnerable-vs-secure-examples]
 
 ### Dynamic loading with a constructed path
 
@@ -168,9 +221,10 @@ from app.telemetry import send_telemetry
 send_telemetry(endpoint=config.TELEMETRY_URL, schema=TELEMETRY_SCHEMA)
 ```
 
----
+***
 
 ## Backdoor / Implant Taxonomy
+[ref: #backdoors-taxonomy]
 
 | Category | Description | Typical signals |
 | --- | --- | --- |
@@ -183,10 +237,12 @@ send_telemetry(endpoint=config.TELEMETRY_URL, schema=TELEMETRY_SCHEMA)
 | **Anti-debug / anti-analysis** | Checks that serve no product purpose and exist only to detect debuggers, sandboxes, or virtual machines. | `IsDebuggerPresent`, `NtQueryInformationProcess`, `/proc/self/status` TracerPID, `ptrace(PTRACE_TRACEME)`, timing checks, VM MAC addresses. |
 | **DGA patterns** | Algorithmic generation of candidate C2 domains from a seed such as the current date. | Loops building random-looking domain strings, concatenating consonants/vowels, or hashing a timestamp to produce domains. |
 | **Beaconing / C2** | Periodic outbound requests that exfiltrate data or poll for commands. | `setInterval`/`setTimeout` loops issuing HTTP requests, cron jobs calling external URLs, long-polling to dynamic DNS domains. |
+| **Supply-chain implants** | Malicious code shipped through build hooks, CI actions, dependency releases, or compromised maintainer accounts rather than direct source edits. | `postinstall`/build-script hooks, retroactively moved version tags, test-artifact-driven build injection (XZ CVE-2024-3094), sudden maintainer changes. |
 
----
+***
 
 ## Detection heuristics per category
+[ref: #backdoors-detection-heuristics]
 
 ### Dynamic loading
 
@@ -242,9 +298,17 @@ send_telemetry(endpoint=config.TELEMETRY_URL, schema=TELEMETRY_SCHEMA)
 - Check whether the destination is an IP address, dynamic DNS domain, or recently registered domain.
 - Look for exfiltration of hostnames, user lists, environment variables, or file listings in request bodies.
 
----
+### Supply-chain insertion channels
+
+- Check build/install hooks (`package.json` scripts, `setup.py`, Makefile, CI workflow steps) for network calls or encoded payloads.
+- Verify CI action pins: full-length commit SHA versus movable tags (tj-actions compromise, GHSA-mrrh-fwg8-r2c3).
+- Review recent maintainer/ownership changes and release provenance for critical dependencies (XZ-style trust-building, CVE-2024-3094).
+- Diff build artifacts against source: test files influencing the build, IFUNC/linker hooks, or build-time code injection.
+
+***
 
 ## Execution
+[ref: #backdoors-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -290,6 +354,15 @@ Launch a subagent with the following instructions:
 > 9. **Beaconing / C2**:
 >    - Timers or loops that call external domains/IPs and exfiltrate host or user data.
 >
+> 10. **Supply-chain insertion channels**:
+>    - Build/install hooks (`package.json` scripts, `setup.py`, Makefile, CI workflow steps) with network calls or encoded payloads.
+>    - CI actions pinned by tag instead of full-length commit SHA.
+>    - Recent maintainer/ownership changes on critical dependencies.
+>    - Test artifacts that influence the build (build-time injection).
+>
+> 11. **Agent tooling as implant channel**:
+>    - `.mcp.json`, `mcp.json`, agent skill/extension directories, and AI-agent tool configs that invoke external code (shadow MCP servers, OWASP MCP09:2025).
+>
 > **What to skip**:
 > - Static imports and normal dependency usage.
 > - Documented, authenticated admin features.
@@ -322,12 +395,15 @@ Launch a subagent with the following instructions:
 
 ### After Phase 1: Check for Candidates Before Proceeding
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/21_recon.md`. If the recon found **zero suspicious sites** (the summary reports "Found 0" or the "Suspicious Construction Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/21_backdoors.md` and stop:
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/21_recon.md`. If the recon found **zero suspicious sites** (the summary reports "Found 0" or the "Suspicious Construction Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/21_backdoors.md`, **delete** `{{ REPORTS_ROOT }}/21_recon.md`, and stop:
 
 ```markdown
-# Backdoor / Malicious Code Analysis Results
+# Backdoor / Malicious Code Analysis Results: [Project Name]
 
-No deliberately malicious code found.
+## Executive Summary
+- Candidates analyzed: 0
+- Scope reviewed: [dynamic loading sites, reflective invocations, string decryption, triggers, build hooks, CI actions, and agent tooling reviewed]
+- No backdoor candidates were found: no deliberately planted malicious code indicators identified in the reviewed scope.
 ```
 
 Only proceed to Phase 2 if Phase 1 found at least one suspicious site.
@@ -454,30 +530,35 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 
 5. After writing `{{ REPORTS_ROOT }}/21_backdoors.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/21_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #backdoors-owasp-mapping]
 
 | OWASP Risk | Why Backdoors / Malicious Code Matter |
 |---|---|
 | **API8:2023 Security Misconfiguration** | Hidden endpoints, unauthorized dynamic loading, and weak build-pipeline controls allow implants to persist. |
 | **API10:2023 Unsafe Consumption of APIs** | Backdoors may abuse third-party integrations, beacon to external C2, or reflectively load untrusted code. |
 
----
+***
 
 ## CWE references
+[ref: #backdoors-cwe-references]
 
 - CWE-912: Hidden Functionality
 - CWE-78: OS Command Injection
 - CWE-94: Improper Control of Generation of Code ('Code Injection')
 - CWE-506: Embedded Malicious Code
 - CWE-507: Trojan Horse
-- CWE-509: Trigger-Based Logical Bombs
+- CWE-511: Logic/Time Bomb
+- CWE-510: Trapdoor
+- CWE-509: Replicating Malicious Code (Virus or Worm)
 - CWE-912 is the parent weakness for most findings produced by this scan.
 
----
+***
 
 ## Important Reminders
+[ref: #backdoors-important-reminders]
 
 - Backdoor detection is **inherently judgment-based**. A finding of "Confirmed Backdoor" should be reserved for code that clearly has no legitimate purpose and contains adversarial indicators (hidden triggers, obfuscation, C2, exfiltration).
 - Always check **git history** for the insertion: `git log -p --follow -- <file>` and `git blame -L <start>,<end> <file>`. A backdoor inserted in a single commit by an unknown author is higher confidence than code that evolved over many reviewed commits.
@@ -487,9 +568,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 - If a confirmed backdoor is found, treat it as an **incident**: rotate credentials, audit access, review build pipeline integrity, and notify stakeholders.
 - Subagents are read-only: they must not modify project source code, commit changes, or run potentially malicious code.
 
----
+***
 
 ## References
+[ref: #backdoors-references]
 
 - MITRE ATT&CK T1620 — Reflective Code Loading
 - MITRE ATT&CK T1622 — Debugger Evasion
@@ -499,4 +581,7 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 - CWE-912: Hidden Functionality
 - CWE-506: Embedded Malicious Code
 - CWE-507: Trojan Horse
-- CWE-509: Trigger-Based Logical Bombs
+- CWE-511: Logic/Time Bomb
+- CWE-510: Trapdoor
+- CVE-2024-3094 — XZ Utils backdoor (supply-chain implant via build injection)
+- GHSA-mrrh-fwg8-r2c3 — tj-actions/changed-files supply-chain compromise (2025)

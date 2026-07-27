@@ -1,3 +1,50 @@
+---
+subject: "Improper inventory management detection reference for SAST subagents; three-phase detection prompt, `API9:2023` definition with documentation and data-flow blindspots plus coverage boundaries, vulnerable/secure example cards incl. MCP/AI agent endpoints and `FastAPI` docs exposure, execution with zero-candidate early-exit gate, prevention guidance, references incl. `MCP09:2025` and `RFC 8594`, operational reminders."
+index:
+  - anchor: inventory-detection
+    what: "Focused inventory-management detection role using the three-phase subagent approach — recon for API hosts, versions, routes, docs, debug endpoints, serverless functions, feature flags, gateway routes, and third-party integrations, batched verify, merge — gated on the architecture report."
+    problem: "Codebase and deployments need systematic sweep of every host, version, route, and integration for inventory visibility, yet unstructured hunting misses shadow deployment paths and drowns reviewers in unverified asset candidates; detection orchestration, asset discovery, audit rigor, candidate flood, coverage goal, methodical triage, shadow surface."
+    use_when: "Inventory scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual inventory knowledge is needed, not execution."
+    expected: "Confirmed inventory-gap findings consolidated into one module report with false positives filtered."
+  - anchor: inventory-api9-2023
+    what: "`API9:2023` definition of improper inventory management with OWASP risk ratings, documentation and data-flow blindspots, attack scenarios, and explicit coverage/non-coverage boundaries against authentication, IDOR, data-exposure, and access-control neighbors."
+    problem: "Reviewer cannot tell whether discovered asset counts as inventory mismanagement without crisp scope boundaries, so known-endpoint auth gaps get flagged here while shadow deployments slip past triage; definition scope, boundary rules, inclusion criteria, exclusion list, classification accuracy, taxonomy anchor, neighbor confusion, blindspot framing."
+    use_when: "Deciding whether observed asset belongs to this risk class; checking both OWASP blindspot question sets against deployment reality; confirming whether undocumented, deprecated, debug, or shadow items fall inside scan coverage."
+    avoid_when: "Auth gaps on known endpoints are the question — route to `10-missingauth.md`; object-level swaps belong to `08-idor.md`; property exposure belongs to `16-bopla.md`; pure config hardening belongs to `20-misconfiguration.md`."
+    expected: "Discovered assets classified against `API9:2023` with explicit boundary reasoning; blindspot checklist either answered or escalated."
+  - anchor: inventory-vulnerable-vs-secure-examples
+    what: "Eleven vulnerable/secure example cards across Python, Java, JavaScript, Go, and C# covering debug-mode switches, deprecated version mounting, admin routes, `FastAPI` docs exposure, missing OpenAPI specs, CI spec generation, non-production data, third-party integrations, serverless URLs, feature flags, gateway routes, and MCP server configurations."
+    problem: "Inventory weaknesses look different per framework and deployment layer, and generic visibility rules miss stack-specific debug flags, stale version sprawl, gateway declarations, and agent endpoints that decide reachability; stack recipes, secure idioms, precise detection, pattern matching, framework diversity, deployment surface, config review, exploit signal."
+    use_when: "Target project uses one of the covered stacks; reviewing route registration, environment branching, or deployment config for concrete idioms; verify batch subagent needs framework-specific patterns for assigned items."
+    avoid_when: "Conceptual scope boundaries are the question — see the `API9:2023` definition card; auth semantics of documented endpoints belong to `10-missingauth.md`; response property leaks belong to `16-bopla.md`."
+    expected: "Framework-specific inventory gaps confirmed with matching secure counterpart; compliant configurations verified as properly managed."
+  - anchor: inventory-execution
+    what: "Three-phase execution: recon discovering API assets across ten categories with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three with per-item classification, orchestrator merge with intermediate-file cleanup."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the inventory scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
+    avoid_when: "Conceptual definitions are the need — see the `API9:2023` card; concrete stack idioms wanted — see the examples card."
+    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+  - anchor: inventory-prevention-guidance
+    what: "Layered defense checklist: full host and version inventory, documented data flows with owners and approval, automated spec generation with CI drift checks, restricted documentation access, equal controls on deprecated versions, sunset/EOL process returning `410 Gone`, non-production data isolation, serverless and gateway assets treated as first-class inventory entries."
+    problem: "Remediation advice scattered across guides leaves gaps, and one missed control lets deprecated hosts, stale specs, or unmonitored integrations persist after fixes ship; remediation checklist, defense layers, control mapping, gap elimination, hardening steps, closure guarantee, mitigation breadth, fix completeness."
+    use_when: "Writing remediation sections of findings; reviewing whether deployed defenses form complete inventory coverage."
+    avoid_when: "Detection mechanics are the question — see execution and example cards; pure server hardening without inventory scope belongs to `20-misconfiguration.md`."
+    expected: "Each finding closes with layered controls that keep every deployed asset inventoried and documented."
+  - anchor: inventory-references
+    what: "External link list: OWASP `API9:2023` risk page, `CWE-1059` incomplete documentation, `CWE-1057` data operations outside expected manager, `MCP09:2025` shadow MCP servers, `RFC 8594` Sunset header."
+    problem: "Reports need authoritative follow-up sources beyond distilled file content when deeper verification, deprecation-header semantics, or MCP-specific risk detail is required; further reading, external canon, deep dives, primary material, cited works, weakness identifiers, reference integrity."
+    use_when: "Primary sources or extended material is needed; findings require canonical citation links."
+    avoid_when: "Recipe or orchestration needs route elsewhere — this list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: inventory-important-reminders
+    what: "Closing operational reminders: phase ordering with dependency gates, three-per-batch parallel dispatch, per-batch context slicing, read-only subagent discipline, discovery-oriented false-negative bias toward `Needs Manual Review`, intermediate-file cleanup."
+    problem: "Modules close with inconsistent final guidance, letting unverified dismissals, leaked context bloat, or leftover batch files slip into reports and client deliverables; closing rules, quality floor, final reminders, uniform endings, wrap discipline, audit closure, leftover artifacts."
+    use_when: "Finalizing the module report; checking phase sequencing and cleanup obligations before closing the scan."
+    avoid_when: "Earlier phases are still open — finish those first; auth, object-level, or property-exposure routing belongs to `10-missingauth.md`, `08-idor.md`, or `16-bopla.md` cards."
+    expected: "Reports close with uniform final rules applied and no leftover intermediates."
+---
+
 # Improper Inventory Management Detection
 
 [ref: #inventory-detection]
@@ -6,9 +53,10 @@ You are performing a focused security assessment to find **Improper Inventory Ma
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## API9:2023 Improper Inventory Management
+[ref: #inventory-api9-2023]
 
 OWASP API Security Top 10 2023 calls this risk **API9:2023 – Improper Inventory Management**. It covers any situation where an organization lacks accurate visibility into its API assets, versions, hosts, data flows, and deployment paths. Without an up-to-date inventory, security controls are inconsistently applied, deprecated or debug endpoints remain exposed, serverless functions and gateway routes become shadow APIs, and incident response is slowed.
 
@@ -59,6 +107,7 @@ These examples justify the audit findings about serverless/function URLs, API ga
 - **Feature-flag-gated routes** — endpoints, admin panels, or beta routes enabled by LaunchDarkly, Split, Unleash, or custom flag checks that may unintentionally expose functionality in production.
 - **API gateway route inventory gaps** — route definitions in Kong, AWS API Gateway, Azure API Management, NGINX ingress, Ambassador, or Istio that are not reflected in code specs or inventory.
 - **Unmonitored third-party integrations** — data flows to external services without inventory, business justification, or visibility.
+- **AI agent / MCP endpoints** — MCP servers, agent tool endpoints, and LLM-backed internal APIs deployed outside the main API inventory (shadow AI surface).
 - **Production data in non-production deployments** — real customer data in dev/staging/test environments.
 
 ### What This Scan Does NOT Cover
@@ -70,9 +119,10 @@ Do not flag these under this scan:
 - **Sensitive data exposure in responses** → that's "Excessive Data Exposure".
 - **Weak access control on a documented admin endpoint** → that's BFLA or Access Control.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #inventory-vulnerable-vs-secure-examples]
 
 ### Debug Mode Enabled
 
@@ -226,6 +276,19 @@ else
     app.UseExceptionHandler("/error");
     app.UseHsts();
 }
+```
+
+```python
+# VULNERABLE: FastAPI serves interactive docs and schema in production by default
+app = FastAPI()  # /docs, /redoc, and /openapi.json are exposed with no opt-out
+
+# SECURE: docs and schema disabled in production, enabled in dev
+IS_PROD = os.environ.get("ENV") == "production"
+app = FastAPI(
+    docs_url=None if IS_PROD else "/docs",
+    redoc_url=None if IS_PROD else "/redoc",
+    openapi_url=None if IS_PROD else "/openapi.json",
+)
 ```
 
 ### Missing OpenAPI / API Documentation
@@ -465,9 +528,58 @@ metadata:
     nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8"
 ```
 
----
+### AI Agent / MCP Endpoints
+
+```json
+// VULNERABLE: MCP server exposed over a network transport with no auth and no inventory entry
+// .mcp.json — shadow MCP deployment, reachable by anyone on the network
+{
+  "mcpServers": {
+    "internal-tools": {
+      "command": "python",
+      "args": ["mcp_server.py"],
+      "transport": "sse",
+      "url": "http://0.0.0.0:8080/sse"
+    }
+  }
+}
+
+// SECURE: MCP server inventoried, authenticated (OAuth 2.1 per MCP spec), internal-only
+// Inventory entry: internal-tools, MCP server, Streamable HTTP /mcp, owner=platform@example.com
+{
+  "mcpServers": {
+    "internal-tools": {
+      "command": "python",
+      "args": ["mcp_server.py"],
+      "transport": "streamable-http",
+      "url": "http://127.0.0.1:8080/mcp",
+      "auth": {
+        "type": "oauth2.1",
+        "issuer": "https://auth.internal.example.com"
+      }
+    }
+  }
+}
+```
+
+```python
+# VULNERABLE: Streamable HTTP MCP endpoint mounted without authentication
+mcp_app = mcp.http_app(path="/mcp")
+app.mount("/mcp", mcp_app)  # no auth dependency, bound to 0.0.0.0
+
+# SECURE: MCP endpoint requires OAuth 2.1 and is bound to the internal network
+mcp_app = mcp.http_app(path="/mcp")
+app.mount("/mcp", mcp_app)
+app.router.dependencies.append(Depends(verify_oauth21_token))  # auth on every MCP call
+# uvicorn runs with --host 127.0.0.1 or behind an internal-only ingress
+```
+
+Note: unapproved MCP deployments are a recognized shadow-API risk — OWASP MCP Top 10 2025 lists **MCP09:2025 Shadow MCP Servers**, and a July 2025 internet scan found at least 1,862 publicly accessible unauthenticated MCP instances. Treat every MCP config (`.mcp.json`, `mcp.json`, `mcp_servers` blocks) and network transport (`/sse`, `/mcp`) as an API asset that must be inventoried and authenticated.
+
+***
 
 ## Execution
+[ref: #inventory-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -534,13 +646,18 @@ Launch a subagent with the following instructions:
 >    - External API keys, service tokens
 >    - Data classification or sharing statements
 >
+> 10. **AI agent / MCP endpoints**
+>    - MCP server config blocks: `.mcp.json`, `mcp.json`, `mcp_servers` entries
+>    - Network transports: `/sse` (deprecated since MCP spec 2025-03-26, Streamable HTTP replaced it, but still found exposed) and Streamable HTTP (often `/mcp`)
+>    - Agent tool endpoints mounted outside the main router
+>
 > **Output format** — write to `{{ REPORTS_ROOT }}/18_recon.md`:
 >
 > ```markdown
 > # Improper Inventory Management Recon: [Project Name]
 >
 > ## Summary
-> Discovered [N] API hosts, [N] versions, [N] routes, [N] docs/specs, [N] debug endpoints, [N] serverless functions, [N] feature flags, [N] gateway routes, [N] third-party integrations.
+> Discovered [N] API hosts, [N] versions, [N] routes, [N] docs/specs, [N] debug endpoints, [N] serverless functions, [N] feature flags, [N] gateway routes, [N] third-party integrations, [N] MCP/AI agent endpoints.
 >
 > ## API Hosts
 >
@@ -612,6 +729,21 @@ Launch a subagent with the following instructions:
 > - **Inventory entry found**: [yes / no / unknown]
 > ```
 
+### After Phase 1: Check for Candidates Before Proceeding
+
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/18_recon.md`. If the recon found **zero items** across all categories (the summary reports zero hosts, versions, routes, specs, debug endpoints, serverless functions, feature flags, gateway routes, third-party integrations, and MCP/AI agent endpoints), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/18_inventory.md`, **delete** `{{ REPORTS_ROOT }}/18_recon.md`, and stop:
+
+```markdown
+# Improper Inventory Management Results: [Project Name]
+
+## Executive Summary
+- Assets analyzed: 0
+- Scope reviewed: [API hosts, versions, routes, documentation/specs, debug endpoints, serverless functions, feature flags, gateway routes, third-party integrations, and MCP/AI agent endpoints reviewed]
+- No API inventory gaps were found: no undocumented, deprecated, debug, shadow, or unmanaged assets identified in the reviewed scope.
+```
+
+Only proceed to Phase 2 if Phase 1 found at least one item.
+
 ### Phase 2: Verify — Validate Inventory Gaps (Batched)
 
 After Phase 1 completes, read `{{ REPORTS_ROOT }}/18_recon.md` and split the discovered items into **batches of up to 3 items each**. Launch **one subagent per batch in parallel**. Each subagent verifies only its assigned items and writes results to its own batch file.
@@ -659,6 +791,7 @@ Give each batch subagent the following instructions (substitute the batch-specif
 > 5. **Is there CI/CD automation that generates or validates the spec?**
 > 6. **For third-party integrations, is there evidence of approval, data-flow inventory, or monitoring?**
 > 7. **For serverless functions, feature flags, or gateway routes, are they listed in the API inventory and protected appropriately?**
+> 8. **For MCP/AI agent endpoints, are they inventoried, authenticated, and bound to the intended network?**
 >
 > **Output format** — write to `{{ REPORTS_ROOT }}/18_batch_[N].md`:
 >
@@ -731,9 +864,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 
 5. After writing `{{ REPORTS_ROOT }}/18_inventory.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/18_batch_*.md`).
 
----
+***
 
 ## Prevention Guidance
+[ref: #inventory-prevention-guidance]
 
 - **Maintain an inventory of all API hosts**, including environment (production, staging, dev, test), intended network access (public, internal, partner), and running API version.
 - **Inventory integrated services and data flows**, documenting role, exchanged data types, sensitivity, owner, and approval.
@@ -746,17 +880,21 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 - **Perform risk analysis** when newer versions include security improvements, and backport or retire older versions accordingly.
 - **Include serverless functions, feature flags, and API gateway routes** in the API inventory and documentation. Treat function URLs and gateway-declared paths as first-class API assets.
 
----
+***
 
 ## References
+[ref: #inventory-references]
 
 - OWASP API Security Top 10 2023 — **API9:2023 Improper Inventory Management**: https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/
 - [CWE-1059: Incomplete Documentation](https://cwe.mitre.org/data/definitions/1059.html)
 - [CWE-1057: Data Access Operations Outside of Expected Data Manager Component](https://cwe.mitre.org/data/definitions/1057.html)
+- OWASP MCP Top 10 2025 — **MCP09:2025 Shadow MCP Servers**: https://owasp.org/www-project-mcp-top-10/2025/MCP09-2025%E2%80%93Shadow-MCP-Servers
+- [RFC 8594: The Sunset HTTP Header Field](https://www.rfc-editor.org/rfc/rfc8594)
 
----
+***
 
 ## Important Reminders
+[ref: #inventory-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.

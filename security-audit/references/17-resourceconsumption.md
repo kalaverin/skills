@@ -1,3 +1,56 @@
+---
+subject: "Unrestricted resource consumption detection reference for SAST subagents; three-phase detection prompt, `API4:2023` definition with IS/IS-NOT boundaries, edge-case exhaustion table incl. LLM and SSE rows, limit patterns plus anti-patterns, per-stack recipes incl. `FastAPI` `SlowAPI` `Resilience4j`, dynamic-test payloads incl. mandatory OWASP scenarios, prevention guidance, OWASP mapping with CWE links, operational reminders."
+index:
+  - anchor: resourceconsumption-detection
+    what: "Focused resource-exhaustion detection role using the three-phase subagent approach — recon for endpoints lacking limits, batched verify, merge — gated on the architecture report."
+    problem: "Codebase needs systematic sweep of every endpoint, job, and integration for missing consumption ceilings, yet unstructured hunting overlooks bypassable limits and buries reviewers in noise; detection orchestration, limit inventory, exhaustion sweep, cost amplification, audit rigor, candidate flood, coverage goal, methodical triage."
+    use_when: "Resource-consumption scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual knowledge is needed, not execution."
+    expected: "Confirmed limit findings consolidated into one module report with false positives filtered."
+  - anchor: resourceconsumption-api4-2023
+    what: "`API4:2023` definition of unrestricted resource consumption with IS/IS-NOT boundaries, edge-case exhaustion table covering ReDoS, XML expansion, deserialization bombs, JSON depth attacks, slowloris, queue growth, fork bombs, cache leaks, LLM overuse, SSE/WebSocket drains, plus limit patterns and anti-patterns."
+    problem: "Reviewer cannot tell whether odd behavior counts as consumption abuse without crisp boundaries, so intentional high-traffic design gets flagged while subtle exhaustion vectors slip past; definition scope, boundary rules, inclusion criteria, exclusion list, classification accuracy, edge cases, wallet denial, taxonomy anchor."
+    use_when: "Deciding whether observed behavior belongs to this risk class; verifying listed protection patterns exist on the endpoint; checking edge-case vectors like ReDoS or LLM overuse against source code."
+    avoid_when: "Auth gaps are the question — route to `10-missingauth.md`; price or role manipulation belongs to `13-businesslogic.md`; SQL injection semantics belong to `02-sqli.md`; pure upload validation depth belongs to `11-fileupload.md`."
+    expected: "Behavior classified against `API4:2023` with explicit boundary reasoning; every listed exhaustion vector either confirmed or excluded."
+  - anchor: resourceconsumption-vulnerable-vs-secure-examples
+    what: "Per-stack vulnerable/secure recipe pairs — Django, Flask, `FastAPI` with `SlowAPI`, Express, Spring Boot with `Resilience4j`, Go, GraphQL — covering page-size ceilings, chunked upload validation, payload limits, throttling, and complexity rules."
+    problem: "Enforcement idioms differ per framework, and generic consumption rules miss stack-specific caps, streaming checks, and middleware quirks that decide exploitability; stack recipes, secure idioms, precise detection, pattern matching, framework diversity, middleware defaults, handler review, exploit signal."
+    use_when: "Target project uses one of the covered stacks; reviewing flow-critical handlers where pagination, uploads, or expensive calls occur; verify batch instructions need `[TECH-STACK EXAMPLES]` selection."
+    avoid_when: "Conceptual boundaries are the question — see the definition card; upload-only validation depth belongs to `11-fileupload.md`; GraphQL injection semantics beyond batching belong to `14-graphql.md`."
+    expected: "Stack-specific missing caps flagged; enforced ceilings and streaming checks verified per framework."
+  - anchor: resourceconsumption-dynamic-test-payload-examples
+    what: "Concrete `curl` command set for proving findings — unbounded pagination, ReDoS probe, GraphQL batching, JSON depth bomb, oversized upload, SMS/email cost amplification — plus the three mandatory OWASP scenario checks."
+    problem: "Findings without reproducible proof get disputed by developers, and handcrafted probes vary wildly across reviewers, weakening every reported weakness; dynamic proof, payload templates, reproducible evidence, timing signals, response codes, live confirmation, dispute risk, proof gap."
+    use_when: "Confirmed or likely-vulnerable finding needs live-test instructions; batch subagent builds its `Dynamic Test` block; one of the required OWASP patterns matches an existing endpoint."
+    avoid_when: "Static review only with no live testing requested; pure upload-validation depth belongs to `11-fileupload.md`; GraphQL injection semantics rather than batching abuse belong to `14-graphql.md`."
+    expected: "Every confirmed finding carries executable proof with status, timing, or size indicator to watch."
+  - anchor: resourceconsumption-prevention-guidance
+    what: "Layered defense checklist: per-endpoint throttling, payload ceilings at every layer, upload caps, length validation, execution timeouts, container quotas, third-party spend alerts, complexity analysis, circuit breakers, backpressure."
+    problem: "Remediation advice scattered across guides leaves gaps, and one missed control lets attackers reopen exhaustion or cost abuse after fixes ship; remediation checklist, defense layers, control mapping, gap elimination, hardening steps, closure guarantee, mitigation breadth, fix completeness."
+    use_when: "Writing remediation sections of findings; reviewing whether deployed defenses form complete coverage."
+    avoid_when: "Detection mechanics are the question — see execution and example cards; price or role manipulation fixes belong to `13-businesslogic.md`."
+    expected: "Each finding closes with layered controls that block reopening of the same abuse path."
+  - anchor: resourceconsumption-execution
+    what: "Three-phase execution: recon generating limit candidates with zero-candidate early-exit gate, batched verify in groups of three under read-only constraints, merge with intermediate-file cleanup."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, merges findings inconsistently, and risks destructive side effects against live systems; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the consumption scan execution; dispatching recon, verify batches, or merge; reviewing any phase output."
+    avoid_when: "Conceptual definitions are the need — see the `API4:2023` definition card; only payload templates wanted — see the dynamic-test card."
+    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+  - anchor: resourceconsumption-owasp-mapping
+    what: "Canonical source links for `API4:2023`: OWASP risk page, availability and GraphQL cheat sheets, `CWE-770`, `CWE-400`, `CWE-799`, `CWE-841`, `CWE-834`, `CWE-405`, NIST `SP 800-204`, and `LLM10:2025` unbounded consumption."
+    problem: "Reports need correct 2023-era taxonomy and authoritative citations, and mislabeled findings break downstream triage metrics and reader trust; taxonomy mapping, risk routing, citation canon, classification accuracy, weakness identifiers, traceability, tagging discipline, reference integrity."
+    use_when: "Tagging findings with OWASP 2023 risks or CWE identifiers; adding authoritative citations to the final report."
+    avoid_when: "Recipe or workflow needs route elsewhere — see the definition, examples, and execution cards; this section is follow-up sourcing, not procedure."
+    expected: "Findings carry correct `API4:2023` and CWE tagging with primary sources attached."
+  - anchor: resourceconsumption-important-reminders
+    what: "Closing operational reminders: phase ordering, three-per-batch parallelism, scoped context handoff, read-only discipline, manual-review bias, full code-path tracing, framework-default awareness, intermediate cleanup."
+    problem: "Modules close with inconsistent final guidance, letting unverified candidates, weak proof, or leftover files slip into reports and client deliverables; closing rules, quality floor, final reminders, weak evidence, uniform endings, wrap discipline, audit closure, leftover artifacts."
+    use_when: "Finalizing the module report; checking phase sequencing and cleanup obligations before closing the scan."
+    avoid_when: "Earlier phases are still open — finish those first; sibling-risk routing belongs to `10-missingauth.md`, `13-businesslogic.md`, or `14-graphql.md` cards."
+    expected: "Reports close with uniform final rules applied and no leftover intermediates."
+---
+
 # Unrestricted Resource Consumption Detection
 
 [ref: #resourceconsumption-detection]
@@ -6,9 +59,10 @@ You are performing a focused security assessment to find **API4:2023 Unrestricte
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the architecture skill first if it doesn't.
 
----
+***
 
 ## API4:2023 Unrestricted Resource Consumption
+[ref: #resourceconsumption-api4-2023]
 
 An API is vulnerable when it fails to enforce limits on the resources a single client request can consume. Satisfying API requests requires network bandwidth, CPU, memory, storage, file descriptors, processes, and sometimes paid third-party API calls. Without limits, one attacker can exhaust resources, drive up cost, or cause denial of service.
 
@@ -58,6 +112,8 @@ In addition to the common cases above, check for these auxiliary single-request 
 | **Uncontrolled queue growth** | Producer/consumer imbalance fills a queue without backpressure. | Message-queue depth unmonitored; no maximum queue length or dead-letter queue. |
 | **Fork / spawn bombs** | Untrusted input triggers unbounded process creation. | `os.system`, `subprocess`, `Runtime.exec`, shell interpolations inside loops without limits. |
 | **Cache-based memory leaks** | Unbounded cache keys or TTL eventually exhaust memory. | In-memory cache without eviction policy, max size, or entry expiration. |
+| **LLM/AI unbounded consumption** | Pay-per-token endpoints without per-user quotas enable variable-length input floods and Denial of Wallet; runaway agent loops burn unbounded reasoning/tool-calling iterations. | LLM completion endpoints without per-user quota, `max_tokens`/`max_iterations` caps, or spend alerts. |
+| **Long-lived connection exhaustion (SSE/WebSocket)** | Held-open streaming connections accumulate until file descriptors or workers exhaust. | SSE/WebSocket endpoints without connection-duration, concurrency, or idle-timeout limits. |
 
 ### Limits That Prevent Resource Consumption
 
@@ -92,8 +148,8 @@ const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use('/api/', limiter);
 ```
 ```java
-// Spring Bucket4j
-@RateLimiting(name = "api", ...)
+// Spring Boot + Resilience4j
+@RateLimiter(name = "api")
 public ResponseEntity<?> upload(...) { ... }
 ```
 
@@ -129,7 +185,7 @@ resources:
 - AWS billing alerts, Twilio spend caps, SendGrid rate limits, etc.
 
 **7. Circuit breakers and backpressure**
-- Timeouts, bulkheads, and circuit-breaker libraries (e.g., Resilience4j, Polly, Hystrix, Sentinel) that fail fast when downstream resources are saturated.
+- Timeouts, bulkheads, and circuit-breaker libraries (e.g., Resilience4j, Polly, Sentinel, Failsafe — Hystrix is legacy/archived) that fail fast when downstream resources are saturated.
 - Explicit queue max-length and consumer backpressure to prevent unbounded queue growth.
 
 ### Anti-Patterns
@@ -159,9 +215,10 @@ if len(data) > MAX:
 ]
 ```
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #resourceconsumption-vulnerable-vs-secure-examples]
 
 ### Python — Django
 
@@ -218,6 +275,41 @@ def bulk_import():
     return jsonify({'ok': True})
 ```
 
+### Python — FastAPI
+
+```python
+# VULNERABLE: uncapped pagination, upload saved without size validation
+@app.get("/api/items")
+def list_items(per_page: int = Query(20)):
+    return items[:per_page]  # per_page can be 999999
+
+@app.post("/api/upload")
+def upload(file: UploadFile):
+    path = save_file(file.file)  # no size check; FastAPI has no built-in body limit
+    return {"path": path}
+
+# SECURE: cap pagination, rate limit expensive endpoints, validate upload size in chunks
+@app.get("/api/items")
+def list_items(per_page: int = Query(20, le=100)):  # or: min(per_page, 100)
+    return items[:per_page]
+
+@app.post("/api/expensive")
+@limiter.limit("5/minute")  # SlowAPI; returns HTTP 429
+def expensive(request: Request):
+    ...
+
+@app.post("/api/upload")
+def upload(file: UploadFile):
+    size = 0
+    while chunk := file.file.read(1024 * 1024):  # 1 MB chunks
+        size += len(chunk)
+        if size > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="File too large")
+    file.file.seek(0)
+    path = save_file(file.file)
+    return {"path": path}
+```
+
 ### Node.js — Express
 
 ```javascript
@@ -266,7 +358,7 @@ public ResponseEntity<?> generateReport(@RequestBody List<Long> ids) {
 
 // SECURE: validate size, set timeout, rate limit
 @PostMapping("/api/reports")
-@RateLimiting(name = "reports")
+@RateLimiter(name = "reports")
 public ResponseEntity<?> generateReport(@RequestBody @Size(max = 100) List<Long> ids) {
     List<Report> reports = service.generate(ids, Duration.ofSeconds(30));
     return ResponseEntity.ok(reports);
@@ -320,9 +412,10 @@ const server = new ApolloServer({
 });
 ```
 
----
+***
 
 ## Dynamic-Test Payload Examples
+[ref: #resourceconsumption-dynamic-test-payload-examples]
 
 Use these payloads and curl commands as concrete proof-of-concept templates in batch findings. Replace `<HOST>`, `<TOKEN>`, and placeholder values with project-specific data.
 
@@ -430,9 +523,10 @@ When the matching endpoint or integration exists in the project, treat these thr
 | **GraphQL profile-picture batch upload** | Batch `uploadPic` mutations in a single HTTP request to exhaust memory during thumbnail generation, bypassing per-request rate limits. | GraphQL operation/batch count limits; memory/CPU/process limits on image-processing workers; payload-size and per-operation caps. |
 | **Cache-bypass cost spike** | Request an object larger than the cache threshold so all clients pull from origin, or request uncached large objects repeatedly. | Cache size/bypass policies; maximum object size enforcement; cloud spend alerts and maximum cost allowance. |
 
----
+***
 
 ## Prevention Guidance
+[ref: #resourceconsumption-prevention-guidance]
 
 - **Apply per-endpoint rate limits** tuned to business needs; expensive endpoints need stricter limits than read-only listing endpoints.
 - **Enforce maximum payload sizes** at the reverse proxy, framework, and application layers.
@@ -444,9 +538,10 @@ When the matching endpoint or integration exists in the project, treat these thr
 - **Analyze GraphQL query complexity** and disable or limit batching/aliasing when it enables bypass.
 - **Add circuit breakers and backpressure**: fail fast when downstream resources are saturated, cap queue lengths, and shed load before exhaustion occurs.
 
----
+***
 
 ## Execution
+[ref: #resourceconsumption-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -475,6 +570,8 @@ Launch a subagent with the following instructions:
 >    - Accept file uploads (`multipart/form-data`, `FILES`, `FormFile`, `MultipartFile`)
 >    - Trigger expensive operations: report generation, image/video processing, bulk import/export, password reset, OTP, SMS/email sending
 >    - Call third-party APIs that incur cost (SMS, email, AI, biometrics, cloud storage, payment)
+>    - Expose LLM/AI completion endpoints (pay-per-token cost, runaway agent loops)
+>    - Open long-lived streaming connections (SSE/WebSocket) without duration or concurrency limits
 >
 > 2. **Framework configuration** for body/payload limits, rate limiting, and upload size limits:
 >    - Missing or very large `DATA_UPLOAD_MAX_MEMORY_SIZE`, `express.json({ limit: ... })`, `spring.servlet.multipart.*`, `http.MaxBytesReader`, nginx `client_max_body_size`
@@ -522,6 +619,21 @@ Launch a subagent with the following instructions:
 >
 > [Repeat for each candidate]
 > ```
+
+### After Phase 1: Check for Candidates Before Proceeding
+
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/17_recon.md`. If the recon found **zero candidates** (the summary reports "Found 0" or the "Candidates" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/17_resourceconsumption.md`, **delete** `{{ REPORTS_ROOT }}/17_recon.md`, and stop:
+
+```markdown
+# Unrestricted Resource Consumption Results: [Project Name]
+
+## Executive Summary
+- Candidates analyzed: 0
+- Scope reviewed: [endpoints, handlers, jobs, and integrations reviewed]
+- No resource-consumption candidates were found: no missing or bypassable rate, size, pagination, or spending limits identified in the reviewed scope.
+```
+
+Only proceed to Phase 2 if Phase 1 found at least one candidate.
 
 ### Phase 2: Verify — Confirm Missing or Bypassable Limits (Batched)
 
@@ -607,6 +719,8 @@ Give each batch subagent the following instructions (substitute the batch-specif
 >    - JSON depth/breadth bombs
 >    - Missing request/header timeouts (slowloris)
 >    - Unbounded queue, cache, or process growth
+>    - LLM/AI endpoints without per-user quota, `max_tokens`/`max_iterations` caps, or spend alerts
+>    - SSE/WebSocket endpoints without connection-duration, concurrency, or idle-timeout limits
 >
 > 9. **Mandatory OWASP API4:2023 patterns** — if the project has a matching endpoint/integration, verify the controls below. Flag as `[LIKELY VULNERABLE]` if any control is missing:
 >    - **SMS forgot-password abuse**: per-user rate limit on the initiating endpoint; SMS provider spending cap or billing alert; per-phone-number throttling.
@@ -713,9 +827,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 
 5. After writing `{{ REPORTS_ROOT }}/17_resourceconsumption.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/17_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 Mapping
+[ref: #resourceconsumption-owasp-mapping]
 
 This detection reference covers **API4:2023 Unrestricted Resource Consumption** from the OWASP API Security Top 10 2023 source file `0xa4-unrestricted-resource-consumption.md`.
 
@@ -729,10 +844,12 @@ This detection reference covers **API4:2023 Unrestricted Resource Consumption** 
 - [CWE-834: Excessive Iteration](https://cwe.mitre.org/data/definitions/834.html)
 - [CWE-405: Asymmetric Resource Consumption (Amplification)](https://cwe.mitre.org/data/definitions/405.html)
 - NIST SP 800-204 — *Security Strategies for Microservices-based Application Systems*: https://csrc.nist.gov/publications/detail/sp/800-204/final
+- OWASP LLM Top 10 2025 — **LLM10:2025 Unbounded Consumption**: https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/
 
----
+***
 
 ## Important Reminders
+[ref: #resourceconsumption-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.

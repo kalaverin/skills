@@ -1,3 +1,62 @@
+---
+subject: "BOPLA detection reference for SAST subagents: three-phase orchestration prompt, `API3:2023` definition with IS/IS-NOT boundaries plus prevention patterns, per-stack vulnerable/secure recipes incl. `FastAPI` and `Laravel`, advanced patterns incl. LLM tool-argument mass assignment, prevention guidance, OWASP mapping, references, reminders."
+index:
+  - anchor: bopla-detection
+    what: "Focused BOPLA detection role using the three-phase subagent approach — recon for serialization and mass-assignment sites, batched verify, merge — gated on the architecture report and mapped to `API3:2023`."
+    problem: "Codebase needs systematic sweep of every serializer, binder, and endpoint for property-level authorization, yet unstructured hunting misses auto-binding paths and drowns reviewers in unverified exposure candidates; detection orchestration, phase pipeline, verified findings, audit rigor, candidate flood, coverage goal, methodical sweep."
+    use_when: "BOPLA scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture summary absent — run the analysis module first; only conceptual property-level knowledge is needed, not execution."
+    expected: "Verified BOPLA findings consolidated into the module report with false positives filtered."
+  - anchor: bopla-what-is-bopla
+    what: "Core definition plus boundaries: excessive data exposure and mass assignment unified under `API3:2023`, explicit IS / IS-NOT lists against IDOR and missing-auth neighbors, five prevention patterns — response DTOs, strong parameters, schema validation, unknown-field denial, split read/write models."
+    problem: "Reviewers flag every generic serializer or object write regardless of class, so sibling vulnerabilities like object-level swaps get mislabeled while real property leaks slip past triage; concept baseline, shared vocabulary, classification consistency, boundary rules, neighbor confusion, reachability framing, term alignment."
+    use_when: "Onboarding to the scan; deciding whether a found behavior belongs to this vulnerability class at all."
+    avoid_when: "Object-ID swaps are the question — route to `08-idor.md`; unauthenticated endpoints belong in `10-missingauth.md`; concrete stack recipes wanted — jump to the examples anchor."
+    expected: "Everyone applies one test: unauthorized property read or write decides reportability."
+  - anchor: bopla-vulnerable-vs-secure-examples
+    what: "Per-stack vulnerable/secure recipe pairs: Django, DRF, Flask with Marshmallow, `FastAPI` with `response_model` and `ConfigDict(extra='forbid')`, Express with Mongoose, Spring, ASP.NET Core, Rails strong parameters, `Laravel` `$fillable` plus `FormRequest`, GraphQL type splitting."
+    problem: "Enforcement idioms differ per framework, and generic allowlist rules miss stack-specific write-path quirks that silently expose or accept privileged fields; stack recipes, serializer defaults, binding idioms, precise detection, pattern matching, orm features, framework conventions."
+    use_when: "Target uses one of the covered stacks; reviewing serializers, update handlers, or GraphQL resolvers for a concrete framework."
+    avoid_when: "Conceptual definition is the need — see the what-is anchor; orchestration phases are the question — see the execution anchor."
+    expected: "Stack-specific exposure and auto-binding sites flagged; allowlisted handlers verified as safe."
+  - anchor: bopla-advanced-patterns
+    what: "Less-obvious variant catalog: JSON:API sparse fieldsets abuse, nested object mass assignment, GraphQL fragment access to sensitive fields, ORM lazy-loading leakage, PATCH and JSON Patch entity application, unenforced OpenAPI response schemas, LLM tool-argument mass assignment via prompt injection."
+    problem: "Standard serializer and binder sweeps stop at obvious handlers, so sparse fieldsets, recursive nested writes, eager relations, patch documents, and agent-emitted tool arguments escape review entirely; hidden vectors, subtle variants, recon breadth, second-order paths, edge coverage, confused deputy, deep hunting."
+    use_when: "Recon or verify needs coverage beyond textbook serializer and binder sites; LLM function-calling handlers or JSON:API query parsing appear in the codebase."
+    avoid_when: "Basic whole-entity exposure or request-body binding is the question — start with definition and examples anchors."
+    expected: "Every non-obvious variant class gets at least one evaluated check during verification."
+  - anchor: bopla-execution
+    what: "Three-phase execution: recon over serialization and mass-assignment sites with a zero-candidate early-exit gate, batched verify in groups of three with per-stack examples injected, orchestrator merge into the final module report."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently; execution model, phase overview, subagent orchestration, context passing, batch discipline, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the BOPLA scan execution; dispatching or reviewing any phase, batch, or gate."
+    avoid_when: "Conceptual knowledge is the need — see definition and examples anchors."
+    expected: "All phases run with shared architecture context into one consolidated report."
+  - anchor: bopla-prevention-guidance
+    what: "Layered defense checklist: explicit request and response allowlists, separate read/write DTOs, unknown-field rejection (`additionalProperties: false`, `unknown = EXCLUDE`), hardened PATCH handling, enforced response schema validation, no direct entity binding, non-serializable internal fields, forbidden-field regression tests."
+    problem: "Remediation advice scattered across framework docs leaves gaps that let one missed control keep privileged fields writable or readable; remediation checklist, control mapping, defense completeness, gap elimination, hardening steps, systematic mitigation, closure guarantee."
+    use_when: "Writing remediation for confirmed findings; auditing whether deployed defenses are complete."
+    avoid_when: "Detection mechanics are the question — see execution and examples anchors."
+    expected: "Every finding closes with a complete, layered control set."
+  - anchor: bopla-owasp-mapping
+    what: "OWASP API 2023 mapping: `API3:2023` Broken Object Property Level Authorization as the single risk for this scan, absorbing 2019-era Excessive Data Exposure and Mass Assignment."
+    problem: "Findings need proper 2023-era taxonomy for reporting, and confusing property abuse with object-level or authentication risks misroutes everything downstream into wrong buckets; risk routing, classification accuracy, edition awareness, correct tagging, traceability, risk labels, label drift."
+    use_when: "Tagging findings with OWASP 2023 risks; writing the report's risk section."
+    avoid_when: "Detection patterns or execution workflow are the question — this anchor is taxonomy only; CWE identifiers wanted — see the references anchor for `CWE-213` and `CWE-915`."
+    expected: "Findings mapped to `API3:2023` with explicit property-level reasoning."
+  - anchor: bopla-references
+    what: "External link list: OWASP `API3:2023` page, Mass Assignment Cheat Sheet, `CWE-213` and `CWE-915` entries, legacy 2019 API3 and API6 pages."
+    problem: "Agents and readers need authoritative follow-up sources beyond this file's distilled content when deeper verification or remediation detail is required; further reading, external canon, deep dives, primary material, cited works, owasp pages, mitre entries."
+    use_when: "Primary sources or extended material is needed."
+    avoid_when: "Recipe or orchestration needs route elsewhere — this list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: bopla-important-reminders
+    what: "Closing operational rules: architecture context passing, read-only subagents, strict phase ordering, batch size of three with parallel dispatch, per-batch context slicing, IDOR distinction, dual-direction focus, conservative `Needs Manual Review` bias, intermediate-file cleanup."
+    problem: "Modules close with inconsistent wrap-up guidance, letting false-negative dismissals, leaked context bloat, or stale intermediate files slip into audit runs and client deliverables; closing rules, quality floor, consistency, final reminders, uniform endings, wrap discipline, report closure."
+    use_when: "Finalizing the module report; reviewing operational rules before dispatch."
+    avoid_when: "Earlier phases are still open — finish detection and execution first."
+    expected: "Runs close with uniform operational rules applied and intermediates deleted."
+---
+
 # Broken Object Property Level Authorization (BOPLA) Detection
 
 [ref: #bopla-detection]
@@ -10,9 +69,10 @@ You are performing a focused security assessment to find Broken Object Property 
 
 **Subagent constraint**: All subagents launched by this skill are **read-only**. They must analyze code, write findings to the report files below, and **must never modify project source code**, tests, configuration files, or dependencies. If a finding needs a code change, describe the fix in the report; do not apply it.
 
----
+***
 
 ## What is BOPLA
+[ref: #bopla-what-is-bopla]
 
 BOPLA occurs when an API exposes or allows modification of object properties that the authenticated caller should not be able to read or write. It combines two older risks:
 
@@ -69,9 +129,10 @@ params.require(:user).permit(:name, :email)
 **5. Separate read and write models / DTOs**
 - The request DTO only contains modifiable fields; the response DTO only contains exposable fields.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #bopla-vulnerable-vs-secure-examples]
 
 ### Python — Django
 
@@ -201,6 +262,58 @@ def patch_user(user_id):
         setattr(user, key, value)
     db.session.commit()
     return UserResponseSchema().dump(user)
+```
+
+### Python — FastAPI
+
+```python
+# VULNERABLE: returns ORM model with sensitive fields, no response_model filter
+@app.get("/api/users/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    return db.query(User).get(user_id)   # leaks password_hash, role, is_admin
+
+# VULNERABLE: blind model reconstruction from the request model (mass assignment)
+@app.post("/api/users")
+def create_user(user_in: UserIn, db: Session = Depends(get_db)):
+    user = UserInDB(**user_in.model_dump())   # attacker can send role, is_admin
+    db.add(user)
+    db.commit()
+    return user
+
+# VULNERABLE: dumps every input field, including extras, into the ORM model
+@app.patch("/api/users/{user_id}")
+def patch_user(user_id: int, body: UserIn, db: Session = Depends(get_db)):
+    user = db.query(User).get(user_id)
+    for key, value in body.model_dump().items():
+        setattr(user, key, value)   # role/is_admin pass straight through
+    db.commit()
+    return user
+
+# SECURE: response_model filters output; input model forbids extras; explicit allowlist
+class UserPublicOut(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+
+class UserUpdateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")   # reject role, is_admin, etc.
+    first_name: str | None = None
+    last_name: str | None = None
+    email: EmailStr | None = None
+
+@app.get("/api/users/{user_id}", response_model=UserPublicOut)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    return db.query(User).get(user_id)   # only UserPublicOut fields are serialized
+
+@app.patch("/api/users/{user_id}", response_model=UserPublicOut)
+def patch_user(user_id: int, body: UserUpdateIn, db: Session = Depends(get_db)):
+    user = db.query(User).get(user_id)
+    allowed = {"first_name", "last_name", "email"}
+    updates = body.model_dump(exclude_unset=True)
+    for key in allowed & updates.keys():
+        setattr(user, key, updates[key])
+    db.commit()
+    return user
 ```
 
 ### Node.js — Express / Mongoose
@@ -381,6 +494,52 @@ def user_params
 end
 ```
 
+### PHP — Laravel
+
+```php
+// VULNERABLE: mass assignment from the entire request body
+public function store(Request $request)
+{
+    return User::create($request->all());   // attacker can send role, is_admin
+}
+
+public function update(Request $request, User $user)
+{
+    $user->update($request->all());   // any model attribute is writable
+    return $user;
+}
+
+// VULNERABLE: $guarded = [] disables all mass-assignment protection
+class User extends Model
+{
+    protected $guarded = [];
+}
+
+// SECURE: $fillable allowlist + FormRequest returning only validated fields
+class User extends Model
+{
+    protected $fillable = ['first_name', 'last_name', 'email'];
+}
+
+class UpdateUserRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'first_name' => ['sometimes', 'string', 'max:255'],
+            'last_name'  => ['sometimes', 'string', 'max:255'],
+            'email'      => ['sometimes', 'email'],
+        ];
+    }
+}
+
+public function update(UpdateUserRequest $request, User $user)
+{
+    $user->update($request->validated());   // only validated fields are applied
+    return $user->only(['id', 'first_name', 'last_name', 'email']);
+}
+```
+
 ### GraphQL
 
 ```python
@@ -447,9 +606,10 @@ class UpdateUser(graphene.Mutation):
         return UpdateUser(user=user)
 ```
 
----
+***
 
 ## Advanced Patterns
+[ref: #bopla-advanced-patterns]
 
 Look for these less-obvious BOPLA variants during recon and verification.
 
@@ -504,9 +664,17 @@ An OpenAPI document can be used as a response allowlist. If the API gateway or t
 - **Signal**: tests calling `validate_response(schema, response)`, middleware that compares responses to `components.schemas`, or gateways that strip undeclared fields.
 - **Check**: is response validation actually enforced for the endpoint in question, or is the OpenAPI document only documentation?
 
----
+### LLM / AI agent tool-argument mass assignment
+
+LLM agents emit structured arguments for external tools (function calling). When a tool handler binds model-produced arguments directly into an ORM/object update (`update_user(**args)`, `Object.assign(doc, toolArgs)`), it is mass assignment with the LLM as a confused deputy: prompt injection (indirect content the agent reads) can steer the arguments toward privileged fields such as `role` or `is_admin`.
+
+- **Signal**: tool/function handlers that pass LLM-produced argument objects wholesale into ORM create/update calls, `setattr` loops, or `Object.assign` on entities.
+- **Check**: are tool inputs validated against a strict JSON schema, and does the handler apply a per-field allowlist before touching the object? If tool-call arguments are forwarded unfiltered, it is a finding.
+
+***
 
 ## Execution
+[ref: #bopla-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -524,6 +692,7 @@ Launch a subagent with the following instructions:
 >
 > 1. **Generic serialization / response leakage**:
 >    - Returning whole ORM models/entities: `res.json(model)`, `jsonify(obj)`, `render json: @obj`, `model_to_dict(...)`, `to_json`, `to_dict`, `serialize()`
+>    - FastAPI path operations returning ORM/Pydantic models without `response_model`; whole-model `model_dump()` returned to the client
 >    - GraphQL resolvers returning full objects by default
 >    - Response objects that include fields like `password`, `password_hash`, `role`, `is_admin`, `is_superuser`, `internal_notes`, `blocked`, `total_stay_price`, `secrets`, `tokens`
 >
@@ -532,6 +701,9 @@ Launch a subagent with the following instructions:
 >    - ORM create/update with unfiltered input: `Model.create(req.body)`, `Model.update(req.body)`, `user.update(request.json)`, `User.objects.create(**request.POST)`
 >    - Framework auto-binding of request JSON to entities: `@RequestBody User user`, `@ModelAttribute`, Rails `update(params)` without `permit`
 >    - Serializers/forms that do not explicitly list fields or that allow unknown fields
+>    - Laravel mass assignment: `Model::create($request->all())`, `->update($request->all())`, `$guarded = []`
+>    - FastAPI blind unpacking of request models: `Model(**body.model_dump())`, `UserInDB(**user_in.model_dump())`
+>    - LLM/AI agent tool handlers forwarding model-produced arguments into ORM/object updates: `update_user(**args)`, `Object.assign(doc, toolArgs)`
 >
 > 3. **Sensitive property writes via request body**:
 >    - Request handlers accepting fields such as `role`, `is_admin`, `is_superuser`, `blocked`, `total_stay_price`, `owner_id`, `created_at`, `id`, `password`, `permissions`
@@ -549,6 +721,7 @@ Launch a subagent with the following instructions:
 >    - ORM lazy-loading / eager relation leakage
 >    - PATCH / JSON Patch endpoints applied directly to persistence entities
 >    - OpenAPI response schemas that are documented but not enforced
+>    - LLM/AI agent tool arguments mass-assigned into objects (see Advanced Patterns)
 >
 > **What to ignore**:
 > - Endpoints that are intentionally public and read-only (e.g., public listings)
@@ -578,6 +751,21 @@ Launch a subagent with the following instructions:
 >
 > [Repeat for each candidate]
 > ```
+
+### After Phase 1: Check for Candidates Before Proceeding
+
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/16_recon.md`. If the recon found **zero candidates** (the summary reports "Found 0" or the "Candidates" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/16_bopla.md`, **delete** `{{ REPORTS_ROOT }}/16_recon.md`, and stop:
+
+```markdown
+# BOPLA Analysis Results: [Project Name]
+
+## Executive Summary
+- Candidates analyzed: 0
+- Scope reviewed: [endpoints, serializers, and models reviewed]
+- No BOPLA candidates were found: no excessive data exposure or mass-assignment sites identified in the reviewed scope.
+```
+
+Only proceed to Phase 2 if Phase 1 found at least one candidate.
 
 ### Phase 2: Verify — Check Property-Level Authorization (Batched)
 
@@ -742,9 +930,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/1
 
 5. After writing `{{ REPORTS_ROOT }}/16_bopla.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/16_batch_*.md`).
 
----
+***
 
 ## Prevention Guidance
+[ref: #bopla-prevention-guidance]
 
 For every endpoint that handles object properties:
 
@@ -781,17 +970,19 @@ For every endpoint that handles object properties:
    - Assert that `role=admin`, `is_admin=true`, `blocked=false`, etc. are rejected or have no effect.
    - Assert that sensitive fields do not appear in responses for each role.
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #bopla-owasp-mapping]
 
 This scan maps to:
 
 - **API3:2023 – Broken Object Property Level Authorization** — exposing or allowing modification of object properties without proper authorization, as defined in `0xa3-broken-object-property-level-authorization.md`.
 
----
+***
 
 ## References
+[ref: #bopla-references]
 
 - OWASP API Security Top 10 2023 — **API3:2023 Broken Object Property Level Authorization (BOPLA)** (`0xa3-broken-object-property-level-authorization.md`): https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/
 - OWASP Mass Assignment Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
@@ -800,9 +991,10 @@ This scan maps to:
 - OWASP API Security Top 10 2019 — API3:2019 Excessive Data Exposure: https://owasp.org/API-Security/editions/2019/en/0xa3-excessive-data-exposure/
 - OWASP API Security Top 10 2019 — API6:2019 Mass Assignment: https://owasp.org/API-Security/editions/2019/en/0xa6-mass-assignment/
 
----
+***
 
 ## Important Reminders
+[ref: #bopla-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - **Subagents must not modify project source code.** They analyze and report only.

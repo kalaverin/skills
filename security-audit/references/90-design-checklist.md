@@ -1,3 +1,56 @@
+---
+subject: "Design-level API security checklist assessment reference; single-subagent `PASS`/`FAIL`/`NOT_APPLICABLE`/`NEEDS_MANUAL_REVIEW` prompt, scope routing versus technical scans 02–20, OWASP API 2023 alignment table, Shieldfy items spanning authentication, access, OAuth incl. `PKCE`/`DPoP`, input, processing, output, CI/CD, monitoring, AI/LLM controls, execution classification, output template, reminders, references."
+index:
+  - anchor: design-checklist
+    what: "Design-level, cross-cutting security assessment role based on the Shieldfy API Security Checklist — one read-only subagent evaluates policy, architecture, and process controls untied to single code locations, supplementing technical scans 02–20 — gated on the architecture report."
+    problem: "API may pass every code-level scan while lacking documented rate-limit policy, secret-rotation process, or monitoring design, and piecemeal review of forty-plus controls without one orchestrated sweep leaves governance blind spots until audit; cross-cutting coverage, checklist inventory, evidence hunt, architecture context, readiness, operational discipline, organizational posture."
+    use_when: "Design-checklist scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full policy-level assessment must run end to end."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual Shieldfy knowledge is needed, not execution."
+    expected: "Every checklist item classified, with governance findings written into one consolidated design report."
+  - anchor: design-checklist-scope-routing
+    what: "Boundary table routing code-level gaps — rate limiting, CORS, headers, hardcoded secrets, missing authentication, injection classes, business logic, third-party trust — to technical references 02–20, reserving `FAIL` here for controls with no evidence anywhere."
+    problem: "Design reviewer flags code-level weaknesses already owned by technical modules, so identical flaw surfaces twice in final reports and policy-only gaps drown in duplicated noise; routing boundaries, scan ownership, overlap discipline, channel separation, report hygiene, misrouted findings, policy-versus-code split."
+    use_when: "A gap candidate emerges during design assessment; verdict needed on whether this file reports it or another scan owns it; triaging overlap between policy absence and implementation weakness."
+    avoid_when: "Scan selection itself — `00-screener.md` owns that; recon and architecture work belong to `01-analysis.md`; code-level gap hunting belongs to sibling scan modules 02–20."
+    expected: "Each candidate lands in exactly one report — policy absences stay here, code weaknesses route outward."
+  - anchor: design-checklist-owasp-alignment
+    what: "Alignment table mapping each checklist area — authentication, access, authorization/OAuth, input, processing, output, CI/CD, monitoring, advanced — to its primary OWASP API 2023 risk (`API1:2023` through `API10:2023`) for `FAIL` findings."
+    problem: "Every failed control needs root-cause risk labeling, yet reviewers guess between authorization, resource-consumption, and misconfiguration framings or skip labeling entirely, weakening consolidated audit output; threat attribution, taxonomy tagging, mapping choice, framing consistency, report compliance, label discipline, crosswalk table."
+    use_when: "Assigning risk labels to confirmed `FAIL` findings; checking which primary threat a given control area maps to; keeping taxonomy consistent across sibling reports."
+    avoid_when: "CWE identifier selection — this table covers OWASP risk framing only; scan applicability decisions belong to `00-screener.md`."
+    expected: "Each `FAIL` finding carries exactly one aligned OWASP tag."
+  - anchor: design-checklist-mapping
+    what: "Full 40-plus-item Shieldfy checklist — authentication, access, authorization/OAuth incl. `PKCE` and `DPoP`, input, processing, output, CI/CD incl. SBOM/provenance, monitoring, advanced topics incl. GraphQL, zero trust, AI/LLM controls — each with evidence definition plus file patterns and keywords."
+    problem: "Policy assessment without concrete item catalog devolves into vague impressions, so obscure controls like sender-constrained tokens, entity expansion, or MCP endpoint authentication never get checked and coverage stays unverifiable; checklist canon, evidence types, keyword index, breadth guarantee, hunt list, granular probing, overlooked corners, systematic questioning."
+    use_when: "Assessor needs the concrete item list with evidence pointers; searching repo and docs for policy, configuration, CI/CD, or runbook traces per control; building per-area hunt queries from keyword columns."
+    avoid_when: "Routing overlaps to technical modules — see scope card; verdict definitions belong to execution card; code-level weakness hunting belongs to technical modules 02–20."
+    expected: "All nine areas probed item by item with documented evidence searched for every control."
+  - anchor: design-checklist-execution
+    what: "Single-`coder`-subagent execution: read-only constraints, architecture context passed in, per-item evidence search, four-status classification (`PASS`, `FAIL`, `NOT_APPLICABLE`, `NEEDS_MANUAL_REVIEW`) with partial-evidence bias toward manual review, overlap dedup against technical scans, and finding write-up obligations."
+    problem: "Assessment dispatched without crisp verdict rules produces inconsistent statuses, duplicated findings, and overconfident failures where proof sits outside repo reach; classification canon, ambiguity handling, evidence thresholds, subagent briefing, read-only discipline, judgment calibration, dispatch clarity, uncertainty bias."
+    use_when: "Dispatching the design-assessment subagent; writing its goal, constraints, and step instructions; calibrating borderline verdicts between `FAIL` and `NEEDS_MANUAL_REVIEW`."
+    avoid_when: "Scan selection belongs to `00-screener.md`; recon and architecture-report generation belong to `01-analysis.md`; item catalog lookup belongs to the mapping card."
+    expected: "Subagent finishes with every item statused under consistent definitions and each `FAIL` fully argued."
+  - anchor: design-checklist-output-template
+    what: "Mandatory report skeleton for `{{ REPORTS_ROOT }}/90_design_checklist.md`: executive-summary status counts, per-item status table, `FAIL` finding blocks with risk/evidence/remediation, Appendix A manual-review items with uncertainty, Appendix B not-applicable items with rationale."
+    problem: "Free-form reporting yields inconsistent deliverables where summary counts disagree with detail tables, manual-review items vanish without trace, and downstream consolidation cannot compare scans; report shape, tally reconciliation, template fidelity, appendix coverage, traceable uncertainty, uniform output, structural canon."
+    use_when: "Writing or reviewing the final `90_design_checklist.md`; assembling summary tallies, per-item rows, verdict write-ups, and both appendices; checking deliverable completeness before closing."
+    avoid_when: "Classification rules themselves — see execution card; item content belongs to mapping card; technical scan output formats live in modules 02–20."
+    expected: "Deliverable matches the template exactly — counts agree with detail rows, verdict sections complete, both appendices present."
+  - anchor: design-checklist-important-reminders
+    what: "Closing operational reminders: read architecture report first, policy-versus-code boundary against scans 02–20, `FAIL` reserved for absent controls rather than imperfect implementations, `NEEDS_MANUAL_REVIEW` bias under doubt, write-only-to-report subagent confinement."
+    problem: "Final pass without fixed wrap-up rules lets imperfect implementations get marked failed, architecture context skipped, or stray writes touch project source; closing rules, quality floor, exit discipline, audit closure, judgment restraint, scope confinement, uniform endings."
+    use_when: "Finalizing the design report; double-checking status conservatism, scope restraint, and context obligations before closing the assessment."
+    avoid_when: "Earlier work still open — finish classification and writing first; scan selection belongs to `00-screener.md`; technical-module routing rules live in scope card."
+    expected: "Assessment closes with all reminders honored — context consumed, conservative statuses, no project files touched."
+  - anchor: design-checklist-references
+    what: "External link list: Shieldfy API Security Checklist repository, OWASP API Security Top 10 2023 edition page, OWASP Cheat Sheet Series, NIST `SP 800-207` Zero Trust Architecture."
+    problem: "Findings and remediation advice need authoritative follow-up sources beyond distilled checklist content when deeper control detail, cheat-sheet recipes, or canonical citation is required; further reading, external canon, primary material, cited works, source integrity, zero-trust background."
+    use_when: "Findings need links to canonical advisories or standards; reader wants primary checklist, OWASP, or NIST material behind summarized controls."
+    avoid_when: "Assessment procedure or verdict rules — this list is follow-up reading, not procedure; routing questions belong to scope card."
+    expected: "Reader reaches canonical external material for every topic this file condenses."
+---
+
 # API Security Design Checklist Assessment
 
 [ref: #design-checklist]
@@ -6,9 +59,10 @@ You are performing a **design-level, cross-cutting** security assessment based o
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## Scope and relationship to other scans
+[ref: #design-checklist-scope-routing]
 
 This checklist evaluates whether the API's **design, build, and operational policies** address common countermeasures. Do **not** duplicate findings that are better handled by the technical scans:
 
@@ -24,9 +78,10 @@ This checklist evaluates whether the API's **design, build, and operational poli
 
 Report a **FAIL** in this design checklist **only** when there is **no evidence at all** that the control is addressed by policy, architecture, configuration, or process. Code-level weaknesses that already have some control in place should be left to the technical scans.
 
----
+***
 
 ## OWASP API 2023 alignment
+[ref: #design-checklist-owasp-alignment]
 
 This checklist spans multiple OWASP API Security Top 10 2023 risks. Map each FAIL to the most relevant risk:
 
@@ -44,9 +99,10 @@ This checklist spans multiple OWASP API Security Top 10 2023 risks. Map each FAI
 
 Use the primary risk in the `FAIL` findings when appropriate.
 
----
+***
 
 ## Checklist mapping
+[ref: #design-checklist-mapping]
 
 Evaluate every item below. For each item, look for **documented policy**, **architectural decision**, **configuration**, or **process evidence** in the repository and its docs.
 
@@ -86,6 +142,8 @@ Accept any of the following as evidence of a control:
 | 3.2 | Exchange authorization codes, not tokens (`response_type=token` disallowed) | OAuth flow config, response_type handling | `response_type=code`, `response_type=token`, `implicit grant` |
 | 3.3 | Use random `state` parameter to prevent CSRF in OAuth | State generation/validation in OAuth flow | `state`, `state_param`, `generate_state` |
 | 3.4 | Define default scope and validate scope per application | Scope definitions, scope validation logic | `scope`, `default_scope`, `allowed_scopes`, `validate_scope` |
+| 3.5 | Require PKCE for every OAuth client (OAuth 2.1 direction; implicit grant removed) | Authorization-code flow config, PKCE parameters | `code_challenge`, `code_verifier`, `code_challenge_method=S256`, OAuth 2.1 notes |
+| 3.6 | Prefer sender-constrained tokens for high-value APIs (DPoP, RFC 9449) | Token binding config, DPoP proofs | `DPoP`, `dpop_jkt`, `cnf`, sender-constrained |
 
 ### 4. Input
 
@@ -136,6 +194,7 @@ Accept any of the following as evidence of a control:
 | 7.4 | Continuously run security tests (SAST/DAST) | CI security job definitions | `sast`, `dast`, `security scan`, `codeql`, `semgrep` |
 | 7.5 | Check dependencies and OS for known vulnerabilities | Dependency scanning, SBOM | `npm audit`, `pip audit`, `dependabot`, `renovate`, `CVE` |
 | 7.6 | Design a rollback solution for deployments | Deployment docs, rollback procedures | `rollback`, `blue-green`, `canary`, `deployment strategy` |
+| 7.7 | Generate an SBOM and verify dependency provenance (SLSA, Sigstore, trusted publishing) | SBOM artifacts, provenance verification jobs, publish pipeline auth | `sbom`, `cyclonedx`, `spdx`, `slsa`, `cosign`, `npm audit signatures`, trusted publishing |
 
 ### 8. Monitoring
 
@@ -185,9 +244,18 @@ Accept any of the following as evidence of a control:
 | 9.4.3 | Use short-lived tokens with automatic refresh | Token TTL/refresh policy | `TTL`, `RTTL`, `refresh token`, `short-lived` |
 | 9.4.4 | Implement request signing for sensitive operations | Request signature config | `request signing`, `signature`, `HMAC`, `signed request` |
 
----
+#### 9.5 AI / LLM API controls
+
+| # | Checklist item | Evidence to look for | File patterns / keywords |
+|---|---|---|---|
+| 9.5.1 | Enforce per-user quotas and cost caps on LLM-backed endpoints (OWASP LLM10:2025) | Quota/rate config on AI endpoints, spend alerts | `max_tokens`, `quota`, `spend alert`, LLM10, `rate_limit` on completion routes |
+| 9.5.2 | Treat model output as untrusted input in downstream design (OWASP LLM05:2025) | Output-validation contract, schema checks before sinks | `model_validate`, output schema, LLM05, prompt-injection notes |
+| 9.5.3 | Inventory MCP servers and agent tooling; no unauthenticated MCP endpoints (OWASP MCP09:2025) | MCP config inventory, auth on `/sse` and `/mcp` transports | `.mcp.json`, `mcp.json`, `mcpServers`, MCP09 |
+
+***
 
 ## Execution
+[ref: #design-checklist-execution]
 
 Perform this assessment with a single `coder` subagent. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` as context.
 
@@ -237,9 +305,10 @@ Use these definitions consistently:
 
 When evidence is partial, prefer `NEEDS_MANUAL_REVIEW` over `FAIL` unless the gap is clearly complete.
 
----
+***
 
 ## Output template
+[ref: #design-checklist-output-template]
 
 Write `{{ REPORTS_ROOT }}/90_design_checklist.md` using exactly this structure:
 
@@ -288,9 +357,10 @@ Write `{{ REPORTS_ROOT }}/90_design_checklist.md` using exactly this structure:
 | 1 | ... | ... | ... |
 ```
 
----
+***
 
 ## Important reminders
+[ref: #design-checklist-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` before assessing any item.
 - This is a **policy/design** scan. Do not re-report code-level vulnerabilities already covered by scans 02–20.
@@ -298,9 +368,10 @@ Write `{{ REPORTS_ROOT }}/90_design_checklist.md` using exactly this structure:
 - When in doubt, classify as `NEEDS_MANUAL_REVIEW` rather than `FAIL` or `PASS`.
 - The subagent must only write `{{ REPORTS_ROOT }}/90_design_checklist.md` and must not modify any project source code or configuration.
 
----
+***
 
 ## References
+[ref: #design-checklist-references]
 
 - Shieldfy API Security Checklist: https://github.com/shieldfy/API-Security-Checklist
 - OWASP API Security Top 10 2023: https://owasp.org/API-Security/editions/2023/en/0x11-t10/

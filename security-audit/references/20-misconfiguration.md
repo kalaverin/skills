@@ -1,3 +1,56 @@
+---
+subject: "Security misconfiguration detection reference for SAST subagents; three-phase detection prompt, `API8:2023` mapping, risk summary, vulnerability conditions, fourteen detection rules incl. modern headers, corrected Log4j `2.17.1`, per-stack/infra recipes — Flask, Django, `FastAPI`, Express, Spring, ASP.NET, Rails, Go, Nginx, Apache, Kubernetes, Docker, Terraform, CloudFormation — execution with zero-candidate early-exit gate, hardening checklist, uniform processing, references, reminders."
+index:
+  - anchor: misconfiguration-detection
+    what: "Focused security-misconfiguration detection role using the three-phase subagent approach — recon for configuration files, header definitions, error handlers, and dependency manifests, batched verify of misconfiguration indicators, merge — gated on the architecture report."
+    problem: "Codebase and deployment configuration need systematic sweep of every config artifact, header chain, error handler, and manifest for insecure defaults, yet unstructured hunting misses proxy-stripped headers and buries reviewers in unverified candidates; detection orchestration, hardening audit, discovery discipline, candidate flood, coverage goal, methodical triage, shadow configs."
+    use_when: "Misconfiguration scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual hardening knowledge is needed, not execution."
+    expected: "Confirmed misconfiguration findings consolidated into one module report with false positives filtered."
+  - anchor: misconfiguration-owasp-mapping
+    what: "`API8:2023` Security Misconfiguration mapping with OWASP risk summary table, full-stack scope spanning network through application code, and eight vulnerability conditions covering hardening gaps, missing patches, unnecessary features, inconsistent request processing, TLS gaps, missing directives, CORS policy, verbose errors."
+    problem: "Reviewer cannot tell whether an observed weakness counts as security misconfiguration without crisp conditions, so absent hardening gets misrouted while uneven request handling and permissive defaults slip past triage; definition scope, inclusion criteria, classification accuracy, taxonomy anchor, impact ratings, stack layers, condition checklist, dominant-issue judgment."
+    use_when: "Deciding whether observed configuration weakness belongs to this risk class; testing the eight OWASP-listed conditions against deployment reality; gauging exploitability, prevalence, detectability, and impact from the summary table."
+    avoid_when: "Missing authentication is the question — route to `10-missingauth.md`; business-logic abuse belongs to `13-businesslogic.md`; injection in request parameters belongs to `02-sqli.md`; dependency-tree CVE depth belongs to `23-dependencies.md`; undocumented assets belong to `18-inventory.md`."
+    expected: "Weakness classified against `API8:2023` with explicit condition mapping and correct taxonomy tagging."
+  - anchor: misconfiguration-what-to-look-for
+    what: "Fourteen detection rules covering missing security headers incl. `Permissions-Policy`, `Cross-Origin-Opener-Policy`, and deprecated `X-XSS-Protection`, permissive CORS, weak TLS, verbose errors, unnecessary verbs, insecure defaults, unpatched components, Log4j-style JNDI lookup before `2.17.1`, missing `Cache-Control`, request smuggling (`CWE-444`), cloud and IaC weaknesses, content-type looseness, absent schema validation, debug logging."
+    problem: "Sweep stalls without concrete indicator catalog, so reviewers flag deprecated header presence as XSS defense while reflected origins, `${jndi:ldap://}` patterns, and desync signals hiding inside proxy chains go unnoticed; rule checklist, header inventory, exploit signals, lookup expansion, cache leakage, permissive egress, parser drift, surface breadth."
+    use_when: "Recon or verify needs concrete misconfiguration indicators; checking header sets, origin rules, TLS posture, error payloads, feature exposure, patch currency, JNDI hints, cache directives, smuggling indicators, cloud posture, content-type limits, schema enforcement, log volume."
+    avoid_when: "Stack-specific secure idioms are the need — see the examples card; auth gaps route to `10-missingauth.md`; parameter injection belongs to `02-sqli.md`; deep dependency-tree CVE analysis belongs to `23-dependencies.md`."
+    expected: "Every indicator category either confirmed with evidence or explicitly excluded across the reviewed scope."
+  - anchor: misconfiguration-vulnerable-vs-secure-examples
+    what: "Per-stack vulnerable/secure recipe pairs — Flask, Django, `FastAPI`, Express with `helmet`, Spring Boot `SecurityFilterChain`, ASP.NET Core `UseHsts`, Rails `Rack::Cors`, Go `net/http`, Nginx, Apache, Kubernetes `securityContext`, Docker, Terraform, CloudFormation — covering CORS restriction, header injection, TLS hardening, generic errors, non-root containers, private buckets, least-privilege IAM."
+    problem: "Misconfiguration idioms differ per framework and infra layer, and generic hardening rules miss stack-specific debug switches, middleware quirks, and template defaults that decide exploitability; stack recipes, secure idioms, precise detection, pattern matching, framework diversity, config quirks, handler review, exploit signal."
+    use_when: "Target project uses one of the covered stacks or infra tools; reviewing config files, manifests, or middleware setup for concrete idioms; verify batch subagent needs `[TECH-STACK EXAMPLES]` selection."
+    avoid_when: "Conceptual indicator catalog is the question — see the detection-rules card; dependency-version CVE depth belongs to `23-dependencies.md`; undocumented asset discovery belongs to `18-inventory.md`."
+    expected: "Stack-specific misconfigurations confirmed with matching secure counterpart; hardened configs verified per framework or platform."
+  - anchor: misconfiguration-execution
+    what: "Three-phase execution: recon discovering configuration artifacts with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three with four-tier classification (`Vulnerable`, `Likely Vulnerable`, `Not Vulnerable`, `Needs Manual Review`) and dynamic-test blocks, orchestrator merge grouped by category with intermediate-file cleanup."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the misconfiguration scan execution; dispatching recon, verify batches, or merge; reviewing any phase output, classification verdict, or the early-exit decision."
+    avoid_when: "Conceptual conditions are the need — see the `API8:2023` mapping card; concrete stack idioms wanted — see the examples card."
+    expected: "All phases run with shared architecture context into one consolidated report grouped by category; intermediates deleted."
+  - anchor: misconfiguration-prevention-guidance
+    what: "Layered hardening checklist: repeatable environment hardening, debug and verbose features off, consistent security headers on every response, HTTPS everywhere with modern TLS, restricted CORS, minimal verbs, default accounts removed, non-root containers with pinned images and least-privilege IAM, patched components with lockfiles, JNDI disabled, `Cache-Control: no-store` on PII, uniform request processing across the chain, restricted content types, enforced response schemas, CI/CD scanners (Checkov, tfsec, Trivy, Snyk, Mozilla Observatory)."
+    problem: "Remediation advice scattered across guides leaves gaps, and one missed control lets wildcard origins, debug pages, or public buckets persist after fixes ship; remediation checklist, defense layers, control mapping, gap elimination, hardening steps, closure guarantee, mitigation breadth, fix completeness."
+    use_when: "Writing remediation sections of findings; reviewing whether deployed defenses form complete misconfiguration coverage; choosing automated config, container, and dependency checks for pipeline integration."
+    avoid_when: "Detection mechanics are the question — see execution and example cards; auth-control fixes belong to `10-missingauth.md`; dependency-upgrade depth belongs to `23-dependencies.md`."
+    expected: "Each finding closes with layered controls that keep every layer hardened, uniformly processed, and continuously scanned."
+  - anchor: misconfiguration-references
+    what: "External link list: OWASP `API8:2023` risk page, Secure Headers Project, WSTG configuration and error-handling testing guides, NIST `SP 800-123`, Let's Encrypt, plus `CWE-2` `CWE-16` `CWE-209` `CWE-319` `CWE-388` `CWE-444` `CWE-942` `CWE-250`."
+    problem: "Reports need authoritative follow-up sources beyond distilled file content when deeper verification, header-standard detail, or canonical citation is required; further reading, external canon, deep dives, primary material, cited works, weakness identifiers, reference integrity."
+    use_when: "Primary sources or extended material is needed; findings require links to OWASP, WSTG, NIST, or CWE entries."
+    avoid_when: "Recipe or orchestration needs route elsewhere — this list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+  - anchor: misconfiguration-important-reminders
+    what: "Closing operational reminders: phase ordering with dependency gates, three-per-batch parallel dispatch, per-batch context slicing, read-only subagent discipline, production-versus-development config distinction, `Needs Manual Review` bias over false negatives, full proxy-chain header verification, generic client errors with server-side diagnostics."
+    problem: "Modules close with inconsistent final guidance, letting dev-only configs get flagged as vulnerable, proxy-stripped headers get misjudged, or leftover batch files slip into reports; closing rules, quality floor, final reminders, uniform endings, wrap discipline, audit closure, leftover artifacts."
+    use_when: "Finalizing the module report; checking phase sequencing, classification bias, and cleanup obligations before closing the scan."
+    avoid_when: "Earlier phases are still open — finish those first; sibling-risk routing belongs to `10-missingauth.md`, `13-businesslogic.md`, `02-sqli.md`, `23-dependencies.md`, or `18-inventory.md` cards."
+    expected: "Reports close with uniform final rules applied and no leftover intermediates."
+---
+
 # Security Misconfiguration Detection
 
 [ref: #misconfiguration-detection]
@@ -6,9 +59,10 @@ You are performing a focused security assessment to find **security misconfigura
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
----
+***
 
 ## OWASP Mapping
+[ref: #misconfiguration-owasp-mapping]
 
 This scan maps to **API8:2023 – Security Misconfiguration** from the OWASP API Security Top 10 2023.
 
@@ -34,9 +88,10 @@ API8:2023 says the API is likely vulnerable when any of the following are true:
 - CORS policy is missing or improperly set.
 - Error messages include stack traces or expose other sensitive information.
 
----
+***
 
 ## What to Look For
+[ref: #misconfiguration-what-to-look-for]
 
 ### Missing Security Headers
 
@@ -46,6 +101,10 @@ APIs and web applications should send security headers that reduce the attack su
 - **X-Content-Type-Options: nosniff** — Prevents MIME-type sniffing.
 - **X-Frame-Options** or CSP `frame-ancestors` — Prevents clickjacking via framing.
 - **Content-Security-Policy** — Restricts script/style sources and other resource loads.
+- **Permissions-Policy** — Gates browser features (camera, geolocation, etc.) per origin.
+- **Cross-Origin-Opener-Policy / Cross-Origin-Resource-Policy** — Isolates the browsing context and controls cross-origin embedding (clickjacking/XS-Leak defense in depth).
+
+Note: `X-XSS-Protection` is deprecated and removed from modern browsers — do not rely on it (or flag its presence as the only XSS defense); CSP supersedes it.
 
 Also check for **Cache-Control** and **Pragma** headers on sensitive responses. Missing cache directives can cause private data to be stored in browser or intermediate caches.
 
@@ -92,7 +151,7 @@ Dependency manifests, base images, and package lists should not contain known-vu
 
 A logging utility with placeholder expansion and JNDI lookups enabled by default can turn a logged request header into remote code execution. Look for:
 
-- Logging libraries with JNDI/lookup features enabled (Log4j 2.x before 2.17.0, Logback, etc.).
+- Logging libraries with JNDI/lookup features enabled (Log4j 2.x before 2.17.1 (CVE-2021-44228/45046/44832 chain; Log4j 1.x JMSAppender is CVE-2021-4104 — Logback has no equivalent message-lookup feature)).
 - Request headers, query parameters, or bodies logged without sanitization.
 - Permissive outbound network policies that let the server reach attacker-controlled LDAP/RMI/DNS servers.
 - Usage of message lookup patterns such as `${jndi:ldap://...}`, `${env:...}`, or `${sys:...}` in log formats or logged data.
@@ -146,9 +205,10 @@ Unnecessary logging features can leak sensitive data or expand untrusted input. 
 - Verbose exception pages (`Whitelabel Error Page`, Django debug page, ASP.NET `UseDeveloperExceptionPage`).
 - Logging of raw SQL queries, internal paths, or environment variables.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #misconfiguration-vulnerable-vs-secure-examples]
 
 ### Python — Flask
 
@@ -820,9 +880,10 @@ Resources:
           CidrIp: 10.0.0.0/8
 ```
 
----
+***
 
 ## Execution
+[ref: #misconfiguration-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -846,7 +907,7 @@ Launch a subagent with the following instructions:
 >    - Application frameworks: `settings.py`, `application*.yml`, `config/*.py`, `app.js`, `server.js`, `Program.cs`, `Startup.cs`
 >
 > 2. **Security header definitions**:
->    - Look for `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, `Cache-Control`, `Pragma`
+>    - Look for `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Cache-Control`, `Pragma`
 >    - Framework middleware or `after_request` / `setHeaders` equivalents
 >    - Web server `add_header` / `Header` directives
 >
@@ -883,7 +944,7 @@ Launch a subagent with the following instructions:
 >    - S3 bucket ACLs, IAM policies, security group rules, overly permissive roles
 >
 > 10. **Log4j-style JNDI / lookup injection indicators**:
->    - Logging libraries with JNDI or placeholder lookup features (Log4j, Logback)
+>    - Logging libraries with JNDI or placeholder lookup features (Log4j 2.x before 2.17.1, Log4j 1.x JMSAppender; Logback has no equivalent message-lookup feature)
 >    - Request headers, query parameters, or bodies logged without sanitization
 >    - Outbound network policies allowing unrestricted egress
 >
@@ -923,6 +984,21 @@ Launch a subagent with the following instructions:
 >
 > [Repeat for each candidate]
 > ```
+
+### After Phase 1: Check for Candidates Before Proceeding
+
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/20_recon.md`. If the recon found **zero misconfiguration candidates** (the summary reports "Found 0" or the candidates section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/20_misconfiguration.md`, **delete** `{{ REPORTS_ROOT }}/20_recon.md`, and stop:
+
+```markdown
+# Security Misconfiguration Analysis Results: [Project Name]
+
+## Executive Summary
+- Candidates analyzed: 0
+- Scope reviewed: [configuration artifacts across headers, CORS, TLS, errors, defaults, containers, cloud, and dependency manifests reviewed]
+- No security misconfiguration candidates were found: no missing security headers, permissive CORS, weak TLS, verbose errors, insecure defaults, container/cloud misconfigurations, or known-vulnerable dependency versions identified in the reviewed scope.
+```
+
+Only proceed to Phase 2 if Phase 1 found at least one candidate.
 
 ### Phase 2: Verify — Check Misconfiguration Indicators (Batched)
 
@@ -1113,9 +1189,10 @@ Preserve every field from the batch results exactly as written.]
 
 6. After writing `{{ REPORTS_ROOT }}/20_misconfiguration.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/20_batch_*.md`).
 
----
+***
 
 ## Prevention Guidance
+[ref: #misconfiguration-prevention-guidance]
 
 ### Hardening Checklist
 
@@ -1126,6 +1203,7 @@ Preserve every field from the batch results exactly as written.]
   - `X-Content-Type-Options: nosniff`
   - `X-Frame-Options` or CSP `frame-ancestors`
   - `Content-Security-Policy`
+  - `Permissions-Policy`
   - `Cache-Control` for sensitive responses
 - Enforce HTTPS for all client-to-API and internal service-to-service communication.
 - Use modern TLS protocols (1.2+) and strong cipher suites; disable weak protocols and ciphers.
@@ -1164,9 +1242,10 @@ Preserve every field from the batch results exactly as written.]
 - Normalize headers, encoding, and path parsing to avoid HTTP request smuggling and desync issues.
 - Use a single source of truth for security headers and TLS policy, applied as close to the client as practical, and verify end-to-end behavior.
 
----
+***
 
 ## References
+[ref: #misconfiguration-references]
 
 - OWASP API Security Top 10 2023 — **API8:2023 Security Misconfiguration**: https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/
 - OWASP Secure Headers Project: https://owasp.org/www-project-secure-headers/
@@ -1181,11 +1260,12 @@ Preserve every field from the batch results exactly as written.]
 - [CWE-388: Error Handling](https://cwe.mitre.org/data/definitions/388.html)
 - [CWE-444: Inconsistent Interpretation of HTTP Requests ('HTTP Request/Response Smuggling')](https://cwe.mitre.org/data/definitions/444.html)
 - [CWE-942: Permissive Cross-domain Policy with Untrusted Domains](https://cwe.mitre.org/data/definitions/942.html)
-- [CWE-1117: Improper Use of Uninitialized Container](https://cwe.mitre.org/data/definitions/1117.html)
+- [CWE-250: Execution with Unnecessary Privileges](https://cwe.mitre.org/data/definitions/250.html)
 
----
+***
 
 ## Important Reminders
+[ref: #misconfiguration-important-reminders]
 
 - Read `{{ REPORTS_ROOT }}/01_architecture.md` and pass its content to all subagents as context.
 - Phase 2 must run AFTER Phase 1 completes — it depends on the recon output.

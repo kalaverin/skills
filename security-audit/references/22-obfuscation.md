@@ -1,3 +1,68 @@
+---
+subject: "Obfuscated-code detection reference for SAST subagents; three-phase detection prompt, obfuscation IS/IS-NOT definition with risk-reduction patterns, vulnerable/secure examples per technique, seven-row taxonomy incl. packing/virtualization, per-technique heuristics incl. entropy checks, execution with zero-candidate early-exit gate, `API8:2023`/`API10:2023` mapping, CWE list incl. `CWE-912`, operational reminders, references incl. `T1027`."
+index:
+  - anchor: obfuscation-detection
+    what: "Focused obfuscated-code detection role using the three-phase subagent approach — recon for obfuscated construction sites across seven techniques, batched verify separating malicious concealment from legitimate protection, merge — gated on the architecture report."
+    problem: "Codebase may conceal attacker payloads behind deliberate unreadability rather than accidental flaws, and unstructured hunting conflates minified bundles with hostile concealment while burying reviewers in unverified candidates; detection orchestration, payload sweep, candidate flood, coverage goal, methodical triage, hidden intent, opaque logic."
+    use_when: "Obfuscation scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual obfuscation knowledge is needed, not execution."
+    expected: "Confirmed malicious-obfuscation findings consolidated into one module report with legitimate protection filtered out."
+  - anchor: obfuscation-what-is
+    what: "Obfuscation definition — deliberate transformation that preserves functionality while defeating human and static analysis — with IS list (encoding/concatenation tricks, control-flow flattening, opaque predicates, string decryption loops, encrypted payloads, identifier mangling with dynamic access), IS-NOT list (minification with preserved names, auditable compiled artifacts, commercial license protectors, non-sensitive base64, hashes and signatures), and three risk-reduction patterns incl. documented obfuscators with source maps, KMS-backed decryption, build-time string encryption with audit trail."
+    problem: "Reviewer cannot tell whether unreadable construct counts as hostile concealment without crisp scope boundaries, so performance minification gets flagged while XOR-decoded commands hiding behind mangled identifiers slip past triage; definition scope, boundary rules, inclusion criteria, exclusion list, classification accuracy, intent framing, false-flag risk, legitimate-versus-hostile test."
+    use_when: "Deciding whether observed construct belongs to the concealment risk class; testing IS criteria against code behavior; confirming whether flagged pattern matches documented legitimate mechanisms."
+    avoid_when: "Plain code-injection sinks are the question — route to `05-rce.md`; dependency-tree version and CVE risk belongs to `23-dependencies.md`; deliberate implant-intent judgment beyond concealment belongs to `21-backdoors.md`; plain exposed secrets without encoding belong to `15-hardcodedsecrets.md`."
+    expected: "Suspicious constructs classified against IS/IS-NOT boundaries with explicit purpose reasoning; legitimate protection mechanisms dismissed with documented rationale."
+  - anchor: obfuscation-vulnerable-vs-secure-examples
+    what: "Six vulnerable/secure code pairs — base64/hex concatenation reassembling URLs versus explicit config endpoints, dispatcher-driven state machines versus named control flow, always-true opaque conditions versus meaningful environment checks, XOR loops feeding `eval` versus allowlisted command dispatch, hardcoded-key AES blobs versus signed artifact fetching, mangled identifiers with dynamic `getattr` versus explicit API calls — across JavaScript and Python."
+    problem: "Concealment looks different per technique, and generic suspicion rules miss whether split encoded fragments, flattened dispatchers, decoded blobs, or mangled dynamic access actually decide malicious purpose; technique recipes, hardened idioms, precise detection, pattern matching, stack quirks, payload signals, verdict support, exploit shape."
+    use_when: "Verify batch subagent needs `[TECH-STACK EXAMPLES]` selection; target project uses one of the covered languages; contrasting observed construct against known-good counterpart."
+    avoid_when: "Conceptual IS/IS-NOT boundaries are the question — see the definition card; category catalog needed — see the taxonomy card; plain injection-sink semantics belong to `05-rce.md`."
+    expected: "Each suspicious site matched against its vulnerable pattern and secure counterpart; matching idioms cited in batch findings."
+  - anchor: obfuscation-taxonomy
+    what: "Seven-row technique table — base64/hex concatenation, control-flow flattening, opaque predicates, string decryption loops, encrypted payloads, identifier mangling, packing/virtualization — each with description and typical signals incl. `atob` fragment joins, `while(true)` switch dispatchers, entropy checks, `_0x1a2b` names, UPX/Themida markers, `WebAssembly.instantiate`."
+    problem: "Recon output and findings need consistent technique labels, yet improvised naming fragments reports and leaves packing or virtualization channels without any bucket; category canon, labeling scheme, signal index, classification vocabulary, report consistency, bucket coverage, naming discipline."
+    use_when: "Assigning canonical labels to recon sites or batch findings; checking which signals typify each concealment class; scoping recon search lists across all seven rows."
+    avoid_when: "Per-technique hunt procedure is the need — see the heuristics card; conceptual scope boundaries belong to the definition card."
+    expected: "Every site and finding carries one canonical row label; no concealment class left unnamed."
+  - anchor: obfuscation-detection-heuristics
+    what: "Per-technique hunt checklist: base64/hex alphabet regexes on joined literals, flattened `while(true)`/`switch(state)` dispatcher checks incl. ConfuserEx/Skidfuscator/Zelix patterns, constant-expression evaluation for always-true guards, byte-array transformation loops with Shannon entropy above 4.5 bits/char, high-entropy literals with hardcoded crypto keys, mangled-name concentration plus dynamic evaluation, packer signatures incl. UPX headers, entry-point anomalies, `.wasm` and install-hook payload reconstruction."
+    problem: "Verifier knows concealment techniques yet lacks concrete per-technique tells, so subtle signals like entropy spikes, trivial arithmetic conditions, single-letter identifiers, or install-time payload assembly go unchecked during review; hunting rigor, signal checklist, review depth, per-class scrutiny, evidence pointers, inspection steps, overlooked markers, false-negative exposure."
+    use_when: "Recon or verify subagent needs actionable search guidance for one technique; inspecting binaries for packer markers, section entropy, or decompilation failures; deciding which artifacts to check for decoding loops or mangled access."
+    avoid_when: "Technique catalog without procedure is the need — see the taxonomy card; pure implant-intent judgment belongs to `21-backdoors.md`; dependency-tree CVE risk belongs to `23-dependencies.md`."
+    expected: "Every technique checked with its concrete tells; each signal class inspected before verdict."
+  - anchor: obfuscation-execution
+    what: "Three-phase execution: recon discovering obfuscated construction sites across seven techniques incl. `.wasm` and install hooks with zero-candidate early-exit gate writing an empty-results report, batched verify in groups of three with three-question decode-flow-legitimacy analysis and four-level classification, orchestrator merge with intermediate-file cleanup."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the obfuscation scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
+    avoid_when: "Conceptual scope boundaries are the need — see the definition card; concrete per-technique tells wanted — see the heuristics card."
+    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+  - anchor: obfuscation-owasp-mapping
+    what: "Two-row OWASP root-cause mapping: `API8:2023` Security Misconfiguration for obfuscation hiding backdoors, unauthorized endpoints, and insecure build-pipeline practices; `API10:2023` Unsafe Consumption of APIs for obfuscated payloads concealing third-party abuse, C2 callbacks, and data exfiltration."
+    problem: "Findings must carry root-cause risk labels, yet reviewers guess between misconfiguration and unsafe-consumption framings or skip mapping entirely, weakening report credibility; taxonomy tagging, risk attribution, mapping choice, report compliance, framing consistency, required field, dual applicability."
+    use_when: "Filling the `OWASP API 2023 root-cause risk` field on batch findings; deciding whether one or both risks apply to confirmed concealment."
+    avoid_when: "CWE identifier selection is the need — see the CWE card; broad misconfiguration hardening without concealment context belongs to `20-misconfiguration.md`; third-party trust analysis belongs to `19-unsafeapiconsumption.md`."
+    expected: "Each finding cites `API8:2023`, `API10:2023`, or both with one-line justification."
+  - anchor: obfuscation-cwe-references
+    what: "CWE identifier list for concealment findings: `CWE-912` Hidden Functionality as parent weakness where obfuscation hides malicious behavior, `CWE-94` Code Injection, `CWE-78` OS Command Injection, `CWE-506` Embedded Malicious Code, `CWE-507` Trojan Horse, `CWE-116` Improper Encoding or Escaping of Output."
+    problem: "Findings require precise weakness identifiers, and vague or missing mappings strip reports of remediation routing and trend tracking across scans; weakness taxonomy, mapping precision, report metadata, identifier canon, trend analysis, citation discipline, scan comparability."
+    use_when: "Selecting the most specific CWE for each batch finding; confirming `CWE-912` as default parent when no narrower entry fits."
+    avoid_when: "OWASP risk framing is the need — see the mapping card; external attack-technique context wanted — see the references card."
+    expected: "Every finding maps to the narrowest applicable CWE with `CWE-912` parentage noted."
+  - anchor: obfuscation-important-reminders
+    what: "Closing operational reminders: signal-not-vulnerability restraint, decode-over-guess preference, build-time versus hand-rolled distinction, source-map checks before flagging minified bundles, Shannon entropy combined with sensitive sinks, decompiler-output review with failure notes, read-only subagent discipline, original-snippet and decoded-content evidence preservation."
+    problem: "Modules close with inconsistent final guidance, letting premature malicious verdicts, executed payloads, or unpreserved evidence slip into reports and incident response; closing rules, quality floor, final reminders, uniform endings, wrap discipline, audit closure, judgment restraint."
+    use_when: "Finalizing the module report; checking verdict confidence, decoding duties, and evidence handling before closing the scan."
+    avoid_when: "Earlier phases are still open — finish those first; injection, implant, dependency, or secret routing belongs to `05-rce.md`, `21-backdoors.md`, `23-dependencies.md`, or `15-hardcodedsecrets.md` cards."
+    expected: "Reports close with uniform final rules applied, evidence preserved, and no concealed code executed."
+  - anchor: obfuscation-references
+    what: "External link list: MITRE ATT&CK `T1027` obfuscated files or information, Red Canary threat-detection report, VMRay malware obfuscation techniques, Unit 42 `.NET` encryption/virtualization research, Akamai JavaScript obfuscation analysis, Obfuscator-LLVM control-flow flattening and opaque predicates, K7 Labs ConfuserEx/KoiVM virtualization research."
+    problem: "Reports need authoritative follow-up sources beyond distilled file content when attack-technique detail, packer-internals narratives, or canonical citation is required; further reading, external canon, deep dives, primary material, cited works, technique case studies, reference integrity."
+    use_when: "Primary sources or extended material is needed; findings require links to ATT&CK techniques, packer research, or documented obfuscation analyses."
+    avoid_when: "Recipe or orchestration needs route elsewhere — this list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+---
+
 # Obfuscated Code Detection
 
 [ref: #obfuscation-detection]
@@ -6,21 +71,8 @@ You are performing a focused security assessment to find **obfuscated code** tha
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
-## Table of contents
-
-- [What is obfuscated code](#what-is-obfuscated-code)
-- [Vulnerable vs. Secure Examples](#vulnerable-vs-secure-examples)
-- [Obfuscation Taxonomy](#obfuscation-taxonomy)
-- [Detection heuristics per technique](#detection-heuristics-per-technique)
-- [Execution](#execution)
-- [OWASP API Security Top 10 2023 mapping](#owasp-api-security-top-10-2023-mapping)
-- [CWE references](#cwe-references)
-- [Important Reminders](#important-reminders)
-- [References](#references)
-
----
-
 ## What is obfuscated code
+[ref: #obfuscation-what-is]
 
 Obfuscation is the deliberate transformation of code to make it harder for humans and static analyzers to understand, while preserving functionality. In a security audit, obfuscation matters when it is used to hide malicious intent — such as concealing C2 addresses, shell commands, credential theft, or unauthorized dynamic execution.
 
@@ -66,9 +118,10 @@ secret = kms.decrypt(ciphertext=encrypted_blob)["Plaintext"]
 - Decryption keys are tied to the build signature, not attacker-controlled.
 - The technique is documented and reviewed.
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #obfuscation-vulnerable-vs-secure-examples]
 
 ### Base64 / hex concatenation
 
@@ -161,9 +214,10 @@ import subprocess
 subprocess.run(["id"], capture_output=True)
 ```
 
----
+***
 
 ## Obfuscation Taxonomy
+[ref: #obfuscation-taxonomy]
 
 | Technique | Description | Typical signals |
 | --- | --- | --- |
@@ -175,9 +229,10 @@ subprocess.run(["id"], capture_output=True)
 | **Identifier mangling** | Renaming variables and functions to meaningless or random strings, often combined with dynamic access. | Names like `_0x1a2b`, `a`, `b`, `c`; heavy use of `eval`, `getattr`, `window[name]`, `call_user_func` with mangled names. |
 | **Packing / virtualization** | Wrapping executable code in a custom interpreter or packer (e.g., UPX, Themida, KoiVM, ConfuserEx). | Unusual entry points, embedded interpreters, high entropy sections, inability to decompile cleanly. |
 
----
+***
 
 ## Detection heuristics per technique
+[ref: #obfuscation-detection-heuristics]
 
 ### Base64 / hex concatenation
 
@@ -215,9 +270,18 @@ subprocess.run(["id"], capture_output=True)
 - Combine mangling signals with dynamic evaluation: `eval`, `new Function`, `getattr`, `call_user_func`.
 - Review whether mangled code performs network, filesystem, or process operations.
 
----
+### Packing / virtualization
+
+- Identify packer signatures and tool markers: UPX headers and section names, Themida/VMProtect mutation patterns, KoiVM/ConfuserEx virtualization in .NET.
+- Check section entropy and entry-point anomalies: high-entropy sections, an entry point in an unexpected section, a decompiler producing garbage or failing entirely.
+- Treat inability to decompile cleanly as a signal, not a verdict — escalate to `NEEDS MANUAL REVIEW`.
+- For JavaScript, flag `WebAssembly.instantiate` calls or embedded `*.wasm` payloads whose module is not produced by the documented build.
+- For npm artifacts, check install hooks (`preinstall`/`install`/`postinstall`) that fetch or reconstruct payloads at install time.
+
+***
 
 ## Execution
+[ref: #obfuscation-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -253,6 +317,11 @@ Launch a subagent with the following instructions:
 > 6. **Identifier mangling + dynamic access**:
 >    - Random hex identifiers, single-letter names, `eval`/`getattr`/`call_user_func` with constructed names.
 >
+> 7. **Packing / virtualization**:
+>    - Packer signatures and tool markers (UPX, Themida, VMProtect, KoiVM, ConfuserEx), high-entropy sections, unusual entry points.
+>    - `WebAssembly.instantiate` calls or embedded `*.wasm` payloads not produced by the documented build.
+>    - Install hooks that fetch or reconstruct payloads at install time.
+>
 > **What to skip**:
 > - Standard minified frontend bundles with source maps.
 > - Documented commercial obfuscators used for license protection.
@@ -271,7 +340,7 @@ Launch a subagent with the following instructions:
 > ### 1. [Descriptive name]
 > - **File**: `path/to/file.ext` (lines X-Y)
 > - **Function / endpoint**: [name]
-> - **Technique**: [base64 concat / flattening / opaque predicate / decryption loop / encrypted payload / mangling]
+> - **Technique**: [base64 concat / flattening / opaque predicate / decryption loop / encrypted payload / mangling / packing / virtualization]
 > - **Obfuscation signal**: [the pattern found]
 > - **Code snippet**:
 >   ```
@@ -284,12 +353,15 @@ Launch a subagent with the following instructions:
 
 ### After Phase 1: Check for Candidates Before Proceeding
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/22_recon.md`. If the recon found **zero obfuscated sites** (the summary reports "Found 0" or the "Obfuscated Construction Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/22_obfuscation.md` and stop:
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/22_recon.md`. If the recon found **zero obfuscated sites** (the summary reports "Found 0" or the "Obfuscated Construction Sites" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/22_obfuscation.md`, **delete** `{{ REPORTS_ROOT }}/22_recon.md`, and stop:
 
 ```markdown
-# Obfuscated Code Analysis Results
+# Obfuscated Code Analysis Results: [Project Name]
 
-No obfuscated code found.
+## Executive Summary
+- Candidates analyzed: 0
+- Scope reviewed: [encoded strings, control-flow structures, embedded payloads, packed modules, and build/install hooks reviewed]
+- No obfuscation candidates were found: no malicious-obfuscation indicators identified in the reviewed scope.
 ```
 
 Only proceed to Phase 2 if Phase 1 found at least one obfuscated site.
@@ -412,18 +484,20 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 
 5. After writing `{{ REPORTS_ROOT }}/22_obfuscation.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/22_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #obfuscation-owasp-mapping]
 
 | OWASP Risk | Why Obfuscation Matters |
 |---|---|
 | **API8:2023 Security Misconfiguration** | Obfuscated code can hide backdoors, unauthorized endpoints, and insecure build-pipeline practices. |
 | **API10:2023 Unsafe Consumption of APIs** | Obfuscated payloads may conceal abuse of third-party APIs, C2 callbacks, or data exfiltration. |
 
----
+***
 
 ## CWE references
+[ref: #obfuscation-cwe-references]
 
 - CWE-912: Hidden Functionality
 - CWE-94: Improper Control of Generation of Code ('Code Injection')
@@ -434,9 +508,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 
 CWE-912 is the parent weakness for findings where obfuscation hides malicious behavior.
 
----
+***
 
 ## Important Reminders
+[ref: #obfuscation-important-reminders]
 
 - **Obfuscation alone is not a vulnerability.** Always trace the obfuscated content to an execution sink or network destination before classifying it as malicious.
 - Prefer **deobfuscation** over guessing. If the key/algorithm is recoverable, decode the string or payload and inspect it.
@@ -447,9 +522,10 @@ CWE-912 is the parent weakness for findings where obfuscation hides malicious be
 - Subagents are read-only: they must not modify project source code, commit changes, or run potentially malicious code.
 - Preserve the original obfuscated snippet and the decoded content (if any) as evidence.
 
----
+***
 
 ## References
+[ref: #obfuscation-references]
 
 - MITRE ATT&CK T1027 — Obfuscated Files or Information
 - Red Canary Threat Detection Report: Obfuscated Files or Information

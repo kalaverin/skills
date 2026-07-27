@@ -1,3 +1,68 @@
+---
+subject: "Supply-chain dependency security detection reference for SAST subagents; three-phase detection prompt, supply-chain definition with scope boundaries plus prevention patterns incl. OIDC trusted publishing, six-category attack taxonomy, per-category vulnerable/secure examples, per-category heuristics incl. Shai-Hulud signals, execution with early-exit gate, `API8:2023`/`API10:2023` mapping, CWE list, operational reminders, references incl. CISA/SLSA/Sigstore."
+index:
+  - anchor: dependencies-detection
+    what: "Focused supply-chain dependency detection role using the three-phase subagent approach — recon for risky dependency indicators across six categories, batched verify separating real threats from acceptable posture, merge — gated on the architecture report."
+    problem: "Project may pull hostile or vulnerable third-party packages rather than trustworthy components, and unstructured hunting conflates outdated-but-safe packages with malicious ones while burying reviewers in unverified candidates; detection orchestration, dependency sweep, trust judgment, candidate flood, coverage goal, methodical triage, hostile provenance."
+    use_when: "Dependency scan selected by the screener; `{{ REPORTS_ROOT }}/01_architecture.md` exists; full three-phase detection must run."
+    avoid_when: "Architecture report missing — run analysis first; only conceptual supply-chain knowledge is needed, not execution."
+    expected: "Confirmed dependency-threat findings consolidated into one module report with acceptable posture filtered out."
+  - anchor: dependencies-what-is
+    what: "Supply-chain risk definition — attackers abusing package trust through malicious publishes, takeovers, known vulnerabilities, or registry confusion — with in-scope list (typosquatting, dependency confusion, known CVEs, abandoned packages, suspicious maintainer changes, compromised registry packages), out-of-scope list (license conflicts, outdated non-vulnerable packages, merely large dependencies, internal vendored code), and four prevention patterns incl. cryptographic lockfiles, private registry scoping, SCA/SBOM in CI, OIDC trusted publishing with provenance-is-not-innocence caveat."
+    problem: "Reviewer cannot tell whether suspicious package counts as supply-chain risk without crisp trust boundaries, so merely outdated packages get flagged while typo-squatted installs resolving to public registries slip past triage; definition scope, boundary rules, inclusion criteria, exclusion list, classification accuracy, trust framing, false-flag risk, hostile-versus-hygiene test."
+    use_when: "Deciding whether observed package belongs to the supply-chain risk class; testing scope criteria against manifests and registry configuration; confirming whether flagged pattern matches documented prevention mechanisms."
+    avoid_when: "Implant-intent judgment inside dependency code belongs to `21-backdoors.md`; consumption-time third-party trust belongs to `19-unsafeapiconsumption.md`; leaked registry tokens belong to `15-hardcodedsecrets.md`; general config hardening belongs to `20-misconfiguration.md`."
+    expected: "Packages classified against scope boundaries with explicit trust reasoning; prevented postures dismissed with documented rationale."
+  - anchor: dependencies-attack-taxonomy
+    what: "Six-row category table — typosquatting, dependency confusion, known CVEs, abandoned packages, suspicious maintainer changes, compromised registry packages — each with mechanism and typical signals incl. edit-distance names, inflated versions, obfuscated `postinstall` scripts, MFA downgrades, stolen-credential publishes."
+    problem: "Recon output and findings need consistent category labels, yet improvised naming fragments reports and leaves registry-compromise channels without any bucket; category canon, labeling scheme, signal index, classification vocabulary, report consistency, bucket coverage, naming discipline."
+    use_when: "Assigning canonical labels to recon indicators or batch findings; checking which signals typify each attack class; scoping recon search lists across all six rows."
+    avoid_when: "Per-category hunt procedure is the need — see the heuristics card; conceptual scope boundaries belong to the definition card."
+    expected: "Every indicator and finding carries one canonical row label; no attack class left unnamed."
+  - anchor: dependencies-vulnerable-vs-secure-examples
+    what: "Six vulnerable/secure pairs — typo-squatted `lodahs` alongside `lodash` versus verified names only, internal scope falling back to public npm versus every scope pinned private, Log4Shell `log4j-core:2.14.1` versus patched `2.17.1`, abandoned `left-pad` versus maintained alternative, `99.99.99` burst from unknown maintainer versus signed semver releases, obfuscated `postinstall` payload versus script-free reproducible build."
+    problem: "Supply-chain attacks look different per category, and generic suspicion rules miss whether near-name packages, scope fallback, stale releases, or install-time payloads actually decide hostile provenance; category recipes, hardened idioms, precise detection, pattern matching, manifest quirks, payload signals, verdict support, attack shape."
+    use_when: "Verify batch subagent needs `[TECH-STACK EXAMPLES]` selection; target project uses one of the covered ecosystems; contrasting observed package against known-good counterpart."
+    avoid_when: "Conceptual scope boundaries are the question — see the definition card; category catalog needed — see the taxonomy card; implant-intent analysis of package payloads belongs to `21-backdoors.md`."
+    expected: "Each suspicious package matched against its vulnerable pattern and secure counterpart; matching idioms cited in batch findings."
+  - anchor: dependencies-detection-heuristics
+    what: "Per-category hunt checklist: edit-distance and homoglyph name checks, internal-name registry-resolution review across `.npmrc`/`.yarnrc`/`pip.conf`/`NuGet.config`, SCA runs over manifests with NVD/OSV/GitHub Advisories cross-reference and in-context exploitability, registry metadata on release age and maintainer activity, maintainer-diff and signing-key comparison, install-script inspection with package-versus-source diffing, worm-propagation and token-harvesting signals incl. Shai-Hulud self-replication, provenance treated as origin evidence only."
+    problem: "Verifier knows attack categories yet lacks concrete per-category tells, so subtle signals like name edit distance, scope fallback, version bursts, or install-hook network calls go unchecked during review; hunting rigor, signal checklist, review depth, per-class scrutiny, evidence pointers, inspection steps, overlooked markers, false-negative exposure."
+    use_when: "Recon or verify subagent needs actionable search guidance for one attack class; inspecting manifests, lockfiles, registry configs, or install hooks; deciding which metadata to pull for maintainer, release-age, or provenance checks."
+    avoid_when: "Category catalog without procedure is the need — see the taxonomy card; pure implant-intent judgment belongs to `21-backdoors.md`; hardcoded secret extraction belongs to `15-hardcodedsecrets.md`."
+    expected: "Every category checked with its concrete tells; each signal class inspected before verdict."
+  - anchor: dependencies-execution
+    what: "Three-phase execution: recon discovering dependency risk indicators across manifests, registry configuration, typosquat and confusion candidates, CVEs, abandonment, maintainer changes, and compromised-package signals with zero-indicator early-exit gate writing an empty-results report, batched verify in groups of three with per-category questions and four-level classification, orchestrator merge with intermediate-file cleanup."
+    problem: "Detection work without orchestration duplicates effort, loses batch boundaries, skips early exits, and merges verdicts inconsistently across recon and verify artifacts; execution model, phase overview, subagent orchestration, batch discipline, context passing, workflow entry, staging, dispatch plan, consolidation, handoff clarity."
+    use_when: "Starting the dependency scan execution; dispatching recon, verify batches, or merge; reviewing any phase output or the early-exit decision."
+    avoid_when: "Scope-boundary concepts are the need — see the definition card; concrete per-category tells wanted — see the heuristics card."
+    expected: "All phases run with shared architecture context into one consolidated report; intermediates deleted."
+  - anchor: dependencies-owasp-mapping
+    what: "Two-row OWASP root-cause mapping: `API8:2023` Security Misconfiguration for vulnerable, abandoned, or untrusted dependencies as configuration failure; `API10:2023` Unsafe Consumption of APIs for malicious or compromised dependencies abusing third-party APIs, exfiltrating data, or executing arbitrary code."
+    problem: "Findings must carry root-cause risk labels, yet reviewers guess between misconfiguration and unsafe-consumption framings or skip mapping entirely, weakening report credibility; taxonomy tagging, risk attribution, mapping choice, report compliance, framing consistency, required field, dual applicability."
+    use_when: "Filling the `OWASP API 2023 root-cause risk` field on batch findings; deciding whether one or both risks apply to confirmed dependency threats."
+    avoid_when: "CWE identifier selection is the need — see the CWE card; broad misconfiguration hardening without dependency context belongs to `20-misconfiguration.md`; consumption-time third-party trust analysis belongs to `19-unsafeapiconsumption.md`."
+    expected: "Each finding cites `API8:2023`, `API10:2023`, or both with one-line justification."
+  - anchor: dependencies-cwe-references
+    what: "CWE identifier list for dependency findings: `CWE-1104` Use of Unmaintained Third-Party Components and `CWE-1035` Using Components with Known Vulnerabilities as parent weaknesses for most scan output, `CWE-506` Embedded Malicious Code, `CWE-912` Hidden Functionality, `CWE-1357` Vulnerable and Outdated Components, `CWE-1395` Software and Data Integrity Failures."
+    problem: "Findings require precise weakness identifiers, and vague or missing mappings strip reports of remediation routing and trend tracking across scans; weakness taxonomy, mapping precision, report metadata, identifier canon, trend analysis, citation discipline, scan comparability."
+    use_when: "Selecting the most specific CWE for each batch finding; confirming `CWE-1104`/`CWE-1035` parentage when no narrower entry fits."
+    avoid_when: "OWASP risk framing is the need — see the mapping card; external attack-technique context wanted — see the references card."
+    expected: "Every finding maps to the narrowest applicable CWE with parentage noted."
+  - anchor: dependencies-important-reminders
+    what: "Closing operational reminders: dependency confusion as registry misconfiguration fixable by scoping not code patching, CVE exploitability-in-context priority, edit-distance over visual inspection, install/lifecycle script scrutiny, package-versus-source comparison, credential rotation after compromise, SBOM as incident-response inventory, read-only subagent discipline."
+    problem: "Modules close with inconsistent final guidance, letting unexploitable-CVE noise, unrotated credentials, or missing inventory slip into reports and incident response; closing rules, quality floor, final reminders, uniform endings, wrap discipline, audit closure, judgment restraint."
+    use_when: "Finalizing the module report; checking verdict confidence, credential hygiene, and inventory obligations before closing the scan."
+    avoid_when: "Earlier phases are still open — finish those first; implant, obfuscation, config, or secret routing belongs to `21-backdoors.md`, `22-obfuscation.md`, `20-misconfiguration.md`, or `15-hardcodedsecrets.md` cards."
+    expected: "Reports close with uniform final rules applied, credentials rotated where needed, and read-only discipline kept."
+  - anchor: dependencies-references
+    what: "External link list: OWASP `API8:2023` and `API10:2023` pages, `CWE-1104`/`CWE-1035`/`CWE-1395`, Microsoft Threat Intelligence dependency-confusion and typosquatting research, Checkmarx supply-chain mechanics, OSV.dev and NVD databases, CISA Shai-Hulud npm-ecosystem alert, SLSA framework, Sigstore signing, npm OIDC trusted publishing."
+    problem: "Reports need authoritative follow-up sources beyond distilled file content when incident narratives, registry-compromise detail, or canonical citation is required; further reading, external canon, deep dives, primary material, cited works, incident case studies, reference integrity."
+    use_when: "Primary sources or extended material is needed; findings require links to advisories, CWE entries, or documented supply-chain incidents."
+    avoid_when: "Recipe or orchestration needs route elsewhere — this list is follow-up reading, not procedure."
+    expected: "Reader reaches canonical external material for any topic this file condenses."
+---
+
 # Supply Chain / Dependency Security Detection
 
 [ref: #dependencies-detection]
@@ -6,21 +71,8 @@ You are performing a focused security assessment to find **supply-chain risks in
 
 **Prerequisites**: `{{ REPORTS_ROOT }}/01_architecture.md` must exist. Run the analysis skill first if it doesn't.
 
-## Table of contents
-
-- [What is supply chain / dependency risk](#what-is-supply-chain--dependency-risk)
-- [Dependency Attack Taxonomy](#dependency-attack-taxonomy)
-- [Vulnerable vs. Secure Examples](#vulnerable-vs-secure-examples)
-- [Detection heuristics per category](#detection-heuristics-per-category)
-- [Execution](#execution)
-- [OWASP API Security Top 10 2023 mapping](#owasp-api-security-top-10-2023-mapping)
-- [CWE references](#cwe-references)
-- [Important Reminders](#important-reminders)
-- [References](#references)
-
----
-
 ## What is supply chain / dependency risk
+[ref: #dependencies-what-is]
 
 Modern applications depend on hundreds or thousands of third-party packages. Attackers abuse this trust by publishing malicious packages, taking over legitimate ones, exploiting known vulnerabilities, or tricking package managers into resolving internal names to public registries.
 
@@ -69,9 +121,15 @@ When you see these patterns, the dependency posture is likely **strong**:
 - SCA tooling blocks packages with critical CVEs or untrusted maintainers.
 - New dependencies require explicit approval.
 
----
+**4. Trusted publishing and provenance verification**
+- CI publishes via OIDC trusted publishing (e.g., GitHub Actions to npm) using short-lived tokens instead of long-lived registry tokens — npm classic tokens were revoked 2025-11.
+- Releases carry Sigstore/SLSA provenance attestations verified during review (`npm audit signatures`, `cosign verify`, registry UI).
+- Caveat: provenance attests the build origin, not intent — the 2026 Shai-Hulud wave shipped valid SLSA Build Level 3 attestations on malicious packages, so combine provenance with content and reputation review.
+
+***
 
 ## Dependency Attack Taxonomy
+[ref: #dependencies-attack-taxonomy]
 
 | Category | Mechanism | Typical signals |
 | --- | --- | --- |
@@ -82,9 +140,10 @@ When you see these patterns, the dependency posture is likely **strong**:
 | **Suspicious maintainer changes** | New maintainer, sudden version burst, or policy change that indicates account takeover or social engineering. | Maintainer email/domain changes; MFA disabled; new versions published in rapid succession after long silence; version has no changelog or GitHub tag. |
 | **Compromised registry packages** | Legitimate package has a malicious version published via stolen credentials or CI compromise. | New version contains obfuscated `postinstall` / `preinstall` scripts; unexpected network calls during install; version not reflected in source repository; inflated size or new native dependencies. |
 
----
+***
 
 ## Vulnerable vs. Secure Examples
+[ref: #dependencies-vulnerable-vs-secure-examples]
 
 ### Typosquatting
 
@@ -178,9 +237,10 @@ implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
 }
 ```
 
----
+***
 
 ## Detection heuristics per category
+[ref: #dependencies-detection-heuristics]
 
 ### Typosquatting
 
@@ -223,10 +283,14 @@ implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
 - Flag unexpected native extensions, new dependencies, or large size increases.
 - Check whether the package makes outbound network requests during install or runtime to unknown destinations.
 - Use registry audit logs (npm audit, PyPI transparency, etc.) to spot unauthorized publishes.
+- Watch for worm-propagation signals: a dependency suddenly publishing versions that themselves publish further versions across other maintainers' packages (self-replicating pattern — Shai-Hulud npm worm, 2025-09, CISA-alerted, 500+ packages compromised).
+- Flag token-harvesting payloads in install hooks that target npm tokens, cloud credentials, or CI secrets.
+- Treat valid Sigstore/SLSA provenance as origin evidence only, not innocence — the 2026 Shai-Hulud wave produced validly-attested SLSA Build Level 3 provenance for malicious packages.
 
----
+***
 
 ## Execution
+[ref: #dependencies-execution]
 
 This skill runs in three phases using subagents. Pass the contents of `{{ REPORTS_ROOT }}/01_architecture.md` to all subagents as context.
 
@@ -252,6 +316,7 @@ Launch a subagent with the following instructions:
 > 2. **Registry configuration**:
 >    - `.npmrc`, `.yarnrc`, `.pnpmfile.cjs`, `pip.conf`, `maven` settings, `NuGet.config`
 >    - Check whether internal scopes are locked to private registries.
+>    - Publish pipeline authentication: long-lived registry tokens in CI secrets versus OIDC trusted publishing (npm classic tokens revoked 2025-11).
 >
 > 3. **Typosquatting candidates**:
 >    - Direct dependency names that are close edits to popular packages.
@@ -308,12 +373,15 @@ Launch a subagent with the following instructions:
 
 ### After Phase 1: Check for Candidates Before Proceeding
 
-After Phase 1 completes, read `{{ REPORTS_ROOT }}/23_recon.md`. If the recon found **zero risk indicators** (the summary reports "Found 0" or the "Risk Indicators" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/23_dependencies.md` and stop:
+After Phase 1 completes, read `{{ REPORTS_ROOT }}/23_recon.md`. If the recon found **zero risk indicators** (the summary reports "Found 0" or the "Risk Indicators" section is empty or absent), **skip Phase 2 and Phase 3 entirely**. Instead, write the following content to `{{ REPORTS_ROOT }}/23_dependencies.md`, **delete** `{{ REPORTS_ROOT }}/23_recon.md`, and stop:
 
 ```markdown
-# Supply Chain / Dependency Analysis Results
+# Supply Chain / Dependency Analysis Results: [Project Name]
 
-No dependency supply-chain risks found.
+## Executive Summary
+- Candidates analyzed: 0
+- Scope reviewed: [dependency manifests, registry configurations, publish pipelines, and maintainer metadata reviewed]
+- No dependency risk candidates were found: no typosquatting, dependency-confusion, known-CVE, abandonment, maintainer-takeover, or compromised-package indicators identified in the reviewed scope.
 ```
 
 Only proceed to Phase 2 if Phase 1 found at least one risk indicator.
@@ -351,6 +419,7 @@ Give each batch subagent the following instructions:
 > 4. **Abandoned package**: How old is the last release? How many active maintainers remain? Is there a security policy or replacement?
 > 5. **Suspicious maintainer change**: Did the maintainer list or email change? Is there a corresponding source-repo tag/changelog? Is the version signed?
 > 6. **Compromised package**: Does the package contain install-time scripts that contact the network or execute dynamic code? Does the package content match the source repository?
+> 7. **Publish pipeline**: Do new versions come from a trusted-publishing OIDC workflow with provenance, or from long-lived tokens? Does the package's provenance match its source repository state (and is provenance treated as origin evidence, not innocence)?
 >
 > **Vulnerable vs. secure examples for this project's tech stack**:
 >
@@ -432,18 +501,20 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 
 5. After writing `{{ REPORTS_ROOT }}/23_dependencies.md`, **delete all intermediate batch files** (`{{ REPORTS_ROOT }}/23_batch_*.md`).
 
----
+***
 
 ## OWASP API Security Top 10 2023 mapping
+[ref: #dependencies-owasp-mapping]
 
 | OWASP Risk | Why Dependency Security Matters |
 |---|---|
 | **API8:2023 Security Misconfiguration** | Using vulnerable, abandoned, or untrusted dependencies is a configuration/hardening failure. |
 | **API10:2023 Unsafe Consumption of APIs** | Malicious or compromised dependencies can abuse third-party APIs, exfiltrate data, or execute arbitrary code. |
 
----
+***
 
 ## CWE references
+[ref: #dependencies-cwe-references]
 
 - CWE-1104: Use of Unmaintained Third-Party Components
 - CWE-1035: OWASP Top Ten 2017 Category A9 — Using Components with Known Vulnerabilities
@@ -454,9 +525,10 @@ After **all** Phase 2 batch subagents complete, read every `{{ REPORTS_ROOT }}/2
 
 CWE-1104 and CWE-1035 are the parent weaknesses for most findings produced by this scan.
 
----
+***
 
 ## Important Reminders
+[ref: #dependencies-important-reminders]
 
 - **Dependency confusion is a registry misconfiguration**, not a code bug. The fix is registry scoping, not patching application logic.
 - **A CVE is only a finding if it is exploitable in context.** A vulnerability in a dev-only linter that never processes attacker input is lower priority than one in a runtime HTTP parser.
@@ -467,9 +539,10 @@ CWE-1104 and CWE-1035 are the parent weaknesses for most findings produced by th
 - **Generate and review an SBOM** for the project; it is the authoritative inventory for incident response.
 - Subagents are read-only: they must not modify project source code, commit changes, or run destructive commands against registries.
 
----
+***
 
 ## References
+[ref: #dependencies-references]
 
 - OWASP API Security Top 10 2023 — API8:2023 Security Misconfiguration
 - OWASP API Security Top 10 2023 — API10:2023 Unsafe Consumption of APIs
@@ -482,3 +555,7 @@ CWE-1104 and CWE-1035 are the parent weaknesses for most findings produced by th
 - SLSA: Dependency Confusion and Typosquatting
 - OSV.dev Open Source Vulnerabilities
 - NVD National Vulnerability Database
+- CISA Alert — Widespread Supply Chain Compromise Impacting npm Ecosystem (Shai-Hulud, 2025-09-23): https://www.cisa.gov/news-events/alerts/2025/09/23/widespread-supply-chain-compromise-impacting-npm-ecosystem
+- SLSA — Supply-chain Levels for Software Artifacts: https://slsa.dev/
+- Sigstore — software signing and transparency: https://www.sigstore.dev/
+- npm Trusted Publishing (OIDC): https://docs.npmjs.com/trusted-publishers
