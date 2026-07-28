@@ -104,7 +104,7 @@ Before writing, verify: every inventoried public surface has an item or a docume
 
 ## Output — Content of `plans/{{ENTITY_NAME}}/tests/coverage`
 
-Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full overwrite if present) per `serena-protocol`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`) plus the mandatory tag `scope` set to the exact string `Full project coverage plan (not diff-based)`, then verify and persist per `[ref: #serena-memory-mutation]`. The content MUST follow this structure:
+Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full overwrite if present) per `serena-protocol`: the tracked-document header per `frontmatter-protocol` `[ref: #tracking-fields]` plus the mandatory tag `scope` set to the exact string `Full project coverage plan (not diff-based)`, then verify and persist per `[ref: #serena-memory-mutation]`. The content MUST follow this structure:
 
 ~~~markdown
 # TEST COVERAGE PLAN — <REPO_NAME> ({{ENTITY_NAME}})

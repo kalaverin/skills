@@ -33,30 +33,10 @@ Frontmatter reading uses the canonical extraction primitives of `frontmatter-pro
 ## 2. Session initialization
 [ref: #sa-session-init]
 
-1. **Capture the audit timestamp** — `AUDIT_DATETIME_UTC` (UTC ISO 8601, e.g. `2026-07-05T03:20:41Z`) and `AUDIT_DIR_SUFFIX` (compact label, e.g. `sast_2026_0705_0320`). Also capture the target's git identity (`GIT_BRANCH`, `GIT_COMMIT` short hash, `GIT_COMMITTED_AT` UTC ISO 8601) from the audited repository — every artifact header needs it.
+1. **Capture the audit timestamp** — `AUDIT_DATETIME_UTC` (UTC ISO 8601, e.g. `2026-07-05T03:20:41Z`) and `AUDIT_DIR_SUFFIX` (compact label, e.g. `sast_2026_0705_0320`). Also capture the audited repository's git identity (`GIT_BRANCH`, `GIT_COMMIT`, `GIT_COMMITTED_AT`) with the canonical triplet of `frontmatter-protocol` `[ref: #tracking-git-commands]`, run inside the audited repository — every artifact header needs it.
 2. **Determine the audit target** — if the user names an entity, verify a card exists at `.serena/memories/repos/<entity>/overview.md`. If missing, halt and tell the user to create it via `repo-audit` first (legacy `entities/` cards: migrate per `entity-protocol` `[ref: #entity-migration-legacy]`). If no entity is named, run a project-level audit (`ENTITY_NAME=""`).
 3. **Build and create `{{ REPORTS_ROOT }}`** — `.serena/memories/audit/<ENTITY_NAME>/<AUDIT_DIR_SUFFIX>/` or `.serena/memories/audit/<AUDIT_DIR_SUFFIX>/`.
-4. **Write `{{ REPORTS_ROOT }}/manifest.md`** — every audit artifact carries the tracking header (per the frontmatter-protocol tracking extension) plus an H1:
-
-   ```yaml
-   ---
-   title: SAST Audit Manifest
-   created_at: <AUDIT_DATETIME_UTC>
-   updated_at: <AUDIT_DATETIME_UTC>
-   repo: <ENTITY_NAME or "generic">
-   branch: <GIT_BRANCH>
-   commit: <GIT_COMMIT>
-   committed_at: <GIT_COMMITTED_AT>
-   source: <project root>
-   entity: <ENTITY_NAME or "project-level">
-   reports_root: <REPORTS_ROOT path>
-   started_at: <AUDIT_DATETIME_UTC>
-   ---
-
-   # SAST Audit Manifest
-   ```
-
-   `entity`, `reports_root`, `started_at` are skill-declared extras; `repo` is the audited entity name or `generic` for a project-level audit; `branch`/`commit`/`committed_at` come from the audited repository's own git, never from the `.serena` host.
+4. **Write `{{ REPORTS_ROOT }}/manifest.md`** — it opens with the tracked-document header exactly per `frontmatter-protocol` `[ref: #tracking-fields]` (field semantics: `[ref: #tracking-field-semantics]`), bound as `title: SAST Audit Manifest`, `repo: <ENTITY_NAME>` (`generic` for a project-level audit), `source: <project root>`, and followed by the H1 `# SAST Audit Manifest`. The manifest adds skill-declared extras after the header fields: `entity: <ENTITY_NAME or "project-level">`, `reports_root: <REPORTS_ROOT path>`, `started_at: <AUDIT_DATETIME_UTC>`.
 
 5. Pass the concrete `{{ REPORTS_ROOT }}` path to every subagent prompt.
 

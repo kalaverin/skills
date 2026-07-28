@@ -69,13 +69,7 @@ collect the git tracking fields per the frontmatter-protocol tracking extension
 ```yaml
 ---
 title: <Project name> service dependencies
-created_at: YYYY-MM-DDTHH:MM:SSZ
-updated_at: YYYY-MM-DDTHH:MM:SSZ
-repo: generic
-branch: <branch>
-commit: <7-char-short-hash>
-committed_at: YYYY-MM-DDTHH:MM:SSZ
-source: .serena/memories/project/dependencies.md
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: generic, source: .serena/memories/project/dependencies.md>
 ---
 ```
 

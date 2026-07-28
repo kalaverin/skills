@@ -151,7 +151,7 @@ After the plan is written and persisted per `[ref: #serena-memory-mutation]`, de
 
 ## Output — Content of `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]`
 
-Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]` (full overwrite if present) per `serena-protocol`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`) plus the mandatory tag `scope` set to the exact string ``Diff-based coverage plan `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}` `` (placeholders substituted with the resolved values), then verify and persist per `[ref: #serena-memory-mutation]`. The content MUST follow this structure:
+Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]` (full overwrite if present) per `serena-protocol`: the tracked-document header per `frontmatter-protocol` `[ref: #tracking-fields]` plus the mandatory tag `scope` set to the exact string ``Diff-based coverage plan `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}` `` (placeholders substituted with the resolved values), then verify and persist per `[ref: #serena-memory-mutation]`. The content MUST follow this structure:
 
 ~~~markdown
 # FEATURE TEST COVERAGE PLAN — <REPO_NAME> ({{ENTITY_NAME}})

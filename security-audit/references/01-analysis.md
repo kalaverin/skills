@@ -494,13 +494,7 @@ Write the results of Phase 1 and Phase 2 to `{{ REPORTS_ROOT }}/01_architecture.
 ```markdown
 ---
 title: Architecture Analysis
-created_at: [UTC ISO 8601 timestamp]
-updated_at: [UTC ISO 8601 timestamp]
-repo: [entity name or "generic"]
-branch: [target repo branch]
-commit: [target repo short hash]
-committed_at: [target repo commit UTC ISO 8601]
-source: [project root]
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: [audited entity or "generic"], source: [project root]>
 ---
 
 # Architecture: [Project Name]

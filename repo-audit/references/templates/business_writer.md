@@ -86,13 +86,7 @@ frontmatter-protocol tracking extension (`[ref: #tracking-fields]`, `[ref: #trac
 ```yaml
 ---
 title: <Repo> business domain report
-created_at: <UTC ISO 8601>
-updated_at: <UTC ISO 8601>
-repo: <repo-name>
-branch: <branch>
-commit: <7-char-short-hash>
-committed_at: <UTC ISO 8601>
-source: <repo-path>
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: <repo-name>, source: <repo-path>>
 ---
 ```
 

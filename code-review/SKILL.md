@@ -93,21 +93,12 @@ repository. The exact representation depends on the report type.
 
 #### Machine-readable report (Serena memory)
 
-The file is a Serena memory entry and MUST begin with the standard YAML
-frontmatter, followed immediately by an H1 title. After the mandatory Serena
-fields, add the review-specific optional tags `reviewer`, `scope`, and
-`skills_used`:
+The file is a Serena memory entry and MUST begin with the tracked-document header per `frontmatter-protocol` `[ref: #tracking-fields]`, followed immediately by an H1 title. After the header fields, add the review-specific optional tags `reviewer`, `scope`, and `skills_used`:
 
 ```yaml
 ---
 title: Code Review Report
-created_at: <YYYY-MM-DDTHH:MM:SSZ>
-updated_at: <YYYY-MM-DDTHH:MM:SSZ>
-repo: generic
-branch: <current git branch>
-commit: <7-char short hash>
-committed_at: <YYYY-MM-DDTHH:MM:SSZ>
-source: <project-relative path or directory>
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: generic, source: <project-relative path or directory>>
 reviewer: Kimi + optional CodeRabbit cross-validation
 scope: <Diff-based review `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}`> OR <Full project review (not diff-based)>
 skills_used:

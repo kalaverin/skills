@@ -13,21 +13,12 @@ Target path follows `SKILL.md` Section 2.1: use the `<entity>/` sub-directory
 only when the target entity is known; otherwise write directly under
 `.serena/memories/review/`.
 
-This report is stored as a Serena memory entry and MUST begin with the Serena
-metadata frontmatter. The `reviewer` and `scope` tags are additional optional
-fields placed after the mandatory fields. The `skills_used` tag records which
-skills the agent loaded while producing the report.
+This report is stored as a Serena memory entry and MUST begin with the tracked-document header per `frontmatter-protocol` `[ref: #tracking-fields]`. The `reviewer` and `scope` tags are additional optional fields placed after the header fields. The `skills_used` tag records which skills the agent loaded while producing the report.
 
 ```markdown
 ---
 title: Code Review Report
-created_at: <YYYY-MM-DDTHH:MM:SSZ>
-updated_at: <YYYY-MM-DDTHH:MM:SSZ>
-repo: generic
-branch: <current git branch>
-commit: <7-char short hash>
-committed_at: <YYYY-MM-DDTHH:MM:SSZ>
-source: <project-relative path or directory>
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: generic, source: <project-relative path or directory>>
 reviewer: Kimi + optional CodeRabbit cross-validation
 scope: <Diff-based review `{{ CURRENT_BRANCH }}` against `{{ BASE_BRANCH }}`> OR <Full project review (not diff-based)>
 skills_used:

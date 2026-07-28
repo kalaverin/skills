@@ -127,7 +127,7 @@ The core detects scan state from filenames alone: `NN_<name>.md` present → sca
 [ref: #protocol-reminders]
 
 - Stage subagents are read-only on the project: no source, test, or configuration edits, ever.
-- Every artifact a stage writes (`NN_<name>.md`, `NN_findings.yaml`) starts with the tracking header (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source` — git identity from the audited repository, `repo` = audited entity or `generic`), followed by the H1 for markdown artifacts.
+- Every artifact a stage writes (`NN_<name>.md`, `NN_findings.yaml`) starts with the tracked-document header per `frontmatter-protocol` `[ref: #tracking-fields]` (repo = audited entity or `generic`, git identity from the audited repository), followed by the H1 for markdown artifacts.
 - Pass paths, never inline reference content, to subagents.
 - Batch size is at most 3 candidates; every candidate's full text travels verbatim into its batch file.
 - A verify subagent sees exactly one batch — never the whole recon output.

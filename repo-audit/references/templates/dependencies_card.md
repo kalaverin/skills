@@ -51,13 +51,7 @@ collect the git tracking fields per the frontmatter-protocol tracking extension
 ```yaml
 ---
 title: <repo> dependencies
-created_at: YYYY-MM-DDTHH:MM:SSZ
-updated_at: YYYY-MM-DDTHH:MM:SSZ
-repo: <repo-name>
-branch: <branch>
-commit: <7-char-short-hash>
-committed_at: YYYY-MM-DDTHH:MM:SSZ
-source: <repo-name>/, repos/<repo>/overview.md, repos/<repo>/business.md
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: <repo-name>, source: <repo-name>/, repos/<repo>/overview.md, repos/<repo>/business.md>
 ---
 ```
 

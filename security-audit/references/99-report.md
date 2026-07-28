@@ -168,13 +168,7 @@ Dispatch one `coder` subagent with this reference file's path and `{{ REPORTS_RO
 ```markdown
 ---
 title: Security Assessment Final Report
-created_at: [current date UTC ISO 8601]
-updated_at: [current date UTC ISO 8601]
-repo: [entity name or "generic"]
-branch: [target repo branch]
-commit: [target repo short hash]
-committed_at: [target repo commit UTC ISO 8601]
-source: [project root]
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: [audited entity or "generic"], source: [project root]>
 ---
 
 # Security Assessment Final Report

@@ -126,13 +126,7 @@ Initial content:
 ```markdown
 ---
 title: Project glossary
-created_at: YYYY-MM-DDTHH:MM:SSZ
-updated_at: YYYY-MM-DDTHH:MM:SSZ
-repo: generic
-branch: <branch>
-commit: <7-char-short-hash>
-committed_at: YYYY-MM-DDTHH:MM:SSZ
-source: .serena
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: generic, source: .serena>
 ---
 
 # Project glossary
@@ -184,13 +178,7 @@ Initial content:
 ```markdown
 ---
 title: <Repo> glossary
-created_at: YYYY-MM-DDTHH:MM:SSZ
-updated_at: YYYY-MM-DDTHH:MM:SSZ
-repo: <repo-name>
-branch: <branch>
-commit: <7-char-short-hash>
-committed_at: YYYY-MM-DDTHH:MM:SSZ
-source: <repo-path>
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: <repo-name>, source: <repo-path>>
 ---
 
 # <Repo> glossary
@@ -234,13 +222,7 @@ Use the current YAML frontmatter standard from `[ref: #serena-metadata]`:
 ```yaml
 ---
 title: <Title matching H1>
-created_at: <UTC ISO 8601>
-updated_at: <UTC ISO 8601; refresh on every edit>
-repo: <repo-name>
-branch: <branch>
-commit: <7-char-short-hash>
-committed_at: <UTC ISO 8601>
-source: <project-relative path with optional line range>
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: <repo-name>, source: <project-relative path with optional line range>>
 ---
 
 # <Title>

@@ -364,13 +364,7 @@ Write the plan to `{{ REPORTS_ROOT }}/00_plan.md` using exactly this format. The
 ```markdown
 ---
 title: SAST Scan Plan
-created_at: [UTC ISO 8601 timestamp]
-updated_at: [UTC ISO 8601 timestamp]
-repo: [entity name or "generic"]
-branch: [target repo branch]
-commit: [target repo short hash]
-committed_at: [target repo commit UTC ISO 8601]
-source: [project root]
+<tracked-document header fields per `frontmatter-protocol` `[ref: #tracking-fields]`, bound as repo: [audited entity or "generic"], source: [project root]>
 selected: ["02", "03", "16"]
 cross_mapped: ["04", "05"]
 skipped:
@@ -414,7 +408,7 @@ primary_framework: "FastAPI"
 
 Frontmatter rules:
 
-- The tracking header fields (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`) follow the frontmatter-protocol tracking extension — `repo` is the audited entity or `generic`; git identity comes from the audited repository. The plan keys below them are the machine-readable contract the orchestrator parses.
+- The tracked-document header above the plan keys follows `frontmatter-protocol` `[ref: #tracking-fields]`; the plan keys below it (`selected` and friends) are the machine-readable contract the orchestrator parses.
 - `selected` lists primary scan IDs (two-digit strings, registry IDs); `cross_mapped` lists scans added by the cross-mapped injection rule; `skipped` maps every skipped ID to its one-sentence justification; `conditional` maps IDs to their indirect-exposure rationale.
 - Every detection ID (02–24) appears in exactly one of `selected`, `cross_mapped`, `skipped`, `conditional` — no omissions.
 - `design_checklist` records the Run/Skip verdict for module 90; `primary_language` and `primary_framework` feed the detection subagents' example selection.

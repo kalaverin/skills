@@ -130,7 +130,7 @@ Subagents return the UPDATED SECTIONS for their artifact. They never re-read the
 [ref: #ra-refresh-finalize]
 
 1. Apply the returned sections to the artifacts (`edit_memory`; never `write_memory` to append).
-2. Bump each touched artifact's frontmatter: `commit` → HEAD, `branch`, `committed_at`, `updated_at`.
+2. Refresh each touched artifact's tracking header per `frontmatter-protocol` `[ref: #tracking-refresh]` (a verified content write bumps the watermark to HEAD per the field-update matrix of `[ref: #tracking-staleness]`).
 3. If `business` changed, update the glossaries with the delta (`added` / `refined` / `moved` markers).
 4. Delete `.tmp/repo-audit/` (pytest-planner scratch convention).
 5. Verify and persist per `serena-protocol` `[ref: #serena-memory-mutation]` (read-back + persistence command from the workspace root).

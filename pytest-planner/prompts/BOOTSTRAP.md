@@ -74,7 +74,7 @@ A subagent returns only anchors backed by evidence in its region. It must not in
 
 ## Phase 4 — Generate and Write `agent/tests`
 
-Produce the repository-specific prompt and write it to Serena memory `agent/tests` (full overwrite if it exists) per `serena-protocol` `[ref: #serena-memory-mutation]`: complete YAML frontmatter (`title`, `created_at`, `updated_at`, `repo`, `branch`, `commit`, `committed_at`, `source`), then verify and persist.
+Produce the repository-specific prompt and write it to Serena memory `agent/tests` (full overwrite if it exists) per `serena-protocol` `[ref: #serena-memory-mutation]`: the tracked-document header per `frontmatter-protocol` `[ref: #tracking-fields]`, then verify and persist.
 
 The content of `agent/tests` MUST follow this structure:
 
