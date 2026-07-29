@@ -4,7 +4,7 @@ description: "MANDATORY skill for Markdown authoring rules and the Markdown Head
 triggers:
   always: true
   reason: "Markdown is used for all documentation, skills, and Serena memories; every authored document must be machine-addressable."
-version: 0.1.0
+version: 0.2.0
 ---
 
 # SKILL: Markdown Authoring Protocol & Headings-as-API Standard
@@ -72,6 +72,8 @@ Summary of the writer-side rules of `references/specification.md` (authoritative
 - **Frontmatter stripping (MUST, tooling):** strip YAML before heading detection; frontmatter is never chunked or hashed. → `[ref: #mds-frontmatter-stripping]`
 - **Errata mechanism (MUST):** authors MUST fix violations they author; encountering an unflagged violation → fix it or flag it in `errata:` (silence is non-conformant); already-flagged docs carry no remediation obligation, but your own writing MUST conform. Writers self-report known deviations and remove a reason ONLY after a complete fix of ALL its instances; unknown reasons are never touched; flow style `errata: [a, b]` is required. → `[ref: #mds-the-errata-mechanism]`
 - **Cross-file citation (SHOULD):** anchor ids globally unique per domain; name the owner when citing across files; domain prefixes (`entity-`, `ra-`, `fm-`, `serena-`, `mds-`). → `[ref: #mds-cross-file-citation]`
+- **Positional addressing (tooling axis):** dotted-decimal queries (`1.4.3`, ranges, open forms, unions) resolve fresh against current structure and are NEVER stored — numeric section references are strictly forbidden inside documents and memory; durable citation is anchors only. → `[ref: #mds-positional-addressing]`
+- **No manual numbering (MUST NOT):** headings never carry hand-typed numeric prefixes (`3.5 Parser`); numbering is assigned by the positional axis, never by authors; legacy numbered headings queue as `numbered_heading`; external arrived standards (RFC, AIP, STD) are exempt. → `[ref: #mds-no-manual-numbering]`
 
 ## 5. Pre-Write Checklist (MANDATORY)
 

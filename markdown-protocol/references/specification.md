@@ -1,5 +1,5 @@
 ---
-subject: "Markdown headings as public API; slugs, anchors, `mds-` prefix, unique chains, rename ban, plain-text headings, writer limit 8192 queue limit 16536, deprecation, fence-aware parsing, frontmatter stripping, errata queue, cross-file citation, `markdown-protocol`, ATX grammar, conformance classes, wild corpora."
+subject: "Markdown headings as public API; slugs, anchors, `mds-` prefix, unique chains, rename ban, plain-text headings, writer limit 8192 queue limit 16536, deprecation, fence-aware parsing, frontmatter stripping, errata queue, cross-file citation, positional addressing, dotted-decimal grammar, ephemerality, numbering ban, `markdown-protocol`, ATX grammar, conformance classes, wild corpora."
 index:
   - anchor: mds-abstract
     what: "The document's abstract: what the headings-as-API contract is and whom it binds."
@@ -163,6 +163,18 @@ index:
     use_when: "Citing anchors across files or skills; minting new anchor prefixes."
     avoid_when: "Within-document anchors — the anchor specification covers those."
     expected: "Unambiguous citations anywhere in the domain."
+  - anchor: mds-positional-addressing
+    what: "The positional citation axis: dotted-decimal query grammar, flat element-list resolution semantics, and the ephemerality contract, computed fresh at read time and never stored."
+    problem: "Agent must address headings below H2 uniformly, extract subtree or range in human dotted form; anchors cover H1/H2 only, stored numbers rot under renumbering; navigation gap, deep addressing, span extraction, browsing queries, ephemeral references, position drift, citation instability."
+    use_when: "Navigating documents by dotted position; extracting subtrees or ranges programmatically; deciding whether numeric reference may appear in text."
+    avoid_when: "Durable cross-session citation — anchors own that axis; storage-layer addressing — chunk hashes own it."
+    expected: "Every H2+ heading reachable by dotted address; positions never persisted; resolution yields upgradeable stable identities."
+  - anchor: mds-no-manual-numbering
+    what: "The authoring ban on hand-typed numeric prefixes in headings — numbering is assigned by the positional axis, never by authors."
+    problem: "Writer hand-numbers heading; every insertion forces renumbering cascade across document, and slug strips leading digits proving number never identity; floating numbers, manual prefixes, cascade edits, slug pollution, renumber churn, positional noise, stale numbering."
+    use_when: "Authoring or reviewing any heading; migrating legacy numbered headings; judging numbered headings in wild corpora."
+    avoid_when: "External arrived standards (RFC, AIP, STD and similar imported canon) — they stay exempt."
+    expected: "New headings carry zero hand-typed numbers; legacy ones queue as `numbered_heading`."
   - anchor: mds-relationship-to-other-standards
     what: "The boundary map to markdown-protocol core rules, tracking, and lazyload."
     problem: "Agent cannot tell which standard owns markers, tracking fields, or errata registration; ownership fog, boundary doubt, standard collision, overlap confusion, jurisdiction questions, authority drift, map absence, governance fog, realm confusion, boundary maze."
@@ -185,7 +197,7 @@ index:
 
 This document specifies the headings of a Markdown document as a public API: a stable, machine-addressable contract between writers (agents), maintainers (memory/index services), and readers (agents citing content across sessions). Every heading is an addressable entity with a computed identity; every section is a retrievable unit; documents can be indexed, cited, compacted, and reconciled by machines without human intervention. Rationale and evidence for every section: `references/rationale.md`.
 
-> **Identity:** `markdown-headings-public-api` v0.1.0 (Standards Track). Supersedes: the frozen draft at `docs/standards/markdown-headings-public-api.md` (historical original — never edited, never stamped). Canonical home: `markdown-protocol` skill.
+> **Identity:** `markdown-headings-public-api` v0.2.0 (Standards Track). Supersedes: v0.1.0, and the frozen draft at `docs/standards/markdown-headings-public-api.md` (historical original — never edited, never stamped). Canonical home: `markdown-protocol` skill.
 
 ## 2. Scope and Conformance Classes
 
@@ -351,6 +363,12 @@ Every H1 and H2 heading MUST carry an anchor per §6. The anchor is the primary 
 
 Heading text MUST be plain text: no bold, italic, links, or other inline markup. One forced exception: verbatim code identifiers (function, class, method, field, file, environment-variable, CLI command and flag names) MUST be wrapped in backticks when they appear in a heading. Pure-symbol headings are forbidden (they slug to empty, §5). Tooling flags `errata: heading_markup` / `errata: empty_slug`.
 
+### No manual numbering in headings (MUST NOT)
+
+[ref: #mds-no-manual-numbering]
+
+Headings MUST NOT carry hand-typed numeric prefixes (`3.5 Parser`, `1. Introduction`, and any look-alike hand numbering). Numbering is assigned by the positional axis (`[ref: #mds-positional-addressing]`), never by authors. Why: hand numbers float — every insertion forces a renumbering cascade across the document — and the slug rule strips leading digits (`3.5 Parser` → `parser`, §5), proving the number was never identity. Existing numbered headings enter the errata conformance queue as `numbered_heading` (§11); the slug rule keeps stripping leading digits for legacy tolerance. Documents that arrived numbered from outside (RFC, AIP, STD, and similar external standards) are exempt — the ban binds agent-authored documents, not imported canon. Files whose closed frontmatter schemas cannot carry `errata` (skill files, reference corpora) are queued by convention outside the field.
+
 ## 9. Section Size and Shape
 
 [ref: #mds-section-size-and-shape]
@@ -449,6 +467,7 @@ YAML flow style is REQUIRED so the canonical enumeration command works everywher
 | `empty_slug` | addressing | pure-symbol heading (slugs to empty) |
 | `heading_markup` | addressing | bold/italic/link markup in a heading (§8.5) |
 | `nonlatin_heading` | addressing | non-Latin letters in a heading (writer-side rule) |
+| `numbered_heading` | addressing | hand-typed numeric prefix in a heading (§8) |
 | `no_frontmatter` | frontmatter | no frontmatter block (header created empty to hold it) |
 | `bad_frontmatter` | frontmatter | unparseable YAML / broken envelope |
 | `invalid_schema` | frontmatter | required fields missing or wrong |
@@ -464,6 +483,45 @@ Rationale: `[ref: #mds-rationale-the-errata-mechanism]` in `references/rationale
 
 Anchor ids SHOULD be globally unique within their domain (e.g. all skills of one repository), so a bare `[ref: #<anchor>]` citation resolves unambiguously across files. When citing across files or skills, name the owner: `[ref: #<anchor>]` in `<skill>/<file>` (example: `[ref: #entity-namespace-registry]` in `entity-protocol/SKILL.md`). Domains mint their own anchor prefixes to keep the global space collision-free (`entity-`, `ra-`, `fm-`, `serena-`, `mds-`, …). **Minting prefixes (MUST):** a new prefix is NEVER created unilaterally — the agent presents variants to the user and writes only after the user's decision. Serena memories rarely need prefixes (the memory name is the address); domain artifacts (skills, standards, corpora) MUST carry a domain prefix for separation.
 
+## Positional Addressing
+
+[ref: #mds-positional-addressing]
+
+Two citation axes exist with disjoint roles: **anchors are stored** (durable identity, §6), and **positions are never stored** (navigation). This section specifies the positional axis: a dotted-decimal query grammar, its resolution semantics, and the ephemerality contract. The dotted-decimal form (`1.4.3`) follows the human citation canon — WCAG 2.2 ("Success Criterion 1.3.4") and the legal "§§ 134–139" tradition: numbers assigned by structure, read by humans. Resolution is tooling behavior; the writer-side duties are only the ephemerality rule (rule 7) and the numbering ban (§8, `[ref: #mds-no-manual-numbering]`).
+
+### Grammar
+
+```text
+query      := element ("," element)*
+element    := node | range | open_right | open_left | whole
+node       := NUMBER ("." NUMBER)*     # 1.4.8.1
+range      := node ".." node           # 1.3.4..1.3.9
+open_right := node ".."                # 1.7.9.2..
+open_left  := ".." node                # ..1.3.8
+whole      := ".."                     # canonical whole document ("1.." legal; bare "." FORBIDDEN)
+```
+
+Tokens are whitespace-free and match exactly; leading zeros are forbidden (`01.2` is not a `node`). `..` is the canonical whole-document form (both range bounds empty = the root scope); `1..` stays legal as the explicit variant; a bare `.` is FORBIDDEN — it visually drowns among dotted addresses and reads as a typo.
+
+### Semantics
+
+1. **1-based, human.** Every H2+ heading counts in document order, blind to heading text. H1 is outside the axis (one H1 per file = the document). Why: positions serve humans and browsing agents, and excluding H1 guarantees that a future extra H1 never shifts any address.
+2. **Flat element list.** A node resolves to a flat list in document order — the node plus every descendant; each element carries `{address, anchor (when present), identity hash, structural span, own content}`; no content duplication. Flat is the single response shape for every query form. Why: one response shape for all query forms keeps every caller simple; carrying stable identities in each element enables the upgrade path (rule 8); no duplication keeps payloads honest about size.
+3. **Range end rules.** Same parent → both ends inclusive (subtree-expanded). End equal to the start's parent's next sibling (the scope boundary) → equivalent to `a..`. Anything else → **query semantic error**. A reversed range → **query syntax error**. Degenerate `a..a` → **query syntax error** (request one node explicitly). Why: closed inclusive ranges follow the XPointer `xpointer()` point/range model (W3C Working Draft 2002 — the scheme never advanced to Recommendation, cited here as the model, not as ratified law); restricting ranges to one parent in v1 keeps resolution local and predictable (cross-scope ranges are deliberately deferred, not forgotten); a reversed or degenerate range is an authoring slip that must surface loudly instead of being reinterpreted; and reinterpreting an out-of-family end would invent structure the caller never asked for.
+4. **Open forms.** `a..` = from `a` through the end of the parent's scope; `..b` = from the parent's start through `b` inclusive; `..` = whole document (both bounds empty = the root scope). Why: the open forms are isomorphic to the XPath 1.0 `following-sibling::*` and `preceding-sibling::*` axes — sibling navigation scoped to the parent, never to the document root, which keeps every query independent of how many siblings later appear outside the scope.
+5. **No clamp.** An unresolvable position (out of tree) is a hard error, never a silent clamp. Why: a clamped answer is a false answer delivered with confidence; the documented instability of content-based references (rule 7's source) shows exactly what lenient resolution costs.
+6. **Fence-blindness.** Heading-lookalikes inside code fences are content, not headings (§10.2) — they receive no position. Why: the fence-aware rule already owns heading detection; positional counting inherits its truth rather than growing a second parser.
+7. **Ephemerality.** Positions are EPHEMERAL: numeric section references are STRICTLY forbidden inside documents and memory; durable citation is anchors only. Why: a position is recomputed from the current structure on every read, so a stored position rots silently the moment any earlier section is inserted or removed — the WICG Text Fragments report (a Community Group report, NOT a W3C TR) documents the same instability for content-based ranges: "text is less stable than document structure".
+8. **Resolve fresh, return upgradeable.** Resolution happens against the CURRENT structure at read time; results include stable identities so callers can upgrade a position into a durable reference. Why: fresh resolution makes every answer correct at the moment of use, and the returned anchors and identity hashes are the bridge to the stored axis — the two-layer model of Again `architecture/addressing` (file anchors = eternal citation identity; computed keys = recomputable organization).
+9. **Preamble and frontmatter.** The preamble has no positional address; the frontmatter travels a separate channel. Why: preamble content belongs to no section (§7.5) and cannot honestly carry a section number; frontmatter is metadata, never document structure (§10.3).
+10. **Union.** Resolve to structural spans, merge overlaps, document order; a whole-document element inside a union collapses into `..`. Why: set semantics over spans — overlap merging delivers every byte exactly once, document order preserves reading flow, and the collapse rule keeps the canonical form unique.
+
+For embedding consumers the positional path doubles as the breadcrumb: prepending `heading_path` context before embedding is the free core of Anthropic's Contextual Retrieval (vendor engineering blog, cited inline — not a standard), adopted in the Again design for `db.lance` and `db.kuzu`.
+
+### The numbering ban
+
+Positions are assigned by the axis, never by authors: headings MUST NOT carry hand-typed numeric prefixes. The authoring rule, its exemptions, and its errata reason live in §8 (`[ref: #mds-no-manual-numbering]`).
+
 ## 13. Relationship to Other Standards
 
 [ref: #mds-relationship-to-other-standards]
@@ -471,7 +529,7 @@ Anchor ids SHOULD be globally unique within their domain (e.g. all skills of one
 - **`markdown-protocol` (the host skill):** this standard lives inside it; its other rules (date format, no manual line wrapping, no bare `---` in bodies, YAML quoting style) remain in force and are not restated here.
 - **`frontmatter-protocol` (tracking extension):** owns the mandatory tracking field set; the `errata` key is registered there as an optional top-level field with semantics pointing here.
 - **`frontmatter-protocol` (lazyload extension):** owns `[ref: #…]` marker usage for reference corpora routing; the marker syntax, tight placement, and kebab-case ids are deliberately the same notation — one mental model across memories and skill corpora.
-- **Positional addresses** (e.g. `1.3.7.2`, `§8.3`): a display/citation layer computed from the document tree, never an identity layer. Positional numbers NEVER enter anchor ids.
+- **Positional addresses** (e.g. `1.3.7.2`, `§8.3`): a display/citation layer computed from the document tree, never an identity layer. Positional numbers NEVER enter anchor ids. The positional citation axis (grammar, semantics, ephemerality contract) is specified in the Positional Addressing section (`[ref: #mds-positional-addressing]`).
 
 ## 14. Out of Scope
 

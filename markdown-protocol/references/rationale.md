@@ -1,5 +1,5 @@
 ---
-subject: "Rationale for markdown headings standard; rejected alternatives, design decisions, evidence appendix, corpus study metrics, Again tooling context, chunking model, key scheme, edition notes, `markdown-protocol`, empty-slug rescue, deprecation asymmetry, errata history, prefix discipline."
+subject: "Rationale for markdown headings standard; rejected alternatives, design decisions, evidence appendix, corpus study metrics, Again tooling context, chunking model, key scheme, edition notes, `markdown-protocol`, empty-slug rescue, deprecation asymmetry, errata history, prefix discipline, positional addressing, numbering ban."
 index:
   - anchor: mds-rationale-scope
     what: "Why the standard exists and why its scope is any agent-authored Markdown."
@@ -61,6 +61,12 @@ index:
     use_when: "Explaining prefix discipline; extending it to new domains."
     avoid_when: "The recommendation text — the specification's citation section."
     expected: "Global uniqueness understood as codified practice."
+  - anchor: mds-rationale-positional-addressing
+    what: "The complete why behind the positional axis and the numbering ban: per-rule-line reasoning, edge cases, rejected alternatives, owner rulings."
+    problem: "Reader questions why second axis exists, why positions never stored, why ranges refuse cross-scope; unexplained rules invite drift and re-litigation; motivation gap, design doubt, boundary cases, ephemeral positions, axis layering, renumbering arguments."
+    use_when: "Defending any positional-addressing rule; rebuilding the spec from reasoning; reviewing amendment proposals."
+    avoid_when: "Normative rule text — the specification's positional section owns it."
+    expected: "Every rule line traceable to its reasoning and first source; design recoverable from rationale alone."
   - anchor: mds-rationale-relationship-to-other-standards
     what: "Why notation is shared with lazyload and why positional numbers stay out of anchors."
     problem: "Reader questions notation reuse and positional-anchor bans; notation doubt, position debate, standards confusion, id philosophy questions, id purity discussions, shared-syntax curiosity, boundary philosophy, sharing questions, notation history, format overlap, syntax unity, id design."
@@ -186,6 +192,44 @@ Commentary, rejected alternatives, and evidence for `references/specification.md
 [ref: #mds-rationale-cross-file-citation]
 
 The original draft was silent on cross-file anchors. The skills repository already practices cross-file citation at scale (`[ref: #entity-…]`, `[ref: #serena-…]`, `[ref: #fm-…]`), so the recommendation formalizes it: globally unique anchor ids per domain, owner naming on citation, and domain-minted prefixes to keep the global space collision-free. The `mds-` prefix of this very corpus is an instance of that rule.
+
+## Rationale: Positional Addressing and the Numbering Ban
+
+[ref: #mds-rationale-positional-addressing]
+
+Commentary for the specification's Positional Addressing section and the no-manual-numbering rule (owner-ruled design session 2026-07-29, Again project; decision record `decisions/project/indexing_and_addressing_design` in the Again repository). First sources archived per `read-for-comments` under `standard/w3c/` and `standard/wicg/`.
+
+**Why a second axis at all.** The standard owned exactly one citation axis: anchors — durable identities, mandatory on H1/H2 only. Anchors answer "point me at this section forever"; they cannot answer "show me sections 2 through 5" or "what is the third subsection of section 1.4". Navigation needs uniform addressing of EVERY heading level with range extraction, in the dotted-decimal form humans have used for centuries. The load-bearing split: **anchors are stored; positions are never stored.** One axis is durable citation identity (lives in the file), the other is navigation computed fresh from current structure (lives nowhere). This is the same two-layer model as Again `architecture/addressing`: file anchors = eternal citation identity; computed keys = recomputable organization. Rejected: extending anchors to every level — marker noise on every H4 (rejected once already in the anchor rationale), and anchors still cannot express ranges.
+
+**Why dotted-decimal.** `1.4.3` is the canonical human citation style: WCAG 2.2 cites "Success Criterion 1.3.4", the legal tradition cites "§§ 134–139". Adopting the established form costs nothing to learn and reads correctly to any human without a manual. Rejected: invented notations (path-like `/1/4/3`, XPointer `element(/1/4/3)`) — machine-friendly but alien to human citation habit.
+
+**Why whitespace-free tokens, exact match, no leading zeros.** A query is a machine token as much as a human notation: it travels in CLI arguments and JSON strings, where internal whitespace breaks tokenization and lenient matching invites ambiguity. No leading zeros because `01.2` and `1.2` would be two spellings of one address — uniqueness of spelling makes comparisons, caching, and dedup trivial.
+
+**Why `..` is the canonical whole and bare `.` is forbidden.** Both bounds empty = the root scope, which is algebraically the natural whole-document form; `1..` stays legal as the explicit variant (through the end of the root scope from its first child). A single `.` was owner-rejected (2026-07-29): it visually drowns among dotted addresses and reads as a typo.
+
+**Rule 1 — 1-based, human; H1 excluded.** Positions are for humans and browsing agents; storage and durable citation stay with anchors and chunk hashes (owner ruling). 1-based because the audience is human — nobody cites "section zero" outside programming. H1 is excluded because one H1 per file IS the document (§7.1): numbering it would put the document inside its own axis, and a future extra H1 (multi-H1 wild corpus) would shift every address — excluding H1 guarantees address stability exactly where the tree is most volatile. Rejected: 0-based (machine habit, human-hostile); including H1 as position 1 (volatile root shifts everything).
+
+**Rule 2 — flat element list.** One response shape for every query form: node, range, open, or union all return a flat document-ordered element list `{address, anchor (when present), identity hash, structural span, own content}`. Rejected alternatives: (a) tree responses — either duplicate content between parent and child entries or force two response shapes, and consumers then need two code paths; (b) node-only responses — the caller re-walks descendants, duplicating the resolver's job in every consumer. Each element carries its stable identities precisely so the caller can upgrade (rule 8) without a second query.
+
+**Rule 3 — range end rules.** Closed inclusive ranges follow the XPointer `xpointer()` point/range model (`range-to()`): a range is two points, both ends included. Honesty note: `xpointer()` is a W3C Working Draft (2002) that never advanced to Recommendation — it is cited as the conceptual model, not as ratified law; the grammar borrows the model, not the maturity. Same-parent-only in v1 keeps resolution local: a cross-scope range would have to answer "which intermediate nodes belong" with no natural rule, so it is deferred deliberately (owner ruling: revisitable later), not forgotten. The boundary equivalence (end = start's parent's next sibling → `a..`) exists because that spelling is what callers naturally produce when walking siblings — refusing it would punish a correct intuition. Reversed ranges and degenerate `a..a` are syntax errors, not normalized inputs: silently swapping reversed ends or collapsing a degenerate range teaches the caller that sloppy queries work, and hides real authoring slips.
+
+**Rule 4 — open forms.** `a..` and `..b` are isomorphic to the XPath 1.0 `following-sibling::*` and `preceding-sibling::*` axes: sibling navigation scoped to the parent. Scoping to the parent (not the document root) is the important choice: a query meant "the rest of this section's subsections" must not change meaning when a new top-level sibling appears later. `..` is the root-scope case of the same rule.
+
+**Rule 5 — no clamp.** A clamped answer is a false answer delivered with confidence: the caller asked for `1.9`, the tree has `1.7`, and "closest match" returns content the caller never meant, indistinguishable from the right answer. The WICG Text Fragments experience (rule 7) is the standing lesson on what lenient reference resolution costs.
+
+**Rule 6 — fence-blindness.** Heading detection already has exactly one owner (§10.2 fence-aware parsing). Positional counting inherits that truth; a second, independent heading detector would drift from the first and produce addresses that disagree with the index. One parser, one truth, many consumers.
+
+**Rule 7 — ephemerality.** This is the contract that keeps the axis honest. A position is a pure function of current structure: insert a section at `1.2` and every later address shifts. Anything stored rots silently — the stored `1.4.3` still parses, still resolves, and points at the WRONG section. The WICG URL Fragment Text Directives report (a Community Group report, explicitly NOT a W3C TR) documents the same lesson for content-based ranges: "text is less stable than document structure" — their prefix/suffix disambiguation machinery exists precisely to fight reference rot, and it is reserved here for a possible future "cite by text snippet" mode rather than copied. Rejected: storing positions with a version/structure stamp — the stamp detects rot but cannot repair it, so the stored reference is still useless; durability is what anchors exist for.
+
+**Rule 8 — resolve fresh, return upgradeable.** Fresh resolution makes every answer correct at the moment of use, and the returned anchors and identity hashes let the caller convert a browsing answer into a durable citation in one step. This is the bridge between the two axes: positions for the journey, anchors for the destination.
+
+**Rule 9 — preamble and frontmatter.** Preamble content belongs to no section (§7.5), so numbering it would fake a structure it does not have; the frontmatter is metadata and never document structure (§10.3) — it travels its own channel (the service exposes it directly). Edge case accepted: a flat H1-only document has no H2+ headings, so its only positional form is `..` — consistent, since the whole document is one unit anyway.
+
+**Rule 10 — union.** Set semantics over spans: merge overlaps so every byte is delivered exactly once, document order so the result reads like the document. A whole-document element collapses the union into `..` because any query containing everything IS everything — the collapse keeps the canonical form unique and short-circuits further merging.
+
+**The embedding breadcrumb.** For embedding consumers the positional path doubles as context: Anthropic's Contextual Retrieval (vendor engineering blog, 2024 — cited inline, NOT a standard and never archived as one) showed that prepending chunk-specific explanatory context before embedding measurably improves retrieval; the deterministic `heading_path` breadcrumb is its free core, and the Again owner ruling (2026-07-29) adopted it for `db.lance` and `db.kuzu`, with the LLM-generated situated-context upgrade riding the planned `srv.llm` worker.
+
+**The numbering ban.** Once the axis exists, hand-typed numbers in headings are pure harm. (a) Numbers were never identity: the slug rule strips leading digits (`3.5 Parser` → `parser`), so the number was decoration pretending to be an address — while readers inevitably treat it as one. (b) Hand numbers float: every insertion forces a renumbering cascade across the document, and each cascade is a wave of meaningless diffs and stale cross-references. (c) The axis assigns numbers by structure, always correct, always fresh — authors numbering headings manually duplicates the axis with a strictly worse, always-stale copy. Rejected: grandfathering existing numbered headings as legal — that would bless two numbering systems forever; instead existing numbered headings enter the errata queue (`numbered_heading`) and migrate. Exemption (owner ruling 2026-07-29): documents that arrived numbered from outside (RFC, AIP, STD and similar external canon) stay as they are — the ban binds what we author, not what we import. Caveat recorded honestly: files whose closed frontmatter schemas cannot carry `errata` (skill files, reference corpora — the recorded waiver in `agent/allowed_violations`) are queued by convention outside the field; their migration is tracked as work items, not as errata entries.
 
 ## Rationale: Relationship to Other Standards
 

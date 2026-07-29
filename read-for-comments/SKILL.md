@@ -56,7 +56,7 @@ Pipeline (the bulk-import carve-out of `serena-protocol` `[ref: #serena-memory-m
 
 ## 4. What Counts as a Standard
 
-A versioned technical text issued by an authoritative body with a stable URL. Families (the `<family>` path segment): `rfc` (IETF RFC), `std` (IETF STD), `bcp` (IETF BCP), `pep` (Python PEP), `aip` (Google AIP), `owasp` (OWASP cheat sheets, ASVS, API Top 10), `w3c` (W3C REC), `whatwg` (WHATWG living standards), `zmpc` (ZeroMQ RFC), `cwe` (MITRE CWE entries).
+A versioned technical text issued by an authoritative body with a stable URL. Families (the `<family>` path segment): `rfc` (IETF RFC), `std` (IETF STD), `bcp` (IETF BCP), `pep` (Python PEP), `aip` (Google AIP), `owasp` (OWASP cheat sheets, ASVS, API Top 10), `w3c` (W3C REC), `whatwg` (WHATWG living standards), `zmpc` (ZeroMQ RFC), `cwe` (MITRE CWE entries), `wicg` (WICG Community Group reports — NOT W3C TR; status must be noted on use).
 
 ### Fetch URL Registry
 
@@ -74,6 +74,7 @@ The canonical fetch URL pattern for every registered family. When archiving a st
 | `whatwg` | WHATWG | `https://<spec>.spec.whatwg.org/` (e.g. `html`, `url`, `fetch`) |
 | `zmpc` | ZeroMQ community | `https://rfc.zeromq.org/spec/<N>/` |
 | `cwe` | MITRE | `https://cwe.mitre.org/data/definitions/<N>.html` |
+| `wicg` | W3C WICG (Community Group) | `https://<group>.github.io/<spec>/` (e.g. `wicg.github.io/scroll-to-text-fragment/`) |
 
 - **Full body only:** an archive entry is the complete standard text (raw download or `kagi_extract`). `kagi_summarizer` output is a derivative and is NEVER archived. If a summary sufficed for the answer but the document is a standard, fetch the full body for the archive anyway.
 - **Not standards:** blogs, tutorials, vendor documentation (e.g. Temporal docs), marketing pages — never archived here.
