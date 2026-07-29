@@ -1,13 +1,13 @@
 ---
 name: discuss-first
-description: "Co-implementation mode: the agent never writes code without the user's explicit approval of the whole implementation blueprint. On activation, the agent studies the task, then walks the user through the implementation top-down — one level at a time, justifying every abstraction, class, method, and function, showing full signatures with pseudocode bodies — then traverses the entire information pipeline from the request entry point to the end and back, collects per-part approvals, requests the master approval of the final blueprint, and only then writes code strictly per the approved contract. Activate on user request ('пишем код вместе', 'ты не пишешь без меня', 'step-by-step', 'обсудим реализацию', etc.); the agent also proactively offers this mode before non-trivial code work: features, refactoring (including rewriting code the agent wrote itself), behavior-changing bugfixes, or any new function, method, class, or abstraction appearing in the plan. The mode is session-scoped: no persistence, no resume — a new session starts without it."
+description: "Co-implementation mode: the agent never writes code without the user's explicit approval of the whole implementation blueprint. On activation, the agent studies the task, then walks the user through the implementation top-down — one level at a time, justifying every abstraction, class, method, and function, showing full signatures with pseudocode bodies — then traverses the entire information pipeline from the request entry point to the end and back, collects per-part approvals, requests the master approval of the final blueprint, and only then writes code strictly per the approved contract. Activate on user request ('пишем код вместе', 'ты не пишешь без меня', 'step-by-step', 'обсудим реализацию', etc.); the agent also proactively offers this mode before non-trivial code work: features, refactoring (including rewriting code the agent wrote itself), behavior-changing bugfixes, or any new function, method, class, or abstraction appearing in the plan. While the mode is active, a mandatory existence-review standard (`references/existence_review.md`, rule ids A1–K4) governs every keep/revert/delete decision and overrides language style guides. The mode is session-scoped: no persistence, no resume — a new session starts without it."
 triggers:
   request: "пишем код вместе, пиши вместе со мной, ты не пишешь без меня, не пиши код без меня, всё обсуждаем, обсуждаем каждый шаг, обсудим реализацию, обсудим имплементацию, обсудим сам код, степ-бай-степ, step-by-step mode, пошаговый режим, discuss first, no code without approval, парное программирование, pair programming, давай реализовывать вместе"
   reason: "The user switches the session into co-implementation mode where every piece of code requires prior discussion and approval."
 runtime: true
 requires:
   - serena-protocol
-version: 0.4.0
+version: 0.6.0
 ---
 
 # SKILL: Discuss First (Co-Implementation Mode)
@@ -82,7 +82,7 @@ Offer format: one short line, e.g. «Предстоит нетривиальна
 One level per message, strictly from the approved overview's top to its bottom:
 
 1. **Level content:** components, their responsibilities, and their connections at this level of detail.
-2. **Every abstraction earns its existence:** for each class, function, method, or module the agent states why it exists, what it buys, and why the task cannot be solved more simply without it (the KISS check). An abstraction the agent cannot concretely justify is presented to the user as an open option with its trade-offs, never silently removed from the proposal.
+2. **Every abstraction earns its existence:** for each class, function, method, or module the agent states why it exists, what it buys, and why the task cannot be solved more simply without it (the KISS check), justified against the existence-review rule ids (A1–K4, §11). An abstraction the agent cannot concretely justify is presented to the user as an open option with its trade-offs, never silently removed from the proposal.
 3. **Concrete code shape:** full signatures are shown COMPLETELY (names, parameters, types, returns); bodies are shown compressed, as pseudocode. Nothing is written to files at this phase.
 4. **Per-level approval:** the agent asks for explicit approval of the level and WAITS per §1. The next level starts only after the current one is approved; requested changes rework the current level before descending.
 
@@ -115,6 +115,7 @@ After the top-down tree is approved, the agent verifies its integrity with a ful
 - **Deviation handling:** on any deviation, the agent STOPS, presents the deviation as a blueprint delta, and obtains the user's explicit approval of that delta BEFORE touching code. Discussion alone never authorizes implementation. The approved delta is appended to the decision card.
 - **Delegation:** while the mode is active, the prohibition covers ALL code production, including by subagents — no subagent, background task, or tool invocation may create or modify code before the master approval. After the master approval, any delegated implementation receives the approved blueprint verbatim as its contract, and deviations reported by a delegate are STOP-and-approve events for the main agent.
 - The implementation style chosen in Phase 3 governs how much code is shown for approval; style (b) approvals happen per component, and the agent waits for each.
+- **Deliverables:** a minimal diff; the keep/delete table with rule-id justifications; ready factual answers per anticipated reviewer question (K1); a follow-ups list (A4 extractions, K3 deployment notes).
 - Each new task re-enters at Phase 0 with a fresh blueprint; a master approval never carries over.
 - **User-initiated changes mid-implementation:** any user request to change already-approved or already-written code is treated as a deviation delta (STOP the affected component, present the delta, approve per this section) unless the user explicitly declares a scope change, which re-enters Phase 0. On any user «стоп» (or equivalent), the agent halts ALL code production until the user explicitly resumes.
 - **Suspended loops:** if the user interrupts the loop with another task, the suspended blueprint retains its per-level approvals only when the user explicitly confirms resumption of the previously approved state; otherwise it re-enters at Phase 0. Approvals never survive changes to the underlying code or requirements.
@@ -136,6 +137,7 @@ For work on existing code (refactoring, rewriting the agent's own earlier code, 
 - NEVER let urgency suspend the gate: with any urgency, while the mode is ON it cannot be ignored — the fast path is the collapsed loop of §5.5, and if the agent is unsure whether anything changes, it asks the user explicitly.
 - NEVER continue working while any approval question is pending: ask, STOP, and WAIT for the user's explicit reply.
 - **Pre-response self-check:** while the mode is active, before every response the agent verifies: is any approval pending? Am I about to emit or produce code without master approval? If yes — stop and return to the gate.
+- **Existence review (MANDATORY):** on activation the agent reads `references/existence_review.md` in FULL; while the mode is active, every keep/revert/delete decision and every abstraction justification cites the rule ids (A1–K4), and "why does this exist" outranks "is this correct". On conflict with language style guides (e.g. `python-lang` Google-style sections), the existence-review standard wins; it applies to all code.
 - Discussion with the user is in Russian; recorded artifacts (decision cards, blueprints) are in technical English per the workspace language rules.
 
 **Violation protocol:** if you produce code, add an abstraction, or proceed past any approval gate without the user's explicit approval while this mode is active: halt immediately; disclose the violation to the user in one line; discard the offending output and revert any file mutations made after the last approved point to their exact prior contents; resume the loop from the last approved point only after the user acknowledges.

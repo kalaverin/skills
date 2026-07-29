@@ -6,8 +6,10 @@ triggers:
   request: "code review, review code, review diff, review feature, review project, pull request review, pr review, ревью, код-ревью, ревью кода, проверь код, проверь diff, проверь изменения, проверь проект"
 requires:
   - api-design
+  - discuss-first
   - frontmatter-protocol
   - serena-protocol
+version: 0.1.0
 ---
 
 # SKILL: Language-Agnostic Code Review
@@ -334,6 +336,24 @@ Every review — `feature` or `project` mode, any programming language — MUST 
 
 For Python code this pass applies with full force whenever the code exposes an API surface (FastAPI, Flask, gRPC, REST, etc.); the same holds for API code in any other language.
 
+## Existence-Review Criteria (MANDATORY)
+
+Every review — `feature` or `project` mode, any programming language — applies the existence-review standard as binding review criteria: the reviewer mindset "why does this exist?" outranks "is this correct?". The single source of the standard is `discuss-first/references/existence_review.md` (rule ids A1–K4); it is consumed by cross-skill reference, never copied.
+
+1. **Full read (root agent, never delegated).** During Phase 0/1 the ROOT agent reads `discuss-first/references/existence_review.md` in FULL (it is a strict standard, not a routing corpus).
+2. **Family-to-subagent mapping.** The families are distributed to the four specialist subagents as binding criteria, injected INLINE into each launch prompt (never modify the subagent prompt files — the api-design precedent of Section 7 applies):
+
+   | Subagent domain | Binding families |
+   |---|---|
+   | Security, Privacy & Configuration | J (secrets in logs), H (fail-open defaults, env), D5, B3, E1 |
+   | Correctness, Concurrency & Performance | B4 (coordination vs current model), A2 (defensive code), G1, C2 |
+   | Resilience & Observability | E (errors), J (logging), H3 (crash-loud), G5 |
+   | Architecture & Maintainability | A (existence), B, C (types), D (layers), F (naming), I, K |
+
+   The existence lens itself ("why does this exist" outranks "is this correct"; burden of proof on every added line, A1) binds ALL four subagents.
+3. **Rule-id citation.** Every finding covered by the standard cites its rule id inline (e.g. `(D1)`, `(C3)`) next to the severity — in both reports; report templates stay unchanged.
+4. **Report.** Both reports carry an "Existence Review Observations" subsection (keep/delete recommendations per the standard's operating workflow); write "Existence Review: clean" when nothing is found. Record `discuss-first` in the `skills_used` frontmatter tag of the machine-readable report.
+
 ## 8. Lazy-Load Protocol
 
 Do not read the full reference files unless required. Use the routing table below.
@@ -349,11 +369,13 @@ Do not read the full reference files unless required. Use the routing table belo
 | Need exact human-readable report template. | `references/report-templates.md` | `[ref: #human-readable-template]` |
 | Need to adapt concepts to a specific language. | Section 6 above | — |
 | Need the mandatory AIP design review procedure. | Section 7 above | — |
+| Need the existence-review criteria procedure. | The Existence-Review Criteria section above | — |
 
 ## 9. Hard Rules
 
 - NEVER invent issues that do not exist.
 - NEVER skip the architectural design review (Section 7) or the full api-design frontmatter read, in any review mode and for any language.
+- NEVER skip the existence-review criteria or the full read of `discuss-first/references/existence_review.md`, in any review mode and for any language; NEVER omit the "Existence Review Observations" subsection from either report.
 - NEVER delegate api-design card routing to a subagent; subagents receive already-extracted AIP material.
 - NEVER omit the "API Design (AIP) Observations" subsection from either report.
 - NEVER ignore issues that do exist.
