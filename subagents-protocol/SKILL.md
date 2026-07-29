@@ -55,12 +55,12 @@ Every `Agent` call MUST include:
 - `description`: a short 3–5 word summary.
 - `subagent_type`: `coder`, `explore`, or `plan`.
 - `prompt`: a complete, self-contained instruction.
+- `model` (HARD): MANDATORY on every launch — default `kimi-code/k3-256k`; override with a stronger model only when the task specifically needs it. NEVER omit the parameter: the fallback chain (built-in type default → the parent's current model) silently runs the subagent on a more expensive model and burns tokens. An omitted `model` is a protocol violation: on noticing one (your own launch or a reviewed one), disclose it and set `model` explicitly on the very next launch.
 
 Optional but important:
 
 - `timeout`: minimum 60 seconds (1 minute) for simple tasks; minimum 3600 seconds (60 minutes maximum) for complex investigations or large code changes.
 - `run_in_background`: default `false`. Use `true` only when the task can continue independently, you do not need the result immediately, and there is a clear benefit to returning control before it finishes.
-- `model`: default to `kimi-code/k3-256k` for every subagent launch. Override with a stronger model only when the task specifically needs it.
 - `resume`: reuse an existing `agent_id` when the new task clearly continues prior work or when that instance already holds relevant context.
 
 ## 5. Context Passing
@@ -163,7 +163,7 @@ Use this checklist before every `Agent` call.
 - [ ] `subagent_type` matches the task.
 - [ ] `prompt` is self-contained and specific.
 - [ ] `timeout` is at least 60s for simple tasks or maximum 3600s for complex tasks.
-- [ ] `model` is `kimi-code/k3-256k` unless the task specifically needs a different model.
+- [ ] `model` is set EXPLICITLY on every launch (never omitted) — `kimi-code/k3-256k` unless the task specifically needs a different model.
 - [ ] `run_in_background` is `true` only when the task can proceed independently and returning early is useful.
 - [ ] `resume` is used only when continuing prior work on the same `agent_id`.
 
@@ -188,4 +188,4 @@ Use this checklist before every `Agent` call.
 
 ## 15. Violation Protocol
 
-If you delegate without passing required context, allow a subagent to rely on MCP tools, or choose parameters that violate this skill, halt immediately, recall the relevant section of this skill, and restart the delegation correctly.
+If you delegate without passing required context, allow a subagent to rely on MCP tools, launch a subagent without an explicit `model`, or choose parameters that violate this skill, halt immediately, recall the relevant section of this skill, and restart the delegation correctly.
