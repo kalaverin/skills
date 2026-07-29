@@ -93,7 +93,11 @@ You MUST NOT read the files `references/01_language_rules.md` or `references/02_
 The pipeline is Ruff-only (`black`, `flake8`, and `isort` are forbidden per the `shell-protocol` skill) and has two mandatory stages, executed in this exact order:
 
 1. **Format** — `ruff format` (black-compatible automatic formatting).
-2. **Lint** — `ruff check` (full-rule diagnostics; fixes scoped to the agent's own edits).
+2. **Lint** — `ruff check --fix` (full-rule diagnostics WITH automatic in-place fixes; fixes scoped to the agent's own edits).
+
+**`--fix` is a mandatory part of the pipeline (HARD):** the lint stage's FIRST invocation MUST carry `--fix`, letting Ruff rewrite auto-fixable violations in place. The agent MUST NOT hand-edit what `ruff check --fix` repairs mechanically — manual fixing of auto-fixable violations wastes tokens and energy and is a pipeline violation. Manual edits are reserved for diagnostics that `--fix` cannot repair.
+
+**The `[*]` reminder rule (HARD):** the output line `[*] fixable with the \`--fix\` option.` means the previous run forgot `--fix`. On seeing it the agent MUST: (1) immediately recall that the first pass ALWAYS runs with `--fix`, and (2) immediately re-run the same command with `--fix` — before reading or hand-fixing any diagnostic. Treat every occurrence as a self-check failure of this pipeline.
 
 ### Hard Constraint: Foreign Code Isolation
 * **ONLY** format and fix violations in code you explicitly wrote or modified.
@@ -126,12 +130,12 @@ uvx ruff format <changed_files>
 ```
 `<changed_files>` is the explicit list of files the agent wrote or edited — nothing else. This stage replaces `black`: `ruff format` implements black-compatible formatting, and invoking `black` itself is forbidden.
 
-### Step 3.3: Read Linter Suggestions
-Run the following command targeting **ONLY the files you modified**:
+### Step 3.3: Fix and Read Linter Suggestions
+Run the following command targeting **ONLY the files you modified** — the `--fix` flag is MANDATORY on this first lint pass (see the HARD rules above); Ruff rewrites fixable violations in place:
 ```bash
-uvx ruff check --select ALL --ignore D,CPY,DOC,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --output-format concise <changed_files>
+uvx ruff check --fix --select ALL --ignore D,CPY,DOC,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --output-format concise <changed_files>
 ```
-Read every suggestion carefully. Apply fixes ONLY to the code you altered.
+Read every REMAINING suggestion carefully (these are the ones `--fix` could not repair). Apply manual fixes ONLY to the code you altered.
 
 ### Step 3.4: Verify Diff Scope
 After applying fixes, verify the diff touches **ONLY changed code**:
