@@ -9,7 +9,7 @@ requires:
   - discuss-first
   - frontmatter-protocol
   - serena-protocol
-version: 0.1.0
+version: 0.2.0
 ---
 
 # SKILL: Language-Agnostic Code Review
@@ -233,17 +233,14 @@ produce a single final report.
 
 ### Phase 1: Parallel Specialist Review
 
-Do not perform the review yourself. Launch four parallel `coder` subagents and
-give each one a narrow domain from the checklist. Each subagent receives the
-absolute path to its specialist subprompt file and the absolute path(s) to the
-target file(s).
+Do not perform the review yourself. Launch five parallel `coder` subagents and give each one a narrow domain from the checklist. Each subagent receives the absolute path to its specialist subprompt file and the absolute path(s) to the target file(s).
 
 1. Determine the target file(s):
    - `feature` mode: files changed relative to `{{ BASE_BRANCH }}`
      (from `git diff {{ BASE_BRANCH }}...HEAD`).
    - `project` mode: the full source tree, excluding anything matched by
      `.gitignore` and `tests/` unless the user asked to review tests.
-2. Launch the four specialist subagents in parallel. Grant each subagent a
+2. Launch the five specialist subagents in parallel. Grant each subagent a
    timeout of no less than 55 minutes.
 
    | # | Domain | Subprompt file |
@@ -252,6 +249,7 @@ target file(s).
    | 2 | Correctness, Concurrency & Performance | `code-review/references/subagent-correctness-concurrency-performance.md` |
    | 3 | Resilience & Observability | `code-review/references/subagent-resilience-and-observability.md` |
    | 4 | Architecture & Maintainability | `code-review/references/subagent-architecture-and-maintainability.md` |
+   | 5 | Existence Inquisition | `code-review/references/subagent-existence-inquisition.md` |
 
    In each subagent prompt, start by telling it to read its subprompt file at the
    absolute path you provide, and then to review the selected project directory. Do not paste the subprompt contents into the prompt — pass
@@ -280,7 +278,7 @@ unknown error), STOP and hand the problem to the user.
 
 ### Phase 3: Synthesize
 
-1. Merge the findings from the four specialist subagents with confirmed
+1. Merge the findings from the five specialist subagents with confirmed
    CodeRabbit issues (if any).
 2. Deduplicate: one problem = one entry.
 3. Sort: `CRITICAL` → `HIGH` → `MEDIUM` → `LOW` → `INFO`; within each level sort
@@ -301,7 +299,7 @@ Include:
 - Executive summary.
 - Findings grouped by severity.
 - Dismissed CodeRabbit issues (if any).
-- Dedicated sections for Architecture, API Design (AIP), Security, Resilience, Observability, and PII/Data Privacy. Write "<Topic>: clean" if there are no findings.
+- Dedicated sections for Architecture, API Design (AIP), Security, Resilience, Observability, PII/Data Privacy, and Existence Inquisition. Write "<Topic>: clean" if there are no findings.
 - A final "Recommendations" section for anything that did not fit the issue
   table but is worth mentioning.
 
@@ -336,23 +334,14 @@ Every review — `feature` or `project` mode, any programming language — MUST 
 
 For Python code this pass applies with full force whenever the code exposes an API surface (FastAPI, Flask, gRPC, REST, etc.); the same holds for API code in any other language.
 
-## Existence-Review Criteria (MANDATORY)
+## Existence Inquisition (MANDATORY)
 
-Every review — `feature` or `project` mode, any programming language — applies the existence-review standard as binding review criteria: the reviewer mindset "why does this exist?" outranks "is this correct?". The single source of the standard is `discuss-first/references/existence_review.md` (rule ids A1–K4); it is consumed by cross-skill reference, never copied.
+Every review — `feature` or `project` mode, any programming language — runs the Existence Inquisition: the dedicated fifth specialist subagent with maximal adversarial bias, executing the existence-review standard whose single source is `discuss-first/references/existence_review.md` (rule ids A1–K4; consumed by cross-skill reference, never copied). The inquisitor owns the standard ENTIRELY — the four domain specialists receive no existence criteria (they would only duplicate them half-heartedly).
 
-1. **Full read (root agent, never delegated).** During Phase 0/1 the ROOT agent reads `discuss-first/references/existence_review.md` in FULL (it is a strict standard, not a routing corpus).
-2. **Family-to-subagent mapping.** The families are distributed to the four specialist subagents as binding criteria, injected INLINE into each launch prompt (never modify the subagent prompt files — the api-design precedent of Section 7 applies):
-
-   | Subagent domain | Binding families |
-   |---|---|
-   | Security, Privacy & Configuration | J (secrets in logs), H (fail-open defaults, env), D5, B3, E1 |
-   | Correctness, Concurrency & Performance | B4 (coordination vs current model), A2 (defensive code), G1, C2 |
-   | Resilience & Observability | E (errors), J (logging), H3 (crash-loud), G5 |
-   | Architecture & Maintainability | A (existence), B, C (types), D (layers), F (naming), I, K |
-
-   The existence lens itself ("why does this exist" outranks "is this correct"; burden of proof on every added line, A1) binds ALL four subagents.
-3. **Rule-id citation.** Every finding covered by the standard cites its rule id inline (e.g. `(D1)`, `(C3)`) next to the severity — in both reports; report templates stay unchanged.
-4. **Report.** Both reports carry an "Existence Review Observations" subsection (keep/delete recommendations per the standard's operating workflow); write "Existence Review: clean" when nothing is found. Record `discuss-first` in the `skills_used` frontmatter tag of the machine-readable report.
+1. **Launch.** The inquisitor runs in Phase 1 alongside the other four (same timeout and launch parameters). It receives the same targets — plus, in `feature` mode, the diff itself: attacks hit added and modified lines only. In `project` mode the whole reviewed surface is the target.
+2. **Doctrine (baked into the subprompt):** subtraction-first — every line is guilty until proven innocent; the default verdict is DELETE/REVERT; a net-negative diff is a victory; every modification of EXISTING code must name why the current state is UNACCEPTABLE, not merely improvable; subtraction never removes meaning, quality, or behavior the business depends on.
+3. **Defense mechanics (root agent, never delegated).** The ROOT agent defends the code against EVERY attack: either confirm (→ finding with its rule id) or defend with facts (→ repelled). A defense must be SERIOUS: a named consumer, a breakage scenario, a verifiable fact (K1) — "that is how it is done" never counts (K2). No attack is ever dismissed silently.
+4. **Report.** Both reports carry an "Existence Inquisition" section containing: confirmed attacks with rule ids and keep/revert/delete recommendations; the FULL list of repelled attacks, each with its winning defense text; and the mandatory shrinkage metric line `lines before → after, net` — the smallest possible diff is the goal state. Record `discuss-first` in the `skills_used` frontmatter tag of the machine-readable report.
 
 ## 8. Lazy-Load Protocol
 
@@ -369,13 +358,14 @@ Do not read the full reference files unless required. Use the routing table belo
 | Need exact human-readable report template. | `references/report-templates.md` | `[ref: #human-readable-template]` |
 | Need to adapt concepts to a specific language. | Section 6 above | — |
 | Need the mandatory AIP design review procedure. | Section 7 above | — |
-| Need the existence-review criteria procedure. | The Existence-Review Criteria section above | — |
+| Need the Existence Inquisition procedure. | The Existence Inquisition section above | — |
+| Need the existence-inquisition subagent prompt. | `references/subagent-existence-inquisition.md` | `[ref: #subagent-existence-inquisition]` |
 
 ## 9. Hard Rules
 
 - NEVER invent issues that do not exist.
 - NEVER skip the architectural design review (Section 7) or the full api-design frontmatter read, in any review mode and for any language.
-- NEVER skip the existence-review criteria or the full read of `discuss-first/references/existence_review.md`, in any review mode and for any language; NEVER omit the "Existence Review Observations" subsection from either report.
+- NEVER skip the Existence Inquisition, in any review mode and for any language; NEVER dismiss an inquisition attack without a written factual defense; NEVER omit the "Existence Inquisition" section or the shrinkage metric from either report.
 - NEVER delegate api-design card routing to a subagent; subagents receive already-extracted AIP material.
 - NEVER omit the "API Design (AIP) Observations" subsection from either report.
 - NEVER ignore issues that do exist.
