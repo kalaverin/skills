@@ -55,7 +55,7 @@ Every `Agent` call MUST include:
 - `description`: a short 3–5 word summary.
 - `subagent_type`: `coder`, `explore`, or `plan`.
 - `prompt`: a complete, self-contained instruction.
-- `model` (HARD): MANDATORY on every launch — default `kimi-code/kimi-for-coding`; override with a stronger model only when the task specifically needs it. NEVER omit the parameter: the fallback chain (built-in type default → the parent's current model) silently runs the subagent on a more expensive model and burns tokens. An omitted `model` is a protocol violation: on noticing one (your own launch or a reviewed one), disclose it and set `model` explicitly on the very next launch.
+- `model` (HARD): MANDATORY on every launch — default `kimi-code/k3-256k`; override with a stronger model only when the task specifically needs it. NEVER omit the parameter: the fallback chain (built-in type default → the parent's current model) silently runs the subagent on a more expensive model and burns tokens. An omitted `model` is a protocol violation: on noticing one (your own launch or a reviewed one), disclose it and set `model` explicitly on the very next launch.
 
 Optional but important:
 
@@ -163,7 +163,7 @@ Use this checklist before every `Agent` call.
 - [ ] `subagent_type` matches the task.
 - [ ] `prompt` is self-contained and specific.
 - [ ] `timeout` is at least 60s for simple tasks or maximum 3600s for complex tasks.
-- [ ] `model` is set EXPLICITLY on every launch (never omitted) — `kimi-code/kimi-for-coding` unless the task specifically needs a different model.
+- [ ] `model` is set EXPLICITLY on every launch (never omitted) — `kimi-code/k3-256k` unless the task specifically needs a different model.
 - [ ] `run_in_background` is `true` only when the task can proceed independently and returning early is useful.
 - [ ] `resume` is used only when continuing prior work on the same `agent_id`.
 
