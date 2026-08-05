@@ -1,34 +1,79 @@
 ---
 name: subagents-protocol
-description: Mandatory protocol for delegating work to built-in subagents (coder, explore, plan). Governs when to delegate, how to pass context, launch parameters, timeouts, foreground/background choice, resume behavior, and the web-search bridge. Loaded at runtime when the user mentions subagents or when the agent plans to delegate.
-runtime: true
+description: Mandatory protocol for delegating work to built-in subagents (coder, explore, plan). Always active. Owns the context-hygiene delegation test (material vs answer, cost balance, warm-instance reuse), launch parameters (mandatory explicit `model`), the single-source model-selection table, answer budgets, degradation handling, and the launch checklist.
 triggers:
+  always: true
+  reason: "Context hygiene must apply from session start — before any delegation is planned — so the skill is always active."
   request: "subagent, subagents, delegate, delegation, delegating, субагент, субагенты, делегируй, делегирование, coder subagent, explore subagent, plan subagent"
-  reason: "The skill must activate whenever the user mentions subagents or the agent decides to delegate work."
 requires:
   - bootstrap
   - shell-protocol
   - serena-protocol
+version: 0.2.0
 ---
 
 # SKILL: Subagent Delegation Protocol
 
 This skill governs every interaction with the `Agent` tool and its built-in subagent instances.
 The main agent is an orchestrator; subagents are specialized workers.
-When this skill is triggered at startup or loaded mid-session via `runtime: true`, its rules take precedence over any general heuristic about delegation.
+The skill is always active: its rules — including the Context Hygiene test — apply from session start, before any delegation is planned, and take precedence over any general heuristic about delegation.
 
 ## 1. When to Delegate
 
-You MUST prefer launching a subagent for any non-trivial task that benefits from isolated context, focused execution, or parallel exploration.
-Typical reasons to delegate:
+The delegation decision is governed EXACTLY by the three-question test of Context Hygiene (HARD) below. Typical delegation-positive cases:
 
-- Codebase investigation that requires more than three searches or reading many files.
+- Codebase investigation beyond a few files or searches.
 - Writing, refactoring, or debugging code.
 - Multi-step file manipulations.
 - Parallel exploration of independent questions.
 - Long-running operations that can continue in the background.
 
-You MAY handle directly only trivial, single-step, or purely conversational tasks that do not touch code or files.
+Acting directly is legitimate exactly per the direct-action exceptions and sizing probes of Context Hygiene — nothing else.
+
+## Context Hygiene (HARD)
+
+[ref: #sp-context-hygiene]
+
+The main agent's context is the scarcest resource in the session. Bulk material needed only as the SOURCE OF AN ANSWER never enters it — a subagent eats the volume and returns the distillate.
+
+**The three-question test** (before any read/search/explore operation):
+
+1. **Material or answer?** Do I need the material itself (I will edit it, quote it exactly, reason over it repeatedly) — or only an answer derived from it?
+2. **Does the volume pay for the delegation?** The prompt and the returned answer are also main-context tokens; delegate only when the volume kept out clearly outweighs that overhead.
+3. **New instance or a warm one?** A subagent that already read this corpus holds it in context — follow-ups go to the same `agent_id`; a fresh instance pays the reading cost twice (resume rule, §8).
+
+If you need only an answer AND the volume pays → delegate (to a warm instance when one covers this corpus, otherwise to a new one). Otherwise act directly.
+
+**MUST-delegate triggers:**
+
+- open-ended exploration: more than 3 files to read or grep for one question;
+- large files, logs, dumps, or command output read for a single fact or a summary (did tests pass, what failed in the build);
+- serial "what's in these N files" questions on one corpus — ONE subagent with the full question list (batching amortizes the prompt).
+
+**Sizing probes (allowed):** when the material's size is unknown, a single careful probe — a toe in the water, never a swim — is legal before deciding: `wc -l`, a `head`, one bounded grep. The probe exists to size the volume, not to read the content; if the probe already answers the question, the question was small — act directly and move on.
+
+**Direct-action exceptions (no delegation, no guilt):**
+
+- material you will EDIT or must quote exactly;
+- material that IS the deliverable;
+- the small critical core of the current reasoning (the approved blueprint, the active rules);
+- a single known file at a known place, a single grep hit, anything small enough that prompt+answer would cost about as much.
+
+**Subagent reuse (STRONG):**
+
+- contextual subagents are assets: an instance that has read a corpus is a warm index over it — follow-ups, refinements, and adjacent tasks on the same material go to the SAME instance via `resume`;
+- keep a mental roster of live instances and their coverage; check the roster before any new launch;
+- retire an instance when its corpus is exhausted or the topic shifts — stretching one instance across unrelated domains pollutes the subagent's own context and is also waste.
+
+**The answer budget:**
+
+- every delegation prompt carries an explicit cap: "≤5 sentences", "a ≤10-row table", "yes/no + path + one-line why";
+- the cap governs ANSWERS TO QUESTIONS, not deliverables: when the task's output IS an artifact, the deliverable-in-report rule (§12) overrides — the cap then applies to everything except the deliverable;
+- a raw dump from a subagent defeats the answer budget: ask the SAME instance to compress — never paste the dump into your own reasoning.
+
+**Carve-out (web):** subagents cannot search the web (§6); the main agent performs Kagi calls itself and distills the results (per `kagi-search`) — the hygiene rule does not redirect web work, it governs local corpora.
+
+**Violation protocol:** violations of this section — including over-delegation — follow §15; the balance cuts both ways.
 
 ## 2. Built-in Subagent Types
 
@@ -42,11 +87,9 @@ Use the correct `subagent_type` for the work:
 
 If a task spans multiple types, split it or choose the dominant type.
 
-## 3. Runtime Activation
+## 3. Always-Active Semantics
 
-This skill uses `runtime: true`.
-After every new user message, re-evaluate the trigger.
-If the user mentions subagents, delegation, or if you decide to delegate, load this skill immediately and apply its rules to all subsequent actions.
+This skill is always active: there is no load event to wait for and no trigger to re-evaluate. The Context Hygiene test applies from the very first read operation of the session, even before any delegation is planned.
 
 ## 4. Launch Parameters
 
@@ -55,11 +98,12 @@ Every `Agent` call MUST include:
 - `description`: a short 3–5 word summary.
 - `subagent_type`: `coder`, `explore`, or `plan`.
 - `prompt`: a complete, self-contained instruction.
-- `model` (HARD): MANDATORY on every launch, chosen per the Model Selection section below — the SINGLE SOURCE of model names, tiers, and selection criteria. NEVER omit the parameter: the fallback chain (built-in type default → the parent's current model) silently runs the subagent on a more expensive model and burns tokens. An omitted `model` is a protocol violation: on noticing one (your own launch or a reviewed one), disclose it and set `model` explicitly on the very next launch.
+- `model` (HARD): MANDATORY on every launch, chosen per the Model Selection section below — the SINGLE SOURCE of model names, tiers, and selection criteria. NEVER omit the parameter: the fallback chain (built-in type default → the parent's current model) silently runs the subagent on a more expensive model and burns tokens. An omitted `model` is a protocol violation (§15).
+- `prompt` carries an explicit answer cap per the answer budget (`[ref: #sp-context-hygiene]`).
 
 Optional but important:
 
-- `timeout`: minimum 60 seconds (1 minute) for simple tasks; minimum 3600 seconds (60 minutes maximum) for complex investigations or large code changes.
+- `timeout`: `1200` seconds for simple tasks; `3600` seconds (the maximum) for complex investigations or large code changes. These two constants are owned HERE — every other mention (the checklist included) references this rule and never restates the numbers.
 - `run_in_background`: default `false`. Use `true` only when the task can continue independently, you do not need the result immediately, and there is a clear benefit to returning control before it finishes.
 - `resume`: reuse an existing `agent_id` when the new task clearly continues prior work or when that instance already holds relevant context.
 
@@ -74,7 +118,7 @@ This section is the ONLY place in the project where subagent model names, tiers,
 | **Default** | `kimi-code/kimi-for-coding` | Everything routine: focused file/symbol lookups, known-file reads, mechanical edits, command runs, artifact attestation, template fills, single-file analysis. |
 | **Upgrade** | `kimi-code/k3-256k` | Tasks needing extra attention and judgment: complex or cross-cutting research (thorough exploration, architecture reconnaissance), judgment-heavy adversarial review or audit, synthesis over many inputs, work where a miss is expensive (security detection, validation). |
 
-**Escalation ladder:** if a default-tier subagent returns shallow or wrong work, relaunch the task on the upgrade tier (resume the instance or start a new one) — do not iterate against a model that is too weak for the task.
+**Escalation ladder:** if a default-tier subagent returns shallow or wrong work, escalate by resuming the SAME instance on the upgrade tier (its corpus context is preserved); start a new instance only when the original instance's context is polluted or lost — do not iterate against a model that is too weak for the task.
 
 **Explicit-parameter rule:** the `model` parameter is passed on EVERY launch (§4), always from this table — never from memory, never from other documents.
 
@@ -155,7 +199,7 @@ Every delegation MUST follow these rules:
 
 ## 13. Directory Trees Belong to the Root Agent (HARD)
 
-A subagent NEVER generates a directory tree for an artifact. Tree generation is a root-agent duty:
+Applies whenever a delegated artifact would contain a directory tree. A subagent NEVER generates a directory tree for an artifact. Tree generation is a root-agent duty:
 
 1. The root agent has reliable shell access; a subagent's Shell may be blocked (§12) or absent (`plan`).
 2. A tree embedded in a deliverable must be byte-deterministic — produced by the canonical command, never paraphrased from exploration.
@@ -165,6 +209,11 @@ The canonical command and its mandatory flags live in `shell-protocol` — `[ref
 ## 14. Subagent Launch Checklist
 
 Use this checklist before every `Agent` call.
+
+### 0. Before delegating
+
+- [ ] Context hygiene checked (`[ref: #sp-context-hygiene]`): for exploration — only an answer is needed and the volume pays; for execution tasks — delegation serves isolation/focus per §1; a warm instance was considered before a new launch.
+- [ ] The prompt carries an explicit answer cap (the answer budget).
 
 ### 1. Subagent type
 
@@ -177,7 +226,7 @@ Use this checklist before every `Agent` call.
 - [ ] `description` is 3–5 words.
 - [ ] `subagent_type` matches the task.
 - [ ] `prompt` is self-contained and specific.
-- [ ] `timeout` is at least 60s for simple tasks or maximum 3600s for complex tasks.
+- [ ] `timeout` follows the §4 rule (the constants are owned there).
 - [ ] `model` is set EXPLICITLY on every launch (never omitted), chosen per `[ref: #sp-model-selection]`.
 - [ ] `run_in_background` is `true` only when the task can proceed independently and returning early is useful.
 - [ ] `resume` is used only when continuing prior work on the same `agent_id`.
@@ -203,4 +252,4 @@ Use this checklist before every `Agent` call.
 
 ## 15. Violation Protocol
 
-If you delegate without passing required context, allow a subagent to rely on MCP tools, launch a subagent without an explicit `model`, or choose parameters that violate this skill, halt immediately, recall the relevant section of this skill, and restart the delegation correctly.
+Violations of any rule in this skill follow ONE protocol: halt immediately, recall the violated section, and restart the action correctly. When the violation is already unrecoverable (the launch already fired, the output already produced), disclose it to the user in one line and apply the correct form on the very next action. This section is the single violation protocol of the skill; other sections reference it instead of restating their own.
