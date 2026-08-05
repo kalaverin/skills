@@ -84,6 +84,14 @@ You MUST NOT read the files `references/01_language_rules.md` or `references/02_
 | Evaluating function length; extracting smaller functions. | 2.18 Function Length | `[ref: #s2.18-function-length]` |
 | Type annotation style; line breaks; generics; conditional imports. | 2.19 Type Annotations | `[ref: #s2.19-type-annotations]` |
 
+### Table C: House Rules (`references/house_rules.md`)
+
+House-specific rules that extend or override the Google corpora (this file wins on conflict; review rules live in `discuss-first/references/existence_review.md`).
+
+| Trigger / Situation | Section | Anchor Tag for Search |
+|:---|:---|:---|
+| Enum membership tests and mypy narrowing; replacing literal tuples with enum-class membership. | Enum-class membership breaks mypy narrowing | `[ref: #hr-enum-membership-narrowing]` |
+
 ***
 
 ## 3. Mandatory Lint & Format Pipeline (Unconditional Gate)
