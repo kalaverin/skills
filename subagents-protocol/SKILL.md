@@ -55,13 +55,28 @@ Every `Agent` call MUST include:
 - `description`: a short 3–5 word summary.
 - `subagent_type`: `coder`, `explore`, or `plan`.
 - `prompt`: a complete, self-contained instruction.
-- `model` (HARD): MANDATORY on every launch — default `kimi-code/k3-256k`; override with a stronger model only when the task specifically needs it. NEVER omit the parameter: the fallback chain (built-in type default → the parent's current model) silently runs the subagent on a more expensive model and burns tokens. An omitted `model` is a protocol violation: on noticing one (your own launch or a reviewed one), disclose it and set `model` explicitly on the very next launch.
+- `model` (HARD): MANDATORY on every launch, chosen per the Model Selection section below — the SINGLE SOURCE of model names, tiers, and selection criteria. NEVER omit the parameter: the fallback chain (built-in type default → the parent's current model) silently runs the subagent on a more expensive model and burns tokens. An omitted `model` is a protocol violation: on noticing one (your own launch or a reviewed one), disclose it and set `model` explicitly on the very next launch.
 
 Optional but important:
 
 - `timeout`: minimum 60 seconds (1 minute) for simple tasks; minimum 3600 seconds (60 minutes maximum) for complex investigations or large code changes.
 - `run_in_background`: default `false`. Use `true` only when the task can continue independently, you do not need the result immediately, and there is a clear benefit to returning control before it finishes.
 - `resume`: reuse an existing `agent_id` when the new task clearly continues prior work or when that instance already holds relevant context.
+
+## Model Selection (SINGLE SOURCE)
+
+[ref: #sp-model-selection]
+
+This section is the ONLY place in the project where subagent model names, tiers, and selection criteria live. Every other document, checklist, or memory references this section by anchor and NEVER names a model — names change; the pointer does not.
+
+| Tier | Model | Use for |
+|---|---|---|
+| **Default** | `kimi-code/kimi-for-coding` | Everything routine: focused file/symbol lookups, known-file reads, mechanical edits, command runs, artifact attestation, template fills, single-file analysis. |
+| **Upgrade** | `kimi-code/k3-256k` | Tasks needing extra attention and judgment: complex or cross-cutting research (thorough exploration, architecture reconnaissance), judgment-heavy adversarial review or audit, synthesis over many inputs, work where a miss is expensive (security detection, validation). |
+
+**Escalation ladder:** if a default-tier subagent returns shallow or wrong work, relaunch the task on the upgrade tier (resume the instance or start a new one) — do not iterate against a model that is too weak for the task.
+
+**Explicit-parameter rule:** the `model` parameter is passed on EVERY launch (§4), always from this table — never from memory, never from other documents.
 
 ## 5. Context Passing
 
@@ -163,7 +178,7 @@ Use this checklist before every `Agent` call.
 - [ ] `subagent_type` matches the task.
 - [ ] `prompt` is self-contained and specific.
 - [ ] `timeout` is at least 60s for simple tasks or maximum 3600s for complex tasks.
-- [ ] `model` is set EXPLICITLY on every launch (never omitted) — `kimi-code/k3-256k` unless the task specifically needs a different model.
+- [ ] `model` is set EXPLICITLY on every launch (never omitted), chosen per `[ref: #sp-model-selection]`.
 - [ ] `run_in_background` is `true` only when the task can proceed independently and returning early is useful.
 - [ ] `resume` is used only when continuing prior work on the same `agent_id`.
 

@@ -39,7 +39,7 @@ This skill is the closing ceremony of session initialization and the evidence-ba
 
 8. **Mode states** — every `runtime: true` skill's state declared (e.g. `discuss-first: off`); no pending user question left unanswered.
 9. **rtk pin** — only when `rtk-protocol` is active — evidence: `rtk --version` output matches the skill's version pin; on mismatch, flag the refresh.
-10. **Delegation readiness** — evidence: default subagent model `kimi-code/k3-256k` is set explicitly on launches (`subagents-protocol` §4); the mirror is fresh enough for subagents (they read skills ONLY from `.kimi/mirror/`).
+10. **Delegation readiness** — evidence: the subagent model is chosen per `subagents-protocol` `[ref: #sp-model-selection]` (the single source of model names) and passed explicitly on launches; the mirror is fresh enough for subagents (they read skills ONLY from `.kimi/mirror/`).
 
 ## 3. Verdict Format
 
