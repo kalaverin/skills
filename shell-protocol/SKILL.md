@@ -39,6 +39,14 @@ You MUST NEVER use the legacy tools on the left. You MUST ALWAYS use the modern 
 * `pip`, `poetry`, `virtualenv` ➔ FORBIDDEN. Use `uv`.
 * `black`, `flake8`, `isort` ➔ FORBIDDEN. Use `ruff`.
 
+## ReadFile Boundary and Skill File Reads (HARD)
+
+[ref: #shell-readfile-boundary]
+
+1. **ReadFile is scoped to the working directory.** An absolute path OUTSIDE it fails with "Resource not found" even when the file exists — this is a scope boundary, not a missing file. Verify existence with `ls`/`fd` before concluding anything; never retry ReadFile in a loop.
+2. **Skill files are read locally, mirror-first.** Prefer `.kimi/mirror/<skill>/...` whenever it exists — subagents always, and the main agent preferably, so everyone reads the same committed truth (the mirror is commit-gated by design; it may lag drafts). The LIVE tree (`<skill>/...` or the `.kimi/skills` symlink) is for EDITING a skill, and for first-run boots before any mirror exists.
+3. **Genuinely external files** (other projects' memory files, harness built-in paths) are out of ReadFile scope: verify with `ls`, then read ONCE via `cat` through Shell. Do not retry, do not conclude the file is missing.
+
 ## 1. Compliance and Lazy-Load Protocol (CRITICAL)
 You MUST NOT read the tool manuals in `references/` in their entirety. You MUST use partial extraction via `rg` to preserve context memory.
 

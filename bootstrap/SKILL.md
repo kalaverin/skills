@@ -20,7 +20,7 @@ This gate is executed HARDEST, with **zero tolerance for deviation**: no reorder
 1. **Skill mirror sync (MUST).** Run `just sync-skills-mirror` before loading any skill.
    - **Hard-stop precondition:** if the project working directory does not contain `.kimi/skills`, halt immediately (hard-stop fail) and report the missing directory to the user. Do NOT create the symlink, do NOT fall back to any other skills location, do NOT proceed with the gate, do NOT search the directory.
    - **Hard-stop on failure:** if the command fails for any reason, halt immediately and report the failure. Do NOT inspect the Justfile, do NOT attempt a manual rsync, do NOT proceed with the gate.
-   - **Subagent constraint:** subagents never use the `.kimi/skills` symlink. All skills passed to subagents MUST be read from `.kimi/mirror/`.
+   - **Skill-file reads:** subagents never use the `.kimi/skills` symlink — they read skills from `.kimi/mirror/`. The main agent prefers `.kimi/mirror/` as well, so everyone reads the same committed truth (the full rule lives in `shell-protocol`); the live tree is for editing.
 2. **Forced import (MUST).** Read `frontmatter-protocol/SKILL.md` in full, then its boot-mandatory extension `frontmatter-protocol/references/include.md` WHOLE, and apply them without exception (the boot contract lives in include.md).
 3. **Skill discovery and loading.** Run discovery and header evaluation per the include extension; read every triggered skill's `SKILL.md` in full.
 4. **Project activation.** Call `activate_project`.
