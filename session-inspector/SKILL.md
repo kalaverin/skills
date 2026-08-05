@@ -34,7 +34,7 @@ uv run --no-project python session-inspector/scripts/inspect_sessions.py --sessi
 
 - **List mode (default):** the N most recent sessions (default 10, `--last K` to change), one block per session: short id, last activity (UTC), status (`active` / `archived` / `interrupted` / `stale`), title when the file carries one, working repos (absolute paths from tool calls, resolved to git roots), and the first/last real messages (the first is read from the oldest compaction segment `context_N.jsonl` when present).
 - **Show mode (`--session <id-prefix>`):** the distilled transcript — user/assistant text only, noise-injected system blocks stripped, each message truncated, capped at the last 50 messages. Use it to answer "what exactly happened in that session" without touching the JSONL.
-- **Restore mode (`--session <id-prefix> --restore`):** the context-restoration pack for "подними контекст из этой сессии" — NOT a transcript: todos from `state.json` (capped at 10), working repos, recently written files, Serena memory refs the session touched, the last user messages, and the last assistant messages at up to 1000 chars each (closing summaries carry the state).
+- **Restore mode (`--session <id-prefix> --restore`):** the context-restoration pack for "подними контекст из этой сессии" — NOT a transcript: OPEN todos from `state.json` in full (done ones collapse to a count), working repos, recently written files, Serena memory refs the session touched, the last user messages, and the last assistant messages at up to 1000 chars each (closing summaries carry the state).
 
 ## 3. Presenting to the User
 

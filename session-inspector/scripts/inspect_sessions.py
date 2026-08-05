@@ -26,7 +26,6 @@ MSG_CHARS = 300
 TAIL_MESSAGES = 50
 TOP_REPOS = 3
 TOP_FILES = 10
-TOP_TODOS = 10
 TODO_CHARS = 120
 SECONDS_PER_DAY = 86400
 RESTORE_USER_MESSAGES = 5
@@ -232,16 +231,18 @@ def cmd_show(session_dir: Path) -> None:
 
 
 def _print_todos(state: dict) -> None:
-    todos = state.get("todos") or []
+    todos = [t for t in (state.get("todos") or []) if isinstance(t, dict)]
     if not todos:
         return
+    open_todos = [t for t in todos if t.get("status") in OPEN_TODO_STATUSES]
+    done_count = len(todos) - len(open_todos)
     print("todos:")
-    for todo in todos[:TOP_TODOS]:
-        if isinstance(todo, dict):
-            title = str(todo.get("title", ""))[:TODO_CHARS]
-            print(f"  [{todo.get('status', '?')}] {title}")
-    if len(todos) > TOP_TODOS:
-        print(f"  … and {len(todos) - TOP_TODOS} more")
+    for todo in open_todos:
+        print(
+            f"  [{todo.get('status', '?')}] {str(todo.get('title', ''))[:TODO_CHARS]}",
+        )
+    if done_count:
+        print(f"  ({done_count} done)")
     print()
 
 
