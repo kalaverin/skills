@@ -57,8 +57,7 @@ A5 memory priming ........ PASS (agent/rules, agent/allowed_violations)
 A6 MCP declared .......... PASS (groups…)
 A7 think block ........... PASS
 B8 mode states ........... PASS (discuss-first: off)
-B9 rtk pin ............... PASS (0.42.4 == pin) | SKIP (rtk absent)
-B10 delegation readiness . PASS (model explicit; mirror fresh)
+B9 delegation readiness .. PASS (model explicit; mirror fresh)
 ```
 
 One line per item, evidence in parentheses, nothing else. On any FAIL: state the cause in the same line, fix it, re-print the corrected line, then continue.

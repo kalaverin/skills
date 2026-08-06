@@ -2,7 +2,7 @@
 name: python-lang
 description: MANDATORY skill for Python code. Use when writing, editing, refactoring, or reviewing Python files, modules, packages, classes, functions, type annotations, imports, exceptions, comprehensions, decorators, or docstrings. Enforces Google Python Style Guide and a mandatory, unconditional Ruff format+check pipeline scoped strictly to the agent's own changes.
 triggers:
-  files: "fd -e py -e pyi --max-results 1 | wc -l | grep -q 1"
+  files: "fd -e py -e pyi --max-results 1 | grep -q ."
 requires:
   - frontmatter-protocol
   - read-for-comments
@@ -10,8 +10,7 @@ requires:
 
 # SKILL: Strict Python Engineering & Compliance
 
-You are an expert Python Engineer and a strict Code Reviewer. **This document is a binding rule set, not a recommendation.**"
-"
+You are an expert Python Engineer and a strict Code Reviewer. **This document is a binding rule set, not a recommendation.**
 Every directive in this guide MUST be followed unless it explicitly uses **SHOULD** or **MAY**. The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when they appear in all capitals or in bold markup.
 
 ## 1. Compliance and Local Style
@@ -26,71 +25,23 @@ Every directive in this guide MUST be followed unless it explicitly uses **SHOUL
 
 ## 2. Mandatory Lookups (Lazy-Load Protocol)
 
-**This index is mandatory.** When the trigger in the left column matches your current task, you MUST extract and read the referenced section in full before proceeding. Do not guess, do not rely on training data, and do not skip the section because the topic seems familiar. All triggers carry the weight of MUST unless the target section itself contains a SHOULD or MAY.
+**This routing is mandatory.** When the task touches Python language or style rules, you MUST route through the corpus frontmatter before reading any body. Do not guess, do not rely on training data, and do not skip routing because the topic seems familiar. You MUST NOT read the reference files in their entirety.
 
-### ⚠️ STRICT READING CONSTRAINT (PARTIAL EXTRACTION)
-You MUST NOT read the files `references/01_language_rules.md` or `references/02_style_rules.md` in their entirety. You MUST use partial extraction to preserve context memory.
+**Corpus:**
 
-**Extraction Execution:**
-1. Match your task to a "Trigger / Situation" in the tables below.
-2. Copy the corresponding `[ref: ...]` tag.
-3. Extract ONLY the relevant section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
+- `references/01_language_rules.md` — Google language rules; 20 routable sections, anchors `py-lr-*`.
+- `references/02_style_rules.md` — Google style rules; 53 routable sections including the subsection-level chapters 2.8 / 2.10 / 2.16 / 2.19, anchors `py-st-*`.
+- `references/03_personal_rules.md` — project-specific rules that EXTEND and OVERRIDE the Google corpora on conflict, anchors `py-pr-*`. Its frontmatter is small: shortlist it on EVERY funnel pass so overrides are never missed.
 
-### Table A: Python Language Rules (`references/01_language_rules.md`)
+**Toolchain precedence (HARD):** the corpus reproduces upstream Google text that references `pylint` and `pytype`. Those references are historical context only. The governing local toolchain is Ruff for lint/format (§3, mandatory) and mypy for type checking (`03_personal_rules.md`). Where a corpus section and this skill's §3 conflict, §3 wins; say so per §1 (Deviation Justification).
 
-| Trigger / Situation | Section | Anchor Tag for Search |
-|:---|:---|:---|
-| Running/configuring linting; suppressing warnings (`pylint: disable`). | 1.1 Lint | `[ref: #s1.1-lint]` |
-| Adding/reorganizing imports; absolute vs relative; import order. | 1.2 Imports | `[ref: #s1.2-imports]` |
-| Creating a new package/module; `__init__.py` usage. | 1.3 Packages | `[ref: #s1.3-packages]` |
-| Raising/catching exceptions; `except Exception:`; preserving tracebacks. | 1.4 Exceptions | `[ref: #s1.4-exceptions]` |
-| Declaring/using global variables; mutable vs immutable state. | 1.5 Mutable Global State | `[ref: #s1.5-global-variables]` |
-| Defining nested functions/classes; closures; local classes. | 1.6 Nested/Local Classes | `[ref: #s1.6-nested]` |
-| Writing comprehensions (list/dict/set) or generator expressions. | 1.7 Comprehensions | `[ref: #s1.7-comprehensions]` |
-| Iterating over collections; using `in` for membership testing. | 1.8 Default Iterators | `[ref: #s1.8-default-iterators-and-operators]` |
-| Writing generator functions; `yield` and `yield from`. | 1.9 Generators | `[ref: #s1.9-generators]` |
-| Writing one-off functions; deciding on `lambda`. | 1.10 Lambda Functions | `[ref: #s1.10-lambda-functions]` |
-| Writing inline conditionals (ternary expressions). | 1.11 Conditional Expressions | `[ref: #s1.11-conditional-expressions]` |
-| Defining default arguments; handling mutable defaults. | 1.12 Default Arguments | `[ref: #s1.12-default-argument-values]` |
-| Implementing getters/setters; using `@property`. | 1.13 Properties | `[ref: #s1.13-properties]` |
-| Empty collection checks; `None`, zero, or boolean evaluations. | 1.14 True/False Evaluations | `[ref: #s1.14-truefalse-evaluations]` |
-| Referencing variables from an enclosing scope (closures). | 1.16 Lexical Scoping | `[ref: #s1.16-lexical-scoping]` |
-| Applying/writing decorators; `@classmethod`, `@staticmethod`. | 1.17 Decorators | `[ref: #s1.17-function-and-method-decorators]` |
-| Multi-threading; `threading`, `multiprocessing`, `concurrent.futures`. | 1.18 Threading | `[ref: #s1.18-threading]` |
-| Metaclasses, reflection, or dynamic attribute access. | 1.19 Power Features | `[ref: #s1.19-power-features]` |
-| Using `from __future__ import annotations` or modern idioms. | 1.20 Modern Python | `[ref: #s1.20-modern-python]` |
-| Adding/evaluating type annotations (`typing`). | 1.21 Type Annotated Code | `[ref: #s1.21-type-annotated-code]` |
+**Skill addendum (lazyload):** `prompts/REFERENCE_STANDARD_ADDENDUM.md` declares the two-tier anchor prefixes (`py-lr-`, `py-st-`, `py-pr-`), the tight `marker_style`, the Google-canon numbered-headings exemption, and the pseudo-heading legalization. Corpus frontmatter schema and card semantics defer to `frontmatter-protocol/references/lazyload.md`.
 
-### Table B: Python Style Rules (`references/02_style_rules.md`)
-
-| Trigger / Situation | Section | Anchor Tag for Search |
-|:---|:---|:---|
-| Multiple statements per line; semicolon usage. | 2.1 Semicolons | `[ref: #s2.1-semicolons]` |
-| Breaking long lines (> 80 chars); explicit backslash vs parens. | 2.2 Line Length | `[ref: #s2.2-line-length]` |
-| Parentheses for grouping, tuples, or line continuation. | 2.3 Parentheses | `[ref: #s2.3-parentheses]` |
-| Indentation rules; hanging indents; trailing commas. | 2.4 Indentation | `[ref: #s2.4-indentation]` |
-| Blank lines between top-level definitions or logical sections. | 2.5 Blank Lines | `[ref: #s2.5-blank-lines]` |
-| Whitespace around operators, commas, colons; spacing in types. | 2.6 Whitespace | `[ref: #s2.6-whitespace]` |
-| Adding/editing shebangs (`#!/usr/bin/env python3`). | 2.7 Shebang Line | `[ref: #s2.7-shebang-line]` |
-| Writing docstrings (Args/Returns/Raises) and inline comments. | 2.8 Comments & Docstrings | `[ref: #s2.8-comments-and-docstrings]` |
-| String formatting (f-string, `%`, `.format()`); log messages. | 2.10 Strings | `[ref: #s2.10-strings]` |
-| Managing resources (files, sockets); using `with`. | 2.11 Files/Sockets | `[ref: #s2.11-files-sockets-closeables]` |
-| Writing TODO comments; correct format and issue linking. | 2.12 TODO Comments | `[ref: #s2.12-todo-comments]` |
-| Formatting and grouping import blocks. | 2.13 Imports Formatting | `[ref: #s2.13-imports-formatting]` |
-| Combining small statements on a single line. | 2.14 Statements | `[ref: #s2.14-statements]` |
-| Choosing between public attributes and accessor methods. | 2.15 Accessors | `[ref: #s2.15-accessors]` |
-| Naming conventions (modules, classes, vars); PEP 8 constraints. | 2.16 Naming | `[ref: #s2.16-naming]` |
-| Script entry points; `if __name__ == '__main__':`. | 2.17 Main | `[ref: #s2.17-main]` |
-| Evaluating function length; extracting smaller functions. | 2.18 Function Length | `[ref: #s2.18-function-length]` |
-| Type annotation style; line breaks; generics; conditional imports. | 2.19 Type Annotations | `[ref: #s2.19-type-annotations]` |
-
-### Table C: House Rules (`references/house_rules.md`)
-
-House-specific rules that extend or override the Google corpora (this file wins on conflict; review rules live in `discuss-first/references/existence_review.md`).
-
-| Trigger / Situation | Section | Anchor Tag for Search |
-|:---|:---|:---|
-| Enum membership tests and mypy narrowing; replacing literal tuples with enum-class membership. | Enum-class membership breaks mypy narrowing | `[ref: #hr-enum-membership-narrowing]` |
+**Routing Funnel (per `frontmatter-protocol` `[ref: #lazy-load-routing]`):**
+1. Run the subject map (Command 1) over `references/` and shortlist candidate files semantically — the request plus inferred session work; shortlist generously.
+2. Read the full frontmatter of shortlisted files — `03_personal_rules.md` is always shortlisted — and match every card's `what` / `use_when` / `avoid_when` semantically (OR semantics); mark each matching card's `anchor`.
+3. Deduplicate anchors, then extract each selected section with the canonical bounded extraction — never a blind `rg -A N` window.
+4. Apply the extracted rules strictly.
 
 ***
 
@@ -145,11 +96,12 @@ uvx ruff check --fix --select ALL --ignore D,CPY,DOC,EM101,ERA001,FBT001,FBT002,
 ```
 Read every REMAINING suggestion carefully (these are the ones `--fix` could not repair). Apply manual fixes ONLY to the code you altered.
 
-### Step 3.4: Verify Diff Scope
-After applying fixes, verify the diff touches **ONLY changed code**:
+### Step 3.4: Preview Remaining Fixes
+After applying fixes, confirm no auto-fixable violations remain — the emitted diff MUST be empty (any non-empty hunk is a fix you still owe or a foreign line you MUST NOT apply):
 ```bash
 uvx ruff check --select ALL --ignore D,CPY,DOC,EM101,ERA001,FBT001,FBT002,FIX001,FIX002,TD001,TD002,TD003,TD004,TD005,TRY003 --target-version <PYVER> --diff <changed_files>
 ```
+This previews would-be fixes only; final git-scope verification is §4 step 6.
 
 ### Step 3.5: Rule Lookup
 If you are uncertain about any rule code generated by the linter, use:
@@ -158,16 +110,18 @@ uvx ruff rule <RULE_CODE>
 ```
 *(Example: `uvx ruff rule E501`)*
 
+### Pipeline Failure Handling (HARD)
+If any pipeline command cannot run or errors out — `uv`/`uvx`/`ruff` missing, the target project is not uv-managed and `uv run` fails, Ruff crashes on a syntax error mid-edit — the agent MUST STOP, report the exact failure and its output to the user, and ask how to proceed. The gate is unconditional, but it is NEVER satisfied by silently skipping it or by substituting another linter (`black`, `flake8`, `isort` stay forbidden).
+
 ***
 
 ## 4. Master Execution Workflow
 1. **Analyze Task:** Determine the specific Python operations required.
-2. **Component Reuse Check:** If the project root contains a `.sdk/` directory, run `fd -L -t f EXPORT.md .sdk/`, read every discovered manifest, and prefer reusable components described there over writing new code.
-3. **Trigger Match:** Locate the relevant rows in Table A and Table B.
-4. **Partial Read:** Run `rg` on the specific `[ref: ...]` tags in `references/01_language_rules.md` and `references/02_style_rules.md`.
-5. **Code Generation:** Write the code strictly adhering to the extracted rules, the reuse manifests, AND local file consistency.
-6. **Lint & Format:** Execute the full Mandatory Lint & Format Pipeline (§3), including foreign-code restoration, on every file the agent wrote or edited — unconditionally, without reminders, and regardless of any project-level linting.
-7. **Final Verification:** Confirm via `git diff` that no unmodified (foreign) code was altered before concluding the task; any formatter bleed into foreign lines must already be reverted or explicitly justified.
+2. **Component Reuse Check:** Apply the §5 Component Reuse Rule before writing any code.
+3. **Route:** Run the §2 routing funnel over the `references/` corpus (subject map → frontmatter cards → bounded extraction of the selected `py-*` sections).
+4. **Code Generation:** Write the code strictly adhering to the extracted rules, the reuse manifests, AND local file consistency.
+5. **Lint & Format:** Execute the full Mandatory Lint & Format Pipeline (§3), including foreign-code restoration, on every file the agent wrote or edited — unconditionally, without reminders, and regardless of any project-level linting.
+6. **Final Verification:** Confirm via `git diff` that no unmodified (foreign) code was altered before concluding the task; any formatter bleed into foreign lines must already be reverted or explicitly justified.
 
 ***
 
@@ -183,4 +137,4 @@ Read every returned file before writing code.
 ### 5.2 Applying Manifests
 Each `EXPORT.md` describes reusable components and the criteria for copying them whole.
 Apply those criteria strictly.
-After copying a module, replace the source package prefix with the target project's package prefix and run the Agent Self-Linting Protocol only on the changed files.
+After copying a module, replace the source package prefix with the target project's package prefix and run the Mandatory Lint & Format Pipeline (§3) only on the changed files.

@@ -38,10 +38,13 @@ If the project root contains a `.sdk/` directory, the agent also checks for reus
 
 ```text
 python-lang/
-├── references/           # Language and style rule references
+├── prompts/
+│   └── REFERENCE_STANDARD_ADDENDUM.md  # Lazyload addendum: prefixes, marker style, exemptions
+├── references/           # Language and style rule references (lazy-load corpus)
 │   ├── 01_language_rules.md
-│   └── 02_style_rules.md
-└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
+│   ├── 02_style_rules.md
+│   └── 03_personal_rules.md
+└── SKILL.md              # Agent entry point: manifest, triggers, routing funnel
 ```
 
 ## Reference overview
@@ -50,6 +53,12 @@ python-lang/
 |------|----------------|
 | `references/01_language_rules.md` | Lint, imports, packages, exceptions, mutable global state, nested classes, comprehensions, iterators, generators, lambdas, conditional expressions, default arguments, properties, truthiness, lexical scoping, decorators, threading, power features, modern Python, and type-annotated code. |
 | `references/02_style_rules.md` | Semicolons, line length, parentheses, indentation, blank lines, whitespace, shebang, comments and docstrings, strings, files and sockets, TODO comments, import formatting, statements, accessors, naming, main entry points, function length, and type annotations. |
+| `references/03_personal_rules.md` | Personal project rules that extend and override the Google corpora on conflict (currently the mypy enum-membership narrowing trap). |
+| `prompts/REFERENCE_STANDARD_ADDENDUM.md` | Lazyload addendum: two-tier anchor prefixes (`py-lr-`, `py-st-`, `py-pr-`), tight marker style, Google-canon numbered-headings exemption, pseudo-heading legalization. |
+
+## Lazy-load routing
+
+The reference corpus is lazy-loadable: `SKILL.md` §2 routes through each file's frontmatter (subject map → decision cards → bounded extraction of `py-*` sections) instead of reading bodies in full. All three files conform to `frontmatter-protocol`'s lazyload standard; local amendments live in `prompts/REFERENCE_STANDARD_ADDENDUM.md`.
 
 ## Important conventions / gotchas
 
@@ -57,4 +66,3 @@ python-lang/
 - Ruff is the mandatory linter and formatter; `black`, `flake8`, and `isort` are not used.
 - `uv` is the mandatory Python project tool; `pip`, `poetry`, and `virtualenv` are not used.
 - The agent formats and fixes only code it explicitly modified, ignores pre-existing violations in untouched code, and reverts any formatter hunks that bleed into foreign lines so foreign code returns byte-identical to its prior state.
-- All timestamps use UTC ISO 8601 format.

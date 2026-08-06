@@ -1,23 +1,22 @@
 ---
-subject: "House rules extending and overriding Google style for this project's Python code; mypy type narrowing traps, enum-class membership, member-tuple pattern, checker limitations, literal unions, typing gotchas, refactor hazards, silent regressions, narrowing preservation, equality chains."
+subject: "Personal rules extending and overriding Google style for this project's Python code; mypy type narrowing traps, enum-class membership, member-tuple pattern, checker limitations, literal unions, typing gotchas, refactor hazards, silent regressions, narrowing preservation, equality chains."
 index:
-  - anchor: hr-enum-membership-narrowing
+  - anchor: py-pr-enum-membership-narrowing
     what: "The mypy narrowing trap of enum-class membership tests (`x in SomeEnum`) and the member-tuple pattern that preserves narrowing."
     problem: "Agent refactors literal tuple membership into enum-class membership check; type checker silently stops narrowing, downstream branches break or sprout ignores; narrowing loss, silent regression, refactor trap, literal unions, enum pitfall, false confidence."
     use_when: "Refactoring membership tests to enums; reviewing enum-based conditionals; mypy errors downstream of an enum-class membership check."
-    avoid_when: "Membership against a tuple of enum members — that pattern narrows correctly and needs no intervention."
+    avoid_when: "Runtime enum semantics or style questions with no narrowing at stake; code without a type checker — the trap is static-analysis-only."
     expected: "Enum membership checks never silently drop narrowing; the member-tuple pattern is used wherever narrowing matters."
 libraries:
   - mypy
 ---
 
-# House Rules (Python)
+# Personal Rules (Python)
 
-House-specific rules that extend or override the Google-style corpora (`01_language_rules.md`, `02_style_rules.md`). Review-focused rules live verbatim in `discuss-first/references/existence_review.md` and win on conflict; this file accumulates house typing and language practice. On conflict with the Google corpora, this file wins.
+Project-specific rules that extend or override the Google-style corpora (`01_language_rules.md`, `02_style_rules.md`). Review-focused rules live verbatim in `discuss-first/references/existence_review.md` and win on conflict; this file accumulates personal typing and language practice. On conflict with the Google corpora, this file wins.
 
 ## Enum-class membership breaks mypy narrowing
-
-[ref: #hr-enum-membership-narrowing]
+[ref: #py-pr-enum-membership-narrowing]
 
 Refactoring a literal membership test into enum-class membership silently drops mypy type narrowing (mypy issue #13684, open: the enum class is not treated as an iterable value set by the narrowing engine):
 

@@ -1,21 +1,143 @@
-## 1. Python Language Rules
+---
+subject: "Google Python language rules governing how code is written; `pylint` suppressions, `import` forms, full package paths, exception discipline, mutable global state, nested functions, comprehensions, default iterators, generators, `lambda`, conditional expressions, default argument values, `@property`, implicit false, lexical scoping, decorators, `threading` `Queue`, power features, `from __future__ import`, type annotations `pytype`."
+index:
+  - anchor: py-lr-lint
+    what: "The upstream `pylint` gate (superseded locally by the Ruff pipeline in `SKILL.md` §3) plus rules for symbolic line-level suppressions and `del`-based unused-argument handling."
+    problem: "Agent edits Python sources without static analysis; typos, use-before-assignment, and unused parameters slip into committed code and surface as runtime defects; spurious warnings, blanket suppression, hidden diagnostics, lint debt, silenced checker, review escape."
+    use_when: "Suppressing one specific warning instance symbolically; unused parameter must stay in signature for caller compatibility; reviewing upstream lint discipline of existing code."
+    avoid_when: "Choosing which linter to run — the mandatory Ruff pipeline (`SKILL.md` §3) governs locally; blanket file-level suppression."
+    expected: "Lint gate satisfied via the Ruff pipeline; remaining warnings carry narrow symbolic suppressions with reasons."
+  - anchor: py-lr-imports
+    what: "Import discipline: `import x` / `from x import y` for packages and modules only, alias rules, the relative-import ban, and symbol-import exemptions."
+    problem: "Agent adds imports casually; symbols pulled directly and relative paths create name collisions, double-imported packages, and unclear origin of names that breaks under refactoring; namespace pollution, shadowing, dot import trap, symbol grabbing, provenance loss, alias chaos."
+    use_when: "Adding or reorganizing import blocks; two same-named modules must coexist; long or generic module names collide with parameters; static-analysis symbols come from `typing` or `collections.abc`."
+    avoid_when: "Importing individual functions or classes directly — exempted `typing`/`collections.abc`/`typing_extensions` symbols aside; shortening aliases without standard-abbreviation justification."
+    expected: "Import block references packages and modules by full path, aliases only where justified, no relative names anywhere."
+  - anchor: py-lr-packages
+    what: "Full-pathname module importing: every module referenced by its complete package path, with no reliance on the main binary's directory sitting in `sys.path`."
+    problem: "Agent assumes script directory or local files resolve as imports; deployment layouts shift `sys.path` and modules silently bind to wrong or duplicate packages; path-dependent resolution, layout sensitivity, shadow module, ambiguous intent, import hijack, top-level confusion."
+    use_when: "Organizing package hierarchies; new module added under nested directories; deployment replicates package structure."
+    avoid_when: "Single-file scripts with no package layout; thinking `import jodie` picks up a sibling `jodie.py` — it resolves as third-party top-level."
+    expected: "Every import resolves identically across environments regardless of working directory or launcher location."
+  - anchor: py-lr-exceptions
+    what: "Exception discipline: built-in exception classes, `Error`-suffixed custom hierarchies, minimal `try` bodies, narrow `except` clauses, `finally` cleanup, and the `assert` litmus test."
+    problem: "Agent scatters broad handlers and asserts-as-validation; unexpected failures get swallowed, preconditions vanish under optimization, and cleanup leaks when control jumps; silenced error, catch-all handler, hidden traceback, assert abuse, fat try block, resource leak."
+    use_when: "Raising or handling errors; choosing between built-in and custom exception types; validation code tempted toward `assert`; resources need release on failure paths."
+    avoid_when: "`pytest` test bodies, where plain `assert` is expected; flow control that a conditional expresses more plainly."
+    expected: "Handlers catch specific exceptions, `try` spans stay minimal, cleanup runs through `finally`, and `assert` never carries application logic."
+  - anchor: py-lr-global-variables
+    what: "Rules for module-level mutability: avoid it; when warranted, declare `_`-prefixed internals behind public accessors, with documented design reasons and `ALL_CAPS` constants."
+    problem: "Agent reaches for shared mutable state for convenience; import-time behavior shifts, encapsulation erodes, and tests interfere through leaked cross-call values; global mutation, import side effect, boundary breach, order dependence, hidden coupling, action at distance."
+    use_when: "Module-level constant needed — encouraged in `ALL_CAPS`; genuinely shared mutable registry justified and documented; accessor functions must gate internal state."
+    avoid_when: "Convenience caching or flag-passing through module scope — pass parameters or encapsulate in classes instead."
+    expected: "Module scope holds constants and documented, accessor-gated internals; behavior stays stable across import order."
+  - anchor: py-lr-nested
+    what: "Nesting verdict: nested or inner functions and classes allowed only when closing over a local value other than `self`/`cls`; hiding belongs to `_`-prefixed module-level names."
+    problem: "Agent buries helpers inside outer functions to keep them private; units become untestable, outer bodies bloat, and closures surprise when scope capture misbehaves; isolated helper, hidden closure, enclosing read, testability loss, decorator building, deep indentation."
+    use_when: "Capturing enclosing locals is the goal; decorator factories and ADT-style small scopes; inner class genuinely scoped to its owner."
+    avoid_when: "Hiding motive alone — a `_`-prefixed module-level def stays testable; nested body stretches the outer function past readability."
+    expected: "Nesting appears only for genuine closures; helpers live at module level, reachable by tests."
+  - anchor: py-lr-comprehensions
+    what: "Comprehension limits: list/dict/set comprehensions and generator expressions allowed for simple cases — one `for` clause, one filter — with readability favored over conciseness."
+    problem: "Agent chains multiple `for` clauses and filters into one expression; comprehension turns unreadable, review stalls, and subtle ordering bugs hide inside dense syntax; nested loop compression, compact maze, readability collapse, iteration interleave, filter stacking, clever one-liner."
+    use_when: "Building a container from one iteration with optional single condition; transforming streams where lazy evaluation avoids a materialized list."
+    avoid_when: "Logic needs nested iteration or compound conditions — write an explicit loop; expression grows past quick comprehension."
+    expected: "Comprehensions stay single-`for`, single-filter, instantly readable; complex iteration lives in plain loops."
+  - anchor: py-lr-default-iterators-and-operators
+    what: "Idiomatic traversal: iterate containers directly, use `in`/`not in` membership, prefer iterator methods over list-returning ones, never mutate during iteration."
+    problem: "Agent loops over `keys()` or `readlines()` out of habit; code reads noisier, wastes memory materializing lists, and mid-loop mutation corrupts traversal; redundant method call, eager copy, concurrent edit, noisy iteration, index emulation, c-style habit."
+    use_when: "Traversing dicts, lists, files, or any container with default iteration; membership checks needed; choosing between iterator and list-returning methods."
+    avoid_when: "Container lacks default iteration; deletion or insertion must happen mid-pass — iterate over a copy or collect keys first; enum-class membership under mypy — `py-pr-enum-membership-narrowing` owns that override."
+    expected: "Loops read `for key in adict:` style, membership uses `in`, no mutation occurs while a pass is active."
+  - anchor: py-lr-generators
+    what: "`yield`-based generators: lazy iterators preserving local variables, `Yields:` docstrings, and context-manager wrapping (PEP-0533) for expensive resources."
+    problem: "Agent builds full lists for streamed data; memory balloons on large inputs, and generator-held resources linger unconsumed past their lifetime; eager accumulation, heap pressure, suspended state, handle leak, lazy stream, cleanup gap."
+    use_when: "Producing sequences consumed incrementally; input size unbounded; local control flow simpler as suspended function than explicit iterator class."
+    avoid_when: "Caller needs random access or repeated passes — a materialized sequence fits; docstring says `Returns:` for a `yield` function."
+    expected: "Large streams flow lazily with low memory; generator functions document `Yields:` and resources under management get deterministic cleanup."
+  - anchor: py-lr-lambda-functions
+    what: "Lambda limits: one-line anonymous functions allowed; longer bodies become named nested functions, and `operator` module functions replace trivial lambdas like `lambda x, y: x * y`."
+    problem: "Agent reaches for anonymous functions beyond one line; stack traces lose names, debugging hurts, and multiline expressions cram into single-expression syntax; inline sprawl, nameless frames, traceback opacity, expression limit, operator alternative, readability squeeze."
+    use_when: "Callback fits one short line; key function for `sorted`/`min`/`max`; common arithmetic where `operator.mul` reads better."
+    avoid_when: "Body exceeds 60-80 chars or needs statements — write a proper `def`; `map()`/`filter()` with lambda where a generator expression suffices."
+    expected: "Lambdas stay single-line and trivial; anything complex has a name and debuggable frames."
+  - anchor: py-lr-conditional-expressions
+    what: "Ternary rules: `x if cond else y` allowed when each of the three portions fits one line; anything longer takes a full if statement."
+    problem: "Agent packs branching into ternaries past one line per portion; condition drowns mid-expression, readers misparse, and diffs tangle on reflow; buried predicate, cramped branches, line-break maze, scan friction, ternary abuse, reflow churn."
+    use_when: "Simple either/or assignment; predicate and both results short; three portions each fit their own line."
+    avoid_when: "Any portion needs wrapping beyond its line — switch to if/else blocks; side effects wanted in branches."
+    expected: "Ternaries appear only in one-line-per-portion form; complex branching reads as plain if statements."
+  - anchor: py-lr-default-argument-values
+    what: "Default-argument safety: defaults evaluate once at module load, so mutable or call-time values are banned; `None` sentinels and immutable empty tuples instead."
+    problem: "Agent writes `def f(items=[])` or `b=time.time()`; every call shares one list, timestamps freeze at import, and flag values predate parsing; shared default, definition-time evaluation, mutable trap, frozen moment, caller bleed, spooky reuse."
+    use_when: "Optional parameter needs a fallback; empty-tuple immutable default suffices; `None` sentinel pattern with typed `Sequence | None` signatures."
+    avoid_when: "List, dict, or any mutable as default; function calls or flag lookups in default position — they bind at definition, not per call."
+    expected: "Defaults are immutable or `None`-sentineled; each invocation gets fresh containers and current values."
+  - anchor: py-lr-properties
+    what: "`@property` usage: wrap trivial computed attribute access that stays cheap and unsurprising; manual descriptors and subclass-override computations are out."
+    problem: "Agent wraps every internal field in getter-setter ceremony or hides heavy work behind attribute syntax; access surprises with side effects, subclasses tangle, and plain fields drown in boilerplate; covert computation, expensive access, java habit, override trap, needless indirection, attribute illusion."
+    use_when: "Derived value trivially computed from other fields; read-only exposure needed; internal representation may evolve behind stable interface."
+    avoid_when: "Plain get-and-set of an internal with no computation — make it public; subclasses will want to override the logic; anything expensive or side-effecting; explicit accessor-method design — `py-st-accessors` owns that verdict."
+    expected: "Properties appear only for cheap derived access; plain attributes stay public, and no surprise hides behind dot notation."
+  - anchor: py-lr-truefalse-evaluations
+    what: "Implicit-false discipline: `if foo:` over length or emptiness comparisons, `is None` for `None`, never `== False`, sequence truthiness, integer and `numpy` caveats."
+    problem: "Agent writes `len(users) == 0` and `x == False` comparisons; code turns verbose, `None` merges with zero, string `'0'` fools checks, and arrays raise in boolean context; wordy comparison, none-zero conflation, truthiness trap, empty sequence, ambiguous array, c-style verbosity."
+    use_when: "Emptiness or presence checks on sequences and containers; `None` distinction matters; boolean flags need idiomatic negation."
+    avoid_when: "Integer results where `None` is a real risk — compare against 0 explicitly; `numpy` arrays — use `.size` instead of truthiness."
+    expected: "Conditionals read `if foo:` / `is None:` style, with explicit numeric comparisons only where ambiguity bites."
+  - anchor: py-lr-lexical-scoping
+    what: "Lexical scoping rules: nested functions read enclosing variables but cannot assign them; closures are fine, with the PEP-0227 rebinding trap understood."
+    problem: "Agent assumes closure sees module-level value; enclosing loop variable silently rebinds same name, so inner function prints surprising results; binding snapshot, scope confusion, late capture, misleading output, name shadowing, pep-0227 puzzle."
+    use_when: "Factory returns a function closing over arguments; decorator implementations; reasoning about which binding an inner def sees."
+    avoid_when: "Inner function must assign enclosing variables — `nonlocal` and its semantics are out of scope here; mutable capture expected to update."
+    expected: "Closures are used deliberately with bindings understood; no surprise when loop or local names rebind."
+  - anchor: py-lr-function-and-method-decorators
+    what: "Decorator discipline: judicious `@` use with docstrings and tests, import-time safety guarantees, `staticmethod` banned, `classmethod` limited to named constructors and process-wide state."
+    problem: "Agent stacks decorators freely; import-time failures become unrecoverable, implicit behavior surprises callers, and external dependencies break module loading; definition-time execution, silent transformation, dependency at decoration, recovery gap, decorator sprawl, wrapper stacking."
+    use_when: "Clear advantage over repetition; invariant enforcement across methods; named constructor via `classmethod`; decorator itself carries docstring and unit tests."
+    avoid_when: "`staticmethod` temptation — write a module-level function; decorator needs files, sockets, or DB access at import; implicit magic would confuse users."
+    expected: "Decorators are few, documented, tested, import-safe; `staticmethod` absent and `classmethod` reserved for constructors."
+  - anchor: py-lr-threading
+    what: "Thread-safety rules: built-in type atomicity is not guaranteed, so `queue.Queue` carries data between threads and `threading.Condition` beats raw locks."
+    problem: "Agent shares dicts across threads trusting atomic operations; custom `__hash__` or `__eq__` breaks that assumption, races corrupt state, and assignment interleaves unpredictably; race window, atomicity myth, unsynchronized container, lock ordering, torn update, heisenbug."
+    use_when: "Producer-consumer data flow between threads; coordination needed beyond a single queue; shared state requires `threading` primitives."
+    avoid_when: "Counting on dict or assignment atomicity as synchronization; reaching for low-level locks where `threading.Condition` expresses the protocol."
+    expected: "Inter-thread data moves through `Queue`; condition variables coordinate, and no correctness rests on presumed atomicity."
+  - anchor: py-lr-power-features
+    what: "Power-feature ban: no custom metaclasses, bytecode access, dynamic inheritance, reparenting, import hacks, reflection, or `__del__` cleanup in project code."
+    problem: "Agent reaches for metaclasses or runtime patching for elegance; reviewers cannot follow execution, debugging turns forensic, and upgrades shatter such tricks; metaclass temptation, monkey patch, unreadable magic, stack archaeology, upgrade fragility, cleverness debt."
+    use_when: "Evaluating whether a tricky technique is permitted; reviewing code that uses `getattr` reflection or metaclass machinery; choosing stdlib alternatives like `dataclasses` or `enum`."
+    avoid_when: "Project code anywhere — the ban is near-absolute; stdlib internals using these (`abc.ABCMeta`, `dataclasses`) are fine to consume, not imitate."
+    expected: "Codebase stays free of metaclasses, import hacks, and `__del__` tricks; behavior follows plain readable control flow."
+  - anchor: py-lr-modern-python
+    what: "`from __future__ import` policy: enable modern features per file, keep imports until old-interpreter support ends, and include `generator_stop` for pre-3.7 compatibility."
+    problem: "Agent removes future imports too early or never adds them; code silently depends on legacy behavior, version upgrades break semantics, and old interpreters hit unexpected `StopIteration`; premature cleanup, behavioral drift, version gate, version floor, interpreter matrix, hidden dependency."
+    use_when: "Repo still supports interpreters below 3.7; modernizing files incrementally; deciding whether a future import may finally be dropped."
+    avoid_when: "Minimum runtime is modern and features no longer hide behind `__future__` — leftover lines are noise; guessing removal safety without checking supported versions."
+    expected: "Future imports present where version support requires, removed confidently once the floor passes the feature."
+  - anchor: py-lr-type-annotated-code
+    what: "Type-annotation adoption: annotate source (or `.pyi` stubs for third-party), verify via `pytype` during builds, document blockers via TODO."
+    problem: "Agent ships unannotated public functions; type errors stay runtime surprises, consumers guess contracts, and retrofitting annotations later costs more than writing them now; untyped surface, late defect, api ambiguity, migration debt, checker absence, documentation gap."
+    use_when: "Public API added or modified; enabling build-time analysis on updated code; third-party extension modules need stub `.pyi` files."
+    avoid_when: "Adoption blocked by side effects — record a TODO with bug link instead of forcing annotations; purely internal throwaway scripts."
+    expected: "Annotated signatures verified at build time; blocked adoption leaves a documented TODO trail."
+---
 
-### 1.1 Lint
-[ref: #s1.1-lint]
-**1.1.1 Definition**
-[ref: #s1.1.1-definition]
+# 1. Python Language Rules
+
+## 1.1 Lint
+[ref: #py-lr-lint]
+
+#### 1.1.1 Definition
 Run `pylint` over your code using the Google `pylintrc`. `pylint` finds bugs and style problems. Because Python is dynamic, some warnings may be spurious, but they should be infrequent.
 
-**1.1.2 Pros**
-[ref: #s1.1.2-pros]
+#### 1.1.2 Pros
 Catches easy-to-miss errors like typos and using-vars-before-assignment.
 
-**1.1.3 Cons**
-[ref: #s1.1.3-cons]
+#### 1.1.3 Cons
 `pylint` is not perfect; sometimes you must write around it, suppress warnings, or fix it.
 
-**1.1.4 Decision**
-[ref: #s1.1.4-decision]
+#### 1.1.4 Decision
 - Run `pylint` on all code.
 - Suppress inappropriate warnings with a line-level comment so other issues are not hidden.
 - Use the symbolic name in suppressions (e.g., `# pylint: disable=invalid-name`). Google-specific warnings start with `g-`.
@@ -33,24 +155,21 @@ def viking_cafe_order(spam: str, beans: str, eggs: str | None = None) -> str:
 
 ---
 
-### 1.2 Imports
-[ref: #s1.2-imports]
+## 1.2 Imports
+[ref: #py-lr-imports]
+
 Use `import` statements for packages and modules only, not for individual types, classes, or functions.
 
-**1.2.1 Definition**
-[ref: #s1.2.1-definition]
+#### 1.2.1 Definition
 Imports are a reusability mechanism for sharing code between modules.
 
-**1.2.2 Pros**
-[ref: #s1.2.2-pros]
+#### 1.2.2 Pros
 Simple namespace management; `x.Obj` indicates `Obj` is defined in module `x`.
 
-**1.2.3 Cons**
-[ref: #s1.2.3-cons]
+#### 1.2.3 Cons
 Module names can collide; some are inconveniently long.
 
-**1.2.4 Decision**
-[ref: #s1.2.4-decision]
+#### 1.2.4 Decision
 - Use `import x` for importing packages and modules.
 - Use `from x import y` where `x` is the package prefix and `y` is the module name with no prefix.
 - Use `from x import y as z` when:
@@ -70,27 +189,24 @@ echo.EchoFilter(input, output, delay=0.7, atten=4)
 
 - Do NOT use relative names in imports. Even within the same package, use the full package name to prevent unintentionally importing a package twice.
 
-**1.2.4.1 Exemptions**
-[ref: #imports-exemptions]
+#### 1.2.4.1 Exemptions
 - Symbols from `typing`, `collections.abc`, and `typing_extensions` may be imported directly to support static analysis and type checking.
 - Redirects from `six.moves` are exempt.
 
 ---
 
-### 1.3 Packages
-[ref: #s1.3-packages]
+## 1.3 Packages
+[ref: #py-lr-packages]
+
 Import each module using the full pathname location of the module.
 
-**1.3.1 Pros**
-[ref: #s1.3.1-pros]
+#### 1.3.1 Pros
 Avoids conflicts and incorrect imports due to unexpected `sys.path`.
 
-**1.3.2 Cons**
-[ref: #s1.3.2-cons]
+#### 1.3.2 Cons
 Harder to deploy if you must replicate the package hierarchy (not a problem with modern deployment).
 
-**1.3.3 Decision**
-[ref: #s1.3.3-decision]
+#### 1.3.3 Decision
 - All new code must import each module by its full package name.
 - The directory of the main binary should NOT be assumed to be in `sys.path`.
 - Code should assume `import jodie` refers to a third-party or top-level package, not a local `jodie.py`.
@@ -112,24 +228,21 @@ import jodie  # Unclear intent; depends on sys.path
 
 ---
 
-### 1.4 Exceptions
-[ref: #s1.4-exceptions]
+## 1.4 Exceptions
+[ref: #py-lr-exceptions]
+
 Exceptions are allowed but must be used carefully.
 
-**1.4.1 Definition**
-[ref: #s1.4.1-definition]
+#### 1.4.1 Definition
 Exceptions break normal control flow to handle errors or exceptional conditions.
 
-**1.4.2 Pros**
-[ref: #s1.4.2-pros]
+#### 1.4.2 Pros
 Normal control flow is not cluttered by error-handling code; allows skipping multiple frames.
 
-**1.4.3 Cons**
-[ref: #s1.4.3-cons]
+#### 1.4.3 Cons
 May confuse control flow; easy to miss error cases when calling libraries.
 
-**1.4.4 Decision**
-[ref: #s1.4.4-decision]
+#### 1.4.4 Decision
 - Make use of built-in exception classes when it makes sense. Raise `ValueError` for programming mistakes like violated preconditions.
 - Do NOT use `assert` statements in place of conditionals or for validating preconditions. `assert` must not be critical to application logic. A litmus test: the `assert` could be removed without breaking the code. `assert` conditionals are not guaranteed to be evaluated. For `pytest` based tests, `assert` is okay and expected.
 - Libraries or packages may define their own exceptions. They must inherit from an existing exception class. Exception names should end in `Error` and must not introduce repetition (`foo.FooError`).
@@ -174,24 +287,21 @@ def connect_to_next_port(self, minimum: int) -> int:
 
 ---
 
-### 1.5 Mutable Global State
-[ref: #s1.5-global-variables]
+## 1.5 Mutable Global State
+[ref: #py-lr-global-variables]
+
 Avoid mutable global state.
 
-**1.5.1 Definition**
-[ref: #s1.5.1-definition]
+#### 1.5.1 Definition
 Module-level values or class attributes that can be mutated during program execution.
 
-**1.5.2 Pros**
-[ref: #s1.5.2-pros]
+#### 1.5.2 Pros
 Occasionally useful.
 
-**1.5.3 Cons**
-[ref: #s1.5.3-cons]
+#### 1.5.3 Cons
 Breaks encapsulation; may change module behavior during import.
 
-**1.5.4 Decision**
-[ref: #s1.5.4-decision]
+#### 1.5.4 Decision
 - Avoid mutable global state.
 - If warranted, declare mutable global entities at module level or as class attributes, make them internal by prepending `_`, and expose access through public functions or class methods.
 - Explain the design reasons in a comment or linked doc.
@@ -199,47 +309,41 @@ Breaks encapsulation; may change module behavior during import.
 
 ---
 
-### 1.6 Nested/Local/Inner Classes and Functions
-[ref: #s1.6-nested]
+## 1.6 Nested/Local/Inner Classes and Functions
+[ref: #py-lr-nested]
+
 Nested local functions or classes are fine when used to close over a local variable. Inner classes are fine.
 
-**1.6.1 Definition**
-[ref: #s1.6.1-definition]
+#### 1.6.1 Definition
 A class can be defined inside a method, function, or class. A function can be defined inside a method or function. Nested functions have read-only access to enclosing scope variables.
 
-**1.6.2 Pros**
-[ref: #s1.6.2-pros]
+#### 1.6.2 Pros
 Allows utility classes/functions limited to a small scope; ADT-style; commonly used for decorators.
 
-**1.6.3 Cons**
-[ref: #s1.6.3-cons]
+#### 1.6.3 Cons
 Cannot be directly tested; can make the outer function longer and less readable.
 
-**1.6.4 Decision**
-[ref: #s1.6.4-decision]
+#### 1.6.4 Decision
 - Avoid nested functions or classes except when closing over a local value other than `self` or `cls`.
 - Do NOT nest a function just to hide it from module users. Instead, prefix its name with `_` at the module level so it can still be accessed by tests.
 
 ---
 
-### 1.7 Comprehensions & Generator Expressions
-[ref: #s1.7-comprehensions]
+## 1.7 Comprehensions & Generator Expressions
+[ref: #py-lr-comprehensions]
+
 Okay to use for simple cases.
 
-**1.7.1 Definition**
-[ref: #s1.7.1-definition]
+#### 1.7.1 Definition
 List, Dict, and Set comprehensions and generator expressions create containers and iterators without traditional loops, `map()`, `filter()`, or `lambda`.
 
-**1.7.2 Pros**
-[ref: #s1.7.2-pros]
+#### 1.7.2 Pros
 Simple comprehensions can be clearer; generator expressions avoid list creation.
 
-**1.7.3 Cons**
-[ref: #s1.7.3-cons]
+#### 1.7.3 Cons
 Complicated comprehensions can be hard to read.
 
-**1.7.4 Decision**
-[ref: #s1.7.4-decision]
+#### 1.7.4 Decision
 - Comprehensions are allowed.
 - Multiple `for` clauses or filter expressions are NOT permitted.
 - Optimize for readability, not conciseness.
@@ -290,24 +394,21 @@ return (
 
 ---
 
-### 1.8 Default Iterators and Operators
-[ref: #s1.8-default-iterators-and-operators]
+## 1.8 Default Iterators and Operators
+[ref: #py-lr-default-iterators-and-operators]
+
 Use default iterators and operators for types that support them (lists, dictionaries, files).
 
-**1.8.1 Definition**
-[ref: #s1.8.1-definition]
+#### 1.8.1 Definition
 Container types define default iterators and membership test operators (`in`, `not in`).
 
-**1.8.2 Pros**
-[ref: #s1.8.2-pros]
+#### 1.8.2 Pros
 Simple, efficient, direct, generic.
 
-**1.8.3 Cons**
-[ref: #s1.8.3-cons]
+#### 1.8.3 Cons
 You cannot tell the type by reading method names (also an advantage).
 
-**1.8.4 Decision**
-[ref: #s1.8.4-decision]
+#### 1.8.4 Decision
 - Use default iterators and operators for types that support them.
 - Prefer built-in iterator methods to methods that return lists.
 - Do NOT mutate a container while iterating over it.
@@ -326,72 +427,63 @@ for line in afile.readlines(): ...
 
 ---
 
-### 1.9 Generators
-[ref: #s1.9-generators]
+## 1.9 Generators
+[ref: #py-lr-generators]
+
 Use generators as needed.
 
-**1.9.1 Definition**
-[ref: #s1.9.1-definition]
+#### 1.9.1 Definition
 A generator function returns an iterator that yields a value each time it executes `yield`. Runtime state is suspended until the next value is needed.
 
-**1.9.2 Pros**
-[ref: #s1.9.2-pros]
+#### 1.9.2 Pros
 Simpler code; local variables and control flow are preserved; uses less memory than creating a full list.
 
-**1.9.3 Cons**
-[ref: #s1.9.3-cons]
+#### 1.9.3 Cons
 Local variables in the generator are not garbage collected until the generator is consumed to exhaustion or itself garbage collected.
 
-**1.9.4 Decision**
-[ref: #s1.9.4-decision]
+#### 1.9.4 Decision
 - Generators are fine.
 - Use "Yields:" rather than "Returns:" in the docstring for generator functions.
 - If the generator manages an expensive resource, force cleanup by wrapping the generator with a context manager (PEP-0533).
 
 ---
 
-### 1.10 Lambda Functions
-[ref: #s1.10-lambda-functions]
+## 1.10 Lambda Functions
+[ref: #py-lr-lambda-functions]
+
 Okay for one-liners. Prefer generator expressions over `map()` or `filter()` with a `lambda`.
 
-**1.10.1 Definition**
-[ref: #s1.10.1-definition]
+#### 1.10.1 Definition
 Lambdas define anonymous functions in an expression.
 
-**1.10.2 Pros**
-[ref: #s1.10.2-pros]
+#### 1.10.2 Pros
 Convenient.
 
-**1.10.3 Cons**
-[ref: #s1.10.3-cons]
+#### 1.10.3 Cons
 Harder to read and debug than local functions; lack of names makes stack traces difficult; expressiveness limited to a single expression.
 
-**1.10.4 Decision**
-[ref: #s1.10.4-decision]
+#### 1.10.4 Decision
 - Lambdas are allowed.
 - If the lambda body spans multiple lines or exceeds 60-80 chars, define it as a regular nested function instead.
 - For common operations (e.g., multiplication), use functions from the `operator` module instead of lambdas (prefer `operator.mul` over `lambda x, y: x * y`).
 
 ---
 
-### 1.11 Conditional Expressions
-[ref: #s1.11-conditional-expressions]
+## 1.11 Conditional Expressions
+[ref: #py-lr-conditional-expressions]
+
 Okay for simple cases.
 
-**1.11.1 Definition**
-[ref: #s1.11.1-definition]
+#### 1.11.1 Definition
 Conditional expressions provide shorter syntax for if statements: `x = 1 if cond else 2`.
 
-**1.11.2 Pros**
-[ref: #s1.11.2-pros]
+#### 1.11.2 Pros
 Shorter and more convenient than an if statement.
 
-**1.11.3 Cons**
-[ref: #s1.11.3-cons]
+#### 1.11.3 Cons
 May be harder to read; condition may be difficult to locate if the expression is long.
 
-**1.11.4 Decision**
-[ref: #s1.11.4-decision]
+#### 1.11.4 Decision
 - Okay to use for simple cases.
 - Each portion must fit on one line: true-expression, if-expression, else-expression.
 - Use a complete if statement when things get more complicated.
@@ -417,24 +509,21 @@ portion_too_long = ('yes'
 
 ---
 
-### 1.12 Default Argument Values
-[ref: #s1.12-default-argument-values]
+## 1.12 Default Argument Values
+[ref: #py-lr-default-argument-values]
+
 Okay in most cases.
 
-**1.12.1 Definition**
-[ref: #s1.12.1-definition]
+#### 1.12.1 Definition
 Values specified at the end of a parameter list: `def foo(a, b=0):`.
 
-**1.12.2 Pros**
-[ref: #s1.12.2-pros]
+#### 1.12.2 Pros
 Easy way to override defaults without defining many functions.
 
-**1.12.3 Cons**
-[ref: #s1.12.3-cons]
+#### 1.12.3 Cons
 Default arguments are evaluated once at module load time. Mutable objects as defaults cause shared state bugs.
 
-**1.12.4 Decision**
-[ref: #s1.12.4-decision]
+#### 1.12.4 Decision
 - Do NOT use mutable objects as default values in function or method definitions.
 
 ```python
@@ -466,28 +555,25 @@ def foo(a, b: Mapping = {}):  # Mutable default
 
 ---
 
-### 1.13 Properties
-[ref: #s1.13-properties]
+## 1.13 Properties
+[ref: #py-lr-properties]
+
 Properties may be used to control getting or setting attributes that require trivial computations or logic. Property implementations must match the general expectations of regular attribute access: cheap, straightforward, and unsurprising.
 
-**1.13.1 Definition**
-[ref: #s1.13.1-definition]
+#### 1.13.1 Definition
 Wrap method calls for getting/setting an attribute as standard attribute access.
 
-**1.13.2 Pros**
-[ref: #s1.13.2-pros]
+#### 1.13.2 Pros
 - Attribute access/assignment API rather than getter/setter method calls.
 - Can make an attribute read-only.
 - Allows lazy calculations.
 - Maintains public interface when internals evolve.
 
-**1.13.3 Cons**
-[ref: #s1.13.3-cons]
+#### 1.13.3 Cons
 - Can hide side-effects like operator overloading.
 - Can be confusing for subclasses.
 
-**1.13.4 Decision**
-[ref: #s1.13.4-decision]
+#### 1.13.4 Decision
 - Properties are allowed, but only when necessary and matching expectations of typical attribute access; otherwise follow getter/setter rules.
 - Do NOT use a property to simply get and set an internal attribute with no computation (make the attribute public instead).
 - Using a property to control access or calculate a trivially derived value is allowed.
@@ -496,24 +582,21 @@ Wrap method calls for getting/setting an attribute as standard attribute access.
 
 ---
 
-### 1.14 True/False Evaluations
-[ref: #s1.14-truefalse-evaluations]
+## 1.14 True/False Evaluations
+[ref: #py-lr-truefalse-evaluations]
+
 Use the "implicit" false if at all possible (with caveats).
 
-**1.14.1 Definition**
-[ref: #s1.14.1-definition]
+#### 1.14.1 Definition
 "Empty" values are false: `0, None, [], {}, ''`.
 
-**1.14.2 Pros**
-[ref: #s1.14.2-pros]
+#### 1.14.2 Pros
 Easier to read, less error-prone, usually faster.
 
-**1.14.3 Cons**
-[ref: #s1.14.3-cons]
+#### 1.14.3 Cons
 May look strange to C/C++ developers.
 
-**1.14.4 Decision**
-[ref: #s1.14.4-decision]
+#### 1.14.4 Decision
 - Use implicit false: `if foo:` rather than `if foo != []:`.
 - ALWAYS use `if foo is None:` (or `is not None`) to check for `None`.
 - NEVER compare a boolean variable to `False` using `==`. Use `if not x:`. If you need to distinguish `False` from `None`, chain expressions: `if not x and x is not None:`.
@@ -547,20 +630,18 @@ def f(x=None):
 
 ---
 
-### 1.16 Lexical Scoping
-[ref: #s1.16-lexical-scoping]
+## 1.16 Lexical Scoping
+[ref: #py-lr-lexical-scoping]
+
 Okay to use.
 
-**1.16.1 Definition**
-[ref: #s1.16.1-definition]
+#### 1.16.1 Definition
 A nested Python function can refer to variables defined in enclosing functions but cannot assign to them. Variable bindings are resolved using lexical scoping.
 
-**1.16.2 Pros**
-[ref: #s1.16.2-pros]
+#### 1.16.2 Pros
 Clearer, more elegant code.
 
-**1.16.3 Cons**
-[ref: #s1.16.3-cons]
+#### 1.16.3 Cons
 Can lead to confusing bugs (see PEP-0227 example).
 
 ```python
@@ -578,8 +659,7 @@ def foo(x: Iterable[int]):
 # So `foo([1, 2, 3])` will print `1 2 3 3`, not `1 2 3 4`.
 ```
 
-**1.16.4 Decision**
-[ref: #s1.16.4-decision]
+#### 1.16.4 Decision
 Okay to use.
 
 ```python
@@ -593,12 +673,12 @@ def get_adder(summand1: float) -> Callable[[float], float]:
 
 ---
 
-### 1.17 Function and Method Decorators
-[ref: #s1.17-function-and-method-decorators]
+## 1.17 Function and Method Decorators
+[ref: #py-lr-function-and-method-decorators]
+
 Use decorators judiciously when there is a clear advantage. Avoid `staticmethod` and limit use of `classmethod`.
 
-**1.17.1 Definition**
-[ref: #s1.17.1-definition]
+#### 1.17.1 Definition
 Decorators (the `@` notation) transform functions/methods. `@property` converts methods into dynamically computed attributes.
 
 ```python
@@ -617,16 +697,13 @@ class C:
     method = my_decorator(method)
 ```
 
-**1.17.2 Pros**
-[ref: #s1.17.2-pros]
+#### 1.17.2 Pros
 Elegantly specifies transformations; eliminates repetitive code; enforces invariants.
 
-**1.17.3 Cons**
-[ref: #s1.17.3-cons]
+#### 1.17.3 Cons
 Can perform arbitrary operations, resulting in surprising implicit behavior. Decorators execute at object definition time; failures are hard to recover from.
 
-**1.17.4 Decision**
-[ref: #s1.17.4-decision]
+#### 1.17.4 Decision
 - Use decorators judiciously when there is a clear advantage.
 - Decorators must follow the same import and naming guidelines as functions.
 - A decorator docstring must clearly state that the function is a decorator.
@@ -638,8 +715,9 @@ Can perform arbitrary operations, resulting in surprising implicit behavior. Dec
 
 ---
 
-### 1.18 Threading
-[ref: #s1.18-threading]
+## 1.18 Threading
+[ref: #py-lr-threading]
+
 Do not rely on the atomicity of built-in types. While Python's built-in data types such as dictionaries appear to have atomic operations, there are corner cases where they aren't atomic (e.g., if `__hash__` or `__eq__` are implemented as Python methods), and their atomicity should not be relied upon. Neither should you rely on atomic variable assignment (since this depends on dictionaries).
 
 - Use the `queue` module's `Queue` data type as the preferred way to communicate data between threads.
@@ -648,45 +726,39 @@ Do not rely on the atomicity of built-in types. While Python's built-in data typ
 
 ---
 
-### 1.19 Power Features
-[ref: #s1.19-power-features]
+## 1.19 Power Features
+[ref: #py-lr-power-features]
+
 Avoid these features.
 
-**1.19.1 Definition**
-[ref: #s1.19.1-definition]
+#### 1.19.1 Definition
 Custom metaclasses, bytecode access, on-the-fly compilation, dynamic inheritance, object reparenting, import hacks, reflection (some uses of `getattr()`), modification of system internals, `__del__` methods implementing customized cleanup, etc.
 
-**1.19.2 Pros**
-[ref: #s1.19.2-pros]
+#### 1.19.2 Pros
 Powerful; can make code more compact.
 
-**1.19.3 Cons**
-[ref: #s1.19.3-cons]
+#### 1.19.3 Cons
 Harder to read, understand, and debug.
 
-**1.19.4 Decision**
-[ref: #s1.19.4-decision]
+#### 1.19.4 Decision
 - Avoid these features in your code.
 - Standard library modules and classes that internally use these features are okay (e.g., `abc.ABCMeta`, `dataclasses`, `enum`).
 
 ---
 
-### 1.20 Modern Python: from __future__ imports
-[ref: #s1.20-modern-python]
-**1.20.1 Definition**
-[ref: #s1.20.1-definition]
+## 1.20 Modern Python: from __future__ imports
+[ref: #py-lr-modern-python]
+
+#### 1.20.1 Definition
 `from __future__ import` statements enable modern features on a per-file basis.
 
-**1.20.2 Pros**
-[ref: #s1.20.2-pros]
+#### 1.20.2 Pros
 Smoother runtime version upgrades; modern code is more maintainable.
 
-**1.20.3 Cons**
-[ref: #s1.20.3-cons]
+#### 1.20.3 Cons
 May not work on very old interpreter versions.
 
-**1.20.4 Decision**
-[ref: #s1.20.4-decision]
+#### 1.20.4 Decision
 - Use of `from __future__ import` statements is encouraged.
 - Once you no longer need to run on a version where the features are hidden behind `__future__`, feel free to remove those lines.
 - In code that may execute on versions as old as 3.5 rather than >= 3.7, import:
@@ -698,12 +770,12 @@ May not work on very old interpreter versions.
 
 ---
 
-### 1.21 Type Annotated Code
-[ref: #s1.21-type-annotated-code]
+## 1.21 Type Annotated Code
+[ref: #py-lr-type-annotated-code]
+
 You can annotate Python code with type hints. Type-check the code at build time with a type checking tool like `pytype`. In most cases, when feasible, type annotations are in source files. For third-party or extension modules, annotations can be in stub `.pyi` files.
 
-**1.21.1 Definition**
-[ref: #s1.21.1-definition]
+#### 1.21.1 Definition
 ```python
 def func(a: int) -> list[int]:
     ...
@@ -711,16 +783,13 @@ def func(a: int) -> list[int]:
 a: SomeType = some_func()
 ```
 
-**1.21.2 Pros**
-[ref: #s1.21.2-pros]
+#### 1.21.2 Pros
 Improves readability and maintainability; converts many runtime errors to build-time errors.
 
-**1.21.3 Cons**
-[ref: #s1.21.3-cons]
+#### 1.21.3 Cons
 Type declarations must be kept up to date; may see type errors on code you think is valid; may reduce ability to use Power Features.
 
-**1.21.4 Decision**
-[ref: #s1.21.4-decision]
+#### 1.21.4 Decision
 - You are strongly encouraged to enable Python type analysis when updating code.
 - When adding or modifying public APIs, include type annotations and enable checking via `pytype` in the build system.
 - If undesired side-effects prevent adoption, add a comment with a TODO or link to a bug describing the issue.
