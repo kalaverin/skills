@@ -43,6 +43,7 @@ Skills that enforce language-specific and API-specific rules.
 |-------|---------|
 | **api-design** | Enforces Google AIP compliance for resource-oriented APIs: resource naming, standard methods, custom methods, pagination, filtering, planes, compatibility guarantees, and HTTP/gRPC transcoding. |
 | **python-lang** | Mandatory Google Python Style Guide enforcement plus a Ruff self-linting protocol. Covers imports, mutability, exceptions, type hints, comprehensions, decorators, docstrings, and formatting. |
+| **ruff-style** (draft) | Ruff rule corpus and enforcement reference for Python code style: 33 theme docs in `references/` (28 top-level + 5 security). DRAFT — under construction. |
 | **pytest-design** | Mandatory skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Covers fixtures, parametrization, mocking, markers, async tests, coverage, xdist, and faker-driven test data. |
 | **protobuf-lang** | Buf Protobuf lint and schema style. Governs `buf.yaml`, packages, imports, enums, messages, services, RPCs, and comments against the Buf STANDARD rule set. |
 | **temporal-lang** | Guidance for Temporal durable execution across Python, TypeScript, Go, Java, .NET, and Ruby: workflow determinism, activities, signals, queries, versioning, continue-as-new, saga patterns, and troubleshooting non-determinism errors. |
