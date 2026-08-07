@@ -9,7 +9,7 @@ requires:
   - bootstrap
   - shell-protocol
   - serena-protocol
-version: 0.2.0
+version: 0.2.1
 ---
 
 # SKILL: Subagent Delegation Protocol
@@ -164,6 +164,7 @@ The `Agent` tool can create a new instance or resume an existing one by `agent_i
 Subagents operate in a standard shell/CLI environment without MCP access.
 They MUST NOT:
 
+- Read `AGENTS.md` — under NO circumstances, at any directory level, for any reason. A subagent's entire context is its launch prompt (§5); `AGENTS.md` is main-agent boot material and user preferences that carry nothing a subagent needs and only burn its context.
 - Call Serena memory tools (`read_memory`, `write_memory`, etc.).
 - Call Kagi web search tools (`kagi_search_fetch`, `kagi_fastgpt`, etc.).
 - Call Serena symbolic/LSP tools (`find_symbol`, `replace_symbol_body`, etc.).
