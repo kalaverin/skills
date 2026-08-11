@@ -1,6 +1,6 @@
 ---
 name: preflight-checklist
-description: "Mandatory session-initialization closer and Startup Gate audit. Always loaded. Runs EXACTLY ONCE at session start, after all skill loading completes: verifies Startup Gate completion with evidence (mirror sync, forced import, discovery, activation, memory priming, MCP declaration, think block), runs dynamic session checks derived from the active skill set (mode states, rtk version pin, delegation readiness), and reports a compact evidence-backed verdict table to the user before the first task output. Any FAIL is fixed before proceeding."
+description: "Mandatory session-initialization closer and Startup Gate audit. Always loaded. Runs EXACTLY ONCE at session start, after all skill loading completes: verifies Startup Gate completion with evidence (mirror sync, forced import, discovery, activation, memory priming, MCP declaration, think block), runs dynamic session checks derived from the active skill set (mode states, delegation readiness), and reports a compact evidence-backed verdict table to the user before the first task output. Any FAIL is fixed before proceeding."
 triggers:
   always: true
   reason: "Every session must close its initialization with an evidence-backed audit of the Startup Gate."
@@ -38,8 +38,7 @@ This skill is the closing ceremony of session initialization and the evidence-ba
 **Part B — dynamic session checks (derived from the active skill set; skip what is not active):**
 
 8. **Mode states** — every `runtime: true` skill's state declared (e.g. `discuss-first: off`); no pending user question left unanswered.
-9. **rtk pin** — only when `rtk-protocol` is active — evidence: `rtk --version` output matches the skill's version pin; on mismatch, flag the refresh.
-10. **Delegation readiness** — evidence: the subagent model is chosen per `subagents-protocol` `[ref: #sp-model-selection]` (the single source of model names) and passed explicitly on launches; the mirror is fresh enough for subagents (they read skills ONLY from `.kimi/mirror/`).
+9. **Delegation readiness** — evidence: the subagent model is chosen per `subagents-protocol` `[ref: #sp-model-selection]` (the single source of model names) and passed explicitly on launches; the mirror is fresh enough for subagents (they read skills ONLY from `.kimi/mirror/`).
 
 ## 3. Verdict Format
 
