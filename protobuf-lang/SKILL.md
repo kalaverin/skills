@@ -5,6 +5,7 @@ triggers:
   any:
     files: "fd -e proto --max-results 1 | wc -l | grep -q 1"
     request: "protobuf, proto, buf, buf.yaml"
+runtime: true
 requires:
   - api-design
 ---

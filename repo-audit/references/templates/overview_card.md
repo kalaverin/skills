@@ -95,6 +95,14 @@ Categorize every item. Use the proper technology/product name, and put the libra
 
 **Do not list:** Sentry, Prometheus, pytest, ruff, black, mypy, bandit, Makefile, Docker, CI, pre-commit hooks.
 
+## Skills
+
+Skills to activate when session work touches this repo. Derive this section from the technology stack above — it is a projection of the stack onto the skill catalog, not new research. List ONLY skills that exist in the catalog (verify names against discovery); one line per skill with the reason. An empty section means: no repo-specific skills beyond the defaults.
+
+- `python-lang` — primary language (Python 3.12)
+- `temporal-lang` — Temporal workers in `src/workers/`
+- `protobuf-lang` — API schemas in `proto/`
+
 ## Standards and protocols
 
 Record the formal standards, protocols, or cryptographic schemes that are **actually used** by this repo, as evidenced by the code. This section is a statement of fact, not a recommendation. For each item, indicate where in the code it is used (file/function/flow), cite the authoritative source (RFC, PEP, ISO, vendor spec, official docs), and include the **current commit hash of the referenced file** — stamped by the ROOT agent at synthesis per `entity-protocol` `[ref: #entity-findings-traceability]`; the exploration subagent supplies only `path:line` + symbol.

@@ -22,9 +22,9 @@ This gate is executed HARDEST, with **zero tolerance for deviation**: no reorder
    - **Hard-stop on failure:** if the command fails for any reason, halt immediately and report the failure. Do NOT inspect the Justfile, do NOT attempt a manual rsync, do NOT proceed with the gate.
    - **Skill-file reads:** subagents never use the `.kimi/skills` symlink — they read skills from `.kimi/mirror/`. The main agent prefers `.kimi/mirror/` as well, so everyone reads the same committed truth (the full rule lives in `shell-protocol`); the live tree is for editing.
 2. **Forced import (MUST).** Read `frontmatter-protocol/SKILL.md` in full, then its boot-mandatory extension `frontmatter-protocol/references/include.md` WHOLE, and apply them without exception (the boot contract lives in include.md).
-3. **Skill discovery and loading.** Run discovery and header evaluation per the include extension; read every triggered skill's `SKILL.md` in full.
+3. **Skill discovery and loading.** Run discovery and header evaluation per the include extension; read every TRIGGERED skill's `SKILL.md` in full. Runtime skills whose triggers did not fire are known by their discovery headers only — no `SKILL.md` body read; bodies load on activation per the include extension's Runtime Re-Evaluation.
 4. **Project activation.** Call `activate_project`.
-5. **Memory priming.** Call `read_memory` → `agent/rules`, plus any memories relevant to the current task.
+5. **Memory priming.** Call `read_memory` → `agent/rules`, plus any memories relevant to the current task. When `project/repos` exists, read it too: it is the session's repo-to-skills routing map (entity-protocol), tiny by contract.
 6. **MCP Inventory.** Identify and declare which MCP skill groups this task requires: `kagimcp` (web search/enrichment), `serena` symbolic/LSP tools (codebase exploration/edits), `serena` memory tools (memory operations), `serena` project tools (project/session management).
 7. **Think block (Proof of Work).** Produce a `think` block with the action plan containing: the MCP groups, format `applied: mcp-1, mcp-2, ...`; and the triggered skills with the rationale for each, format `applied: skill-1, skill-2, ...`.
 8. Only then proceed with the user's request.

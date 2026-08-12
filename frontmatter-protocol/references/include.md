@@ -1,5 +1,5 @@
 ---
-subject: "Skill header evaluation extension; SKILL.md frontmatter schema, closed trigger grammar, always any all conditions, files shell exit zero, request semantic matching, runtime bootstrap awareness read and re-evaluation, requires transitive closure, draft skip, version policy, skill discovery, boot contract, batch extraction, deterministic evaluation pipeline, skill-creator override."
+subject: "Skill header evaluation extension; SKILL.md frontmatter schema, closed trigger grammar, always any all conditions, files shell exit zero, request semantic matching, runtime header-only awareness re-evaluation, requires transitive closure, draft skip, version policy, skill discovery, boot contract, batch extraction, deterministic evaluation pipeline, skill-creator override."
 index:
   - anchor: include-skill-header-schema
     what: "The closed key schema every `SKILL.md` header MUST satisfy: `name`, `description`, `triggers`, optional `requires`, `runtime`, `version`, `draft`."
@@ -20,11 +20,11 @@ index:
     avoid_when: "Designing new condition kinds — the grammar is closed; evaluation covers only existing kinds."
     expected: "Each trigger block yields one deterministic load-or-skip decision per request and workspace."
   - anchor: include-runtime-reevaluation
-    what: "The `runtime: true` opt-in: at bootstrap the loader reads the skill's `SKILL.md` in full and remembers its feature set as available-on-demand capabilities; `files` gates freeze at bootstrap; after every new message the agent matches the `request` conditions and described domain from memory and activates the skill when the conversation reaches them."
+    what: "The `runtime: true` opt-in: at bootstrap the loader knows the skill only by its discovery header (name, description, triggers) — no body read; workspace `files` probes defer to touch evaluation; after every new message or path touch the agent matches `request` conditions from memory and activates the skill (full read) when the conversation reaches them."
     problem: "Session starts without some skill, then mid-session user messages mention its domain — delegation, review, search; startup-only evaluation misses that shift and agent answers unguarded; late triggers, stale skill set, shifting topics, dynamic loading, session drift, domain emergence."
     use_when: "Meta/orchestration skills whose relevance appears mid-session; skills gated on user vocabulary that may surface later."
     avoid_when: "Stable domain skills where startup evaluation suffices; attaching re-evaluation universally wastes cycles."
-    expected: "Bootstrap yields full feature awareness for every runtime skill; activation happens mid-session exactly when the trigger first matches; no re-reads of unchanged files."
+    expected: "Bootstrap keeps runtime skills header-only and cheap; activation happens mid-session exactly when a trigger first matches — request, touch probe, or repo routing — and only then is the body read."
   - anchor: include-requires-resolution
     what: "Transitive closure of the `requires` list: loading a skill loads every listed skill, recursively, until no new skills are added."
     problem: "Skill declares dependencies on peers, agent loads only top one and misses mandated companions — protocols, languages, checklists — producing partial rule sets; missing dependencies, transitive gaps, broken chains, incomplete closure, orphaned companions, dependency blindness."
@@ -79,7 +79,7 @@ Every skill entry point is `<skill-dir>/SKILL.md` carrying a core-conformant fro
 | `description` | yes | What the skill governs; prose, any YAML string style. |
 | `triggers` | yes | Activation rules per the trigger grammar (next section). |
 | `requires` | no | List of skill names to load transitively (see Requires Resolution). |
-| `runtime` | no | Boolean; `true` opts into bootstrap awareness read plus per-message re-evaluation (see Runtime Re-Evaluation). |
+| `runtime` | no | Boolean; `true` opts into header-only bootstrap awareness plus per-message and per-touch re-evaluation (see Runtime Re-Evaluation). |
 | `version` | yes* | Semver string. \*Mandatory in the schema, but absence reads as `0.0.0` (see Version Policy). |
 | `draft` | no | Boolean; `draft: true` marks a skill purely in development — loaders MUST ignore it entirely. |
 
@@ -134,20 +134,26 @@ Evaluation of a node: collect the results of every non-`reason` entry (condition
 Evaluate a header's conditions against the current user message plus project context. This section owns ONLY the semantics of each condition kind; condition COMBINATION is owned by the Trigger Grammar, and the ORDER, short-circuit, and load procedure are owned by the Evaluation Pipeline.
 
 1. `always: true` — the condition is constant-true: it loads the skill unconditionally, for every task.
-2. `files: "<shell command>"` — run the command in the workspace root **at bootstrap only**; **exit code 0 means match**. **Probe law:** the command MUST exit non-zero when the target is absent. Bare `fd` is FORBIDDEN as a probe — `fd` exits 0 even with zero matches. Canonical existence probe: `fd -e py --max-results 1 | wc -l | grep -q 1` (cap `fd` at one hit, count it, gate through `grep -q`). Content probes use `rg` (exits 1 on no match); directory probes use `test -d`. **Prefer STRUCTURAL probes** (extension, directory, exact config filename) over content greps: a content probe matches prose as readily as code — observed live in this workspace, `rg -i 'temporal'` matched the skills repository's own documentation and force-loaded `temporal-lang` for a whole session. If a content probe is unavoidable, anchor it to code-shaped markers (decorators, import statements), never to bare words.
+2. `files: "<shell command>"` — **exit code 0 means match**. Two probe classes:
+   - **Environment probes** inspect the tool environment, not the workspace (canonical form: `command -v <bin>`). They run in the workspace root **at bootstrap only** and are never re-executed mid-session.
+   - **Workspace probes** inspect workspace content (`fd`, `rg`, `test -d` on workspace paths). For `runtime: true` skills they are DEFERRED: not run at bootstrap; they run at touch evaluation per Runtime Re-Evaluation, scoped to the touched path. For skills WITHOUT `runtime:` they run at bootstrap as before (legacy behavior; adding `runtime: true` is the per-skill opt-in to deferral).
+   **Probe law:** the command MUST exit non-zero when the target is absent. Bare `fd` is FORBIDDEN as a probe — `fd` exits 0 even with zero matches. Canonical existence probe: `fd -e py --max-results 1 | wc -l | grep -q 1` (cap `fd` at one hit, count it, gate through `grep -q`). Content probes use `rg` (exits 1 on no match); directory probes use `test -d`. **Prefer STRUCTURAL probes** (extension, directory, exact config filename) over content greps: a content probe matches prose as readily as code — observed live in this workspace, `rg -i 'temporal'` matched the skills repository's own documentation and force-loaded `temporal-lang` for a whole session. If a content probe is unavoidable, anchor it to code-shaped markers (decorators, import statements), never to bare words.
 3. `request: "<keywords>"` — **semantic** match against the user's request and the inferred session work, never naive substring matching.
 
 ## Runtime Re-Evaluation
 
 [ref: #include-runtime-reevaluation]
 
-Skills opt into mid-session activation with `runtime: true`. This section owns the opt-in mechanics (bootstrap awareness read, frozen `files` gates, memory-based re-check, activation semantics); where these mechanics sit in the evaluation order is owned by the Evaluation Pipeline.
+Skills opt into mid-session activation with `runtime: true`. This section owns the opt-in mechanics (header-only awareness, deferred `files` gates, request match from memory, touch evaluation, repo routing, activation semantics); where these mechanics sit in the evaluation order is owned by the Evaluation Pipeline.
 
-1. **Bootstrap awareness read.** When a `runtime: true` skill's triggers do NOT fire at bootstrap, the loader still reads the skill's `SKILL.md` in full right then — purely for awareness: the agent learns the skill's feature set, its `request` conditions, and the domain its `description` names, and keeps them in mind as capabilities it can connect on demand. Awareness is NOT activation: the skill's rules do not apply yet, its `requires` are not resolved, and its reference corpus is not routed.
-2. By default triggers evaluate once, at session start. **`files` gates run ONLY at bootstrap** — they are never re-executed mid-session.
-3. After **every new user message**, for each `runtime: true` skill not yet activated, the agent re-evaluates **from memory**: it matches the message against the `request` conditions and the domain remembered from the bootstrap read, and notices when the conversation reaches anything described there. Do NOT re-read the `SKILL.md` for this check; do NOT re-run shell probes.
-4. On a match, ACTIVATE the skill: the `SKILL.md` body is already in context from the bootstrap read, so activation means applying its rules to all subsequent actions, resolving `requires` transitively, and routing its reference corpus per the skill's own lazy-load protocol.
-5. Skills without `runtime:` (or `runtime: false`) are never read at bootstrap "just in case" and never re-evaluated mid-session.
+1. **Awareness = the discovery header.** At bootstrap a `runtime: true` skill whose triggers did NOT fire is known ONLY by its header (`name`, `description`, `triggers`): no full read — the `SKILL.md` body loads at activation, never before. Awareness is NOT activation: the skill's rules do not apply yet, its `requires` are not resolved, and its reference corpus is not routed.
+2. **`files` gates:** environment probes run at bootstrap and freeze; workspace probes of `runtime: true` skills defer to touch evaluation (Trigger Evaluation §2).
+3. **Re-evaluation** — after **every new user message** AND after any tool call that touches a path, for each `runtime: true` skill not yet activated:
+   a. **Request match (from memory):** match the message and the inferred session work against the skill's `request` conditions and the domain its `description` names. Do NOT re-read the `SKILL.md` for this check.
+   b. **Touch evaluation:** if the skill has deferred workspace probes and the touch introduced a NEW git root (`git rev-parse --show-toplevel` of the touched path), run each probe scoped to that root; cache the verdict per root for the session. If the touched path has no git root, the probe scope is the directory containing the touched path.
+4. **Repo routing:** when session work names or touches a repo that has a card at `repos/<repo>/overview`, read the card's Skills section and treat every listed skill as matched. A listed name that does not resolve to a discovered skill is ignored with a one-line notice to the user. If the card has no `## Skills` section, no repo-routing skills are added; request and touch evaluation continue unchanged.
+5. **On a match, ACTIVATE the skill:** read its `SKILL.md` in full NOW, apply its rules to all subsequent actions, resolve `requires` transitively, and route its reference corpus per the skill's own lazy-load protocol.
+6. Skills without `runtime:` (or `runtime: false`) are never read at bootstrap "just in case" and never re-evaluated mid-session.
 
 ## Requires Resolution
 
@@ -206,13 +212,13 @@ Trigger evaluation MUST run as a fixed pipeline, in this exact order, for every 
 1. **Draft gate.** The header carries `draft: true` → SKIP entirely: not listed, not triggered, its `requires` entries resolve to nothing.
 2. **Always gate.** `always: true` → LOAD unconditionally; condition evaluation is skipped.
 3. **Condition evaluation.** Otherwise evaluate the `triggers` conditions:
-   - `files` conditions run FIRST (cheap, deterministic shell commands; exit 0 means match), `request` conditions LAST (semantic match).
+   - `files` conditions run FIRST (cheap, deterministic shell commands; exit 0 means match), `request` conditions LAST (semantic match). Workspace `files` probes of `runtime: true` skills are NOT evaluated here — they defer per Runtime Re-Evaluation. A deferred condition is neither match nor non-match: it never triggers `any:` short-circuit or `all:` fail-fast; the skill stays pending until touch evaluation resolves it. While any condition in a node is deferred, that node yields no final LOAD or SKIP decision; the whole skill stays pending.
    - Flat conditions and `any:` (OR): short-circuit — stop at the first match → LOAD.
    - `all:` (AND): fail-fast — stop at the first non-match → SKIP.
 4. **Load.** On a positive decision, read the skill's `SKILL.md` in full (trigger override: load even when the topic feels familiar), then resolve `requires`.
 5. **Requires closure.** Walk `requires` with a visited set until no new skills are added (semantics: Requires Resolution). An edge pointing back into the current dependency chain is a CYCLE: report it to the user and drop the edge — never walk cycles.
-6. **Runtime bootstrap read.** For each `runtime: true` skill whose triggers did not fire in steps 1–3, apply the bootstrap awareness read from Runtime Re-Evaluation.
-7. **Runtime re-evaluation.** After every new user message, apply the re-check-from-memory mechanics from Runtime Re-Evaluation; on a match, activate and run step 5 (`requires` closure).
+6. **Runtime awareness.** For each `runtime: true` skill whose triggers did not fire in steps 1–3: the skill is known by its discovery header only — NO bootstrap read (semantics: Runtime Re-Evaluation).
+7. **Runtime re-evaluation.** After every new user message and after path-touching tool calls, apply the re-check mechanics from Runtime Re-Evaluation (request match, touch evaluation, repo routing); on a match, activate and run step 5 (`requires` closure).
 
 Determinism contract: identical header set + identical workspace + identical request MUST yield an identical load decision. The only non-mechanical step is `request` semantic matching; every other gate is byte- or exit-code-exact.
 

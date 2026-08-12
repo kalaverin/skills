@@ -5,6 +5,7 @@ triggers:
   all:
     files: "fd -e py -e pyi --max-results 1 | wc -l | grep -q 1"
     request: "pytest, unit test, integration test, test fixture, conftest, parametrization, mocking, markers, test isolation, faker in tests, async test, pytest plugin, pytest configuration, coverage, xdist, python test, python tests, тест, тесты, юнит-тест, интеграционный тест, фикстура, параметризация, мок, маркер, покрытие тестами"
+runtime: true
 requires:
   - frontmatter-protocol
   - python-lang

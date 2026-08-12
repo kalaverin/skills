@@ -41,6 +41,7 @@ Decisions behind the layout:
 
 - The card lives INSIDE the repo directory as `repos/<repo>/overview.md`; the prerequisite gate (`[ref: #entity-prerequisite]`) checks `repos/<repo>/overview`.
 - The name registry is renamed: `project/entities` → `project/repos`.
+- The `project/repos` registry carries a fixed routing-only row format: `| Repo | Type | Lang | Skills |` (Skills = skill names from the catalog, mirrored from the card's Skills section; the card is canonical, the registry is a derived index).
 - Project scope otherwise unchanged: `project/glossary`, `project/dependencies` stay.
 - Findings scopes (`bugs|notes|decisions|style|todo|plans|proposals|reports/<repo>/...`) stay as-is; they are shared across all skills, not audit-owned.
 - The scope name `cards/` is RESERVED for future use — never use it.

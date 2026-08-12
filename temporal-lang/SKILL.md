@@ -1,11 +1,10 @@
 ---
 name: temporal-lang
 description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET and Ruby. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
-version: 0.4.0
+version: 0.5.0
 triggers:
-  any:
-    files: "rg -i 'temporal|@temporalio|@workflow|@activity'"
-    request: "temporal, [temporal] workflow, [temporal] activity"
+  request: "temporal, temporalio, temporal workflow, temporal activity, durable execution, temporal cloud, temporal cli, temporal server, continue-as-new"
+runtime: true
 ---
 
 # Skill: temporal-lang

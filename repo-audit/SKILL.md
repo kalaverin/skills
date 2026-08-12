@@ -55,7 +55,7 @@ Every subagent prompt = the common base prompt (`shared/subagent_base.md` — `[
 3. Dependency downstream mapper (`generators/dependencies.md` `[ref: #ra-deps-downstream]`).
 4. Dependency infra & libs catalog (`generators/dependencies.md` `[ref: #ra-deps-infra]`).
 
-**Root synthesis:** generate the directory tree yourself (never delegate) → write `repos/<repo>/overview` (template `templates/overview_card.md`) → write `repos/<repo>/business` (single or split per thresholds; template `templates/business_writer.md`) → write `repos/<repo>/dependencies` and draw the Mermaid diagram yourself (template `templates/dependencies_card.md`) → update both glossaries (`templates/glossary_routing.md`) → route findings (`entity-protocol` `[ref: #entity-namespace-registry]`) → verify read-backs → `just serena-checkpoint`. Synthesis rules: `shared/synthesis.md` (`[ref: #ra-synthesis]`). Conventions: `shared/conventions.md` (`[ref: #ra-conventions-mermaid]`, `[ref: #ra-conventions-exclusions]`, `[ref: #ra-conventions-evidence]`, `[ref: #ra-conventions-dates-language]`).
+**Root synthesis:** generate the directory tree yourself (never delegate) → write `repos/<repo>/overview` (template `templates/overview_card.md`; fill the Skills section from the stack findings and the active skill catalog) → write `repos/<repo>/business` (single or split per thresholds; template `templates/business_writer.md`) → write `repos/<repo>/dependencies` and draw the Mermaid diagram yourself (template `templates/dependencies_card.md`) → update both glossaries (`templates/glossary_routing.md`) → update the `project/repos` registry row (`| Repo | Type | Lang | Skills |`, format per `entity-protocol`) → route findings (`entity-protocol` `[ref: #entity-namespace-registry]`) → verify read-backs → `just serena-checkpoint`. Synthesis rules: `shared/synthesis.md` (`[ref: #ra-synthesis]`). Conventions: `shared/conventions.md` (`[ref: #ra-conventions-mermaid]`, `[ref: #ra-conventions-exclusions]`, `[ref: #ra-conventions-evidence]`, `[ref: #ra-conventions-dates-language]`).
 
 In FULL mode the analysis-wave subagents explore the codebase; the generators wave works from `preanalysis_reports` plus targeted code reads. Code covered by a fresh input (`commit == HEAD`) is never re-read.
 
@@ -65,7 +65,7 @@ Run the gates, then launch only the subagents that produce the requested artifac
 
 ## REFRESH Mode
 
-Staleness detector per artifact → present metrics and ALWAYS ask the user (recommend REFRESH under 1000 lines / 10%, FULL over 5000 lines / 30%) → root prepares `.tmp/repo-audit/` (diff, numstat, impact.md) → one subagent per affected artifact reads only the diff → root applies updated sections, bumps tracking fields → deletes the scratch dir → persists. Full procedure: `references/shared/refresh.md` (`[ref: #ra-refresh]`).
+Staleness detector per artifact → present metrics and ALWAYS ask the user (recommend REFRESH under 1000 lines / 10%, FULL over 5000 lines / 30%) → root prepares `.tmp/repo-audit/` (diff, numstat, impact.md) → one subagent per affected artifact reads only the diff → root applies updated sections (keeping the Skills section and the `project/repos` row in sync), bumps tracking fields → deletes the scratch dir → persists. Full procedure: `references/shared/refresh.md` (`[ref: #ra-refresh]`).
 
 ## Lazy-Load Routing Index
 

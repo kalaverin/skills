@@ -83,7 +83,7 @@ All Serena memory namespaces/scopes are defined HERE — the single normative so
 
 - `agent/rules`: Contains the `## Contradictions log`.
 - `agent/deprecations`: Project-wide deprecation registry; per-repo deprecations live in `deprecations/<repo>/` — semantics in `[ref: #entity-deprecations]`.
-- `project/repos`: Canonical registry of repos recognized in this workspace.
+- `project/repos`: Canonical registry of repos recognized in this workspace. Row format (routing-only — four columns, no domain facts; the card stays canonical, the registry is a derived index written by `repo-audit`): `| Repo | Type | Lang | Skills |`, where Lang = the repo's primary language/runtime (single value). Read at bootstrap memory priming; consumed by the repo-routing rule in the `frontmatter-protocol` include extension.
 - `project/<topic>`: Project-wide knowledge (glossary, dependency graph, tech stack).
 - `repos/<repo>/overview`: Canonical repo card ONLY. No findings here. Layout contract: `[ref: #entity-memory-layout]`.
 - `repos/<repo>/...`: Repo analysis output (`business`, `entities/`, `processes/`, `rules/`, `integrations/`, `risks/`, `glossary`, `dependencies`) — produced by the `repo-audit` skill. Layout contract: `[ref: #entity-memory-layout]`.
