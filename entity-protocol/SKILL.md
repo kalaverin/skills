@@ -35,7 +35,7 @@ This skill is the single normative source for the **repo** concept and for **all
 
 [ref: #entity-prerequisite]
 
-Before creating any repo-scoped memory (`bugs/<repo>/...`, `decisions/<repo>/...`, `notes/<repo>/...`, `style/<repo>/...`, `plans/<repo>/...`, `proposals/<repo>/...`, `proposal/<repo>/...`, `reports/<repo>/...`, `todo/<repo>/...`, `deprecations/<repo>/...`, or anything under `repos/<repo>/...`), the agent MUST verify that the target repo already has a card at `repos/<repo>/overview`.
+Before creating any repo-scoped memory (`bugs/<repo>/...`, `decisions/<repo>/...`, `notes/<repo>/...`, `style/<repo>/...`, `plans/<repo>/...`, `proposals/<repo>/...`, `proposal/<repo>/...`, `reports/<repo>/...`, `todo/<repo>/...`, `deprecations/<repo>/...`, `feature/<repo>/...`, or anything under `repos/<repo>/...`), the agent MUST verify that the target repo already has a card at `repos/<repo>/overview`.
 
 **If no repo cards exist yet (`repos/` scope is empty):**
 
@@ -77,6 +77,7 @@ All Serena memory namespaces/scopes are defined HERE — the single normative so
 | `standard/` | `standard/<family>/<family>_<id>.md` | Fetch-once archive of authoritative standards (full raw bodies). Families: `rfc`, `std`, `bcp`, `pep`, `aip`, `owasp`, `w3c`, `whatwg`, `zmpc`, `cwe`. |
 | `audit/` | `audit/[<entity>/]<sast_suffix>/` | SAST audit artifact trees (manifest, plan, architecture, module reports, validation, final report). Owner: `security-audit`. |
 | `review/` | `review/[<entity>/]{feature,project}_<datetime>.md` | Machine-readable code-review reports. Owner: `code-review`. |
+| `feature/` | `feature/<repo>/<feature>/...` | Feature workspaces: free-form per-feature trees for describing, planning, discussing, and tracking features (description, discussion log, plan, status links). The meta-entity `project` covers cross-project features. No owner skill; internal structure is fully free. |
 | Findings scopes | `<domain>/<repo>/<topic>` | Repo-scoped findings (`bugs`, `decisions`, `notes`, `style`, `todo`, `plans`, `proposals`, `reports`, `deprecations`) — semantics in the subsection below. |
 
 **Strict routing rules:**
@@ -107,6 +108,7 @@ Findings are repo-scoped memories about a repo (or the meta-entity). They MUST N
 - `proposals/<repo>/<topic>`: proposed code changes, alternative solutions, session results; `proposal/<topic>` or `proposal/<repo>/<topic>` for not-yet-accepted agent proposals.
 - `reports/<repo>/<topic>`: agent reports (reviews, incident investigations, feature research).
 - `deprecations/<repo>/<topic>`: deprecated repo-local names, aliases, and their canonical replacements.
+- `feature/<repo>/<feature>/...`: per-feature workspace trees — description, planning, discussion log, status tracking. Fully free internal structure, no owner skill. Cross-project features use the meta-entity: `feature/project/<feature>/...`.
 
 **Granularity (HARD):** keep each finding memory short and focused on ONE topic. A report item that mixes two topics becomes two memories. Never append unrelated findings to an existing memory.
 
