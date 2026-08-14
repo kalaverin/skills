@@ -15,3 +15,14 @@ Inside bootstrap, the **Startup Gate** (its §1) is executed HARDEST, with zero 
 - **ALL internal reasoning, thinking, analysis, code exploration, code generation, comments, and memory entries MUST be in English.**
 - **Communication with the user MUST be in Russian.**
 - **No exceptions.** Technical content (code, architecture notes, bug reports, decisions) is always in English. Russian is used exclusively for the user-facing chat interface.
+
+## 3. Skill Location and Fallback
+
+- The canonical committed skill set is `.kimi/mirror/`.
+- The agent may read skills directly from `.kimi/mirror/`.
+- If `.kimi/skills/` exists, it may be used as the runtime symlink or live skill tree.
+- If `.kimi/skills/` is absent, use `.kimi/mirror/` as the authoritative fallback and continue the session.
+- Do not create `.kimi/skills/`, manually copy skills, or use skill directories outside the project working directory.
+- Subagents must always read from `.kimi/mirror/`, never from `.kimi/skills/`.
+
+Do not use directories outside our workdir, it's restricted by harness. When you need to /tmp, just use in-project .tmp/ directory.
