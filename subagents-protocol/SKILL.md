@@ -116,7 +116,7 @@ This section is the ONLY place in the project where subagent model names, tiers,
 | Tier | Model | Use for |
 |---|---|---|
 | **Default** | `kimi-code/kimi-for-coding` | Everything routine: focused file/symbol lookups, known-file reads, mechanical edits, command runs, artifact attestation, template fills, single-file analysis. |
-| **Upgrade** | `kimi-code/k3-256k` | Tasks needing extra attention and judgment: complex or cross-cutting research (thorough exploration, architecture reconnaissance), judgment-heavy adversarial review or audit, synthesis over many inputs, work where a miss is expensive (security detection, validation). |
+| **Upgrade** | `kimi-code/kimi-for-coding` | Tasks needing extra attention and judgment: complex or cross-cutting research (thorough exploration, architecture reconnaissance), judgment-heavy adversarial review or audit, synthesis over many inputs, work where a miss is expensive (security detection, validation). |
 
 **Escalation ladder:** if a default-tier subagent returns shallow or wrong work, escalate by resuming the SAME instance on the upgrade tier (its corpus context is preserved); start a new instance only when the original instance's context is polluted or lost — do not iterate against a model that is too weak for the task.
 
