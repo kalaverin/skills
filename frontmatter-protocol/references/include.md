@@ -170,16 +170,17 @@ Skills opt into mid-session activation with `runtime: true`. This section owns t
 
 [ref: #include-skill-discovery]
 
-A skill directory is any directory containing a `SKILL.md` entry point. Discover candidates in this priority order:
+A skill directory is any directory containing a `SKILL.md` entry point. Discover candidates from the committed skill mirror:
 
-1. `.kimi/skills/` in the project root.
-2. `.agents/skills/` in the project root.
-3. Any other directories exposed by the environment (e.g. `~/.config/kimi/skills`, harness built-ins).
+1. `.kimi/mirror/` in the project root.
+2. `.kimi/skills/` only if `.kimi/mirror/` is absent — it is the live/symlink tree for the root agent and bootstrap/init.
+3. `.agents/skills/` in the project root.
+4. Any other directories exposed by the environment (e.g. `~/.config/kimi/skills`, harness built-ins).
 
 Batch-extract every header in one command (core §6, Form 2 applied to discovery). Exclude the nested `SKILL.md` files inside `OnDemand/` and `Drafts/` — those directories use special handling:
 
 ```bash
-fd -t f SKILL.md .kimi/skills .agents/skills <other-dirs> \
+fd -t f SKILL.md .kimi/mirror .agents/skills <other-dirs> \
   --exclude 'OnDemand/*/SKILL.md' \
   --exclude 'Drafts/*/SKILL.md' \
   2>/dev/null | LC_ALL=C sort -u | while IFS= read -r f; do printf '\n### %s\n' "$f"; awk '/^---[ \t]*$/{c++; if(c==2) exit; next} c==1{print}' "$f"; done

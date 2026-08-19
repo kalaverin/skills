@@ -8,6 +8,7 @@ requires:
   - entity-protocol
   - frontmatter-protocol
   - markdown-protocol
+version: 0.1.0
 ---
 
 # SKILL: Serena Memory & MCP Protocol

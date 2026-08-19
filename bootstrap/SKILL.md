@@ -6,6 +6,7 @@ triggers:
   reason: "Every session must run the Startup Gate and load the correct skill set before executing any task."
 requires:
   - frontmatter-protocol
+version: 0.1.0
 ---
 
 # SKILL: Session Boot & Skill Loading Orchestrator (Bootstrap)
@@ -18,10 +19,11 @@ The **mechanics** — header schema, trigger grammar, evaluation semantics, disc
 This gate is executed HARDEST, with **zero tolerance for deviation**: no reordering, no skipping, no partial completion, no softened preconditions, no interpretation. The user's first message is **PENDING** until all steps complete. **No output until done.**
 
 1. **Skill mirror sync (MUST).** Run `just sync-skills-mirror` before loading any skill.
-   - If the project working directory contains `.kimi/skills/`, use it as the runtime skill symlink or live skill tree after the sync.
-   - If symlink `.kimi/skills/` is unreachable for agent, use the committed `.kimi/mirror/` directory as the authoritative skill source.
+   - `.kimi/mirror/` is the committed, canonical skill set used for discovery and by subagents.
+   - `.kimi/skills/` is the runtime symlink or live skill tree for the root agent and for bootstrap/init (it is the source that `sync-skills-mirror` copies into the mirror).
+   - If `.kimi/skills/` is unreachable, rely on `.kimi/mirror/` directly; if both are missing, halt.
    - **Hard-stop on failure:** if `just sync-skills-mirror` fails for any reason, halt immediately and report the failure. Do NOT inspect the Justfile, do NOT attempt a manual rsync, do NOT proceed with the gate.
-   - **Skill-file reads:** subagents never use the `.kimi/skills/` symlink — they read skills from `.kimi/mirror/`. The main agent prefers `.kimi/mirror/` as well, so everyone reads the same committed truth (the full rule lives in `mandatory-tools`); the live tree is for editing.
+   - **Skill-file reads:** subagents never use the `.kimi/skills/` symlink — they read skills from `.kimi/mirror/`. The main agent performs discovery from `.kimi/mirror/`; it may read `.kimi/skills/` only for live edits during bootstrap/init.
 
 2. **Forced import (MUST).** Read `frontmatter-protocol/SKILL.md` in full, then its boot-mandatory extension `frontmatter-protocol/references/include.md` WHOLE, and apply them without exception (the boot contract lives in include.md).
 3. **Skill discovery and loading.** Run discovery and header evaluation per the include extension; read every TRIGGERED skill's `SKILL.md` in full. Runtime skills whose triggers did not fire are known by their discovery headers only — no `SKILL.md` body read; bodies load on activation per the include extension's Runtime Re-Evaluation.

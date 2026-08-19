@@ -7,6 +7,7 @@ triggers:
 requires:
   - frontmatter-protocol
   - read-for-comments
+version: 0.1.0
 ---
 
 # SKILL: Strict API Design & Compliance (Google AIP)

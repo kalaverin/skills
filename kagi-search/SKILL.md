@@ -4,6 +4,7 @@ description: Mandatory and exclusive protocol for all web search and page enrich
 triggers:
   always: true
   reason: "Web search and page enrichment may be needed in any session, and this skill mandates exclusive use of Kagi."
+version: 0.1.0
 ---
 
 # SKILL: Kagi Search & Enrichment Protocol

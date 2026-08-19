@@ -3,12 +3,13 @@ name: python-lang
 description: MANDATORY skill for Python code. Use when writing, editing, refactoring, or reviewing Python files, modules, packages, classes, functions, type annotations, imports, exceptions, comprehensions, decorators, or docstrings. Enforces Google Python Style Guide and a mandatory, unconditional Ruff format+check pipeline scoped strictly to the agent's own changes.
 triggers:
   any:
-    files: "fd -e py -e pyi --max-results 1 | grep -q ."
+    files: "fd -e py -e pyi --max-results 1 | wc -l | grep -q 1"
     request: "python, питон"
 runtime: true
 requires:
   - frontmatter-protocol
   - read-for-comments
+version: 0.1.0
 ---
 
 # SKILL: Strict Python Engineering & Compliance

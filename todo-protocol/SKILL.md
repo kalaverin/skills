@@ -4,6 +4,7 @@ description: Mandatory protocol for using the SetTodoList tool. Governs when to 
 triggers:
   always: true
   reason: "Todo list management is required for any non-trivial or multi-step task."
+version: 0.1.0
 ---
 
 # SKILL: Todo List Protocol
