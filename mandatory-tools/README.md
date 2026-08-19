@@ -1,12 +1,12 @@
 # mandatory-tools
 [ref: #mandatory-tools]
 
-Defines the modern CLI toolkit the agent uses when it works with files, search, and Python projects.
+Defines the modern CLI toolkit the agent uses when it works with files, search, Python projects, structured edits, and token-optimized commands.
 
 ## What it does
 [ref: #shell-what-it-does]
 
-This skill is the agent's tool-selection layer for filesystem and Python work. It replaces slow, verbose legacy UNIX utilities with fast, modern equivalents and adds safety hygiene such as dry-run-first bulk replacements and automatic Python linting after edits. The moving parts are a hard replacement table, a routing index into per-tool reference cards, and execution mandates that apply after every relevant tool call.
+This skill is the agent's tool-selection layer for filesystem, Python, structured edits, and token-optimized commands. It replaces slow, verbose legacy UNIX utilities with fast, modern equivalents, routes structured and multi-file edits through Patchloom, prefixes shell commands with RTK to save tokens, and adds safety hygiene such as dry-run-first bulk replacements and automatic Python linting after edits. The moving parts are a tool-precedence ladder, a hard replacement table, a routing index into per-tool reference cards, and execution mandates that apply after every relevant tool call.
 
 ## When it activates
 [ref: #shell-when-it-activates]
@@ -51,6 +51,8 @@ What a human must ensure:
 [ref: #shell-what-it-produces]
 
 - Consistent tool selection across every session.
+- Token-optimized command output through RTK prefixing.
+- Structured and multi-file edits through Patchloom when available.
 - Safe bulk edits via dry-run-first replacement.
 - Cleaner Python code through `ruff check` and `ruff format`.
 - Manageable directory listings with depth limits.
@@ -69,6 +71,8 @@ What a human must ensure:
 | `uv` | Modern Python project and dependency management that replaces `pip`, `poetry`, and `virtualenv`. |
 | `ruff` | Unified Python linter and formatter that replaces `black`, `flake8`, and `isort`. |
 | `tree` | Hierarchical directory visualization used with a depth limit. |
+| `rtk` | Token-optimized CLI proxy that prefixes shell commands to reduce output tokens. |
+| `patchloom` | Parser-backed structured editing for JSON/YAML/TOML, Markdown sections, and atomic multi-op plans. |
 
 ## Strengths and trade-offs
 [ref: #shell-strengths-and-trade-offs]
@@ -90,7 +94,9 @@ mandatory-tools/
 │   ├── ruplacer.md
 │   ├── tree.md
 │   ├── uv-full.md
-│   └── uv.md
+│   ├── uv.md
+│   ├── rtk.md
+│   └── patchloom.md
 ├── README.md                # Human overview (this file)
 └── SKILL.md              # Agent entry point: tool-replacement rules and routing index
 ```
@@ -102,12 +108,14 @@ mandatory-tools/
 |---|---|
 | `references/fd-find.md` | Finding files by name, extension, type, size, and modified time |
 | `references/lsd.md` | Colorized directory listings and git-aware displays |
+| `references/patchloom.md` | Structured editing tools, apply-honesty traps, and CLI fallback |
 | `references/ripgrep.md` | Searching text and symbols inside files |
+| `references/rtk.md` | Token-optimized command reference and full filter inventory |
 | `references/ruff.md` | Linting and formatting Python code |
 | `references/ruplacer.md` | Bulk find/replace with dry-run safety |
 | `references/tree.md` | Directory-tree visualization |
-| `references/uv.md` | Safe, read-only `uv` commands |
 | `references/uv-full.md` | Complete `uv` command reference |
+| `references/uv.md` | Safe, read-only `uv` commands |
 
 ## Important conventions / gotchas
 [ref: #shell-important-conventions-and-gotchas]

@@ -1,40 +1,31 @@
----
-name: rtk-protocol
-description: "Token-optimized command execution via RTK (Rust Token Killer). Activates automatically when the `rtk` binary is detected in PATH. Governs the always-prefix golden rule (including inside && chains), the full dedicated-filter command inventory (files, search, git/forges, cloud/DB, language toolchains, infrastructure, network, meta/ops) pinned to the installed rtk version, and the precedence contract with mandatory-tools tool selection and the MCP tool layer."
-triggers:
-  files: "command -v rtk >/dev/null 2>&1"
-  reason: "The skill activates only where the rtk binary actually exists; without it the instructions would be dead weight."
-requires:
-  - mandatory-tools
-version: 0.1.0
----
+# RTK Token-Optimized Commands
 
-# SKILL: RTK (Rust Token Killer) — Token-Optimized Commands
+[ref: #rtk-reference]
 
-RTK is a high-performance CLI proxy that filters and summarizes command output before it reaches the agent's context: when it has a dedicated filter for a command, it compacts the output (typically 60–90% token reduction); when it does not, it passes the command through unchanged — so prefixing is always safe. This skill owns when and how the agent prefixes commands with `rtk`.
+RTK is a high-performance CLI proxy that filters and summarizes command output before it reaches the agent's context: when it has a dedicated filter for a command, it compacts the output (typically 60–90% token reduction); when it does not, it passes the command through unchanged — so prefixing is always safe. This reference owns when and how the agent prefixes commands with `rtk`.
 
-## 1. The Golden Rule
+## Golden Rule
 
 [ref: #rtk-golden-rule]
 
 **Always prefix commands with `rtk`.** If RTK has a dedicated filter, it uses it; if not, the command passes through unchanged. This holds even inside command chains with `&&`:
 
 ```bash
-# ❌ Wrong
+# Wrong
 git add . && git commit -m "msg" && git push
 
-# ✅ Correct
+# Correct
 rtk git add . && rtk git commit -m "msg" && rtk git push
 ```
 
-## 2. Version Pin (refresh trigger)
+## Version Pin
 
 [ref: #rtk-version-pin]
 
-- The §3 inventory is generated from `rtk --help` of **rtk 0.42.4** (captured 2026-08-03).
-- On ANY rtk upgrade: run `rtk --help`, diff the command list against §3, update the inventory, and bump the pin. An installed rtk NEWER than the pin means this skill may be incomplete — treat the mismatch as a refresh trigger and tell the user.
+- The command inventory is generated from `rtk --help` of **rtk 0.42.4** (captured 2026-08-03).
+- On ANY rtk upgrade: run `rtk --help`, diff the command list against the inventory below, update it, and bump the pin. An installed rtk NEWER than the pin means this reference may be incomplete — treat the mismatch as a refresh trigger and tell the user.
 
-## 3. Command Inventory
+## Command Inventory
 
 [ref: #rtk-command-inventory]
 
@@ -182,17 +173,23 @@ rtk --ultra-compact <cmd>  # Ultra-compact mode: ASCII icons, inline format (Lev
 rtk --skip-env <cmd>    # SKIP_ENV_VALIDATION=1 for child processes (Next.js, tsc, lint, prisma)
 ```
 
-## 4. Precedence Contract (HARD)
+## Precedence Contract
 
 [ref: #rtk-precedence]
 
-1. **mandatory-tools owns tool selection.** `fd`, `rg`, `lsd`, `ruplacer`, `uv`, `ruff` stay canonical for their domains; RTK's own `rtk ls` / `rtk read` / `rtk grep` / `rtk find` / `rtk tree` do NOT replace them. RTK MAY prefix any of them (passthrough is safe), but the modern-tool mandate of `mandatory-tools` is never weakened by this skill. Note: `rtk rg` runs ripgrep NATIVELY with a compact output filter — it is the preferred form of `rg` when large output is expected.
+1. **mandatory-tools owns tool selection.** `fd`, `rg`, `lsd`, `ruplacer`, `uv`, `ruff` stay canonical for their domains; RTK's own `rtk ls` / `rtk read` / `rtk grep` / `rtk find` / `rtk tree` do NOT replace them. RTK MAY prefix any of them (passthrough is safe), but the modern-tool mandate of `mandatory-tools` is never weakened by this reference. Note: `rtk rg` runs ripgrep NATIVELY with a compact output filter — it is the preferred form of `rg` when large output is expected.
 2. **The MCP tool layer is untouched.** Web search goes through `kagimcp`; memory and symbolic operations through `serena` MCP tools (bootstrap §8). RTK never substitutes for an MCP tool.
-3. **Dedicated filters SHOULD be used.** For every command in the §3 inventory, run the `rtk`-prefixed form to harvest the token savings — this is the point of the skill.
+3. **Dedicated filters SHOULD be used.** For every command in the inventory, run the `rtk`-prefixed form to harvest the token savings — this is the point of the reference.
 4. **Passthrough guarantee:** `rtk git` passthrough works for ALL git subcommands, even unlisted ones.
-5. **`rtk init` is FORBIDDEN for the agent** (it writes instructions into CLAUDE.md-style files; the instructions already live HERE). `rtk trust`/`untrust`/`hook`/`telemetry` change machine or project state — use only with the user's explicit request.
 
-## 5. Token Savings Overview
+## Forbidden Commands
+
+[ref: #rtk-forbidden]
+
+- **`rtk init` is FORBIDDEN for the agent** (it writes instructions into CLAUDE.md-style files; the instructions already live in `mandatory-tools`).
+- **`rtk trust`/`untrust`/`hook`/`telemetry` change machine or project state** — use only with the user's explicit request.
+
+## Token Savings Overview
 
 [ref: #rtk-savings-overview]
 
@@ -209,8 +206,8 @@ rtk --skip-env <cmd>    # SKIP_ENV_VALIDATION=1 for child processes (Next.js, ts
 
 Overall average: **60–90% token reduction** on common development operations.
 
-## 6. Violation Protocol
+## Violation Protocol
 
 [ref: #rtk-violation-protocol]
 
-If you run a §3-inventoried command WITHOUT the `rtk` prefix while this skill is active, disclose the miss in one line and prefix the next invocation. Never weaken §4: an `rtk`-prefixed call that replaces an MCP tool or a `mandatory-tools` tool choice is a violation — halt, discard, rerun through the correct layer. If the installed rtk is NEWER than the §2 pin and §3 was not refreshed, say so and propose the refresh.
+If you run an inventoried command WITHOUT the `rtk` prefix while rtk is available, disclose the miss in one line and prefix the next invocation. Never weaken the precedence contract: an `rtk`-prefixed call that replaces an MCP tool or a `mandatory-tools` tool choice is a violation — halt, discard, rerun through the correct layer. If the installed rtk is NEWER than the pin and the inventory was not refreshed, say so and propose the refresh.

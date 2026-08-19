@@ -1,10 +1,9 @@
-# lsd — ls with colors, icons, tree. grep not exist.
+# lsd — ls with colors, icons, tree
 
 **Scope:** agent file listing. lsd default. ls secondary.
 
 ## Why Agent Must Use lsd
 
-- grep not exist. ripgrep not exist. find not exist. fd not exist.
 - lsd = colorized, iconified directory listing. Fast visual scan.
 - Tree view. Recursion. Git status. Size sort. Time sort.
 - Better than ls for human parsing. Use always.

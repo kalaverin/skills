@@ -1,42 +1,40 @@
----
-name: patchloom-protocol
-description: "Structured file editing via Patchloom (parser-backed doc/md ops, batch/tx atomic plans, AST ops). Activates automatically when the `patchloom` binary is detected in PATH; the MCP rules are live only while the Patchloom MCP server is connected for the session, otherwise the scoped CLI mandate applies. Governs the MCP-first golden rule for structured/multi-file edits, the core-surface tool inventory pinned to the installed patchloom version, the apply-honesty traps, and the precedence contract with mandatory-tools, rtk-protocol, and the Serena MCP layer."
-triggers:
-  files: "command -v patchloom >/dev/null 2>&1"
-  reason: "The skill activates only where the patchloom binary actually exists; without it the instructions would be dead weight. The MCP server is toggled separately (Zed context_servers entry) — the skill detects tool absence at runtime and degrades to the CLI mandate."
-requires:
-  - mandatory-tools
-version: 0.1.0
----
 
-# SKILL: Patchloom — Structured Editing & Atomic Multi-Op Plans
+# Patchloom Structured Editing
 
-Patchloom is a parser-backed editing toolkit: JSON/YAML/TOML `doc` ops that always emit valid documents, markdown section-aware `md` ops, text replace with match honesty, and `execute_plan` (tx) — multi-operation atomic plans with rollback. As an MCP server it enforces workspace containment server-side: the root is the workspace the host pinned at server start (`server_info.cwd` reports it), and every call is checked against it — `../` escapes and out-of-root absolute paths are rejected. This skill owns when and how the agent uses Patchloom tools (MCP-first) or the `patchloom` CLI (fallback).
+[ref: #patchloom-reference]
 
-[ref: #patchloom-skill]
+Patchloom is a parser-backed editing toolkit: JSON/YAML/TOML `doc` ops that always emit valid documents, markdown-section-aware `md` ops, text replace with match honesty, and `execute_plan` (tx) — multi-operation atomic plans with rollback. As an MCP server it enforces workspace containment server-side: the root is the workspace the host pinned at server start (`server_info.cwd` reports it), and every call is checked against it — `../` escapes and out-of-root absolute paths are rejected. This reference owns when and how the agent uses Patchloom tools (MCP-first) or the `patchloom` CLI (fallback).
 
-## 1. Activation & the Golden Rule
+## Activation
+
+[ref: #patchloom-activation]
+
+- **MCP live check (per session):** the Patchloom MCP tools (`execute_plan`, `doc_set`, `replace_text`, ...) are either visible in the session toolset or not. If they are NOT visible, every MCP rule in this reference is INERT — apply the CLI mandate ([ref: #patchloom-cli-mandate]) and never call the missing tools.
+- **Server registration note (host-side):** the MCP root follows the server's spawn cwd unless pinned explicitly with `--cwd <project>` in the host's server entry. The explicit pin is the recommended form: the host pins `--cwd`, the model never supplies it.
+- **CLI fallback:** when the MCP tools are not visible but `patchloom` is in PATH, use the CLI commands from [ref: #patchloom-cli-mandate].
+- **Native fallback:** when neither MCP nor CLI is available, use native/shell tools and say so.
+
+## Golden Rule
 
 [ref: #patchloom-golden-rule]
 
-- **MCP live check (per session):** the Patchloom MCP tools (`execute_plan`, `doc_set`, `replace_text`, ...) are either visible in the session toolset or not (the handshake is surface-aware: a core-surface server never lists full-only tool names, so tool visibility is the reliable detector). If they are NOT visible (server disabled or not spawned), every MCP rule in this skill is INERT — apply the CLI mandate ([ref: #patchloom-cli-mandate]) and never call the missing tools.
-- **Server registration note (host-side):** the MCP root follows the server's spawn cwd (patchloom does NOT query MCP client roots) unless pinned explicitly with `--cwd <project>` in the host's server entry (Zed `context_servers`). The explicit pin is the recommended form (#1832 host contract: the host pins `--cwd`, the model never supplies it) — it keeps the root deterministic even if a launcher wrapper (e.g. the local `subrunner`) ever changes cwd-handling behavior. MCP enforces the server root for every call (`AllowIfContained`).
-- **Golden rule (MCP connected):** structured edits and multi-file/multi-op changes go through Patchloom tools, not through whole-file rewrites, not through shell `sed`/`jq`/`yq`. Single small text edits MAY still use the native edit tool (cheaper) — but any of these MUST be Patchloom:
-  1. JSON/YAML/TOML value edits → `doc_set` / `execute_plan` with `doc.set`.
-  2. Markdown section/bullet/table edits by heading → `md_replace_section` (or plan `md.*` ops).
-  3. The same edit across 2+ files → `batch_replace`.
-  4. 2+ coordinated edits or anything needing atomic rollback → `execute_plan` (one call, all-or-nothing).
-  5. Freeform snippet apply with a known anchor → plan op `apply.fragment` (never anchor-less).
+Structured edits and multi-file/multi-op changes go through Patchloom tools, not through whole-file rewrites, not through shell `sed`/`jq`/`yq`. Single small text edits MAY still use the native edit tool (cheaper) — but any of these MUST be Patchloom:
 
-## 2. Version Pin (refresh trigger)
+1. JSON/YAML/TOML value edits → `doc_set` / `execute_plan` with `doc.set`.
+2. Markdown section/bullet/table edits by heading → `md_replace_section` (or plan `md.*` ops).
+3. The same edit across 2+ files → `batch_replace`.
+4. 2+ coordinated edits or anything needing atomic rollback → `execute_plan` (one call, all-or-nothing).
+5. Freeform snippet apply with a known anchor → plan op `apply.fragment` (never anchor-less).
+
+## Version Pin
 
 [ref: #patchloom-version-pin]
 
 - This inventory and the trap list ([ref: #patchloom-apply-honesty]) are generated from `patchloom agent-rules` of **patchloom 0.27.0** (captured 2026-08-07T10:40:00Z).
-- On ANY patchloom upgrade: run `patchloom agent-rules`, diff against this skill, update, and bump the pin. An installed patchloom NEWER than the pin means this skill may be stale — treat the mismatch as a refresh trigger and tell the user.
+- On ANY patchloom upgrade: run `patchloom agent-rules`, diff against this reference, update, and bump the pin. An installed patchloom NEWER than the pin means this reference may be stale — treat the mismatch as a refresh trigger and tell the user.
 - The canonical, always-current rule dump is `patchloom agent-rules` (574 lines at 0.27.0); consult it lazily for anything not covered here — do NOT paste it into the session preemptively.
 
-## 3. Core-Surface Inventory (MCP, `PATCHLOOM_MCP_SURFACE=core`)
+## Core-Surface Inventory
 
 [ref: #patchloom-core-inventory]
 
@@ -53,7 +51,7 @@ Patchloom is a parser-backed editing toolkit: JSON/YAML/TOML `doc` ops that alwa
 | `list_files` | Ignore-aware inventory; prefer over shell `find`/`ls` for exploration. |
 | `server_info` | Reports `cwd` (the enforced root), `surface`, `tool_count`, package `version`, and MCP `protocol_version`. Call once per session if the root is in doubt. |
 
-## 4. Apply-Honesty Traps (HARD)
+## Apply-Honesty Traps
 
 [ref: #patchloom-apply-honesty]
 
@@ -68,13 +66,13 @@ Patchloom is a parser-backed editing toolkit: JSON/YAML/TOML `doc` ops that alwa
 9. **Plans hard-fail on missing paths:** in `execute_plan`/batch, a missing file is a hard `not_found` and rolls back the WHOLE plan (atomic) — set `if_exists` on optional files to soft-skip them instead. `strict: false` only tolerates soft content misses (`no_matches` on existing paths); it never continues past hard errors. CLI multi-path replace is the mirror image: missing paths soft-skip under `skipped[]`.
 10. **`doc.*` re-emit honesty:** doc writes may re-emit canonical YAML presentation (e.g. collapse block-sequence indentation) while keeping values correct. When the result reports `style_changed: true`, say the file was canonically re-emitted — never claim a pure surgical text edit.
 
-## 5. CLI Mandate (MCP absent, binary present)
+## CLI Mandate
 
 [ref: #patchloom-cli-mandate]
 
-When the MCP tools are not in the session but `patchloom` is in PATH, the golden-rule items 1–5 ([ref: #patchloom-golden-rule]) map to the CLI: `patchloom doc set ... --apply`, `patchloom md replace-section ... --apply`, `patchloom batch --apply <<'EOF'` (3+ edits, one round-trip), `patchloom tx plan.json --apply` (atomic), `patchloom apply-fragment --old|--after|--before ... --apply` (item 5). All traps ([ref: #patchloom-apply-honesty]) apply; `rtk` prefixing is pass-through only.
+When the MCP tools are not in the session but `patchloom` is in PATH, the golden-rule items map to the CLI: `patchloom doc set ... --apply`, `patchloom md replace-section ... --apply`, `patchloom batch --apply <<'EOF'` (3+ edits, one round-trip), `patchloom tx plan.json --apply` (atomic), `patchloom apply-fragment --old|--after|--before ... --apply`. All traps ([ref: #patchloom-apply-honesty]) apply; `rtk` prefixing is pass-through only.
 
-## 6. Precedence Contract (HARD)
+## Precedence Contract
 
 [ref: #patchloom-precedence]
 
@@ -82,11 +80,11 @@ When the MCP tools are not in the session but `patchloom` is in PATH, the golden
 2. **Serena owns memory and symbolic code exploration.** `read_memory`/`write_memory`, `find_symbol`, `find_referencing_symbols` etc. never route through Patchloom (core surface has no AST tools anyway; plan-level `ast.*` ops are for mechanical edits, not exploration).
 3. **kagi-search owns web** (the `kagimcp` tools) — untouched.
 4. **Multi-file literal replace — the ruplacer overlap, arbitrated:** when the Patchloom MCP is connected and the target files live inside the server root, `batch_replace` (or one `execute_plan`) wins for the same literal change across files — atomicity plus match honesty. `ruplacer` (mandatory-tools, dry-run first) remains canonical when Patchloom is absent, the paths are outside the server root, or the replace needs ruplacer's own preview loop. One edit — one chosen layer, never both on the same files.
-5. **Native tools keep the cheap tail:** single-line reads/edits with no structure semantics MAY stay native; the moment the golden-rule items 1–5 ([ref: #patchloom-golden-rule]) apply, Patchloom is mandatory. The whole-file rewrite (`WriteFile` overwrite of an existing structured file) is the anti-pattern this skill replaces.
+5. **Native tools keep the cheap tail:** single-line reads/edits with no structure semantics MAY stay native; the moment the golden-rule items apply, Patchloom is mandatory. The whole-file rewrite (`WriteFile` overwrite of an existing structured file) is the anti-pattern this reference replaces.
 6. **Containment wins silently:** if Patchloom rejects a path, do NOT retry with escapes — use the native/shell layer and say so.
 
-## 7. Violation Protocol
+## Violation Protocol
 
 [ref: #patchloom-violation-protocol]
 
-If you edited a structured file or ran a multi-file change through whole-file rewrites or `sed`/`jq` while the MCP tools were available, disclose the miss in one line and route the next edit through Patchloom. If the installed patchloom is NEWER than the version pin ([ref: #patchloom-version-pin]) and the skill was not refreshed, say so and propose the refresh. Never weaken the precedence contract ([ref: #patchloom-precedence]): a Patchloom call that replaces a Serena symbolic op, a kagi-search lookup, or a shell build/test step is a violation — halt, discard, rerun through the correct layer.
+If you edited a structured file or ran a multi-file change through whole-file rewrites or `sed`/`jq` while Patchloom was available, disclose the miss in one line and route the next edit through Patchloom. If the installed patchloom is NEWER than the version pin ([ref: #patchloom-version-pin]) and the reference was not refreshed, say so and propose the refresh. Never weaken the precedence contract ([ref: #patchloom-precedence]): a Patchloom call that replaces a Serena symbolic op, a kagi-search lookup, or a shell build/test step is a violation — halt, discard, rerun through the correct layer.
