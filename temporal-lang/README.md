@@ -1,99 +1,89 @@
 # temporal-lang
+[ref: #tl-intro]
 
-Provides guidance, patterns, and SDK-specific recipes for building reliable Temporal durable-execution applications.
+Guides development, debugging, and management of Temporal applications.
 
 ## What it does
+[ref: #tl-what]
 
-This skill is a documentation library for Temporal.
-It helps the agent design workflows and activities, keep workflow code deterministic, use signals/queries/updates/child workflows, version running workflows, troubleshoot stuck workflows and non-determinism errors, and apply task-queue priority and fairness.
-It includes per-SDK guidance for Python, TypeScript, Go, Java, .NET, and Ruby, plus a catalog of third-party integrations.
+This skill provides patterns for building durable execution systems with Temporal. It covers workflows, activities, workers, signals, queries, heartbeats, retries, versioning, continue-as-new, child workflows, saga patterns, and Temporal CLI / Server / Cloud usage. It supports Python, TypeScript, Go, Java, .NET, and Ruby SDKs.
 
 ## When it activates
+[ref: #tl-when]
 
-Activates when the project contains Temporal SDK code or when you ask about Temporal concepts.
+Activates when you build workflows or activities, debug stuck workflows, handle non-determinism errors, or operate Temporal infrastructure.
 
-Typical triggers:
+Examples:
 
-- The repo imports a Temporal SDK such as `@temporalio`, `temporalio`, or `go.temporal.io`.
-- You mention workflows, activities, workers, signals, queries, heartbeats, versioning, `continue-as-new`, child workflows, or saga patterns.
-- You ask about Temporal CLI, Temporal Server, or Temporal Cloud.
+- "Implement a Temporal workflow."
+- "Debug a non-determinism error."
+- "Add signals and queries to a workflow."
+- "Set up a Temporal worker."
 
-Example prompts:
+## How to run / use it
+[ref: #tl-how]
 
-- "Add a new workflow that calls an activity."
-- "Why is my workflow failing with a non-determinism error?"
-- "Show me how to query a running workflow."
-- "Set up a Python Temporal worker."
-- "How do I version this workflow safely?"
-
-## How to use it
-
-Ask the agent to build, review, or debug your Temporal code.
-The agent reads the language-agnostic `references/core/` guides first and then pulls in the relevant SDK-specific reference.
-If you want to run a local Temporal server, install the Temporal CLI; the skill points to `references/core/install_cli.md` for instructions.
+The skill is reference material used while writing or reviewing Temporal code. It provides language-specific guidance, anti-patterns, testing patterns, and operational commands. Use the `SKILL.md` routing index to find the relevant SDK or operational topic, then read the corresponding reference card.
 
 ## What it produces
+[ref: #tl-produces]
 
-- Workflow, activity, and worker code.
-- Determinism checks and replay guidance.
-- Debugging steps for stuck workflows or non-determinism errors.
-- Versioning, signal, query, and update patterns.
-- CLI and operational recommendations.
+- Durable, deterministic workflows.
+- Reliable activities with proper retry and heartbeat semantics.
+- Correct signal and query handlers.
+- Operational commands for workflow inspection and cluster management.
+
+## Dependencies and why they matter
+[ref: #tl-deps]
+
+- `python-lang` or another language skill when available — provides language-specific style while this skill supplies Temporal patterns.
+
+## Strengths and trade-offs
+[ref: #tl-tradeoffs]
+
+### Strong sides
+[ref: #tl-strong]
+
+- Covers the full Temporal lifecycle: authoring, testing, debugging, and operations.
+- Multi-language support means the same durability concepts apply across SDKs.
+- Includes practical patterns such as sagas, child workflows, and patching.
+
+### Weak sides / limits
+[ref: #tl-weak]
+
+- The skill is reference, not an executable tool; you still write the Temporal code.
+- SDK differences are real; always check the language-specific reference card.
+- Operational commands depend on the Temporal CLI version and cluster setup.
+
+### Common pitfalls / gotchas
+[ref: #tl-pitfalls]
+
+- Workflows must be deterministic: no randomness, no unbounded iteration, no wall-clock sleeps.
+- Heavy or non-deterministic work belongs in activities, not workflows.
+- Use `patch` or `workflow.GetVersion` for workflow changes in production.
+- Heartbeats are required for long-running activities.
+- Child workflows and continue-as-new have specific cancellation and retry rules.
 
 ## Repository layout
+[ref: #tl-layout]
 
 ```text
 temporal-lang/
-├── references/
-│   ├── core/               # Language-agnostic Temporal concepts
-│   │   ├── ai-patterns.md
-│   │   ├── determinism.md
-│   │   ├── dev-management.md
-│   │   ├── error-reference.md
-│   │   ├── gotchas.md
-│   │   ├── install_cli.md
-│   │   ├── interactive-workflows.md
-│   │   ├── patterns.md
-│   │   ├── priority-fairness.md
-│   │   ├── troubleshooting.md
-│   │   └── versioning.md
-│   ├── dotnet/             # .NET SDK reference
-│   ├── go/                 # Go SDK reference
-│   ├── java/               # Java SDK reference (with Spring integrations)
-│   ├── python/             # Python SDK reference (with AI/LLM integrations)
-│   ├── ruby/               # Ruby SDK reference
-│   ├── typescript/         # TypeScript SDK reference
-│   └── integrations.md     # Catalog of third-party integrations
-├── LICENSE
-└── SKILL.md                # Agent entry point: manifest, version, and routing index
+├── references/           # SDK and operational reference cards
+├── README.md                # Human overview (this file)
+└── SKILL.md              # Agent entry point: routing index and core concepts
 ```
 
 ## Reference overview
+[ref: #tl-refs]
 
-| File / Directory | What it covers |
-|------------------|----------------|
-| `references/core/determinism.md` | Why determinism matters and replay mechanics |
-| `references/core/patterns.md` | Signals, queries, updates, child workflows, and sagas |
-| `references/core/versioning.md` | Patching, worker build IDs, and `continue-as-new` |
-| `references/core/troubleshooting.md` | Stuck workflows and non-determinism errors |
-| `references/core/error-reference.md` | Workflow status vocabulary and error codes |
-| `references/core/gotchas.md` | Common pitfalls |
-| `references/core/install_cli.md` | Temporal CLI installation |
-| `references/core/interactive-workflows.md` | Interactive workflow patterns |
-| `references/core/priority-fairness.md` | Task-queue priority and fairness |
-| `references/core/dev-management.md` | Developer and team workflows |
-| `references/core/ai-patterns.md` | AI patterns for durable execution |
-| `references/integrations.md` | Third-party integrations catalog |
-| `references/python/` | Python SDK guidance |
-| `references/typescript/` | TypeScript SDK guidance |
-| `references/go/` | Go SDK guidance |
-| `references/java/` | Java SDK guidance |
-| `references/dotnet/` | .NET SDK guidance |
-| `references/ruby/` | Ruby SDK guidance |
+The `references/` directory contains language-specific and topic-specific cards for Python, TypeScript, Go, Java, .NET, Ruby, testing, debugging, and operations.
 
 ## Important conventions / gotchas
+[ref: #tl-conventions]
 
-- This skill contains guidance, not runtime code or SDK replacements.
-- Install the Temporal CLI before running a local development server.
-- Determinism rules are the foundation of durable execution; the agent applies them strictly.
-- SDK examples connect to `localhost:7233` by default.
+- Keep workflows deterministic.
+- Offload I/O and heavy work to activities.
+- Version workflow changes before deploying to production.
+- Heartbeat long-running activities.
+- Use saga patterns for compensatable multi-step operations.

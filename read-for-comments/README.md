@@ -1,58 +1,96 @@
 # read-for-comments
+[ref: #rfc-intro]
 
-Keeps frequently referenced technical standards close at hand so the agent consults local copies before searching the web.
+Local standards library and archival rule for technical standards and specifications.
 
 ## What it does
+[ref: #rfc-what]
 
-This skill hosts local copies of technical standards such as RFCs.
-It gives the agent a fast, offline-first lookup for requirement-level keywords and common specifications.
-It reduces redundant web searches and keeps interpretations consistent across sessions.
-When a requested standard is not stored locally, the agent falls back to web search and can save the result for future reuse.
+This skill is a standards archive and lookup procedure, not a code skill. It maintains two stores:
+
+1. **Archive (searched FIRST):** Serena memories at `standard/<family>/<family>_<id>.md` — every standard ever fetched for this project.
+2. **Seed (searched SECOND):** this skill's `references/` directory — a tiny curated set of frequently needed standards that travels with the skill mirror.
+
+Before fetching any standard from the internet, the agent must check both stores in that order. If a standard body is missing, the agent fetches it, then archives it according to the event-bound rule.
 
 ## When it activates
+[ref: #rfc-when]
 
-No action needed — loaded automatically in every session.
-It also activates when you ask about RFCs, OWASP guidelines, STDs, PEPs, or requirement words such as MUST, SHOULD, and MAY.
+Activates whenever the agent needs to cite, fetch, or archive a technical standard, specification, or authoritative document.
 
-Examples of prompts that trigger it:
+Examples:
 
-- "What does RFC 2119 say about MUST?"
-- "Explain the OWASP API Security Top 10."
-- "When is lowercase 'should' still binding?"
+- You ask a question that requires citing an RFC, ISO standard, OWASP guideline, Google style guide, or similar.
+- The agent needs a standard as context for a review, audit, or design decision.
+- A downloaded standard must be archived locally.
 
-## How to use it
+## How to run / use it
+[ref: #rfc-how]
 
-You do not need to configure anything.
-When you ask about a standard, the agent checks the local `references/` directory first.
-If the standard is missing, the agent searches the web and may store the fetched text under Serena memory `standard/<kind>/<id>` for next time.
-You can add new local standards by placing Markdown or text files in `read-for-comments/references/` with predictable names such as `rfc<id>.md`, `owasp<id>.md`, `std<id>.md`, or `pep<id>.md`.
+If a standard is needed, the agent first searches the Serena `standard/` archive (`list_memories topic=standard` or a path probe), then this skill's `references/` seed.
+If the standard is found locally, the agent uses it.
+If it is missing, the agent fetches it from the authoritative source, archives it under `.serena/memories/standard/<family>/<family>_<id>.md`, and updates the manifest.
+Large standards are split into logical chapters or sections and stored as separate files.
+You do not need to manage the archive manually.
 
 ## What it produces
+[ref: #rfc-produces]
 
-- Local answers from `references/` when a standard is already on disk.
-- Serena memory entries under `standard/` when a newly fetched standard is saved for reuse.
-- No changes to project source code.
+- `read-for-comments/references/<standard>.md` files for seeded standards.
+- `standard/<family>/<family>_<id>.md` memory entries for archived standards.
+- Manifests that list each standard's title, version, canonical URL, and archival path.
+
+## Dependencies and why they matter
+[ref: #rfc-deps]
+
+- `frontmatter-protocol` — provides the frontmatter conventions used by manifests and archived standards.
+- `serena-protocol` — governs memory naming, formatting, and persistence for standards archived in the `standard/` namespace.
+- `kagi-search` — used for the actual web fetch when both local stores miss.
+
+## Strengths and trade-offs
+[ref: #rfc-tradeoffs]
+
+### Strong sides
+[ref: #rfc-strong]
+
+- Prevents repeated internet fetches for the same standard.
+- Keeps authoritative sources under source control.
+- Manifests make it easy to see which standards are available and how recent they are.
+
+### Weak sides / limits
+[ref: #rfc-weak]
+
+- Requires discipline: the agent must check local archives before every external fetch.
+- Large standards can be tedious to split and archive.
+- Seeding is manual; the skill does not auto-populate the archive.
+
+### Common pitfalls / gotchas
+[ref: #rfc-pitfalls]
+
+- ALWAYS check the Serena `standard/` archive FIRST, then this skill's `references/` seed, and only then go to the web.
+- Archive every standard body after download; do not leave it in a temporary file.
+- Use the exact family name from the registered list: `rfc`, `std`, `bcp`, `pep`, `aip`, `owasp`, `w3c`, `whatwg`, `zmpc`, `cwe`, `wicg`. Propose a new family to the user before first use.
+- Split multi-chapter standards into one file per chapter.
+- When citing, include the section number and the stable URL.
+- `kagi_summarizer` output is a derivative and is NEVER archived; archive the full body.
 
 ## Repository layout
+[ref: #rfc-layout]
 
 ```text
 read-for-comments/
-├── references/           # Local copies of technical standards
-│   ├── rfc2119.md        # Key words for use in RFCs to Indicate Requirement Levels
-│   └── rfc8174.md        # Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words
-└── SKILL.md              # Agent entry point: manifest, triggers, and lookup protocol
+├── references/           # Local standards seed
+│   ├── rfc2119.md
+│   └── rfc8174.md
+├── README.md                # Human overview (this file)
+└── SKILL.md              # Agent entry point: lookup gate, fetch/archival rules, family registry
 ```
 
-## Reference overview
-
-| File | What it covers |
-|------|----------------|
-| `references/rfc2119.md` | RFC 2119 — Key words for use in RFCs to Indicate Requirement Levels |
-| `references/rfc8174.md` | RFC 8174 — Ambiguity of uppercase vs lowercase in RFC 2119 key words |
-
 ## Important conventions / gotchas
+[ref: #rfc-conventions]
 
-- No prerequisites.
-- Only standards present in `references/` are served locally; absent standards still require a web search.
-- The skill prefers local copies, so adding a file here makes future lookups faster and more consistent.
-- Saved web standards land in Serena memory, not in this directory.
+- This is a knowledge workflow, not a code tool.
+- The archive is checked first, the seed second, the web last.
+- Every download must be archived event-bound.
+- Large standards are split by chapter and tracked in a manifest.
+- Cite by section and stable URL.

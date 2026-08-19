@@ -1,71 +1,99 @@
 # pytest-planner
+[ref: #ptp-intro]
 
-Tailors the generic `pytest-design` playbook to a specific Python repository and turns it into an executable test plan.
+Produces repository-specific pytest enablement artifacts: a test-authoring prompt and an atomic coverage plan.
 
 ## What it does
+[ref: #ptp-what]
 
-This skill produces repository-specific pytest enablement artifacts.
-It analyzes the target repo once and writes a reusable test-authoring prompt plus an atomic unit-test coverage plan.
-That saves future agents from rediscovering the repository's domain model, stack, and relevant pytest recipes every time they write tests.
-It keeps the actual test-writing rules in `pytest-design`; it only pins which rules matter for this repository.
+This skill creates two artifacts for a Python project. The first is a per-repo test-authoring and research prompt pinned to the exact `pytest-design` reference anchors a downstream agent must lazy-load. The second is an iteration-ready unit-test coverage plan split into atomic work items. It supports two branches: **bootstrap** (create the prompt in Serena memory) and **planning** (create a coverage plan in `project` or `feature` mode).
 
 ## When it activates
+[ref: #ptp-when]
 
-Activates when you ask for test bootstrapping, a test agent prompt, or a test coverage plan.
+Activates when the agent needs to bootstrap testing for a Python repo or create a coverage plan for a feature branch.
 
-Examples of prompts that trigger it:
+Examples:
 
-- "Create a test prompt for the billing service."
-- "Bootstrap tests for this repository."
-- "Build a unit-test coverage plan for merchant-api."
-- "Plan the test development for the order domain."
+- "Create a test plan for this project."
+- "Plan pytest coverage for the auth feature."
+- "What should we test next?"
+- "Бутстрап тестов."
+- "План покрытия фичи."
 
-## How to use it
+## How to run / use it
+[ref: #ptp-how]
 
-First make sure the repository has its technical and business cards in place.
-You create those with `project-audit` (entity card) and `business-audit` (business cards and glossaries).
-Then ask the agent to produce the artifact you need.
-For a reusable authoring prompt, say "Create a test prompt for `<entity>`".
-For a concrete work plan, say "Create a unit-test coverage plan for `<entity>`".
-Coverage plans come in two modes. On `main`/`master` the agent defaults to the full-project plan. On any other branch it STOPs and asks you to choose: `feature` (a plan for the diff of the current branch against the base branch) or `project` (a full plan of the whole entity). Stating the mode in your request (e.g. "feature coverage plan") skips the question.
-The agent may ask you to name the entity if several exist, and it may ask runtime questions such as how deep mutation testing should go or whether to include a security audit.
-You do not edit files manually; the agent writes everything to Serena memory.
+Tell the agent what you need.
+The agent resolves the entity/repo name, verifies preconditions, and runs the correct generator from `prompts/`:
+
+- **Bootstrap** — for requests about a test prompt or bootstrapping tests: reads `prompts/BOOTSTRAP.md` and writes the generated prompt to Serena memory `agent/tests`.
+- **Planning** — for requests about a coverage plan: resolves the mode (`project` on `main`/`master`, otherwise asks), reads `prompts/PLANNING.md` (`project`) or `prompts/FEATURE.md` (`feature`), and writes the plan to Serena memory `plans/<entity>/tests/coverage` or `plans/<entity>/tests/feature_coverage[_<suffix>]`.
+
+In `project` mode the existing `agent/tests` prompt is a hard precondition. In `feature` mode it is optional.
 
 ## What it produces
+[ref: #ptp-produces]
 
-- Serena memory `agent/tests` — a repository-specific pytest authoring and research prompt.
-- Serena memory `plans/<entity>/tests/coverage` — an iteration-ready list of atomic unit-test work items.
-- Serena memory `plans/<entity>/tests/feature_coverage[_<suffix>]` — a TEMPORARY, diff-scoped plan for immediate implementation of the current branch's changes; never merged back into the master coverage plan.
-- A list of any missing dependencies that block the planned tests.
-- Validated, deduplicated anchors pointing back to the relevant `pytest-design` recipe cards.
+- A repository-specific test-authoring prompt stored in Serena memory at `agent/tests`.
+- A machine-readable coverage plan stored in Serena memory at `plans/<entity>/tests/coverage` (project) or `plans/<entity>/tests/feature_coverage[_<suffix>]` (feature).
+
+## Dependencies and why they matter
+[ref: #ptp-deps]
+
+- `pytest-design` — the plan's purpose is to drive work that conforms to this skill's rules.
+- `entity-protocol` — defines the repo concept and the canonical `repos/` memory layout used to key generated plans.
+- `frontmatter-protocol` — provides the lazy-load routing and frontmatter-harvest mechanics used during bootstrap.
+- `repo-audit` — produces the technical (`repos/<repo>/overview`) and business (`repos/<repo>/business`) cards that are mandatory inputs.
+- `serena-protocol` — governs memory mutation and persistence for generated artifacts.
+- `subagents-protocol` — defines the read-only `explore` subagents used to survey the codebase.
+- `todo-protocol` — governs the iteration planning workflow.
+
+## Strengths and trade-offs
+[ref: #ptp-tradeoffs]
+
+### Strong sides
+[ref: #ptp-strong]
+
+- Gives future agents a clear, repo-specific testing contract.
+- Atomic work items make incremental progress easy to track.
+- Feature mode avoids re-planning for code that is already covered.
+
+### Weak sides / limits
+[ref: #ptp-weak]
+
+- Requires an existing understanding of the repo structure.
+- The plan itself is not executable; an agent still has to implement each item.
+- Feature mode depends on a clean git diff and a known base branch.
+- Cannot start without the repo cards created by `repo-audit`.
+
+### Common pitfalls / gotchas
+[ref: #ptp-pitfalls]
+
+- Always pin exact `pytest-design` reference anchors in the generated prompt.
+- Keep work items small and testable.
+- In `feature` mode, base the plan strictly on the diff, not the whole repo.
+- Store the final artifact in `.serena/memories/`; do not write prompt files to the skill directory.
+- Never guess the plan mode outside the `main`/`master` → `project` default.
 
 ## Repository layout
+[ref: #ptp-layout]
 
 ```text
 pytest-planner/
-├── prompts/              # Prompt generators
-│   ├── BOOTSTRAP.md      # Repository-specific test-authoring prompt
-│   ├── FEATURE.md        # Diff-based (feature) unit-test coverage plan
-│   └── PLANNING.md       # Iteration-ready unit-test coverage plan
-└── SKILL.md              # Agent entry point, routing, and workflow
+├── prompts/              # Plan-generation prompts
+│   ├── BOOTSTRAP.md      # Test-authoring prompt generator
+│   ├── PLANNING.md       # Project-mode coverage plan generator
+│   └── FEATURE.md        # Feature-mode coverage plan generator
+├── README.md                # Human overview (this file)
+└── SKILL.md              # Agent entry point: modes, deliverables, and routing index
 ```
 
-## Reference overview
-
-| File | What it covers |
-|------|----------------|
-| `prompts/BOOTSTRAP.md` | Generating the repository-specific pytest agent prompt stored in `agent/tests` |
-| `prompts/FEATURE.md` | Building the diff-scoped feature coverage plan stored in `plans/<entity>/tests/feature_coverage[_<suffix>]` |
-| `prompts/PLANNING.md` | Building the atomic unit-test coverage plan stored in `plans/<entity>/tests/coverage` |
-
 ## Important conventions / gotchas
+[ref: #ptp-conventions]
 
-- Requires `business-audit`, `project-audit`, `pytest-design`, `serena-protocol`, `subagents-protocol`, and `todo-protocol`.
-- Hard preconditions are `entities/<entity>`, `logic/<entity>/...`, `project/glossary`, and `logic/<entity>/glossary`.
-- The in-root skill mirror `.kimi/mirror/` must exist and contain the skill tree.
-- Project-mode planning depends on bootstrapping: `agent/tests` must already exist before creating a full coverage plan. Feature-mode planning treats `agent/tests` as optional — the feature anchor set is surveyed and validated on the fly.
-- The skill writes only to Serena memory; it does not generate test code directly.
-- It never duplicates the `pytest-design` rule prose; it only pins the anchors that apply.
-- Plan mode fork: `main`/`master` → `project` by default; any other branch → STOP-and-ask (`feature` vs `project`); the mode is never guessed.
-- Feature plans are named `plans/<entity>/tests/feature_coverage[_<suffix>]`, suffix = feature name and/or branch ticket joined by underscores (no hyphens; the ticket is sanitized code-review style: `CRYPTO-5238` → `CRYPTO5238`); the agent asks if the suffix is unclear, and on a re-run with existing feature plans it asks what to do (overwrite or create new).
-- In feature mode the main agent materializes the diff into `.tmp/pytest-planner/feature_<sanitized-branch>/` (a `CHANGED_FILES.md` manifest plus one `.diff` file per changed file) and hands subagents only absolute paths to those files; nothing is ever written into `.kimi/mirror/`, and project mode materializes nothing. The scratch is deleted once the plan is sealed and whenever the plan is discarded; the agent never edits the target repository's `.gitignore`.
+- Two branches: **bootstrap** (prompt) and **planning** (coverage plan).
+- Two planning modes: `project` (whole repo) and `feature` (diff-scoped).
+- Every generated artifact must reference exact anchors from `pytest-design`.
+- Work items must be atomic and independently completable.
+- Persist the final artifact in Serena memory.

@@ -46,8 +46,6 @@ sections needed for the current sub-task.
 | Validation checklist and edit rules | `references/06_validation_and_edits.md` | `[ref: #smr-validate]` |
 | Header-validation script (stub) | `scripts/validate_memory_frontmatter.py` | `[ref: #smr-script]` |
 
-Extract a reference section with `rg` (example):
-
 Extract ONLY the relevant section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 
 Stop reading when you reach the next `[ref: #...]` marker or the end of the

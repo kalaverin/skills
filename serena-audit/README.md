@@ -1,25 +1,29 @@
 # serena-audit
+[ref: #sma-intro]
 
 Reconciles Serena memory files against their source repositories to keep knowledge fresh and metadata accurate.
 
-## What it does
+**DRAFT:** this skill is currently marked `draft: true` in `SKILL.md`, so it is invisible to automatic skill discovery. Use it only when explicitly loaded or referenced.
 
-This skill detects drift between Serena memory entries and the code they describe.
-It runs in two phases: first it scans every memory file, classifies discrepancies, and writes a reconciliation plan; then it executes the plan by updating each memory in turn.
-It also resolves git source directories, maps entity names between memory paths and git directories, and validates memory frontmatter.
+## What it does
+[ref: #sma-what]
+
+This skill detects drift between Serena memory entries and the code they describe. It runs in two phases: first it scans every memory file, classifies discrepancies, and writes a reconciliation plan; then it executes the plan by updating each memory in turn. It also resolves git source directories, maps entity names between memory paths and git directories, and validates memory frontmatter.
 
 ## When it activates
+[ref: #sma-when]
 
-Activates when the project contains a `.serena/memories/` directory and you ask to reconcile or audit Serena memory.
+When explicitly loaded, activates when the project contains a `.serena/memories/` directory and you ask to reconcile or audit Serena memory in English or Russian.
 
-Example prompts:
+Examples:
 
 - "Reconcile Serena memory with the source repos."
 - "Audit memory freshness."
 - "Update stale memory headers."
 - "Реконсиляция памяти проекта."
 
-## How to use it
+## How to run / use it
+[ref: #sma-how]
 
 Ask the agent to reconcile or audit memory.
 The agent enumerates all memories, checks their YAML frontmatter and git metadata, classifies discrepancies, and produces a plan.
@@ -27,12 +31,45 @@ After you approve or the agent continues per policy, it updates each memory with
 You do not need to edit memory files manually.
 
 ## What it produces
+[ref: #sma-produces]
 
 - A reconciliation plan saved as a Serena memory under `.serena/memories/plans/...`.
 - Updated memory files with refreshed YAML frontmatter and corrected content.
 - Output from the frontmatter validation script.
 
+## Dependencies and why they matter
+[ref: #sma-deps]
+
+- `serena-protocol` — owns memory naming, routing, formatting, mutation, and persistence rules. This skill is loaded automatically because it is declared in `requires:`.
+
+## Strengths and trade-offs
+[ref: #sma-tradeoffs]
+
+### Strong sides
+[ref: #sma-strong]
+
+- Keeps long-lived memory from silently going stale as the codebase evolves.
+- Classifies discrepancies so you can see whether a memory is outdated, misnamed, or missing its source.
+- Handles entity-name normalization between memory paths, repo cards, and git directories.
+
+### Weak sides / limits
+[ref: #sma-weak]
+
+- Cannot create missing repo cards; it will stop and ask you to run `repo-audit` first.
+- Large memories may need to be split or stored outside Serena memory to stay under the 25 KB `write_memory` limit.
+- The frontmatter validation script is currently a stub, so some checks are manual.
+- The skill is in draft; discovery and activation depend on explicit loading.
+
+### Common pitfalls / gotchas
+[ref: #sma-pitfalls]
+
+- Do not edit memory contents as the root agent during phase 1.
+- Pass absolute file paths to subagents, never full memory contents.
+- Non-compliant memory names must be renamed immediately.
+- Every content edit must refresh the YAML frontmatter.
+
 ## Repository layout
+[ref: #sma-layout]
 
 ```text
 serena-audit/
@@ -45,22 +82,25 @@ serena-audit/
 │   └── 06_validation_and_edits.md
 ├── scripts/              # Stub memory frontmatter validator
 │   └── validate_memory_frontmatter.py
+├── README.md                # Human overview (this file)
 └── SKILL.md              # Agent entry point: manifest, triggers, and routing index
 ```
 
 ## Reference overview
+[ref: #sma-refs]
 
 | File | What it covers |
 |------|----------------|
-| `references/01_reconcile_and_plan.md` | Phase 1: scan every memory, classify discrepancies, and write a reconciliation plan. |
-| `references/02_reconciliation_subagent_prompt.md` | Read-only scan subagent prompt. |
-| `references/03_plan_writer.md` | Plan-memory format and routing. |
-| `references/04_execute_update.md` | Phase 2: execute the update plan. |
-| `references/05_per_memory_subagent_prompt.md` | Per-memory update subagent prompt. |
-| `references/06_validation_and_edits.md` | Validation checklist and edit rules. |
-| `scripts/validate_memory_frontmatter.py` | Stub frontmatter validator. |
+| `references/01_reconcile_and_plan.md` | Phase 1: scan every memory, classify discrepancies, and write a reconciliation plan |
+| `references/02_reconciliation_subagent_prompt.md` | Read-only scan subagent prompt |
+| `references/03_plan_writer.md` | Plan-memory format and routing |
+| `references/04_execute_update.md` | Phase 2: execute the update plan |
+| `references/05_per_memory_subagent_prompt.md` | Per-memory update subagent prompt |
+| `references/06_validation_and_edits.md` | Validation checklist and edit rules |
+| `scripts/validate_memory_frontmatter.py` | Stub frontmatter validator |
 
 ## Important conventions / gotchas
+[ref: #sma-conventions]
 
 - Requires the `serena-protocol` skill automatically.
 - Missing repo cards must be created via `repo-audit` before repo-scoped memories can be reconciled.

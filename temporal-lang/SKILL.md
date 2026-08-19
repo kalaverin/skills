@@ -102,5 +102,4 @@ For Temporal plugins and integrations with third-party frameworks and SDKs (Spri
 
 ### Reporting Issues in This Skill
 
-If you (the AI) find this skill's explanations are unclear, misleading, or missing important information—or if Temporal concepts are proving unexpectedly difficult to work with—draft a GitHub issue body describing the problem encountered and what would have helped, then ask the user to file it at https://github.com/temporalio/skill-temporal-lang/issues/new. Do not file the issue autonomously."
-"
+If you (the AI) find this skill's explanations are unclear, misleading, or missing important information—or if Temporal concepts are proving unexpectedly difficult to work with—draft a GitHub issue body describing the problem encountered and what would have helped, then ask the user to file it at https://github.com/temporalio/skill-temporal-lang/issues/new. Do not file the issue autonomously.

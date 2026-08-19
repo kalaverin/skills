@@ -1,87 +1,92 @@
 # api-design
+[ref: #ad-intro]
 
-Enforces Google AIP rules when you design or review resource-oriented APIs.
+Mandatory rules for Google AIP-compliant API resource design and compatibility.
 
 ## What it does
+[ref: #ad-what]
 
-This skill gives you a binding, Google AIP-driven reference for resource-oriented API design.
-It covers resource naming, parent-child relationships, standard and custom operations, field design, pagination, filtering, field masks, soft delete, ETags, compatibility, versioning, deprecation, naming conventions, documentation, errors, retry configuration, and Protocol Buffers API structure.
-Use it to keep REST, gRPC, OpenAPI, Swagger, and GraphQL designs consistent with Google's API Improvement Proposals.
+This skill enforces Google AIP design patterns when the agent designs or reviews APIs. It covers resource naming, standard operations, fields, pagination, filtering, sorting, long-running operations, errors, versioning, and backward compatibility. For proto schema style, use `protobuf-lang`.
 
 ## When it activates
+[ref: #ad-when]
 
-Activates when you ask about API design, resource modeling, URL schemes, method definitions, Google AIP compliance, or API versioning.
+Activates whenever the agent designs API resources, writes or reviews RPCs, plans proto services, or discusses API compatibility.
+
 Examples:
-- "Review this API design"
-- "Is this resource name AIP-compliant?"
-- "How should I model batch operations?"
-- "Design a gRPC API for orders and order items"
 
-## How to use it
+- "Design the API for orders."
+- "Review this gRPC service."
+- "Is this change backward compatible?"
+- "Add pagination to the list endpoint."
 
-Ask the agent to design or review your API.
-Place your `.proto`, OpenAPI, or schema files in the repo so the agent can inspect them.
-The agent will apply the AIP rules automatically and route any `.proto` file questions to the `protobuf-lang` skill for Buf lint and schema style.
-No manual skill loading is required.
+## How to run / use it
+[ref: #ad-how]
+
+The skill applies automatically during API design and review. It lazy-loads AIP rules from `references/` by rule number.
+When writing protobuf, combine this skill with `protobuf-lang`: `api-design` owns resource design, `protobuf-lang` owns schema style.
+Use `api-design/references/` to look up specific AIP rules by number or topic.
 
 ## What it produces
+[ref: #ad-produces]
 
-- AIP-compliant API designs and design reviews.
-- Corrected resource names, routes, request/response shapes, field semantics, and error behavior.
-- For `.proto` files, coordination with `protobuf-lang` for Buf lint and schema style.
+- AIP-compliant resource models and method sets.
+- Consistent naming, pagination, and error semantics.
+- Backward-compatible change assessments.
+- Optional machine-readable design artifacts stored in `.serena/memories/`.
+
+## Dependencies and why they matter
+[ref: #ad-deps]
+
+- `frontmatter-protocol` — provides the lazy-load routing funnel used to consume the large AIP reference corpus.
+- `read-for-comments` — archives the Google AIP corpus and the RFC 2119/8174 requirement-level keywords.
+
+## Strengths and trade-offs
+[ref: #ad-tradeoffs]
+
+### Strong sides
+[ref: #ad-strong]
+
+- Aligns APIs with Google's widely adopted AIP standard.
+- Separates design concerns from proto syntax concerns.
+- Compatibility rules prevent breaking changes from being introduced silently.
+
+### Weak sides / limits
+[ref: #ad-weak]
+
+- Not every AIP rule applies to every API; the agent must select rules by context.
+- AIP is Google-centric; external constraints may require deviations.
+- Does not enforce proto linting; use `protobuf-lang` and `buf` for that.
+
+### Common pitfalls / gotchas
+[ref: #ad-pitfalls]
+
+- Resource names use collection identifiers and resource IDs, e.g., `projects/123/orders/456`.
+- Standard methods are `List`, `Get`, `Create`, `Update`, `Delete`, and `Batch*` variants.
+- Custom methods must use a colon suffix and a verb, e.g., `orders/456:cancel`.
+- `Update` uses field masks; `Create` does not.
+- List responses are wrapped in a response message with `repeated` results and a `next_page_token`.
 
 ## Repository layout
+[ref: #ad-layout]
 
 ```text
 api-design/
-├── prompts/
-│   └── REFERENCE_STANDARD_ADDENDUM.md  # Skill-specific presentation choices, defers to the cross-skill standard
-├── references/           # AIP reference sections with routing frontmatter, plus authoritative RFC verbs
-│   ├── 01_foundation_and_process.md
-│   ├── 02_design_review.md
-│   ├── 03_api_concepts.md
-│   ├── 04_resource_design.md
-│   ├── 05_operations.md
-│   ├── 06_fields.md
-│   ├── 07_design_patterns.md
-│   ├── 08_compatibility_and_versioning.md
-│   ├── 09_polish.md
-│   ├── 10_protocol_buffers.md
-│   └── rfc_verbs.md
-└── SKILL.md              # Agent entry point: manifest, triggers, and the lazy-load routing funnel
+├── prompts/              # API design prompts
+├── references/           # Google AIP rule reference cards
+├── README.md                # Human overview (this file)
+└── SKILL.md              # Agent entry point: AIP rules, compatibility, and routing index
 ```
 
 ## Reference overview
+[ref: #ad-refs]
 
-| File | What it covers |
-|------|----------------|
-| `references/01_foundation_and_process.md` | AIP purpose, numbering, versioning, precedent, style, and glossary |
-| `references/02_design_review.md` | Design review FAQ and beta-blocking changes |
-| `references/03_api_concepts.md` | Management vs data planes and declarative clients |
-| `references/04_resource_design.md` | Resource orientation, names, types, associations, enumerations, singletons |
-| `references/05_operations.md` | Standard, batch, custom, and long-running operations |
-| `references/06_fields.md` | Field names, behavior, quantities, time, codes, repeated fields, ranges |
-| `references/07_design_patterns.md` | Jobs, import/export, ETags, pagination, filtering, field masks, soft delete |
-| `references/08_compatibility_and_versioning.md` | Backwards compatibility, stability levels, and API versioning |
-| `references/09_polish.md` | Naming, file structure, documentation, errors, and retry configuration |
-| `references/10_protocol_buffers.md` | HTTP/gRPC transcoding, common components, and API-specific protos |
-| `references/rfc_verbs.md` | Definitions of `MUST`, `MUST NOT`, `SHOULD`, `MAY`, etc. |
-
-## How the agent loads references
-
-Each reference file opens with YAML frontmatter: a `subject` line naming the chapter and its section areas, an `index` of decision cards (one selection gate per section), and an `aips` list of covered AIP numbers. The agent routes in three steps without reading whole files:
-
-1. **Subject map** — one coarse routing line per file (Command 1 of the canonical funnel).
-2. **Frontmatter dump** — the full frontmatter of the shortlisted files only (Command 2); the agent matches every card's `what`/`use_when`/`avoid_when` semantically against the request and marks anchors (duplicates converge on one section).
-3. **Bounded extraction** — each chosen section is read exactly from its `[ref: #<anchor>]` marker to the next marker.
-
-The exact commands and routing rules live in `frontmatter-protocol` `[ref: #lazy-load-routing]` (referenced from `SKILL.md` §2); the normative format lives in `frontmatter-protocol/references/lazyload.md` with api-design specifics in `prompts/REFERENCE_STANDARD_ADDENDUM.md`.
+The `references/` directory contains AIP rule cards organized by AIP number. Lazy-load the cards you need via the `frontmatter-protocol` lazy-load funnel (`[ref: #lazy-load-routing]`) rather than reading every file.
 
 ## Important conventions / gotchas
+[ref: #ad-conventions]
 
-- Requires the `read-for-comments` and `protobuf-lang` skills.
-- Reference files MUST NOT be read in full; routing goes through frontmatter cards only.
-- After editing any reference frontmatter, run `uv run --no-project --with pyyaml python frontmatter-protocol/scripts/validate_frontmatter.py --aips references/<FILE>.md` from the workspace root — it MUST pass.
-- This skill enforces AIP resource-design rules; it does not handle Buf lint or raw `.proto` schema style.
-- Buf lint and `.proto` style questions are handled by `protobuf-lang`.
-- Requirement verbs follow RFC 2119 / RFC 8174.
+- Resource design lives here; proto syntax lives in `protobuf-lang`.
+- Use standard methods and custom methods consistently.
+- Assess backward compatibility before approving changes.
+- Store final design decisions in memory when the project uses Serena.

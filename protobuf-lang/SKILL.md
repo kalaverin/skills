@@ -18,14 +18,14 @@ You are an expert Backend Engineer and Protobuf API Designer. This document is y
 
 ## ⚠️ STRICT READING CONSTRAINT (LAZY-LOAD PROTOCOL)
 You MUST NOT read the file `references/rules.md` in its entirety. You MUST use partial extraction to preserve context memory and avoid hallucinations.
-"
-**Extraction Execution:**"
+
+**Extraction Execution:**
 1. Match your current task to a "Trigger / Situation" in the table below.
 2. Copy the corresponding `[ref: ...]` tag.
 3. Extract ONLY the relevant section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 4. Read the extracted rules and apply them strictly to your Protobuf schema.
 
----
+***
 
 ## 📚 TRIGGER TABLE
 
@@ -44,7 +44,7 @@ You MUST NOT read the file `references/rules.md` in its entirety. You MUST use p
 | Setting up `buf.yaml` or choosing a rule category. | Quick Start | `[ref: #quick-start]` |
 | Configuring buf.yaml for linting, exceptions, or suffixes. | Configuration | `[ref: #configuration]` |
 
----
+***
 
 ## ⚙️ WORKFLOW
 1. **Analyze Task:** Determine what Protobuf element you are creating/editing (e.g., RPC, Enum, Message, import, `buf.yaml`).

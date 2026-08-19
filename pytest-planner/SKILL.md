@@ -25,18 +25,18 @@ The prompt pins the exact `pytest-design` reference anchors a downstream test ag
 
 - **This skill owns** the bootstrap workflow: preconditions, feature discovery from `pytest-design`, fan-out to read-only exploration subagents, anchor aggregation/validation, and writing the final prompt to `agent/tests`.
 - **This skill does NOT own** the test rules, fixtures, or HOW. Those live in `pytest-design` and are always loaded alongside. Never duplicate them here or in the generated prompt.
-- **This skill does NOT own** the technical entity card (`project-audit`) or the business-domain cards (`business-audit`). They are mandatory inputs.
+- **This skill does NOT own** the technical repo card (`repo-audit` → `repos/<ENTITY_NAME>/overview`) or the business-domain report (`repo-audit` → `repos/<ENTITY_NAME>/business`). They are mandatory inputs.
 - **This skill does NOT own** general Serena memory rules (frontmatter, naming, mutation, verify/persist). Those live in `serena-protocol`.
 
 ## Inputs and Preconditions
 
-- `{{ENTITY_NAME}}` (snake_case) is the only free input. It keys `entities/<ENTITY_NAME>`, `logic/<ENTITY_NAME>/...`, and the glossaries.
-  - If exactly one card exists under `entities/`, auto-detect the name.
+- `{{ENTITY_NAME}}` (snake_case) is the only free input. It keys `repos/<ENTITY_NAME>/overview`, `repos/<ENTITY_NAME>/business`, and the glossaries.
+  - If exactly one repo card exists under `repos/`, auto-detect the name.
   - If zero or multiple exist, STOP and ask the user to name the entity.
 - **Hard preconditions** (verify before any work):
   - `.kimi/mirror/` in the project root MUST exist and contain the skill tree (at minimum `pytest-design/` and `pytest-planner/`). Subagents are root-locked: they can read only files inside the project repository, and `.kimi/skills` is a symlink they cannot rely on, so the auto-synced mirror is their only way to read skills. If `.kimi/mirror/` is missing or contains no skills, this is a HARD STOP — report it to the user and do not proceed (the main agent's startup gate keeps the mirror fresh).
-  - `entities/<ENTITY_NAME>` — technical card (create via `project-audit`). If missing, STOP and ask the user to create it via the named skill.
-  - `logic/<ENTITY_NAME>/...` plus `project/glossary` and `logic/<ENTITY_NAME>/glossary` — business cards (create via `business-audit`). If missing, STOP and ask the user to create it via the named skill.
+  - `repos/<ENTITY_NAME>/overview` — technical card (create via `repo-audit`). If missing, STOP and ask the user to create it via the named skill.
+  - `repos/<ENTITY_NAME>/business` plus `project/glossary` and `repos/<ENTITY_NAME>/glossary` — business-domain report and glossaries (create via `repo-audit`). If missing, STOP and ask the user to create it via the named skill.
 
 ## Request Routing
 
@@ -96,7 +96,7 @@ This is the **bootstrap** path (→ Serena `agent/tests`); for the **planning** 
 The generated prompt MUST contain, in order:
 
 1. **Header** — repository, `{{ENTITY_NAME}}`, Python baseline, generator id, UTC timestamp, git branch + short commit.
-2. **Domain identity** — real entities, primary id fields, services, business rules/invariants, constants/`Enum`s to import, and naming conventions, sourced from `entities/<ENTITY_NAME>` + `logic/<ENTITY_NAME>/...` + glossaries. This re-contextualizes downstream examples without duplicating rules.
+2. **Domain identity** — real entities, primary id fields, services, business rules/invariants, constants/`Enum`s to import, and naming conventions, sourced from `repos/<ENTITY_NAME>/overview` + `repos/<ENTITY_NAME>/business` + glossaries. This re-contextualizes downstream examples without duplicating rules.
 3. **Stack profile** — test framework and plugins present, async/sync ratio, frameworks, external I/O, time handling, CLI, each with `file:line` evidence.
 4. **Pinned anchor manifest** — the exhaustive, deduplicated list of `pytest-design` anchors (slugs grouped by declaring card file) the downstream agent MUST always lazy-load from the in-root mirror `.kimi/mirror/pytest-design/` (hard stop if the mirror is missing), plus the exact extraction commands against the mirror.
 5. **Minimal repo-specific rules** — only what is NOT already covered by the pinned cards (the universal floor lives in `pytest-design`).

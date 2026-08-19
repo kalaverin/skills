@@ -54,7 +54,7 @@ You MUST NOT read the tool manuals in `references/` in their entirety. You MUST 
 * `PYTHON ECOSYSTEM:` Usage of `uv` and `ruff` is **ALWAYS MANDATORY** when the workspace contains Python code.
 
 **Extraction Workflow:**
-1. Match your task to the routing table below."
+1. Match your task to the routing table below.
 2. Extract the exact section per the canonical loader mechanics in `frontmatter-protocol` `[ref: #lazy-load-routing]` (bounded extraction — never a blind `rg -A N` window; the exact command lives there, not here).
 3. Apply the extracted flags and commands strictly.
 
@@ -92,7 +92,7 @@ You MUST NOT read the tool manuals in `references/` in their entirety. You MUST 
 5. **uv**: Default to `references/uv.md` (safe mode) unless explicit package installation or lock mutation is required.
 6. **tree / lsd**: You MUST limit recursion depth (e.g., `--depth 3` or `-L 3`) to avoid output flooding.
 
----
+***
 
 ## 4. Master Execution Workflow
 1. **Analyze Task:** Determine which modern tool(s) are needed.

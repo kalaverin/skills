@@ -1,45 +1,89 @@
 # subagents-protocol
+[ref: #subagents-protocol]
 
-Tells the agent when and how to hand work off to specialized coder, explore, or plan subagents.
+Orchestration rules for delegating work to the built-in `coder`, `explore`, and `plan` subagents.
 
 ## What it does
+[ref: #subagents-what-it-does]
 
-This skill governs delegation.
-It lets the main agent spin up isolated workers for complex or parallel tasks instead of doing everything in one context window.
-It covers which subagent type to use, how long to let it run, what context to pass, and how to bridge web search or Serena memory operations that subagents cannot perform themselves.
+This skill governs every use of the `Agent` tool. It decides whether a task should be delegated, which subagent type fits, what context to pass, and how to bridge capabilities subagents do not have — web search, Serena memory, and symbolic/LSP operations. The core idea is context hygiene: bulky source material should be consumed by a subagent so the main agent only receives the distilled answer.
 
 ## When it activates
+[ref: #subagents-when-it-activates]
 
-Activates when you mention subagents or delegation, and whenever the agent decides a task should be delegated.
+The skill is always loaded and applies from the first read operation of the session.
 
-Examples of prompts that trigger it:
+It explicitly triggers when you mention subagents or delegation, and it also governs automatic delegation for complex work.
+
+Example prompts:
 
 - "Use a subagent to explore the codebase."
 - "Delegate the refactoring to a coder subagent."
 - "Plan the implementation with a plan subagent."
+- "Find every call site of `process_payment` and summarize them."
 
-It also activates automatically for complex investigations, multi-file edits, or parallel exploration.
+## How to run / use it
+[ref: #subagents-how-to-run-use-it]
 
-## How to use it
+You do not call the protocol directly. When a request benefits from isolation, the agent handles delegation for you.
 
-You do not call the protocol directly.
-When a request is large enough to benefit from isolation, the agent selects the right subagent type for you.
-`coder` subagents write, refactor, debug, and run commands.
-`explore` subagents do read-only codebase reconnaissance.
-`plan` subagents produce implementation plans before any edits happen.
-Give the agent a clear goal and boundaries; it packages those into a self-contained prompt, sets a timeout, and summarizes the result for you.
+What a human should provide:
+
+- A clear goal and explicit boundaries.
+- Any file paths, conventions, or memory pages the subagent needs.
+
+What the agent does automatically:
+
+- Applies the Context Hygiene three-question test before reads and searches.
+- Chooses the subagent type:
+  - `coder` for writing, refactoring, debugging, and running commands.
+  - `explore` for read-only codebase reconnaissance.
+  - `plan` for implementation planning before edits.
+- Sets the model, timeout, and background flag explicitly.
+- Passes only the necessary context, never pasting large memory contents inline.
+- Performs Kagi searches or Serena memory/symbolic operations on behalf of the subagent and feeds distilled results back.
+- Summarizes the subagent's findings for you.
+
+Default timeouts are 1200 seconds for simple tasks and 3600 seconds for complex investigations or large code changes.
 
 ## What it produces
+[ref: #subagents-what-it-produces]
 
 - One or more subagent tasks and their summarized findings.
 - Code changes, reports, or plans authored by the subagent and reviewed by the main agent.
 - No direct artifacts from the protocol itself.
 
-## Important conventions / gotchas
+## Dependencies and why they matter
+[ref: #subagents-dependencies-and-why-they-matter]
 
-- Requires `bootstrap`, `shell-protocol`, and `serena-protocol`.
-- Subagents have no access to MCP tools.
-- The main agent must perform Serena memory, Kagi web search, and symbolic/LSP operations on their behalf.
+| Dependency | Why it matters |
+|---|---|
+| `bootstrap` | The startup gate and skill-loading contract must be in place before delegation rules are applied. |
+| `shell-protocol` | Provides the fallback tools a subagent uses when its own `Shell` is blocked, and owns the canonical commands for directory trees. |
+| `serena-protocol` | Governs memory and symbolic operations that the main agent must bridge because subagents cannot call them directly. |
+| `Agent` tool | The built-in subagent launcher that this protocol configures. |
+
+## Strengths and trade-offs
+[ref: #subagents-strengths-and-trade-offs]
+
+- **Strong sides:** Keeps the main agent's context small, enables parallel exploration, and isolates complex or long-running work.
+- **Weak sides / limits:** Subagents have no MCP access; tool calls may be rejected by the approval layer; prompt overhead exists; choosing the wrong model wastes tokens.
+- **Common pitfalls / gotchas:** Always set the `model` parameter explicitly on every launch. Always include an answer budget in the prompt. Reuse warm instances for follow-ups on the same corpus. Default to foreground; background only makes sense when the task can continue independently and returning early helps.
+
+## Repository layout
+[ref: #subagents-repository-layout]
+
+```text
+subagents-protocol/
+├── README.md                # Human overview (this file)
+└── SKILL.md              # Agent entry point: context hygiene, launch parameters, model selection, and degradation rules
+```
+
+## Important conventions / gotchas
+[ref: #subagents-important-conventions-and-gotchas]
+
+- Subagents must never read `AGENTS.md`; their entire context is the launch prompt.
+- Subagents must never call Serena memory tools, Kagi web search tools, or Serena symbolic/LSP tools.
 - Pass Serena memory pages by file path, never by pasting their contents.
-- Default to foreground subagents; use background only when the task can continue independently and returning early helps.
-- Simple tasks get at least 1 minutes; complex investigations get up to 60 minutes (max).
+- Directory trees required by a deliverable must be generated by the root agent, not a subagent.
+- When delegating drafting or editing work, the subagent must include the full deliverable text in its report as a fallback transport in case writes are blocked.

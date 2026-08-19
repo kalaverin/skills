@@ -1,68 +1,102 @@
 # python-lang
+[ref: #py-intro]
 
-Enforces strict Python language and style rules based on the Google Python Style Guide and Ruff.
+Mandatory Python language and style rules based on the Google Python Style Guide and Ruff.
 
 ## What it does
+[ref: #py-what]
 
-This skill governs how Python code is written, edited, refactored, and reviewed in the project.
-It covers language-level rules such as imports, packages, exceptions, comprehensions, generators, decorators, threading, type annotations, and modern Python idioms.
-It also covers style-level rules such as line length, indentation, whitespace, comments, docstrings, naming, and function length.
-After every edit, the agent unconditionally runs a mandatory two-stage Ruff pipeline (`ruff format` + `ruff check`) on every file it wrote or edited — independently of any project-level linting — and restores any foreign code the formatter touched.
+This skill enforces strict Python engineering in the codebase. It mandates type annotations, explicit visibility via naming, modern dependency and environment management, and a Ruff-based format and lint pipeline. It also forbids older tools such as `pip`, `poetry`, `black`, `flake8`, and `isort` in favor of `uv` and `ruff`.
 
 ## When it activates
+[ref: #py-when]
 
-Activates automatically when the project contains `.py` or `.pyi` files.
+Activates whenever the agent writes, edits, refactors, or reviews Python code, modules, packages, classes, functions, type annotations, imports, exceptions, comprehensions, decorators, or docstrings.
 
-Example prompts:
+Examples:
 
-- "Refactor this module to use dataclasses."
-- "Add type annotations to the payment service."
-- "Review my Python code for style issues."
-- "Write a pytest fixture for this test suite."
+- "Refactor this Python module."
+- "Add a Python API client."
+- "Fix this function's type annotations."
+- "Review the Python code."
 
-## How to use it
+## How to run / use it
+[ref: #py-how]
 
-Ask the agent to write, edit, refactor, or review Python code.
-The agent checks the relevant language and style rules, respects local file consistency, and runs Ruff on the files it changed.
-You do not need to configure Ruff or invoke it yourself.
+The skill applies automatically as the agent edits Python files. The Ruff pipeline is unconditional and scoped strictly to files you touched:
 
-If the project root contains a `.sdk/` directory, the agent also checks for reusable components before writing new code.
+```bash
+uvx ruff format <changed_files>
+uvx ruff check --fix --target-version <PYVER> <changed_files>
+uvx ruff check --target-version <PYVER> --diff <changed_files>
+```
+
+`<changed_files>` is the explicit list of files you wrote or edited; never run the pipeline against the whole project or a directory. Determine `<PYVER>` with:
+
+```bash
+uv run python -c "import sys; print(f'py{sys.version_info.major}{sys.version_info.minor}')"
+```
+
+Reusable SDK utilities live under `.sdk/sdk/` and should be imported instead of reinvented.
 
 ## What it produces
+[ref: #py-produces]
 
-- Python code that follows the project style guide.
-- Ruff-clean, black-compatibly formatted files scoped to the agent's own changes, with foreign code restored byte-identical.
-- Optional reuse of existing `.sdk/` components.
+- Consistent, formatted Python code that passes `ruff`.
+- Type annotations and docstrings aligned with the Google style.
+- Minimal, correct imports.
+- No forbidden toolchain usage.
+
+## Dependencies and why they matter
+[ref: #py-deps]
+
+- `frontmatter-protocol` — provides the lazy-load routing used to consume the `references/` corpus.
+- `read-for-comments` — archives the RFC 2119/8174 normative-keyword standards that govern the skill's requirement-level language.
+- `.sdk/sdk/` — in-project reusable Python components shared across skills.
+
+## Strengths and trade-offs
+[ref: #py-tradeoffs]
+
+### Strong sides
+[ref: #py-strong]
+
+- Modern, opinionated toolchain reduces bike-shedding.
+- Ruff is fast and unified; one tool replaces black, flake8, isort, and many plugins.
+- Strong typing and explicit visibility make large codebases easier to maintain.
+- Reusable `.sdk/sdk/` components avoid duplication.
+
+### Weak sides / limits
+[ref: #py-weak]
+
+- Assumes `uv` and `ruff` are installed and configured.
+- Migrating an existing project can require a large reformatting pass.
+- Some legacy patterns are forbidden even when they would be expedient.
+
+### Common pitfalls / gotchas
+[ref: #py-pitfalls]
+
+- Never use `pip`, `poetry`, `black`, `flake8`, `isort`, `pyflakes`, `pycodestyle`, `pylint`, or `autopep8`.
+- Always run `ruff format` and `ruff check --fix` on files you touch.
+- Prefer absolute imports inside packages and relative imports only within a single module.
+- Use `typing.Self` and modern generics; avoid `from __future__ import annotations` tricks.
+- Do not put production logic in `__init__.py`.
 
 ## Repository layout
+[ref: #py-layout]
 
 ```text
 python-lang/
-├── prompts/
-│   └── REFERENCE_STANDARD_ADDENDUM.md  # Lazyload addendum: prefixes, marker style, exemptions
-├── references/           # Language and style rule references (lazy-load corpus)
-│   ├── 01_language_rules.md
-│   ├── 02_style_rules.md
-│   └── 03_personal_rules.md
-└── SKILL.md              # Agent entry point: manifest, triggers, routing funnel
+├── prompts/              # Generation and review prompts
+├── references/           # Google Python Style Guide excerpts and cheat sheets
+├── README.md                # Human overview (this file)
+└── SKILL.md              # Agent entry point: rules, forbidden tools, and routing index
 ```
 
-## Reference overview
-
-| File | What it covers |
-|------|----------------|
-| `references/01_language_rules.md` | Lint, imports, packages, exceptions, mutable global state, nested classes, comprehensions, iterators, generators, lambdas, conditional expressions, default arguments, properties, truthiness, lexical scoping, decorators, threading, power features, modern Python, and type-annotated code. |
-| `references/02_style_rules.md` | Semicolons, line length, parentheses, indentation, blank lines, whitespace, shebang, comments and docstrings, strings, files and sockets, TODO comments, import formatting, statements, accessors, naming, main entry points, function length, and type annotations. |
-| `references/03_personal_rules.md` | Personal project rules that extend and override the Google corpora on conflict (currently the mypy enum-membership narrowing trap). |
-| `prompts/REFERENCE_STANDARD_ADDENDUM.md` | Lazyload addendum: two-tier anchor prefixes (`py-lr-`, `py-st-`, `py-pr-`), tight marker style, Google-canon numbered-headings exemption, pseudo-heading legalization. |
-
-## Lazy-load routing
-
-The reference corpus is lazy-loadable: `SKILL.md` §2 routes through each file's frontmatter (subject map → decision cards → bounded extraction of `py-*` sections) instead of reading bodies in full. All three files conform to `frontmatter-protocol`'s lazyload standard; local amendments live in `prompts/REFERENCE_STANDARD_ADDENDUM.md`.
-
 ## Important conventions / gotchas
+[ref: #py-conventions]
 
-- Requires the `read-for-comments` skill automatically for RFC 2119 / RFC 8174 verb semantics.
-- Ruff is the mandatory linter and formatter; `black`, `flake8`, and `isort` are not used.
-- `uv` is the mandatory Python project tool; `pip`, `poetry`, and `virtualenv` are not used.
-- The agent formats and fixes only code it explicitly modified, ignores pre-existing violations in untouched code, and reverts any formatter hunks that bleed into foreign lines so foreign code returns byte-identical to its prior state.
+- Every Python file you touch must be formatted and linted with `ruff`.
+- Target the Python version declared in `pyproject.toml` or `.python-version`.
+- Use `uv run python` for script execution and dependency management.
+- Prefer `.sdk/sdk/` utilities over inline reinvention.
+- Follow the Google Python Style Guide for docstrings, naming, and structure.

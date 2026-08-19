@@ -1,55 +1,90 @@
 # protobuf-lang
+[ref: #pb-intro]
 
-Enforces Buf Protobuf style and lint rules when you write, edit, or review `.proto` files and `buf.yaml` configuration.
+Mandatory rules for writing, editing, and reviewing Protocol Buffers schema and `buf` configuration.
 
 ## What it does
+[ref: #pb-what]
 
-This skill keeps Protobuf schemas consistent with the Buf STANDARD ruleset.
-It covers proto file and package conventions, import ordering, enum naming and values, message field naming and numbering, service and RPC naming, comment style, file layout, schema evolution, and `buf.yaml` v2 lint configuration.
-The agent looks up only the relevant rule section for the task at hand.
+This skill enforces Buf-style protobuf conventions. It covers package names, file layout, imports, enums, messages, services, RPCs, field naming, comments, and lint configuration. When `api-design` is also active, this skill handles schema style while `api-design` handles resource design.
 
 ## When it activates
+[ref: #pb-when]
 
-Activates automatically when the project contains `.proto` files.
-It also activates when you ask about protobuf, proto, buf, or `buf.yaml`.
+Activates whenever the agent writes, edits, or reviews `.proto` files, `buf.yaml` configuration, packages, imports, enums, messages, services, RPCs, or proto comments.
 
-Example prompts:
+Examples:
 
-- "Review my protobuf schema."
-- "Add a new RPC to the payment service."
-- "Configure buf lint for this repo."
-- "Are these enum values named correctly?"
+- "Define a protobuf schema."
+- "Review the proto files."
+- "Set up buf lint."
+- "Add a gRPC service."
 
-## How to use it
+## How to run / use it
+[ref: #pb-how]
 
-Place your `.proto` files in the repository and add a `buf.yaml` if you want linting.
-When you ask the agent to write or review proto code, it applies the Buf rules automatically.
-If `buf` is available, the agent runs `buf lint` on the files it changed and fixes only those files.
+The skill applies automatically during proto editing. To validate:
+
+```bash
+buf lint
+buf format -w
+```
+
+Use the package structure and naming rules from this skill and the resource patterns from `api-design`.
 
 ## What it produces
+[ref: #pb-produces]
 
-- Lint-compliant `.proto` files.
-- A `buf.yaml` configuration matching your chosen rule category.
-- Optional `buf lint` output when the tool is present.
+- Clean, lint-free `.proto` files.
+- Consistent package and message naming.
+- Properly configured `buf.yaml` lint configuration.
+- Clear proto comments.
+
+## Dependencies and why they matter
+[ref: #pb-deps]
+
+- `api-design` — owns Google AIP resource design when both skills are triggered.
+
+## Strengths and trade-offs
+[ref: #pb-tradeoffs]
+
+### Strong sides
+[ref: #pb-strong]
+
+- Buf lint catches style and compatibility issues early.
+- Consistent proto style makes generated code predictable across languages.
+- Clear separation between schema style (`protobuf-lang`) and resource design (`api-design`).
+
+### Weak sides / limits
+[ref: #pb-weak]
+
+- Requires `buf` CLI to be installed.
+- Strict conventions may conflict with legacy proto files.
+- Does not replace API design review; use `api-design` for resource modeling.
+
+### Common pitfalls / gotchas
+[ref: #pb-pitfalls]
+
+- Package names use lowercase and reverse-domain style.
+- File names use `snake_case.proto`.
+- Message names use `PascalCase`; field names use `snake_case`.
+- Enum names use `UPPER_SNAKE_CASE`; the first value must be `*_UNSPECIFIED = 0`.
+- Services and RPCs use `PascalCase`; request/response messages are named `<RPC>Request` and `<RPC>Response`.
 
 ## Repository layout
+[ref: #pb-layout]
 
 ```text
 protobuf-lang/
-├── references/           # Exhaustive Buf lint and style reference
-│   └── rules.md
-└── SKILL.md              # Agent entry point: manifest, triggers, and routing index
+├── references/           # Buf style guide and rule details
+├── README.md                # Human overview (this file)
+└── SKILL.md              # Agent entry point: proto style rules and routing index
 ```
 
-## Reference overview
-
-| File | What it covers |
-|------|----------------|
-| `references/rules.md` | Quick start, `buf.yaml` configuration, file and package conventions, imports, enums, messages, services and RPCs, comments and layout, design recommendations, rule categories, per-rule reference, and intentionally excluded topics. |
-
 ## Important conventions / gotchas
+[ref: #pb-conventions]
 
-- Requires the `api-design` skill automatically.
-- Google AIP resource design, HTTP/gRPC transcoding, and overall API structure live in `api-design`, not here.
-- The default lint category is `STANDARD`.
-- The agent fixes only code it explicitly modified; pre-existing lint violations in untouched files are left alone.
+- Run `buf lint` and `buf format -w` after proto changes.
+- Keep schema style in this skill; keep resource design in `api-design`.
+- Use `*_UNSPECIFIED = 0` as the first enum value.
+- Name request and response messages consistently.
