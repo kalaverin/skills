@@ -41,9 +41,9 @@ The always-loaded set is NOT hardcoded here: it is exactly the set of discovered
 
 Follow `frontmatter-protocol/references/include.md` for:
 
-- the `SKILL.md` header schema (including `draft: true` skipping),
+- the `SKILL.md` header schema (including `draft: true` skipping and the `ondemand:` manifest extra),
 - the closed trigger grammar and its evaluation semantics (`always`, `files`, `request`, `any`, `all`),
-- the discovery algorithm and batch header extraction,
+- the discovery algorithm and batch header extraction (including the `OnDemand/` and `Drafts/` directory semantics),
 - `runtime: true` mid-session re-evaluation,
 - transitive `requires` resolution.
 

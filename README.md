@@ -12,7 +12,12 @@ Skills are not libraries. They are operational protocols: they define when the a
 ```text
 .
 ├── AGENTS.md                    # Runtime-wide startup gate and MCP usage contract
-├── <skill-name>/
+├── Drafts/                      # In-development skills (excluded from discovery)
+│   └── <skill-name>/
+├── OnDemand/                    # Runtime header-only manifest + rarely used skills
+│   ├── SKILL.md                 # Compressed trigger registry for on-demand skills
+│   └── <skill-name>/
+├── <core-skill-name>/           # Always-loaded core protocols and meta skills
 │   ├── README.md                # Human-facing overview, gotchas, and layout
 │   ├── SKILL.md                 # Entry point: frontmatter, triggers, routing index
 │   ├── references/              # Lazy-loaded sections referenced by [ref: #...] anchors
@@ -21,7 +26,7 @@ Skills are not libraries. They are operational protocols: they define when the a
 └── README.md                    # This file
 ```
 
-A skill is active when its trigger matches the user request or project context. The agent then loads `SKILL.md`, resolves the relevant `[ref: #...]` anchors, and executes the referenced section only.
+A skill is active when its trigger matches the user request or project context. The agent then loads `SKILL.md`, resolves the relevant `[ref: #...]` anchors, and executes the referenced section only. Core skills live in the repository root; rarely used skills are registered in `OnDemand/SKILL.md` and loaded only when their trigger fires; draft skills live in `Drafts/` and are ignored by discovery.
 
 ## Skill Catalog
 [ref: #asr-catalog]
@@ -46,7 +51,7 @@ Skills that govern the agent itself, its tool selection, and its startup behavio
 | **todo-protocol** | Mandatory protocol for using the `SetTodoList` tool. Governs when to create a todo list, how to update it without violating immutability rules, how to synchronize item status after every tool call, and the forbidden mutations. |
 | **read-for-comments** | Always-active local reference library for technical standards (RFC, OWASP, STD, etc.). Agents MUST check the Serena `standard/` archive and this skill's `references/` seed before fetching a standard from the internet. |
 | **kagi-search** | Mandatory and exclusive protocol for web search and page enrichment through the `kagimcp` MCP tools. Governs `kagi_search_fetch`, `kagi_fastgpt`, `kagi_extract`, and `kagi_summarizer`. Always active. |
-| **session-inspector** | Token-cheap inspection of Kimi Code CLI session files under `~/.kimi/sessions`. Agents MUST use the provided script instead of reading raw JSONL. |
+| **discuss-first** | Co-implementation mode. The agent plans the implementation top-down, shows full signatures and pseudocode, collects per-part approvals, requests master approval, and only then writes code. |
 
 ### Languages & API Design
 [ref: #asr-lang]
@@ -57,52 +62,46 @@ Skills that enforce language-specific and API-specific rules.
 |-------|---------|
 | **api-design** | Enforces Google AIP compliance for resource-oriented APIs: resource naming, standard methods, custom methods, pagination, filtering, planes, compatibility guarantees, and HTTP/gRPC transcoding. |
 | **python-lang** | Mandatory Google Python Style Guide enforcement plus a Ruff self-linting protocol. Covers imports, mutability, exceptions, type hints, comprehensions, decorators, docstrings, and formatting. |
-| **ruff-style** (draft) | Ruff rule corpus and enforcement reference for Python code style. DRAFT — under construction. |
-| **pytest-design** | Mandatory skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Covers fixtures, parametrization, mocking, markers, async tests, coverage, xdist, and faker-driven test data. |
-| **pytest-planner** | Generates repository-specific pytest enablement artifacts for a Python project: a test-authoring/research prompt and an iteration-ready unit-test coverage plan pinned to the exact `pytest-design` reference anchors. |
-| **protobuf-lang** | Buf Protobuf lint and schema style. Governs `buf.yaml`, packages, imports, enums, messages, services, RPCs, and comments against the Buf STANDARD rule set. |
-| **temporal-lang** | Guidance for Temporal durable execution across Python, TypeScript, Go, Java, .NET, and Ruby: workflow determinism, activities, signals, queries, versioning, continue-as-new, saga patterns, and troubleshooting non-determinism errors. |
 
-### Knowledge & Architecture
-[ref: #asr-knowledge]
+### On-Demand Skills
+[ref: #asr-ondemand]
 
-Skills that extract, structure, and navigate project knowledge.
-
-| Skill | Purpose |
-|-------|---------|
-| **repo-audit** | Creates and maintains repo cards (`repos/<repo>/overview`), business-domain reports (`repos/<repo>/business`), and dependency cards (`repos/<repo>/dependencies`) in Serena memory. Supports FULL, PARTIAL, and REFRESH run modes. |
-| **graphify-protocol** (draft) | Converts any codebase, document set, or media collection into a persistent knowledge graph. Produces `graph.html`, `graph.json`, `GRAPH_REPORT.md`, and supports query/path/explain operations, incremental updates, and exports to Neo4j, Obsidian, GraphML, and MCP. |
-
-### Audits & Reviews
-[ref: #asr-audit]
-
-Skills that inspect code, dependencies, business logic, and memory state.
-
-| Skill | Purpose |
-|-------|---------|
-| **code-review** | Language-agnostic rigorous code review for features (diff against `main`/`master`) or whole projects. Spawns parallel specialist subagents, classifies findings by severity, and emits both machine-readable and human-readable reports. |
-| **security-audit** | SAST workflow aligned with OWASP API Security Top 10 2023. Uses a mandatory screener to select applicable vulnerability scans and dispatches parallel detector subagents for SQLi, XSS, IDOR, SSRF, JWT, BOLA/BOPLA, misconfiguration, and others. |
-| **serena-audit** (draft) | Reconciles Serena memory files against their source repositories. Audits YAML frontmatter, commit/branch freshness, naming conventions, and contradictions; produces and executes a two-phase reconciliation plan. |
-
-### Domain & Collaboration
-[ref: #asr-domain]
-
-Skills that cover specific provider domains or human-in-the-loop workflows.
+Rarely used skills registered in `OnDemand/SKILL.md`. The agent evaluates their compressed triggers at runtime and loads the full `SKILL.md` only on a match.
 
 | Skill | Purpose |
 |-------|---------|
 | **bobplus-api** | Integration knowledge for the Bobplus Payments API (Africa): bearer auth, RSA request signing, `X-Hash`, C2B payins, B2C payouts, account services, bank/MNO lookups, transaction status, and webhook callbacks. |
-| **discuss-first** | Co-implementation mode. The agent plans the implementation top-down, shows full signatures and pseudocode, collects per-part approvals, requests master approval, and only then writes code. |
+| **code-review** | Language-agnostic rigorous code review for features (diff against `main`/`master`) or whole projects. Spawns parallel specialist subagents, classifies findings by severity, and emits both machine-readable and human-readable reports. |
+| **protobuf-lang** | Buf Protobuf lint and schema style. Governs `buf.yaml`, packages, imports, enums, messages, services, RPCs, and comments against the Buf STANDARD rule set. |
+| **pytest-design** | Mandatory skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Covers fixtures, parametrization, mocking, markers, async tests, coverage, xdist, and faker-driven test data. |
+| **pytest-planner** | Generates repository-specific pytest enablement artifacts for a Python project: a test-authoring/research prompt and an iteration-ready unit-test coverage plan pinned to the exact `pytest-design` reference anchors. |
+| **repo-audit** | Creates and maintains repo cards (`repos/<repo>/overview`), business-domain reports (`repos/<repo>/business`), and dependency cards (`repos/<repo>/dependencies`) in Serena memory. Supports FULL, PARTIAL, and REFRESH run modes. |
+| **security-audit** | SAST workflow aligned with OWASP API Security Top 10 2023. Uses a mandatory screener to select applicable vulnerability scans and dispatches parallel detector subagents for SQLi, XSS, IDOR, SSRF, JWT, BOLA/BOPLA, misconfiguration, and others. |
+| **session-inspector** | Token-cheap inspection of Kimi Code CLI session files under `~/.kimi/sessions`. Agents MUST use the provided script instead of reading raw JSONL. |
+| **temporal-lang** | Guidance for Temporal durable execution across Python, TypeScript, Go, Java, .NET, and Ruby: workflow determinism, activities, signals, queries, versioning, continue-as-new, saga patterns, and troubleshooting non-determinism errors. |
+
+### Drafts
+[ref: #asr-drafts]
+
+Skills under construction. They live in `Drafts/` and are excluded from discovery until they are promoted.
+
+| Skill | Purpose |
+|-------|---------|
+| **graphify-protocol** (draft) | Converts any codebase, document set, or media collection into a persistent knowledge graph. Produces `graph.html`, `graph.json`, `GRAPH_REPORT.md`, and supports query/path/explain operations, incremental updates, and exports to Neo4j, Obsidian, GraphML, and MCP. |
+| **nim-docgen** (draft) | *Description pending.* |
+| **ruff-style** (draft) | Ruff rule corpus and enforcement reference for Python code style. |
+| **serena-audit** (draft) | Reconciles Serena memory files against their source repositories. Audits YAML frontmatter, commit/branch freshness, naming conventions, and contradictions; produces and executes a two-phase reconciliation plan. |
 
 ## How Skills Are Discovered
 [ref: #asr-discovery]
 
 Agent runtimes that consume this registry must:
 
-1. Locate every `SKILL.md` under the skill search paths.
+1. Locate every `SKILL.md` under the skill search paths, excluding `Drafts/*/SKILL.md`.
 2. Parse the YAML frontmatter of each `SKILL.md` in a single batch pass.
 3. Evaluate `triggers` against the user request and project context.
 4. Load the full `SKILL.md` of every matching skill and lazily pull referenced sections as needed.
+5. Evaluate the `ondemand:` manifest in `OnDemand/SKILL.md` at runtime and load `OnDemand/<name>/SKILL.md` only when an entry matches.
 
 A skill declares its activation rules in frontmatter. Triggers may be unconditional (`always: true`), file-based, keyword-based, or compound `any`/`all` conditions.
 
