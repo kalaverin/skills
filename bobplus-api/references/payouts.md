@@ -47,7 +47,7 @@ Request body:
 | `acc_no` | string | Recipient bank account number | Yes |
 | `bank_code` | string | Recipient bank code (full list in `utilities.md`) | Yes |
 | `amount` | numeric | Order amount to be paid (no commas as thousands separator) | Yes |
-| `currency` | string | Currency (e.g. `KES`, `TZS`, `UGX`, `ZAR`) | Yes |
+| `currency` | string | Currency (`KES`, `TZS`, `XOF`, `MWK`, `RWF`, `UGX`, `ZMW`, `BWP`, `XAF`, `CDF`, `EGP`, `GMD`, `GHS`, `GNF`, `LSL`, `MRU`, `MZN`, `NGN`, `SLL`, `ZAR`) | Yes |
 | `description` | string | Your order description | Yes |
 | `channel` | numeric | Channel unique code, e.g. `100002` for BANK-KENYA (table below) | Yes |
 | `result_url` | string | URL on your server for the callback response | Yes |
