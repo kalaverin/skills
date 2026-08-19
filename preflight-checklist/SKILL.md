@@ -29,7 +29,7 @@ This skill is the closing ceremony of session initialization and the evidence-ba
 
 1. **Mirror sync** — evidence: `just sync-skills-mirror` output (`SYNCED`/`CREATED`). If it printed `INSYNC` while uncommitted skill edits exist, apply the documented lag workaround (`notes/project/skills_mirror_uncommitted_lag`) and re-run.
 2. **Forced import** — evidence: `frontmatter-protocol/SKILL.md` and `references/include.md` read in full this session.
-3. **Discovery & evaluation** — evidence: the batch header extraction ran; the loaded skill set is named (always-skills `shell-protocol`, `serena-protocol`, `read-for-comments` present among them).
+3. **Discovery & evaluation** — evidence: the batch header extraction ran; the loaded skill set is named (always-skills `mandatory-tools`, `serena-protocol`, `read-for-comments` present among them).
 4. **Project activation** — evidence: `activate_project` result received.
 5. **Memory priming** — evidence: `agent/rules` and `agent/allowed_violations` read.
 6. **MCP groups declared** — evidence: the think block's `applied: mcp-…` line.

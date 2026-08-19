@@ -45,7 +45,7 @@ You do not need to open `~/.kimi/sessions/` yourself; the script is the only san
 ## Dependencies and why they matter
 [ref: #si-deps]
 
-- `shell-protocol` — governs CLI execution and the script invocation pattern.
+- `mandatory-tools` — governs CLI execution and the script invocation pattern.
 - `uv` and Python — needed to run `inspect_sessions.py`.
 
 ## Strengths and trade-offs

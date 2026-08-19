@@ -6,7 +6,7 @@ Token-saving wrapper that compacts command output before it reaches the agent's 
 ## What it does
 [ref: #rtk-what-it-does]
 
-This skill tells the agent when and how to prefix shell commands with `rtk`, a Rust-based output filter. When `rtk` knows the command, it compresses the output dramatically; when it does not, the command passes through unchanged. The skill therefore acts as a transparent token-economy layer on top of normal shell work, not as a replacement for the tools selected by `shell-protocol`.
+This skill tells the agent when and how to prefix shell commands with `rtk`, a Rust-based output filter. When `rtk` knows the command, it compresses the output dramatically; when it does not, the command passes through unchanged. The skill therefore acts as a transparent token-economy layer on top of normal shell work, not as a replacement for the tools selected by `mandatory-tools`.
 
 ## When it activates
 [ref: #rtk-when-it-activates]
@@ -33,7 +33,7 @@ What the agent does automatically:
 
 - Prefixes every shell command in the supported inventory with `rtk`, even inside `&&` chains.
 - Falls back to normal execution when no dedicated filter exists.
-- Keeps `shell-protocol` tool selection intact: `fd`, `rg`, `lsd`, `ruplacer`, `uv`, and `ruff` remain the canonical tools, but may be `rtk`-prefixed when output is large.
+- Keeps `mandatory-tools` tool selection intact: `fd`, `rg`, `lsd`, `ruplacer`, `uv`, and `ruff` remain the canonical tools, but may be `rtk`-prefixed when output is large.
 
 Installation note: `rtk` is distributed as a standalone binary. There is no agent-side configuration file to maintain.
 
@@ -49,7 +49,7 @@ Installation note: `rtk` is distributed as a standalone binary. There is no agen
 
 | Dependency | Why it matters |
 |---|---|
-| `shell-protocol` | RTK never overrides tool selection or execution hygiene; `shell-protocol` still decides when to use `fd`, `rg`, `lsd`, `ruplacer`, `uv`, and `ruff`. |
+| `mandatory-tools` | RTK never overrides tool selection or execution hygiene; `mandatory-tools` still decides when to use `fd`, `rg`, `lsd`, `ruplacer`, `uv`, and `ruff`. |
 | `rtk` binary | The skill is inactive and its rules are moot without the binary. |
 
 ## Strengths and trade-offs

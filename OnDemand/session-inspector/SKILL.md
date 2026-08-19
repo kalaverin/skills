@@ -6,7 +6,7 @@ triggers:
   reason: "Session questions must be answered from distilled script output, never from raw JSONL reads."
 runtime: true
 requires:
-  - shell-protocol
+  - mandatory-tools
 version: 0.2.0
 ---
 

@@ -52,7 +52,7 @@ Every directive in this guide MUST be followed unless it explicitly uses **SHOUL
 
 **MANDATORY — ALWAYS, WITHOUT REMINDERS:** For EVERY Python file the agent writes, creates, or edits, the agent MUST run this pipeline before declaring the task complete. This gate is unconditional: it applies in addition to — and independently of — any project-level linting, formatter configuration, pre-commit hooks, or CI checks present in the target project. The agent MUST NOT skip it because "the project has its own linting", MUST NOT wait for the user to ask, and MUST NOT consider the task done until both stages pass on the agent's own changes.
 
-The pipeline is Ruff-only (`black`, `flake8`, and `isort` are forbidden per the `shell-protocol` skill) and has two mandatory stages, executed in this exact order:
+The pipeline is Ruff-only (`black`, `flake8`, and `isort` are forbidden per the `mandatory-tools` skill) and has two mandatory stages, executed in this exact order:
 
 1. **Format** — `ruff format` (black-compatible automatic formatting).
 2. **Lint** — `ruff check --fix` (full-rule diagnostics WITH automatic in-place fixes; fixes scoped to the agent's own edits).

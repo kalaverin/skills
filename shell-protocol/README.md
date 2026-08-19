@@ -1,5 +1,5 @@
-# shell-protocol
-[ref: #shell-protocol]
+# mandatory-tools
+[ref: #mandatory-tools]
 
 Defines the modern CLI toolkit the agent uses when it works with files, search, and Python projects.
 
@@ -81,7 +81,7 @@ What a human must ensure:
 [ref: #shell-repository-layout]
 
 ```text
-shell-protocol/
+mandatory-tools/
 ├── references/           # Per-tool reference manuals with lazy-load anchors
 │   ├── fd-find.md
 │   ├── lsd.md

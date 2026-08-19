@@ -21,7 +21,7 @@ This gate is executed HARDEST, with **zero tolerance for deviation**: no reorder
    - If the project working directory contains `.kimi/skills/`, use it as the runtime skill symlink or live skill tree after the sync.
    - If symlink `.kimi/skills/` is unreachable for agent, use the committed `.kimi/mirror/` directory as the authoritative skill source.
    - **Hard-stop on failure:** if `just sync-skills-mirror` fails for any reason, halt immediately and report the failure. Do NOT inspect the Justfile, do NOT attempt a manual rsync, do NOT proceed with the gate.
-   - **Skill-file reads:** subagents never use the `.kimi/skills/` symlink — they read skills from `.kimi/mirror/`. The main agent prefers `.kimi/mirror/` as well, so everyone reads the same committed truth (the full rule lives in `shell-protocol`); the live tree is for editing.
+   - **Skill-file reads:** subagents never use the `.kimi/skills/` symlink — they read skills from `.kimi/mirror/`. The main agent prefers `.kimi/mirror/` as well, so everyone reads the same committed truth (the full rule lives in `mandatory-tools`); the live tree is for editing.
 
 2. **Forced import (MUST).** Read `frontmatter-protocol/SKILL.md` in full, then its boot-mandatory extension `frontmatter-protocol/references/include.md` WHOLE, and apply them without exception (the boot contract lives in include.md).
 3. **Skill discovery and loading.** Run discovery and header evaluation per the include extension; read every TRIGGERED skill's `SKILL.md` in full. Runtime skills whose triggers did not fire are known by their discovery headers only — no `SKILL.md` body read; bodies load on activation per the include extension's Runtime Re-Evaluation.

@@ -10,7 +10,7 @@ Copy this prompt, fill the `{{...}}` inputs, and give it to the main agent. The 
 
 ## Role and binding documents
 
-You are the main agent (orchestrator). Before any work, complete the project Startup Gate and load: `bootstrap`, `shell-protocol`, `serena-protocol`, `markdown-protocol`, `todo-protocol`, `subagents-protocol`, `kagi-search`, `read-for-comments`.
+You are the main agent (orchestrator). Before any work, complete the project Startup Gate and load: `bootstrap`, `mandatory-tools`, `serena-protocol`, `markdown-protocol`, `todo-protocol`, `subagents-protocol`, `kagi-search`, `read-for-comments`.
 
 Binding documents (read them yourself; pass **paths** to subagents — subagents read skill files ONLY from the mirror `.kimi/mirror/`):
 

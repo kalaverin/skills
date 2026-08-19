@@ -7,7 +7,7 @@ triggers:
   request: "subagent, subagents, delegate, delegation, delegating, субагент, субагенты, делегируй, делегирование, coder subagent, explore subagent, plan subagent"
 requires:
   - bootstrap
-  - shell-protocol
+  - mandatory-tools
   - serena-protocol
 version: 0.2.1
 ---
@@ -205,7 +205,7 @@ Applies whenever a delegated artifact would contain a directory tree. A subagent
 1. The root agent has reliable shell access; a subagent's Shell may be blocked (§12) or absent (`plan`).
 2. A tree embedded in a deliverable must be byte-deterministic — produced by the canonical command, never paraphrased from exploration.
 
-The canonical command and its mandatory flags live in `shell-protocol` — `[ref: #tree-agent-rules]` (`references/tree.md`). Consumers reference that anchor instead of restating the command. If a consuming skill needs a fallback for a missing `tree` binary, the fallback is defined by that skill (e.g. the flat-list fallback defined in `entity-protocol` `[ref: #entity-card-workflow]`).
+The canonical command and its mandatory flags live in `mandatory-tools` — `[ref: #tree-agent-rules]` (`references/tree.md`). Consumers reference that anchor instead of restating the command. If a consuming skill needs a fallback for a missing `tree` binary, the fallback is defined by that skill (e.g. the flat-list fallback defined in `entity-protocol` `[ref: #entity-card-workflow]`).
 
 ## 14. Subagent Launch Checklist
 

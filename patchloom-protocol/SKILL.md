@@ -1,11 +1,11 @@
 ---
 name: patchloom-protocol
-description: "Structured file editing via Patchloom (parser-backed doc/md ops, batch/tx atomic plans, AST ops). Activates automatically when the `patchloom` binary is detected in PATH; the MCP rules are live only while the Patchloom MCP server is connected for the session, otherwise the scoped CLI mandate applies. Governs the MCP-first golden rule for structured/multi-file edits, the core-surface tool inventory pinned to the installed patchloom version, the apply-honesty traps, and the precedence contract with shell-protocol, rtk-protocol, and the Serena MCP layer."
+description: "Structured file editing via Patchloom (parser-backed doc/md ops, batch/tx atomic plans, AST ops). Activates automatically when the `patchloom` binary is detected in PATH; the MCP rules are live only while the Patchloom MCP server is connected for the session, otherwise the scoped CLI mandate applies. Governs the MCP-first golden rule for structured/multi-file edits, the core-surface tool inventory pinned to the installed patchloom version, the apply-honesty traps, and the precedence contract with mandatory-tools, rtk-protocol, and the Serena MCP layer."
 triggers:
   files: "command -v patchloom >/dev/null 2>&1"
   reason: "The skill activates only where the patchloom binary actually exists; without it the instructions would be dead weight. The MCP server is toggled separately (Zed context_servers entry) — the skill detects tool absence at runtime and degrades to the CLI mandate."
 requires:
-  - shell-protocol
+  - mandatory-tools
 version: 0.1.0
 ---
 
@@ -78,10 +78,10 @@ When the MCP tools are not in the session but `patchloom` is in PATH, the golden
 
 [ref: #patchloom-precedence]
 
-1. **shell-protocol owns tool selection and execution hygiene.** Build/test/run stays shell (`uv`, `ruff`, `rtk`-prefixed). Patchloom never runs tests or linters for the agent.
+1. **mandatory-tools owns tool selection and execution hygiene.** Build/test/run stays shell (`uv`, `ruff`, `rtk`-prefixed). Patchloom never runs tests or linters for the agent.
 2. **Serena owns memory and symbolic code exploration.** `read_memory`/`write_memory`, `find_symbol`, `find_referencing_symbols` etc. never route through Patchloom (core surface has no AST tools anyway; plan-level `ast.*` ops are for mechanical edits, not exploration).
 3. **kagi-search owns web** (the `kagimcp` tools) — untouched.
-4. **Multi-file literal replace — the ruplacer overlap, arbitrated:** when the Patchloom MCP is connected and the target files live inside the server root, `batch_replace` (or one `execute_plan`) wins for the same literal change across files — atomicity plus match honesty. `ruplacer` (shell-protocol, dry-run first) remains canonical when Patchloom is absent, the paths are outside the server root, or the replace needs ruplacer's own preview loop. One edit — one chosen layer, never both on the same files.
+4. **Multi-file literal replace — the ruplacer overlap, arbitrated:** when the Patchloom MCP is connected and the target files live inside the server root, `batch_replace` (or one `execute_plan`) wins for the same literal change across files — atomicity plus match honesty. `ruplacer` (mandatory-tools, dry-run first) remains canonical when Patchloom is absent, the paths are outside the server root, or the replace needs ruplacer's own preview loop. One edit — one chosen layer, never both on the same files.
 5. **Native tools keep the cheap tail:** single-line reads/edits with no structure semantics MAY stay native; the moment the golden-rule items 1–5 ([ref: #patchloom-golden-rule]) apply, Patchloom is mandatory. The whole-file rewrite (`WriteFile` overwrite of an existing structured file) is the anti-pattern this skill replaces.
 6. **Containment wins silently:** if Patchloom rejects a path, do NOT retry with escapes — use the native/shell layer and say so.
 

@@ -1,5 +1,5 @@
 ---
-name: shell-protocol
+name: mandatory-tools
 description: Mandatory skill for CLI, shell execution, and filesystem operations. Applies when the user asks to list directory contents, search the disk/directory (fd-find), search inside files or grep (ripgrep), lint or format Python code (ruff), replace text, run Python tools, or manage dependencies. Natural-language triggers include 'поищи на диске', 'поищи в каталоге', 'посмотри содержимое каталога', 'грепни', 'прогрепай', 'проверь стайл', 'причеши код', 'поправь форматирование', and equivalent phrases. Enforces modern tools (lsd, fd, rg, ruplacer, uv, ruff) over legacy UNIX utilities.
 triggers:
   always: true

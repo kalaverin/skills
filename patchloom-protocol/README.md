@@ -51,7 +51,7 @@ First-time CLI note: Patchloom previews changes by default. Any write through th
 
 | Dependency | Why it matters |
 |---|---|
-| `shell-protocol` | Build, test, lint, and general execution hygiene still belong to the shell layer; Patchloom does not run tests or replace `uv`, `ruff`, or `rtk`. |
+| `mandatory-tools` | Build, test, lint, and general execution hygiene still belong to the shell layer; Patchloom does not run tests or replace `uv`, `ruff`, or `rtk`. |
 | `patchloom` binary | The skill is inactive without it; the CLI fallback is unavailable. |
 | Patchloom MCP server | Optional; when present it enables the MCP-first golden rule and server-side workspace containment. |
 
@@ -76,5 +76,5 @@ patchloom-protocol/
 
 - MCP-first: when the Patchloom MCP server is connected, structured or multi-file edits must use Patchloom tools, not whole-file rewrites or `sed`/`jq`.
 - The core-surface inventory is pinned to `patchloom 0.27.0`; refresh the skill on any upgrade.
-- Serena owns memory and symbolic code exploration; Kagi owns web search; `shell-protocol` owns builds and tests. Patchloom must never replace those layers.
+- Serena owns memory and symbolic code exploration; Kagi owns web search; `mandatory-tools` owns builds and tests. Patchloom must never replace those layers.
 - For multi-file literal replacement, prefer `batch_replace` or a single `execute_plan` when Patchloom is connected; fall back to `ruplacer` only when Patchloom is absent or the paths are outside the server root.

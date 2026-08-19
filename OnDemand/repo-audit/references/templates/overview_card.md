@@ -55,7 +55,7 @@ Use this skeleton for **every** repo card, regardless of type (`grpc-service`, `
 - Do **not** include Sentry, Prometheus, or other observability-only dependencies.
 - Do **not** include entry points (how to run the repo).
 - Do **not** include development meta: Makefile, tests, linters, CI, pre-commit hooks, coverage, or editor config.
-- For the directory tree: the ROOT agent generates it with the canonical command (`shell-protocol` `[ref: #tree-agent-rules]`; never delegated — `subagents-protocol` §13). Add a one-line responsibility comment for **meaningful** files/directories only. Skip empty `__init__.py`, `Makefile`, `Dockerfile`, `tests/`, CI files, entry-point files, and boilerplate.
+- For the directory tree: the ROOT agent generates it with the canonical command (`mandatory-tools` `[ref: #tree-agent-rules]`; never delegated — `subagents-protocol` §13). Add a one-line responsibility comment for **meaningful** files/directories only. Skip empty `__init__.py`, `Makefile`, `Dockerfile`, `tests/`, CI files, entry-point files, and boilerplate.
 - For environment variables, list only the **necessary/important** ones with their prefix. Do **not** write default values, example values, or secrets.
 - For **Technology stack**, use categorical bullets with proper technology names; put libraries in parentheses with the version exactly as declared in `pyproject.toml`, `requirements/*.txt`, `uv.lock`, `package.json`, `go.mod`, or equivalent lockfiles. Do not normalize to `major.minor`, do not drop the patch, and do not invent versions.
 - For **Standards and protocols**, state what is actually used in the repo, based on code evidence and authoritative sources (RFCs, vendor docs); use web search when necessary. Do not prescribe standards or guess.

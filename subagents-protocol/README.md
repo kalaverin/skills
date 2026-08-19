@@ -59,7 +59,7 @@ Default timeouts are 1200 seconds for simple tasks and 3600 seconds for complex 
 | Dependency | Why it matters |
 |---|---|
 | `bootstrap` | The startup gate and skill-loading contract must be in place before delegation rules are applied. |
-| `shell-protocol` | Provides the fallback tools a subagent uses when its own `Shell` is blocked, and owns the canonical commands for directory trees. |
+| `mandatory-tools` | Provides the fallback tools a subagent uses when its own `Shell` is blocked, and owns the canonical commands for directory trees. |
 | `serena-protocol` | Governs memory and symbolic operations that the main agent must bridge because subagents cannot call them directly. |
 | `Agent` tool | The built-in subagent launcher that this protocol configures. |
 

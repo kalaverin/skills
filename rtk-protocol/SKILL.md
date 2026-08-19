@@ -1,11 +1,11 @@
 ---
 name: rtk-protocol
-description: "Token-optimized command execution via RTK (Rust Token Killer). Activates automatically when the `rtk` binary is detected in PATH. Governs the always-prefix golden rule (including inside && chains), the full dedicated-filter command inventory (files, search, git/forges, cloud/DB, language toolchains, infrastructure, network, meta/ops) pinned to the installed rtk version, and the precedence contract with shell-protocol tool selection and the MCP tool layer."
+description: "Token-optimized command execution via RTK (Rust Token Killer). Activates automatically when the `rtk` binary is detected in PATH. Governs the always-prefix golden rule (including inside && chains), the full dedicated-filter command inventory (files, search, git/forges, cloud/DB, language toolchains, infrastructure, network, meta/ops) pinned to the installed rtk version, and the precedence contract with mandatory-tools tool selection and the MCP tool layer."
 triggers:
   files: "command -v rtk >/dev/null 2>&1"
   reason: "The skill activates only where the rtk binary actually exists; without it the instructions would be dead weight."
 requires:
-  - shell-protocol
+  - mandatory-tools
 version: 0.1.0
 ---
 
@@ -186,7 +186,7 @@ rtk --skip-env <cmd>    # SKIP_ENV_VALIDATION=1 for child processes (Next.js, ts
 
 [ref: #rtk-precedence]
 
-1. **shell-protocol owns tool selection.** `fd`, `rg`, `lsd`, `ruplacer`, `uv`, `ruff` stay canonical for their domains; RTK's own `rtk ls` / `rtk read` / `rtk grep` / `rtk find` / `rtk tree` do NOT replace them. RTK MAY prefix any of them (passthrough is safe), but the modern-tool mandate of `shell-protocol` is never weakened by this skill. Note: `rtk rg` runs ripgrep NATIVELY with a compact output filter — it is the preferred form of `rg` when large output is expected.
+1. **mandatory-tools owns tool selection.** `fd`, `rg`, `lsd`, `ruplacer`, `uv`, `ruff` stay canonical for their domains; RTK's own `rtk ls` / `rtk read` / `rtk grep` / `rtk find` / `rtk tree` do NOT replace them. RTK MAY prefix any of them (passthrough is safe), but the modern-tool mandate of `mandatory-tools` is never weakened by this skill. Note: `rtk rg` runs ripgrep NATIVELY with a compact output filter — it is the preferred form of `rg` when large output is expected.
 2. **The MCP tool layer is untouched.** Web search goes through `kagimcp`; memory and symbolic operations through `serena` MCP tools (bootstrap §8). RTK never substitutes for an MCP tool.
 3. **Dedicated filters SHOULD be used.** For every command in the §3 inventory, run the `rtk`-prefixed form to harvest the token savings — this is the point of the skill.
 4. **Passthrough guarantee:** `rtk git` passthrough works for ALL git subcommands, even unlisted ones.
@@ -213,4 +213,4 @@ Overall average: **60–90% token reduction** on common development operations.
 
 [ref: #rtk-violation-protocol]
 
-If you run a §3-inventoried command WITHOUT the `rtk` prefix while this skill is active, disclose the miss in one line and prefix the next invocation. Never weaken §4: an `rtk`-prefixed call that replaces an MCP tool or a `shell-protocol` tool choice is a violation — halt, discard, rerun through the correct layer. If the installed rtk is NEWER than the §2 pin and §3 was not refreshed, say so and propose the refresh.
+If you run a §3-inventoried command WITHOUT the `rtk` prefix while this skill is active, disclose the miss in one line and prefix the next invocation. Never weaken §4: an `rtk`-prefixed call that replaces an MCP tool or a `mandatory-tools` tool choice is a violation — halt, discard, rerun through the correct layer. If the installed rtk is NEWER than the §2 pin and §3 was not refreshed, say so and propose the refresh.
