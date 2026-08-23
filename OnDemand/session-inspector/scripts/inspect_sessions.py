@@ -5,16 +5,19 @@ compact digests so the agent never reads raw JSONL noise (system prompts,
 checkpoints, tool outputs, wire protocol) into its context.
 
 Usage (run from the skills workspace root):
-    inspect_sessions.py [--last N]           list the N most recent sessions for cwd
-    inspect_sessions.py --no-cwd [--last N]  list sessions from all projects
-    inspect_sessions.py --session <id>       distilled transcript of one session
-    inspect_sessions.py --session <id> --restore  context-restoration pack
-    inspect_sessions.py --sessions-dir PATH  override the sessions root
+    inspect_sessions.py [--last N]
+    inspect_sessions.py --no-cwd [--last N]
+    inspect_sessions.py --query "PHRASE" [--last N]
+    inspect_sessions.py --query "PHRASE" --exact [--last N]
+    inspect_sessions.py --session <id>
+    inspect_sessions.py --session <id> --restore
+    inspect_sessions.py --sessions-dir PATH
 """
 
 # ruff: noqa: INP001, T201 — CLI script, not a package; print is the interface.
 
 import argparse
+import difflib
 import hashlib
 import json
 import re
@@ -23,6 +26,19 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from rapidfuzz import fuzz  # type: ignore[import-not-found]
+
+    def _fuzz_ratio(a: str, b: str) -> float:
+        return fuzz.ratio(a, b)
+except ImportError:
+
+    def _fuzz_ratio(a: str, b: str) -> float:
+        return difflib.SequenceMatcher(None, a, b).ratio() * 100
+
+
+FUZZY_RATIO_FULL = 75.0
+FUZZY_RATIO_WINDOW = 85.0
 GIST_CHARS = 220
 MSG_CHARS = 300
 TAIL_MESSAGES = 50
@@ -207,9 +223,53 @@ def _cwd_hashes(cwd: Path, kimi_json: Path) -> set[str] | None:
     return hashes
 
 
+def _matches_quote(messages: list[tuple[str, str]], quote: str, fuzzy: bool) -> bool:
+    """Return True if any user/assistant message matches the quote."""
+    quote_norm = quote.lower()
+    for _, text in messages:
+        text_lower = text.lower()
+        if not fuzzy:
+            if quote_norm in text_lower:
+                return True
+            continue
+        # Fuzzy: check the whole message and a sliding window near the quote length.
+        if _fuzz_ratio(quote_norm, text_lower) >= FUZZY_RATIO_FULL:
+            return True
+        window = max(len(quote_norm), 20)
+        for i in range(0, len(text_lower) - window + 1, window // 2):
+            snippet = text_lower[i : i + window + len(quote_norm)]
+            if _fuzz_ratio(quote_norm, snippet) >= FUZZY_RATIO_WINDOW:
+                return True
+    return False
+
+
+def _session_matches(
+    session_dir: Path,
+    quote: str | None,
+    fuzzy: bool,
+) -> bool:
+    """Check whether a session contains the requested quote."""
+    if not quote:
+        return True
+    state = _session_state(session_dir)
+    if state.get("custom_title") and _matches_quote(
+        [("user", state["custom_title"])],
+        quote,
+        fuzzy,
+    ):
+        return True
+    for segment in _context_files(session_dir):
+        messages, _, _ = _scan(segment)
+        if _matches_quote(messages, quote, fuzzy):
+            return True
+    return False
+
+
 def _iter_sessions(
     root: Path,
     allowed_hashes: set[str] | None = None,
+    quote: str | None = None,
+    fuzzy: bool = False,
 ) -> list[tuple[float, Path]]:
     sessions = []
     for session_dir in root.glob("*/*/"):
@@ -220,15 +280,28 @@ def _iter_sessions(
             and not (session_dir / "state.json").exists()
         ):
             continue
+        if not _session_matches(session_dir, quote, fuzzy):
+            continue
         last = max(f.stat().st_mtime for f in session_dir.iterdir() if f.is_file())
         sessions.append((last, session_dir))
     sessions.sort(reverse=True)
     return sessions
 
 
-def cmd_list(root: Path, last: int, allowed_hashes: set[str] | None) -> None:
+def cmd_list(
+    root: Path,
+    last: int,
+    allowed_hashes: set[str] | None,
+    quote: str | None,
+    fuzzy: bool,
+) -> None:
     now = datetime.now(UTC).timestamp()
-    for last_activity, session_dir in _iter_sessions(root, allowed_hashes)[:last]:
+    for last_activity, session_dir in _iter_sessions(
+        root,
+        allowed_hashes,
+        quote,
+        fuzzy,
+    )[:last]:
         state = _session_state(session_dir)
         segments = _context_files(session_dir)
         first = ""
@@ -344,6 +417,18 @@ def main() -> None:
             "not only those matching the current directory"
         ),
     )
+    parser.add_argument(
+        "--query",
+        help=(
+            "filter sessions by a phrase "
+            "(fuzzy by default; use --exact for substring)"
+        ),
+    )
+    parser.add_argument(
+        "--exact",
+        action="store_true",
+        help="make --query a case-insensitive substring match instead of fuzzy",
+    )
     args = parser.parse_args()
 
     root = args.sessions_dir
@@ -364,10 +449,13 @@ def main() -> None:
                 file=sys.stderr,
             )
 
+    quote: str | None = args.query
+    fuzzy = not args.exact
+
     if args.session:
         matches = [
             d
-            for _, d in _iter_sessions(root, allowed_hashes)
+            for _, d in _iter_sessions(root, allowed_hashes, quote, fuzzy)
             if d.name.startswith(args.session)
         ]
         if len(matches) != 1:
@@ -380,7 +468,7 @@ def main() -> None:
         else:
             cmd_show(matches[0])
     else:
-        cmd_list(root, args.last, allowed_hashes)
+        cmd_list(root, args.last, allowed_hashes, quote, fuzzy)
 
 
 if __name__ == "__main__":

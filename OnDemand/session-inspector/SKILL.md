@@ -1,6 +1,6 @@
 ---
 name: session-inspector
-description: "Token-cheap inspection of Kimi Code CLI session files under ~/.kimi/sessions. Use when the user asks to find, list, or identify past sessions — or to restore working context from one: 'найди сессию', 'последние сессии', 'прошлая сессия', 'сломанная/незавершённая сессия', 'какие были чаты', 'session id', 'подними контекст из сессии', 'продолжим с той сессии', 'what was that session about'. Governs the mandatory script-based extraction: the agent MUST NEVER read session JSONL files directly — the script distills titles, repos, statuses, and transcripts."
+description: "Token-cheap inspection of Kimi Code CLI session files under ~/.kimi/sessions. Use when the user asks to find, list, or identify past sessions — or to restore working context from one: 'найди сессию', 'последние сессии', 'прошлая сессия', 'сломанная/незавершённая сессия', 'какие были чаты', 'какие были сессии', 'session id', 'подними контекст из сессии', 'продолжим с той сессии', 'what was that session about'. Governs the mandatory script-based extraction: the agent MUST NEVER read session JSONL files directly — the script distills titles, repos, statuses, and transcripts."
 triggers:
   request: "найди сессию, последние сессии, прошлая сессия, прежняя сессия, сломанная сессия, незавершённая сессия, завершённая сессия, какие были чаты, какие были сессии, session id, найди разговор, найди чат, история сессий, what sessions, find session, previous session, broken session, подними контекст, подними контекст из сессии, продолжим с той сессии, продолжи сессию, восстанови контекст сессии, restore session context, resume that session"
   reason: "Session questions must be answered from distilled script output, never from raw JSONL reads."
@@ -23,13 +23,37 @@ NEVER read session files (`*.jsonl`, `state.json`, `metadata.json`) directly wit
 ```bash
 uv run --no-project python session-inspector/scripts/inspect_sessions.py [--last N]
 uv run --no-project python session-inspector/scripts/inspect_sessions.py --no-cwd [--last N]
+uv run --no-project python session-inspector/scripts/inspect_sessions.py --query "some phrase" [--last N]
+uv run --no-project python session-inspector/scripts/inspect_sessions.py --query "some phrase" --exact [--last N]
 uv run --no-project python session-inspector/scripts/inspect_sessions.py --session <id-prefix>
 uv run --no-project python session-inspector/scripts/inspect_sessions.py --session <id-prefix> --restore
+uv run --no-project python session-inspector/scripts/inspect_sessions.py --sessions-dir PATH
 ```
 
-(Subagents receive the absolute path: `<workspace>/session-inspector/scripts/inspect_sessions.py`. Run from the skills workspace root; use `--last K` to widen the window for older sessions and `--sessions-dir` to point at fixtures or another sessions root.)
+(Subagents receive the absolute path: `<workspace>/session-inspector/scripts/inspect_sessions.py`. Run from the skills workspace root.)
 
-## 2. Modes
+## 2. Flags and Arguments
+
+[ref: #si-flags]
+
+| Flag | Default | Description |
+|---|---|---|
+| `--last N` | 10 | How many recent sessions to list. Increase this when the target session is older than the default window. |
+| `--no-cwd` | false | Disable the current-working-directory filter and search sessions from all known projects. |
+| `--query PHRASE` | — | Filter sessions whose messages match `PHRASE`. Fuzzy by default; use `--exact` for a case-insensitive substring match. |
+| `--exact` | false | Switch `--query` from fuzzy matching to exact case-insensitive substring matching. |
+| `--session ID_PREFIX` | — | Switch to show/restore mode for the session whose UUID starts with the prefix. Must match exactly one session. |
+| `--restore` | false | Use only with `--session`: emit a context-restoration pack instead of a transcript. |
+| `--sessions-dir PATH` | `~/.kimi/sessions` | Override the sessions root (useful for tests, fixtures, or non-standard Kimi layouts). |
+
+Combinations and constraints:
+
+- `--exact` is only meaningful together with `--query`.
+- `--query` can be combined with `--no-cwd` to search across all projects.
+- `--restore` is invalid without `--session`.
+- `--last` affects list mode only (the default). Show/restore mode always targets one session.
+
+## 3. Modes
 
 [ref: #si-modes]
 
@@ -37,7 +61,7 @@ uv run --no-project python session-inspector/scripts/inspect_sessions.py --sessi
 - **Show mode (`--session <id-prefix>`):** the distilled transcript — user/assistant text only, noise-injected system blocks stripped, each message truncated, capped at the last 50 messages. Use it to answer "what exactly happened in that session" without touching the JSONL.
 - **Restore mode (`--session <id-prefix> --restore`):** the context-restoration pack for "подними контекст из этой сессии" — NOT a transcript: OPEN todos from `state.json` in full (done ones collapse to a count), working repos, recently written files, Serena memory refs the session touched, the last user messages, and the last assistant messages at up to 1000 chars each (closing summaries carry the state).
 
-## 3. Presenting to the User
+## 4. Presenting to the User
 
 [ref: #si-presentation]
 
@@ -46,7 +70,7 @@ uv run --no-project python session-inspector/scripts/inspect_sessions.py --sessi
 - Status vocabulary for the user: `active` = живой (активность в последние сутки), `archived` = завершён, `interrupted` = вероятно сломан/брошен (не archived, есть ОТКРЫТЫЕ todos, активность давно), `stale` = не archived, открытых todos нет, активность давно.
 - If the user looks for "the broken/finished session", run list mode, name candidates with ids, and offer show mode for the chosen one.
 
-## 4. Context Restoration Procedure
+## 5. Context Restoration Procedure
 
 [ref: #si-restore]
 
@@ -57,7 +81,7 @@ When the user asks to lift/restore context from a session ("подними ко�
 3. Present a compact Russian summary: what the session did, where it stopped (todos + last assistant message), which repos and files it touched.
 4. Ask the user what to continue — never auto-resume the old task list.
 
-## 5. Violation Protocol
+## 6. Violation Protocol
 
 [ref: #si-violation-protocol]
 
