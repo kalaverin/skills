@@ -142,3 +142,73 @@ Read every returned file before writing code.
 Each `EXPORT.md` describes reusable components and the criteria for copying them whole.
 Apply those criteria strictly.
 After copying a module, replace the source package prefix with the target project's package prefix and run the Mandatory Lint & Format Pipeline (§3) only on the changed files.
+
+***
+
+## 6. Constants, Enums, Magic Values, and Data Carriers
+
+[ref: #py-constants-enums]
+
+This section is mandatory. It applies to every Python file the agent writes, edits, or reviews.
+
+### 6.1 No magic values
+
+- A "magic value" is any numeric or string literal that carries semantic meaning outside the immediate syntax (e.g., `200`, `404`, `"pending"`, `0.95`, `86400`, `1 << 41`).
+- Magic values MUST NOT appear inline in expressions, comparisons, function arguments, or return values.
+- The only literals allowed inline are:
+  - `0`, `1`, `-1` when used as pure arithmetic/indexing identities.
+  - `True`, `False`, `None`.
+  - Version parts or structurally required constants documented in the same line.
+
+### 6.2 Use enums for categorical values
+
+- Categorical string values MUST be represented as `StrEnum` with `auto()`:
+  ```python
+  class Role(StrEnum):
+      ADMIN = auto()
+      USER = auto()
+  ```
+- Categorical numeric values MUST be represented as `Enum`:
+  ```python
+  class Priority(Enum):
+      LOW = 1
+      HIGH = 2
+  ```
+- Bit flags and masks MUST be represented as `IntFlag`:
+  ```python
+  class Permission(IntFlag):
+      READ = auto()
+      WRITE = auto()
+  ```
+
+### 6.3 Module-level constants
+
+- Any semantic value that is not naturally an enum MUST be defined as a module-level `ALL_CAPS` constant.
+- Examples: `TIMEOUT_SECONDS = 10.0`, `REFRESH_BUFFER_RATIO = 0.95`, `MAX_RETRIES = 3`.
+- Constants MUST be placed near the top of the module, after imports.
+
+### 6.4 Function-boundary constants
+
+- `Literal[...]` is allowed ONLY at boundaries where the value comes from outside the application and cannot yet be an enum (e.g., raw external API input, CLI flags).
+- Inside the application, categorical strings and numbers MUST be `Enum`/`StrEnum` members, not `Literal`.
+- If the value can be modeled as a dataclass or Pydantic model, use that instead of `Literal`.
+
+### 6.5 HTTP status codes
+
+- HTTP status codes MUST NOT be written as bare integers.
+- If `starlette` is available, use `from starlette import status` and `status.HTTP_200_OK`.
+- Otherwise use `http.HTTPStatus.OK` from the standard library.
+- Never use `200`, `201`, `400`, `404`, `500`, etc.
+
+### 6.6 Data carriers
+
+- Functions MUST NOT accept or return plain `dict` as a primary data carrier.
+- Inside the application, use frozen `dataclass` instances (`@dataclass(frozen=True)`).
+- At application boundaries (HTTP, files, env, external APIs, CLI input), use Pydantic models.
+- `TypedDict` is allowed ONLY as an exception, with the user's explicit approval, and only for dict-shaped data that cannot be a dataclass/Pydantic model.
+- `NamedTuple`/`namedtuple` is allowed for performance-oriented intermediate representations when the data has already been validated by Pydantic models or sourced from dataclasses. It MUST NOT be used as the primary boundary carrier.
+
+### 6.7 Enforcement
+
+- Ruff rule `PLR2004` catches many magic-value violations. Do not suppress it without explicit justification.
+- Run the §3 pipeline on every changed file; fix every `PLR2004` by naming the value or converting it to an enum.
