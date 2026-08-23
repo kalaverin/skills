@@ -21,9 +21,16 @@ These rules are absolute. They apply before, during, and after the Startup Gate.
 - Read-only git operations are allowed (`git status`, `git log`, `git diff`, `git rev-parse`, `git blame`).
 - If the user wants a git mutation, the instruction must be explicit and specifically about git, e.g. "закоммить", "сделай git push", "создай ветку". Indirect hints ("надо бы сохранить", "сохрани изменения") are NOT sufficient. When in doubt, ask in the chat and wait for the reply.
 
+### Tooling and build-configuration mutations require explicit chat approval
+
+- The agent MUST NOT edit build, task-runner, or linter/checker configuration files: `Makefile`, `Justfile`, `justfile`, `mise.toml`, `pyproject.toml` tool sections, `ruff.toml`, `.pylintrc`, `.pre-commit-config.yaml`, `tox.ini`, `setup.cfg`, `package.json` scripts and devDependencies, and any equivalent configuration.
+- The agent MAY run these tools (`just <recipe>`, `make <target>`, `uv run ruff check`, etc.) but MUST NOT modify their definitions, targets, recipes, dependency lists, or configuration.
+- If the agent believes a tooling change is required (e.g. adding an ignore rule, changing a target, adding a dependency), it MUST stop and ask the user directly in the chat. The question must name the file, the exact change, and the reason why it is necessary. The agent MUST wait for the user's explicit text reply (yes/no with reason) before editing. Indirect hints or inferred needs are NOT sufficient.
+- The only exception is a direct, explicit user instruction to change a specific tooling file.
+
 ### Violation protocol
 
-If the agent is about to break either rule, it must halt before executing the command and ask the user in the chat. Repeated violations must be recorded in Serena memory under `bugs/project/agent-mutation-bypass`.
+If the agent is about to break any rule in this section, it must halt before executing the command and ask the user in the chat. Repeated violations must be recorded in Serena memory under `bugs/project/agent-mutation-bypass`.
 
 ## 1. 🔒 BOOTSTRAP MANDATE (HARD — NO VARIANTS, NO DEVIATIONS)
 
