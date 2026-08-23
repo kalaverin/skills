@@ -2,6 +2,29 @@
 
 [ref: #agent-requirements]
 
+## 0. 🔒 HARD IMMUTABILITY RULES (pre-bootstrap, always in force)
+
+[ref: #hard-immutability-rules]
+
+These rules are absolute. They apply before, during, and after the Startup Gate. No skill, task, or inferred convenience may override them.
+
+### Environment mutations require explicit chat approval
+
+- The agent MUST NOT mutate the execution environment: no installing, removing, updating, or locking of packages; no creating or destroying virtual environments; no state-changing commands for `uv`, `pip`, `pipx`, `poetry`, `npm`, `yarn`, `pnpm`, `gem`, `cargo install`, `go get`, or any other package/tool manager.
+- Read-only environment queries are allowed (`uv run`, `uvx`, `python -c`, `which`, `--version`, `--help`).
+- If any task needs a missing package, dependency, or environment change, the agent MUST stop and ask the user directly in the chat. The question must state what is missing, why it is needed, and the exact command the agent proposes to run. The agent MUST wait for the user's explicit text reply before proceeding. Tool-based or implied consent is invalid.
+
+### Git mutations require an explicit user instruction about git
+
+- The agent MUST NOT run any git-mutating command: `git commit`, `git push`, `git pull`, `git fetch`, `git add`, `git reset`, `git rebase`, `git checkout` that changes state, `git stash`, `git merge`, tag/branch creation or deletion, or any equivalent operation.
+- The only allowed automated git mutation is `just serena-checkpoint` (or the configured Serena memory persistence command).
+- Read-only git operations are allowed (`git status`, `git log`, `git diff`, `git rev-parse`, `git blame`).
+- If the user wants a git mutation, the instruction must be explicit and specifically about git, e.g. "закоммить", "сделай git push", "создай ветку". Indirect hints ("надо бы сохранить", "сохрани изменения") are NOT sufficient. When in doubt, ask in the chat and wait for the reply.
+
+### Violation protocol
+
+If the agent is about to break either rule, it must halt before executing the command and ask the user in the chat. Repeated violations must be recorded in Serena memory under `bugs/project/agent-mutation-bypass`.
+
 ## 1. 🔒 BOOTSTRAP MANDATE (HARD — NO VARIANTS, NO DEVIATIONS)
 
 [ref: #bootstrap-mandate]
