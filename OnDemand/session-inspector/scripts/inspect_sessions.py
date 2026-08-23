@@ -5,7 +5,8 @@ compact digests so the agent never reads raw JSONL noise (system prompts,
 checkpoints, tool outputs, wire protocol) into its context.
 
 Usage (run from the skills workspace root):
-    inspect_sessions.py [--last N]           list the N most recent sessions
+    inspect_sessions.py [--last N]           list the N most recent sessions for cwd
+    inspect_sessions.py --no-cwd [--last N]  list sessions from all projects
     inspect_sessions.py --session <id>       distilled transcript of one session
     inspect_sessions.py --session <id> --restore  context-restoration pack
     inspect_sessions.py --sessions-dir PATH  override the sessions root
@@ -14,6 +15,7 @@ Usage (run from the skills workspace root):
 # ruff: noqa: INP001, T201 — CLI script, not a package; print is the interface.
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -178,9 +180,41 @@ def _status(state: dict, last_activity: float, now: float) -> str:
     return "active"
 
 
-def _iter_sessions(root: Path) -> list[tuple[float, Path]]:
+def _cwd_hashes(cwd: Path, kimi_json: Path) -> set[str] | None:
+    """Return project hashes whose work-dir is a prefix of the current cwd.
+
+    Hashes are MD5 of the path string as stored in ~/.kimi/kimi.json, because
+    session directories are named after that exact hash.
+    """
+    if not kimi_json.exists():
+        return None
+    try:
+        data = json.loads(kimi_json.read_text(encoding="utf-8", errors="replace"))
+    except json.JSONDecodeError:
+        return None
+    work_dirs = data.get("work_dirs") or []
+    cwd_resolved = str(cwd.resolve())
+    hashes: set[str] = set()
+    for entry in work_dirs:
+        path = entry.get("path") if isinstance(entry, dict) else None
+        if not isinstance(path, str):
+            continue
+        path_resolved = str(Path(path).resolve())
+        if cwd_resolved == path_resolved or cwd_resolved.startswith(
+            path_resolved + "/",
+        ):
+            hashes.add(hashlib.md5(path.encode()).hexdigest())  # noqa: S324
+    return hashes
+
+
+def _iter_sessions(
+    root: Path,
+    allowed_hashes: set[str] | None = None,
+) -> list[tuple[float, Path]]:
     sessions = []
     for session_dir in root.glob("*/*/"):
+        if allowed_hashes is not None and session_dir.parent.name not in allowed_hashes:
+            continue
         if (
             not _context_files(session_dir)
             and not (session_dir / "state.json").exists()
@@ -192,9 +226,9 @@ def _iter_sessions(root: Path) -> list[tuple[float, Path]]:
     return sessions
 
 
-def cmd_list(root: Path, last: int) -> None:
+def cmd_list(root: Path, last: int, allowed_hashes: set[str] | None) -> None:
     now = datetime.now(UTC).timestamp()
-    for last_activity, session_dir in _iter_sessions(root)[:last]:
+    for last_activity, session_dir in _iter_sessions(root, allowed_hashes)[:last]:
         state = _session_state(session_dir)
         segments = _context_files(session_dir)
         first = ""
@@ -302,6 +336,14 @@ def main() -> None:
         type=Path,
         default=Path.home() / ".kimi" / "sessions",
     )
+    parser.add_argument(
+        "--no-cwd",
+        action="store_true",
+        help=(
+            "list sessions from all projects, "
+            "not only those matching the current directory"
+        ),
+    )
     args = parser.parse_args()
 
     root = args.sessions_dir
@@ -312,9 +354,21 @@ def main() -> None:
     if args.restore and not args.session:
         parser.error("--restore requires --session <id-prefix>")
 
+    allowed_hashes: set[str] | None = None
+    if not args.no_cwd:
+        allowed_hashes = _cwd_hashes(Path.cwd(), root.parent / "kimi.json")
+        if allowed_hashes is not None and not allowed_hashes:
+            print(
+                f"warning: current directory {Path.cwd()} "
+                "does not match any known project; use --no-cwd to see all sessions",
+                file=sys.stderr,
+            )
+
     if args.session:
         matches = [
-            d for _, d in _iter_sessions(root) if d.name.startswith(args.session)
+            d
+            for _, d in _iter_sessions(root, allowed_hashes)
+            if d.name.startswith(args.session)
         ]
         if len(matches) != 1:
             candidates = ", ".join(d.name for d in matches) or "none"
@@ -326,7 +380,7 @@ def main() -> None:
         else:
             cmd_show(matches[0])
     else:
-        cmd_list(root, args.last)
+        cmd_list(root, args.last, allowed_hashes)
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ NEVER read session files (`*.jsonl`, `state.json`, `metadata.json`) directly wit
 
 ```bash
 uv run --no-project python session-inspector/scripts/inspect_sessions.py [--last N]
+uv run --no-project python session-inspector/scripts/inspect_sessions.py --no-cwd [--last N]
 uv run --no-project python session-inspector/scripts/inspect_sessions.py --session <id-prefix>
 uv run --no-project python session-inspector/scripts/inspect_sessions.py --session <id-prefix> --restore
 ```
