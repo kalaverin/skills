@@ -180,6 +180,15 @@ This section is mandatory. It applies to every Python file the agent writes, edi
       READ = auto()
       WRITE = auto()
   ```
+- Prefer `auto()` for every member whose concrete value is not semantically significant. When only some members need custom values, assign those explicitly and keep `auto()` for the rest. Do not hand-write every value just because one member requires a custom value:
+  ```python
+  class ReconTarget(StrEnum):
+      PROGRAMS_INDEX = "/programs"
+      AUTHOR_INDEX = "/author"
+      ARCHIVE_INDEX = "/archive"
+      NEWS_SECTION = auto()
+      OPINIONS_SECTION = auto()
+  ```
 
 ### 6.3 Sentinel values
 
@@ -196,6 +205,7 @@ This section is mandatory. It applies to every Python file the agent writes, edi
 - Any semantic value that is not naturally an enum MUST be defined as a module-level `ALL_CAPS` constant.
 - Examples: `TIMEOUT_SECONDS = 10.0`, `REFRESH_BUFFER_RATIO = 0.95`, `MAX_RETRIES = 3`.
 - Constants MUST be placed near the top of the module, after imports.
+- Whenever several constants form a logical or semantic group — such as URL path prefixes, section identifiers, feature flags, or configuration keys — they SHOULD be grouped into a single enum instead of being declared as separate `ALL_CAPS` constants. Prefer `StrEnum` for string groups, `Enum` for numeric groups, and `IntFlag` for flags. This makes the grouping explicit, gives it a name, and prevents accidental mixing with unrelated constants.
 
 ### 6.5 Function-boundary constants
 
