@@ -158,7 +158,7 @@ This section is mandatory. It applies to every Python file the agent writes, edi
 - The only literals allowed inline are:
   - `0`, `1`, `-1` when used as pure arithmetic/indexing identities.
   - `True`, `False`, `None`.
-  - Version parts or structurally required constants documented in the same line.
+  - Mathematical identity values such as `base=10` or `radix=10`, documented in the same line.
 
 ### 6.2 Use enums for categorical values
 
@@ -181,34 +181,106 @@ This section is mandatory. It applies to every Python file the agent writes, edi
       WRITE = auto()
   ```
 
-### 6.3 Module-level constants
+### 6.3 Sentinel values
+
+- Do not use magic strings or numbers as sentinels (e.g., `result = -1`, `name = "N/A"`, `value = 999`).
+- Use a dedicated enum member or a singleton sentinel object:
+  ```python
+  class Result(Enum):
+      FOUND = auto()
+      NOT_FOUND = auto()
+  ```
+
+### 6.4 Module-level constants
 
 - Any semantic value that is not naturally an enum MUST be defined as a module-level `ALL_CAPS` constant.
 - Examples: `TIMEOUT_SECONDS = 10.0`, `REFRESH_BUFFER_RATIO = 0.95`, `MAX_RETRIES = 3`.
 - Constants MUST be placed near the top of the module, after imports.
 
-### 6.4 Function-boundary constants
+### 6.5 Function-boundary constants
 
 - `Literal[...]` is allowed ONLY at boundaries where the value comes from outside the application and cannot yet be an enum (e.g., raw external API input, CLI flags).
 - Inside the application, categorical strings and numbers MUST be `Enum`/`StrEnum` members, not `Literal`.
 - If the value can be modeled as a dataclass or Pydantic model, use that instead of `Literal`.
 
-### 6.5 HTTP status codes
+### 6.6 HTTP status codes
 
 - HTTP status codes MUST NOT be written as bare integers.
 - If `starlette` is available, use `from starlette import status` and `status.HTTP_200_OK`.
 - Otherwise use `http.HTTPStatus.OK` from the standard library.
 - Never use `200`, `201`, `400`, `404`, `500`, etc.
 
-### 6.6 Data carriers
+### 6.7 Data carriers
 
-- Functions MUST NOT accept or return plain `dict` as a primary data carrier.
+- Functions in application code MUST NOT accept or return plain `dict` as their public contract.
+- Raw `dict` is allowed only as the immediate input to a parser/validator; it MUST be wrapped in a model or dataclass before crossing any application function boundary.
 - Inside the application, use frozen `dataclass` instances (`@dataclass(frozen=True)`).
-- At application boundaries (HTTP, files, env, external APIs, CLI input), use Pydantic models.
+- At application boundaries (HTTP, files, env, external APIs, CLI input), use Pydantic models. If Pydantic is unavailable, use a dataclass with explicit validation.
+- `argparse.Namespace` and similar CLI parsers must be mapped to a dataclass or Pydantic model before use.
 - `TypedDict` is allowed ONLY as an exception, with the user's explicit approval, and only for dict-shaped data that cannot be a dataclass/Pydantic model.
 - `NamedTuple`/`namedtuple` is allowed for performance-oriented intermediate representations when the data has already been validated by Pydantic models or sourced from dataclasses. It MUST NOT be used as the primary boundary carrier.
 
-### 6.7 Enforcement
+### 6.8 No `**` unpacking
+
+- The `**` operator MUST NOT be used to unpack dictionaries into function arguments.
+- Every argument MUST be passed explicitly by name or position.
+- Bad: `func(**kwargs)`, `obj.method(**config_dict)`.
+- Good: `func(name=user.name, role=user.role)`.
+
+### 6.9 Examples
+
+Bad:
+```python
+if response.status_code == 200:
+    ...
+wait(0.95)
+```
+
+Good:
+```python
+from starlette import status
+if response.status_code == status.HTTP_200_OK:
+    ...
+wait(REFRESH_BUFFER_RATIO)
+```
+
+Bad:
+```python
+def create_user(data: dict) -> dict:
+    ...
+```
+
+Good:
+```python
+@dataclass(frozen=True)
+class UserCreate: ...
+
+@dataclass(frozen=True)
+class User: ...
+
+def create_user(data: UserCreate) -> User:
+    ...
+```
+
+### 6.10 Enforcement
 
 - Ruff rule `PLR2004` catches many magic-value violations. Do not suppress it without explicit justification.
 - Run the §3 pipeline on every changed file; fix every `PLR2004` by naming the value or converting it to an enum.
+- The agent MUST self-review new function signatures for bare `dict`, `**kwargs`, magic literals, and missing enum/data-carrier types before declaring the task complete.
+
+***
+
+## 7. Logging and Output
+
+[ref: #py-logging]
+
+- Every Python file that produces any diagnostic, status, warning, or error output MUST define a module-level logger:
+  ```python
+  logger = logging.getLogger(__name__)
+  ```
+- `print()` and `sys.stdout.write()` are forbidden for logging, debugging, status, warning, or error output. Use `logger.debug/info/warning/error/exception` instead.
+- For the script's actual product output (e.g., a CLI reporter, a pipe-friendly tool), use `print()` by default. Use `sys.stdout.write()` only when precise control is needed (no newline, raw strings, performance).
+- Never swallow exceptions, errors, or unusual conditions silently. Log them at the appropriate level.
+- Use `logger.exception(...)` inside `except` blocks to capture the traceback.
+- Log messages must be concise and include relevant context (identifiers, paths, operation names); avoid dumping large objects or full tracebacks at `INFO` level.
+- At module load time, use `logger.debug`.
