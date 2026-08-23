@@ -52,6 +52,31 @@ Inside bootstrap, the **Startup Gate** (its §1) is executed HARDEST, with zero 
 - **Communication with the user MUST be in Russian.**
 - **No exceptions.** Technical content (code, architecture notes, bug reports, decisions) is always in English. Russian is used exclusively for the user-facing chat interface.
 
+### Communication style
+
+[ref: #communication-style]
+
+- Start with the answer; no preamble, no filler, no pleasantries in any language.
+- Do not open with «Конечно!», «Без проблем», «Хорошо», «Ладно», "Sure", "Of course", or similar placeholders.
+- One user request → one reply; do not split a short answer across multiple messages.
+- Answer directly; do not restate the user's message unless clarification is needed.
+- Technical content (code, filenames, commands, architecture notes) remains in English; user-facing chat remains in Russian.
+
+### Compression of natural-language artifacts
+
+[ref: #compression-of-natural-language-artifacts]
+
+- Any natural-language prose produced by the agent — internal reasoning, memory entries, notes, explanations to the user — defaults to telegraphic style.
+- In English: strip articles (`a`, `an`, `the`), auxiliaries (`is`, `are`, `was`, `were`), modal verbs (`should`, `would`, `could`, `might`), hedging, and filler; avoid passive voice and subordinate clauses.
+- In Russian: remove filler, hedging, and empty intros; keep sentences short and direct.
+- One fact, decision, or step per line; prefer bullets over paragraphs.
+- Preserve exact identifiers, numbers, file paths, and causal links.
+- Examples:
+  - "We should keep the file because it is used by bootstrap" → `Keep file. Bootstrap uses it.`
+  - "I will check whether the dependency is installed" → `Check dependency installed.`
+  - "The user decided not to rename the directory" → `User: no rename.`
+- Do not compress code, structured data, formal specifications, or explanations where precision is critical (subtle bugs, safety, legal, or when the user explicitly asks for a full explanation).
+
 ## 3. Skill Location and Fallback
 
 [ref: #skill-location-and-fallback]
@@ -64,3 +89,29 @@ Inside bootstrap, the **Startup Gate** (its §1) is executed HARDEST, with zero 
 - Subagents must always read from `.kimi/mirror/`, never from `.kimi/skills/`.
 
 Do not use directories outside our workdir, it's restricted by harness. When you need to /tmp, just use in-project .tmp/ directory.
+
+## 4. Token efficiency and reconnaissance discipline
+
+[ref: #token-efficiency]
+
+- All file and shell operations follow the `mandatory-tools` ladder: prefer Serena/Kagi MCP tools, then Patchloom (`read_file` for bounded reads, AST operations for structured edits), then `rtk`-prefixed modern tools (`rtk rg`, `rtk fd`, `rtk wc`), and never legacy `grep`, `find`, `ls`, `cat`, `head`, or `tail`.
+- Reconnaissance should be one pass: gather facts with a combined probe (`rtk rg`, `rtk fd`, a subagent, or an MCP search) rather than repeated piecemeal lookups.
+- Peek before reading whole files: use Patchloom `read_file` with line ranges first; fall back to `rtk`-prefixed tools only when Patchloom cannot access the path.
+  - Examples of bounded reads with Patchloom:
+    - `read_file` with `lines: "1:50"` — first 50 lines.
+    - `read_file` with `lines: "100:200"` — middle chunk.
+    - `execute_plan` op `read` with `lines: "10:25"`.
+- Environment checks should be one probe: `python -c "import a, b, c"`, `command -v x y z`, not serial separate calls.
+- When waiting for a background task, poll with large intervals; do not poll every second.
+- Do not build verification harnesses, test frameworks, mock fixtures, or extra scripts unless the user explicitly asks for them.
+
+## 5. Read before write
+
+[ref: #read-before-write]
+
+- Before editing any file, understand the context through the `mandatory-tools` ladder: Serena/Kagi MCP tools first, then `rtk`-prefixed modern tools. Read imports, signatures, the bodies of affected functions, their callers, and related tests.
+- Do not apply text replacements based on assumptions about file contents. Verify the exact match with a targeted search before replacing.
+- Use Patchloom AST operations for structured or multi-file edits whenever the change can be expressed as an AST operation. If Patchloom cannot express the edit, use the next layer of the `mandatory-tools` ladder and validate the result.
+- Before any bulk or risky replacement, run a dry-run and review the diff. Never apply a blind global replace without review.
+- If the relevant code path spans multiple files, trace the full flow before changing any one file.
+
