@@ -35,7 +35,7 @@ index:
 
 # Nigeria (NGN) Integration Guide
 
-Scraped from `https://developers.bobplus.africa/nigeria` (docs version V2.1.2) on 2026-08-12; currency NGN (Nigerian Naira).
+Scraped from `https://developers.bobplus.africa/nigeria` (docs version V2.1.2) on 2026-08-25; currency NGN (Nigerian Naira).
 
 ## Payment Channels
 
@@ -244,8 +244,8 @@ Bank transfer payout (channel `300043`) — request (`bank_code` is `100004` for
 {
     "wallet_no": "XXXXXXX",
     "reference": "CORNGNPAY00123744",
-    "acc_name": "Elizabeth Julius",
-    "acc_no": "8127586313",
+    "acc_name": "Test Customer",
+    "acc_no": "8127589303",
     "bank_code": "100004",
     "email": "customer@example.com",
     "currency": "NGN",
@@ -262,8 +262,8 @@ Bank transfer payout — response:
     "success": true,
     "message": "Successfully initiated",
     "data": {
-        "acc_name": "Elizabeth Julius",
-        "acc_no": "8127586313",
+        "acc_name": "Test Customer",
+        "acc_no": "8127589303",
         "description": "Test NGN Opay payout",
         "transaction_id": "126072846655",
         "reference": "CORNGNPAY00123744",

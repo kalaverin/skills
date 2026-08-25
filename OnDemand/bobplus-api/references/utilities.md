@@ -23,7 +23,7 @@ index:
 
 # Bobplus Utility APIs
 
-Scraped from `https://developers.bobplus.africa` (pages `bank-codes`, `callback-response`, `transaction-status/payment`; docs version V2.1.2) on 2026-08-12.
+Scraped from `https://developers.bobplus.africa` (pages `bank-codes`, `callback-response`, `transaction-status/payment`; docs version V2.1.2) on 2026-08-25.
 
 ## Bank Codes
 

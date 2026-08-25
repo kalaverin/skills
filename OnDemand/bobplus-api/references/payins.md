@@ -23,7 +23,7 @@ index:
 
 # Bobplus Payins (C2B)
 
-Scraped from `https://developers.bobplus.africa` (pages `c2b/momo-payin`, `c2b/south-africa-payin`, `c2b/nigeria-payin`; docs version V2.1.2) on 2026-08-12.
+Scraped from `https://developers.bobplus.africa` (pages `c2b/momo-payin`, `c2b/south-africa-payin`, `c2b/nigeria-payin`; docs version V2.1.2) on 2026-08-25.
 
 ## Mobile Money Deposit
 
@@ -56,19 +56,26 @@ Request body:
 | `description` | string | Your order description | Yes |
 | `channel` | numeric | Channel unique code, e.g. `100000` for M-PESA-KENYA (table below) | Yes |
 | `result_url` | string | URL on your server for the callback response | Yes |
+| `telco` | string | Mobile network operator (`orange`, `mtn`, `moov`, `wave`, `vodacom`, `airtel`). Conditional: required for Cameroon, Senegal, Ivory Coast, Mali, DRC, and Benin. | Conditional |
 
 Channel codes:
 
 | Channel code | Name | Currency |
 |---|---|---|
-| `220000` | MOBILE MONEY - BENIN | XOF |
+| `100000` | MOBILE MONEY - KENYA | KES |
+| `300001` | MOBILE MONEY - TANZANIA | TZS |
+| `300011` | MOBILE MONEY - UGANDA | UGX |
+| `800017` | MOBILE MONEY - BENIN \* | XOF |
+| `230000` | MOBILE MONEY - MALAWI | MWK |
+| `910001` | MOBILE MONEY - RWANDA | RWF |
+| `260000` | MOBILE MONEY - ZAMBIA | ZMW |
 | `210000` | MOBILE MONEY - BOTSWANA | BWP |
 | `250000` | MOBILE MONEY - BURKINA FASO | XOF |
-| `270003` | MOBILE MONEY - CAMEROON | XAF |
+| `800009` | MOBILE MONEY - CAMEROON \* | XAF |
 | `280000` | MOBILE MONEY - CENTRAL AFRICAN REPUBLIC | XAF |
 | `290000` | MOBILE MONEY - CHAD | XAF |
 | `310000` | MOBILE MONEY - CONGO BRAZZAVILLE | XAF |
-| `320000` | MOBILE MONEY - DRC | CDF |
+| `800011` | MOBILE MONEY - DRC \* | CDF |
 | `330000` | MOBILE MONEY - EGYPT | EGP |
 | `340000` | MOBILE MONEY - EQUATORIAL GUINEA | XAF |
 | `350000` | MOBILE MONEY - GABON | XAF |
@@ -76,25 +83,21 @@ Channel codes:
 | `370000` | MOBILE MONEY - GHANA | GHS |
 | `380000` | MOBILE MONEY - GUINEA | GNF |
 | `390000` | MOBILE MONEY - GUINEA BISSAU | XOF |
-| `410000` | MOBILE MONEY - IVORY COAST | XOF |
-| `100000` | MOBILE MONEY - KENYA | KES |
+| `800003` | MOBILE MONEY - IVORY COAST \* | XOF |
 | `420000` | MOBILE MONEY - LESOTHO | LSL |
-| `230000` | MOBILE MONEY - MALAWI | MWK |
-| `430000` | MOBILE MONEY - MALI | XOF |
+| `800007` | MOBILE MONEY - MALI \* | XOF |
 | `440000` | MOBILE MONEY - MAURITANIA | MRU |
 | `450000` | MOBILE MONEY - MOZAMBIQUE | MZN |
 | `460000` | MOBILE MONEY - NIGER | XOF |
 | `300041` | VIRTUAL ACCOUNTS - NIGERIA | NGN |
 | `300044` | CHECKOUT PAYMENT LINKS - NIGERIA | NGN |
 | `300045` | OPAY & PALMPAY - NIGERIA | NGN |
-| `240000` | MOBILE MONEY - RWANDA | RWF |
-| `480000` | MOBILE MONEY - SENEGAL | XOF |
+| `800005` | MOBILE MONEY - SENEGAL \* | XOF |
 | `490000` | MOBILE MONEY - SIERRA LEONE | SLL |
 | `500000` | MOBILE MONEY - SOUTH AFRICA | ZAR |
-| `300001` | MOBILE MONEY - TANZANIA | TZS |
 | `510000` | MOBILE MONEY - TOGO | XOF |
-| `300011` | MOBILE MONEY - UGANDA | UGX |
-| `260000` | MOBILE MONEY - ZAMBIA | ZMW |
+| `910003` | MOBILE MONEY - BURUNDI | BIF |
+| `180003` | MOBILE MONEY - ZIMBABWE | ZWG |
 
 Request headers:
 
@@ -102,6 +105,8 @@ Request headers:
 |---|---|---|---|
 | `Authorization` | string | Bearer token used to access the API | Yes |
 | `Signature` | string | SHA-256 signature: concatenate `channel+reference+currency+amount`, sign with the private key, base64-encode | Yes |
+
+Curator's note — source ambiguity: the request-headers table does not list `x-hash`, but the curl example includes `# --header 'x-hash: xxxxxx' # Generated X-Hash header` as a comment. Payout endpoints explicitly require `x-hash`; for payins the requirement is unclear.
 
 Example request:
 
@@ -111,8 +116,8 @@ curl --location --request POST 'https://base-url-here.com/api/v2/payment/' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <token>' \
 --header 'Signature: xxx' \
---header 'x-hash: xxxxxx' \
---data-raw '{
+# --header 'x-hash: xxxxxx' # Generated X-Hash header \
+--data-raw '{'
     "wallet_no": "xxxxxxx",
     "reference": "TRXXXX79",
     "acc_name": "JOHN DOE",
@@ -141,7 +146,11 @@ Success response fields: `success`, `message`, `data.transaction_id`, `data.stat
 }
 ```
 
-Security best practices from the docs: always use HTTPS for all API requests; keep your private key secure and never share it; verify the signature on the server side for every request.
+Notes:
+
+- Countries marked `\*` (Cameroon, Senegal, Ivory Coast, Mali, DRC, Benin) require the `telco` field. Accepted values: `orange`, `mtn`, `moov`, `wave`, `vodacom`, `airtel` (per-country availability depends on the market).
+- Burundi (`910003`): after initiation the customer receives an SMS approval request and must dial `*163#` and choose option 2 to approve the transaction.
+- Security best practices from the docs: always use HTTPS for all API requests; keep your private key secure and never share it; verify the signature on the server side for every request.
 
 ## South Africa (EFT and Capitec)
 

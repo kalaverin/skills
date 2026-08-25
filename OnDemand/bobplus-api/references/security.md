@@ -23,7 +23,7 @@ index:
 
 # Bobplus API Security
 
-Scraped from `https://developers.bobplus.africa` (pages `authentication`, `generate-signature`, `generate-x-hash`; docs version V2.1.2) on 2026-08-12.
+Scraped from `https://developers.bobplus.africa` (pages `authentication`, `generate-signature`, `generate-x-hash`; docs version V2.1.2) on 2026-08-25.
 
 ## Authentication (Bearer Token)
 
@@ -163,9 +163,11 @@ Practices: keep the private key secure and never share it; rotate keys regularly
 
 Sources: [Generate X-Hash](https://developers.bobplus.africa/generate-x-hash)
 
-The `X-Hash` header adds a second signature layer: it is a digital signature generated with your private key over your `businessId` (or the agreed payload), verified by Bobplus with your public key.
+The `X-Hash` header adds a second signature layer: it is a digital signature generated with your private key, verified by Bobplus with your public key.
 
-Flow: reuse the RSA key pair from the signature guide → sign the `businessId` → base64-encode → send as the `x-hash` header.
+Flow: reuse the RSA key pair from the signature guide → sign the documented payload → base64-encode → send as the `x-hash` header.
+
+Curator's note — source ambiguity: the generate-x-hash page says to sign "your `businessId` or the agreed payload". The PHP example signs only `businessId`. Payout pages require `x-hash` but do not define the exact payload to sign for those endpoints. Use `businessId` as shown in the example, but confirm with Bobplus for payout-specific X-Hash recipes.
 
 Sign the `businessId` (found on the merchant portal) with SHA-256:
 
@@ -198,3 +200,5 @@ curl_setopt_array($curl, [
 ```
 
 The `X-Hash` is verified on the server using your public key. Practices mirror the signature guide: protect the private key, rotate keys regularly, use HTTPS everywhere.
+
+Curator's note — header casing: the generate-signature and generate-x-hash PHP examples use lowercase `signature:` and `x-hash:`, while most endpoint curl examples use `Signature:` and `x-hash:`. HTTP header names are case-insensitive, but normalize to one casing in code samples.

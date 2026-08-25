@@ -17,7 +17,7 @@ index:
 
 # Bobplus Account Services API
 
-Scraped from `https://developers.bobplus.africa` (pages `account-services/get-balance`, `account-services/full-statement`; docs version V2.1.2) on 2026-08-12.
+Scraped from `https://developers.bobplus.africa` (pages `account-services/get-balance`, `account-services/full-statement`; docs version V2.1.2) on 2026-08-25.
 
 ## Fetch Balance
 

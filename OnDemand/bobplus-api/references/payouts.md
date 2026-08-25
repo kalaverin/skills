@@ -17,7 +17,7 @@ index:
 
 # Bobplus Payouts (B2C)
 
-Scraped from `https://developers.bobplus.africa` (pages `b2c/bank-payout`, `b2c/momo-payout`; docs version V2.1.2) on 2026-08-12.
+Scraped from `https://developers.bobplus.africa` (pages `b2c/bank-payout`, `b2c/momo-payout`; docs version V2.1.2) on 2026-08-25.
 
 ## Bank Payout
 
@@ -145,6 +145,7 @@ Request body:
 | `description` | string | Your order description | Yes |
 | `channel` | numeric | Channel unique code, e.g. `100003` for M-PESA-KENYA (table below) | Yes |
 | `result_url` | string | URL on your server for the callback response | Yes |
+| `telco` | string | Mobile network operator (`orange`, `mtn`, `moov`, `wave`, `vodacom`, `airtel`). Conditional: required for Cameroon, Senegal, Ivory Coast, Mali, DRC, and Benin. | Conditional |
 
 Channel codes (payout codes — they differ from the payin set):
 
@@ -152,18 +153,18 @@ Channel codes (payout codes — they differ from the payin set):
 |---|---|---|
 | `100003` | MOBILE MONEY - KENYA | KES |
 | `300002` | MOBILE MONEY - TANZANIA | TZS |
-| `110003` | MOBILE MONEY - BENIN | XOF |
+| `800018` | MOBILE MONEY - BENIN \* | XOF |
 | `120003` | MOBILE MONEY - MALAWI | MWK |
-| `130003` | MOBILE MONEY - RWANDA | RWF |
+| `910002` | MOBILE MONEY - RWANDA | RWF |
 | `300012` | MOBILE MONEY - UGANDA | UGX |
 | `150003` | MOBILE MONEY - ZAMBIA | ZMW |
 | `110013` | MOBILE MONEY - BOTSWANA | BWP |
 | `120013` | MOBILE MONEY - BURKINA FASO | XOF |
-| `130013` | MOBILE MONEY - CAMEROON | XAF |
+| `800010` | MOBILE MONEY - CAMEROON \* | XAF |
 | `140003` | MOBILE MONEY - CENTRAL AFRICAN REPUBLIC | XAF |
 | `160003` | MOBILE MONEY - CHAD | XAF |
 | `170003` | MOBILE MONEY - CONGO BRAZZAVILLE | XAF |
-| `180003` | MOBILE MONEY - DRC | CDF |
+| `800012` | MOBILE MONEY - DRC \* | CDF |
 | `190003` | MOBILE MONEY - EGYPT | EGP |
 | `200003` | MOBILE MONEY - EQUATORIAL GUINEA | XAF |
 | `210003` | MOBILE MONEY - GABON | XAF |
@@ -171,17 +172,19 @@ Channel codes (payout codes — they differ from the payin set):
 | `230003` | MOBILE MONEY - GHANA | GHS |
 | `240003` | MOBILE MONEY - GUINEA | GNF |
 | `250003` | MOBILE MONEY - GUINEA BISSAU | XOF |
-| `260003` | MOBILE MONEY - IVORY COAST | XOF |
+| `800004` | MOBILE MONEY - IVORY COAST \* | XOF |
 | `270003` | MOBILE MONEY - LESOTHO | LSL |
-| `280003` | MOBILE MONEY - MALI | XOF |
+| `800008` | MOBILE MONEY - MALI \* | XOF |
 | `290003` | MOBILE MONEY - MAURITANIA | MRU |
 | `310003` | MOBILE MONEY - MOZAMBIQUE | MZN |
 | `320003` | MOBILE MONEY - NIGER | XOF |
 | `300043` | BANK TRANSFER - NIGERIA | NGN |
-| `340003` | MOBILE MONEY - SENEGAL | XOF |
+| `800006` | MOBILE MONEY - SENEGAL \* | XOF |
 | `350003` | MOBILE MONEY - SIERRA LEONE | SLL |
 | `360003` | MOBILE MONEY - SOUTH AFRICA | ZAR |
 | `370003` | MOBILE MONEY - TOGO | XOF |
+| `910004` | MOBILE MONEY - BURUNDI | BIF |
+| `180004` | MOBILE MONEY - ZIMBABWE | ZWG |
 
 Request headers:
 
@@ -229,4 +232,7 @@ Success response fields: `success`, `message`, `data.transaction_id`, `data.stat
 }
 ```
 
-Both payout endpoints: use HTTPS, keep the private key secret, and verify the signature and X-Hash server-side on every request.
+Notes:
+
+- Countries marked `\*` (Cameroon, Senegal, Ivory Coast, Mali, DRC, Benin) require the `telco` field. Accepted values: `orange`, `mtn`, `moov`, `wave`, `vodacom`, `airtel` (per-country availability depends on the market).
+- Both payout endpoints: use HTTPS, keep the private key secret, and verify the signature and X-Hash server-side on every request.

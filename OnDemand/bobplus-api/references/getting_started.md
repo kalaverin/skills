@@ -23,7 +23,7 @@ index:
 
 # Getting Started with the Bobplus API
 
-Scraped from `https://developers.bobplus.africa` (docs version V2.1.2) on 2026-08-12; the Nigeria country guide lives in `nigeria.md`.
+Scraped from `https://developers.bobplus.africa` (docs version V2.1.2) on 2026-08-25; the Nigeria country guide lives in `nigeria.md`.
 
 ## Platform Overview
 
@@ -99,9 +99,10 @@ The matrix below lists every supported market with its currency, payment methods
 | Cameroon | XAF | MTN | Payins, Payouts |
 | Congo Brazzaville | XAF | Airtel Money | Payins, Payouts |
 | Congo Brazzaville | XAF | MTN | Payins, Payouts |
+| DRC | CDF | Africel | Payins, Payouts |
+| DRC | CDF | Mpesa | Payins, Payouts |
 | DRC | CDF | Orange | Payins, Payouts |
-| DRC | CDF | Airtel Money | Payins, Payouts |
-| DRC | CDF | Vodacom | Payins, Payouts |
+| DRC | CDF | Airtel | Payins, Payouts |
 | Gabon | XAF | Airtel Money | Payins, Payouts |
 | Gabon | XAF | Moov | Payins, Payouts |
 | Ghana | GHS | MTN | Payins, Payouts |
@@ -117,10 +118,8 @@ The matrix below lists every supported market with its currency, payment methods
 | Mozambique | MZN | Movitel | Payins, Payouts |
 | Rwanda | RWF | Airtel Money | Payins, Payouts |
 | Rwanda | RWF | MTN | Payins, Payouts |
-| Senegal | XOF | Yas | Payins, Payouts |
-| Senegal | XOF | Orange | Payins, Payouts |
 | Senegal | XOF | Wave | Payins, Payouts |
-| Senegal | XOF | Momo (Orange, Wave) | Payins, Payouts |
+| Senegal | XOF | Mix | Payins, Payouts |
 | Sierra Leone | SLL | Orange | Payins, Payouts |
 | Zambia | ZMW | Airtel Money | Payins, Payouts |
 | Zambia | ZMW | MTN | Payins, Payouts |
@@ -140,11 +139,14 @@ The matrix below lists every supported market with its currency, payment methods
 | Togo | XOF | Momo (Tmoney, Moov) | Payins, Payouts |
 | Niger | XOF | Momo | Payins, Payouts |
 | Mauritania | MRU | Momo | Payins, Payouts |
+| Burundi | BIF | Lumicash | Payins, Payouts |
+| Zimbabwe | ZWG | Ecocash | Payins, Payouts |
 
 Notes from the source documentation:
 
 - Some payment methods support both directions, others only one.
 - Nigeria and South Africa have dedicated country integration guides; the Nigeria guide is captured in `nigeria.md`, while the South Africa guide page was broken (HTTP 500) at scrape time — the ZAR EFT payin flow is documented in `payins.md` instead.
+- For **Cameroon, Senegal, Ivory Coast, Mali, DRC, and Benin**, mobile-money payin and payout requests require/accept an additional `telco` field specifying the operator. Accepted values include `orange`, `mtn`, `moov`, `wave`, `vodacom`, `airtel` (per-country mapping is in `references/payins.md` and `references/payouts.md`).
 
 ## IP Whitelisting
 

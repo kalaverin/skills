@@ -15,7 +15,7 @@ version: 0.1.0
 
 This skill is the offline knowledge base for the **Bobplus Payments API v2** (financial, eCommerce, and business management APIs for Africa), captured from `https://developers.bobplus.africa`. Use it to answer integration questions and to write code against the API without visiting the site.
 
-**Provenance pin:** docs version **V2.1.2**, scraped 2026-08-12 from 17 pages (the `/south-africa` guide page was broken, HTTP 500 — its ZAR flow is covered in `references/payins.md`). The site sends no `Last-Modified`/`ETag` headers, so freshness is only verifiable by re-scraping; the re-scrape runbook lives in `prompts/refresh.md`.
+**Provenance pin:** docs version **V2.1.2** (no newer version string appears in the refreshed source), re-scraped 2026-08-25 from 18 URLs; 17 returned HTTP 200, `/south-africa` still returned HTTP 500 — its ZAR flow is covered only in `references/payins.md`. The site sends no `Last-Modified`/`ETag` headers, so freshness is only verifiable by re-scraping; the re-scrape runbook lives in `prompts/refresh.md`.
 
 ## 1. Compliance and Default Rules
 
@@ -32,15 +32,19 @@ Signature requirements differ per endpoint — every signed value is SHA-256 wit
 | Auth login (`/api/v2/auth/login`) | — (no signature) | — |
 | Balance (`GET /api/v2/wallet/{wallet_no}/{currency}`) | `wallet_no+currency` | — |
 | Statement (`POST /api/v2/wallet/statement`) | `wallet_no+to_date+limit` | — |
-| Payin (`POST /api/v2/payment/`) | `channel+reference+currency+amount` | `x-hash` used in docs' examples |
+| Payin (`POST /api/v2/payment/`) | `channel+reference+currency+amount` | `x-hash` appears only in commented curl examples; requirement is ambiguous — see `references/payins.md` |
 | Payout (`POST /api/v2/payment/`) | `channel+reference+currency+amount` | `x-hash` REQUIRED |
 | Status query (`POST /api/v2/payment/status-query`) | `wallet_no+reference` | — |
 | Inbound webhook (`result_url`) | HMAC-SHA256 keyed with the **consumer key** over the documented field order (success/failure differ) | verify `hash`, ack HTTP 200 |
 
-Known source-doc inconsistencies (preserved deliberately — flag them to the user when relevant):
+Known source-doc inconsistencies (preserved deliberately — flag them to the user when relevant; full registry in `references/contradictions.md`):
 
 - NGN payout channel is documented both as `300043` (Nigeria guide, momo payout table) and as `900020`/`900021` (bank payout table).
 - Rate limit is stated as 1500/minute on the main page and 1500/second on the bank-codes page.
+- South Africa payin channel is documented as `500000` (mobile-money page) and as `900017`/`900018` (EFT/Capitec page).
+- Full-statement signature string omits the required body field `from_date`.
+- X-Hash payload is undefined beyond "sign `businessId` or the agreed payload".
+- Failed-callback HMAC field order in prose differs from the sample JSON order.
 
 ## 3. Lazy-Load Protocol (CRITICAL)
 
@@ -104,3 +108,19 @@ Base URL: `https://developers.bobplus.africa`. Page names as rendered on each pa
 ## 6. Violation Protocol
 
 If you answer Bobplus API questions from training data, invent endpoints/fields/channel codes, hardcode a placeholder or invented base URL, or skip the corpus routing before writing integration code, halt immediately, discard the offending output, load the correct section per §3, and redo the work from the corpus.
+
+## 7. Open Questions for Bobplus
+
+The following gaps prevent the corpus from claiming final "source of truth" status. When any of these affect an integration, raise them with Bobplus support/engineering and record the answer in `references/contradictions.md` or the relevant reference file.
+
+1. **Channel-code authority:** Which codes are current for Benin, Cameroon, DRC, Ivory Coast, Mali, Senegal, Rwanda, Burundi, Zimbabwe? Are the pre-2026-08-25 codes deprecated, still valid, or simply corrected?
+2. **`telco` field:** Is `telco` mandatory for Cameroon, Senegal, Ivory Coast, Mali, DRC, and Benin on both payins and payouts? What is the exact accepted-value list per country?
+3. **X-Hash on payins:** Is `x-hash` required for mobile-money payins, South Africa payins, or Nigeria virtual-account payins, or only for payouts?
+4. **X-Hash payload for payouts:** For payout endpoints that require `x-hash`, what exact string should be signed — `businessId`, the request payload, or something else?
+5. **NGN payout routing:** Should integrators use `300043`, `900020`, or `900021` for Nigeria bank payouts? When does each apply?
+6. **South Africa payin routing:** Should integrators use generic mobile-money channel `500000` or dedicated EFT/Capitec channels `900017`/`900018`?
+7. **Statement signature:** Should `from_date` be included in the full-statement signature concatenation?
+8. **Failed-callback hash order:** Should the HMAC use the documented textual order or the sample JSON field order?
+9. **Production base URL:** What is the real production host? The docs continue to use placeholders.
+10. **Virtual-account expiry:** The Nigeria VA example shows `expires` one hour before generation. What is the real TTL?
+11. **`result_url` for Nigeria payouts:** The request-fields table marks `result_url` as required, but the bank-transfer payout example omits it. Is it required in practice?
