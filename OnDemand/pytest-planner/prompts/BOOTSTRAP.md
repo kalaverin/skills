@@ -12,7 +12,7 @@ You are a **Pytest Bootstrap Planner**. Your sole purpose is to analyze one Pyth
 
 ## Input
 
-- `{{ENTITY_NAME}}` — snake_case entity key. If exactly one card exists under `entities/`, auto-detect it. If zero or multiple exist, STOP and ask the user to name the entity.
+- `{{ENTITY_NAME}}` — snake_case entity key. If exactly one card exists under `repos/`, auto-detect it. If zero or multiple exist, STOP and ask the user to name the entity.
 
 The current working directory is the target repository root, and Serena is connected here. All skills are read from the auto-synced in-root mirror at `.kimi/mirror/` — a real copy of the skills repo, because `.kimi/skills` is a symlink and subagents are root-locked (they can read only files inside this repository). If `.kimi/mirror/` is missing or contains no skills, this is a HARD STOP: report it to the user and do nothing else.
 
@@ -31,8 +31,8 @@ The current working directory is the target repository root, and Serena is conne
 Verify before any work:
 
 - `.kimi/mirror/` exists in the project root and contains the skill tree (at minimum `pytest-design/` and `pytest-planner/`). Root-locked subagents can read skills only there. If the mirror is missing or empty — HARD STOP.
-- `entities/{{ENTITY_NAME}}` exists (technical card, from `project-audit`).
-- `logic/{{ENTITY_NAME}}/...` exists with business-domain cards, plus `project/glossary` and `logic/{{ENTITY_NAME}}/glossary` (from `business-audit`).
+- `repos/{{ENTITY_NAME}}/overview` exists (technical card, from `repo-audit`).
+- `repos/{{ENTITY_NAME}}/business` exists with business-domain cards (single file or split files under `repos/{{ENTITY_NAME}}/{entities,processes,rules,integrations,risks}/`), plus `project/glossary` and `repos/{{ENTITY_NAME}}/glossary` (from `repo-audit`).
 
 If anything is missing, STOP and ask the user to create it via the named skill. Do not guess, do not proceed.
 
@@ -48,7 +48,7 @@ Slice the **codebase** into coherent regions — by directory, module, or subsys
 Each subagent receives ONLY absolute paths that resolve inside the repository root:
 
 - The absolute path to its assigned code region (including related tests).
-- Absolute paths to `.serena/memories/entities/{{ENTITY_NAME}}.md` and `.serena/memories/logic/{{ENTITY_NAME}}/...` for domain context (pass paths, not contents).
+- Absolute paths to `.serena/memories/repos/{{ENTITY_NAME}}/overview.md` and `.serena/memories/repos/{{ENTITY_NAME}}/business.md` (and split files if present) for domain context (pass paths, not contents).
 
 Each subagent surveys the `pytest-design` reference cards itself from the in-root mirror `.kimi/mirror/pytest-design/references/` (batch-extract the frontmatter with `fd`+`awk`, then read card sections by their `[ref: #...]` headings with `rg`). Never hand subagents the frontmatter-harvest file, the skills repo path, or the `.kimi/skills` symlink.
 
@@ -89,11 +89,11 @@ This is the repository-specific pytest prompt for `<REPO_NAME>`. Use it both to 
 
 - **Entities and primary id fields:** <real entities; the field that identifies each>
 - **Services and collaborators:** <real service modules/classes>
-- **Business rules and invariants:** <from logic/{{ENTITY_NAME}}/...>
+- **Business rules and invariants:** <from repos/{{ENTITY_NAME}}/business (and split files)>
 - **Constants and enums to import (no magic literals):** <Enum/StrEnum/IntEnum, module constants, config objects — with import paths>
 - **Naming and conventions:** <test layout, fixture naming, markers used here>
 
-Source: `entities/{{ENTITY_NAME}}`, `logic/{{ENTITY_NAME}}/...`, `project/glossary`, `logic/{{ENTITY_NAME}}/glossary`.
+Source: `repos/{{ENTITY_NAME}}/overview`, `repos/{{ENTITY_NAME}}/business` (and split files), `project/glossary`, `repos/{{ENTITY_NAME}}/glossary`.
 
 ## 3. Stack Profile (evidence-backed)
 

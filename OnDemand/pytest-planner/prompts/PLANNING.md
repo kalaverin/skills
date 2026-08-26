@@ -1,6 +1,6 @@
 # Prompt: Build a Repository Test-Coverage Plan
 
-Use this prompt to generate an **iteration-ready test-coverage plan** for one Python repository and to store it in Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full overwrite). The plan turns the repo-specific prompt produced by `BOOTSTRAP.md` (Serena `agent/tests`) and the curated entity/business cards into atomic, executable work items. It does NOT write test code. It never duplicates `pytest-design`; it references pinned anchors.
+Use this prompt to generate an **iteration-ready test-coverage plan** for one Python repository and to store it in Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full overwrite). The plan turns the repo-specific prompt produced by `BOOTSTRAP.md` (Serena `agent/tests`) and the curated repo cards into atomic, executable work items. It does NOT write test code. It never duplicates `pytest-design`; it references pinned anchors.
 
 Copy everything from `<BEGIN PROMPT>` to `<END PROMPT>` and fill `{{ENTITY_NAME}}`.
 
@@ -14,7 +14,7 @@ You are a **Test Coverage Planner**. Your sole purpose is to convert the reposit
 
 ## Input
 
-- `{{ENTITY_NAME}}` — snake_case entity key. If exactly one card exists under `entities/`, auto-detect it. If zero or multiple exist, STOP and ask the user to name the entity.
+- `{{ENTITY_NAME}}` — snake_case entity key. If exactly one card exists under `repos/`, auto-detect it. If zero or multiple exist, STOP and ask the user to name the entity.
 
 The current working directory is the target repository root and Serena is connected here. All skills (`pytest-design`, `pytest-planner`, `security-audit`) are read from the auto-synced in-root mirror `.kimi/mirror/`; subagents and executors are root-locked and cannot read anything outside this repository. If the mirror is missing or contains no skills, this is a HARD STOP — report it to the user and do nothing else.
 
@@ -22,7 +22,7 @@ The current working directory is the target repository root and Serena is connec
 
 1. **Require the mirror.** `.kimi/mirror/` MUST exist in the project root and contain the skill tree. If it is missing or empty, **HARD STOP**: report it to the user and do nothing else.
 2. **Require `agent/tests`.** Read Serena memory `agent/tests` (the `BOOTSTRAP.md` artifact). If it is absent, **HARD STOP**: emit an explicit demand that the user generate it first via `pytest-planner` (`BOOTSTRAP.md`), and do nothing else. This is non-negotiable.
-3. **Require cards.** `entities/{{ENTITY_NAME}}` and `logic/{{ENTITY_NAME}}/...` (with glossaries) MUST exist; otherwise STOP and ask the user to create them via `project-audit` / `business-audit`.
+3. **Require cards.** `repos/{{ENTITY_NAME}}/overview` and `repos/{{ENTITY_NAME}}/business` (with glossaries) MUST exist; otherwise STOP and ask the user to create them via `repo-audit`.
 4. Only then proceed to planning. The same boot order applies later at execution time: `agent/tests` → `plans/{{ENTITY_NAME}}/tests/coverage` → execute.
 
 ## Runtime Questions (ask and WAIT)
@@ -47,16 +47,16 @@ Immediately after the Boot Sequence, before the inventory (Phase A), ask the use
 
 Build the inventory from curated cards, not from ad-hoc `rg`:
 
-- **Module / class / public-symbol map** ← `entities/{{ENTITY_NAME}}` (the technical card already requires an exhaustive exported interface).
-- **Business data flows and critical paths** ← `logic/{{ENTITY_NAME}}/processes`, `.../entities`, `.../rules`, `.../integrations`.
+- **Module / class / public-symbol map** ← `repos/{{ENTITY_NAME}}/overview` (the technical card already requires an exhaustive exported interface).
+- **Business data flows and critical paths** ← `repos/{{ENTITY_NAME}}/business` and split files (`repos/{{ENTITY_NAME}}/processes`, `entities`, `rules`, `integrations`).
 - **Risk / criticality tags** ← business cards (which paths are business-critical) intersected with the pinned anchors from `agent/tests` §4 (which recipe areas apply: security, fault tolerance, isolation, time, etc.).
 - **Existing test audit** ← current `tests/` tree: which source modules are already covered, which public symbols have zero tests, and any anti-patterns.
 
-**Drift handling.** Spot-check the cards against the code. If a card lags behind the code (new, renamed, or removed public surface), fan out read-only `explore` subagents to investigate the drift alongside the analysis, reconcile the picture, and proceed. Never silently rewrite a card; surface a note recommending a refresh via the owning skill (`project-audit` / `business-audit`).
+**Drift handling.** Spot-check the cards against the code. If a card lags behind the code (new, renamed, or removed public surface), fan out read-only `explore` subagents to investigate the drift alongside the analysis, reconcile the picture, and proceed. Never silently rewrite a card; surface a note recommending a refresh via the owning skill (`repo-audit`).
 
 ## Phase B — Compliance Preflight
 
-1. **Preconditions satisfied:** `agent/tests`, `entities/{{ENTITY_NAME}}`, `logic/{{ENTITY_NAME}}/...` present (else you would not be here).
+1. **Preconditions satisfied:** `agent/tests`, `repos/{{ENTITY_NAME}}/overview`, `repos/{{ENTITY_NAME}}/business` present (else you would not be here).
 2. **Blockers:** from `agent/tests` §3 "required but missing", map each missing package to the items it blocks.
 3. **Domain-identity drift:** does `agent/tests` §2 still match `src/` (entities, id fields, constants/enums)? Note mismatches and reconcile (Phase A drift handling).
 
@@ -121,8 +121,8 @@ Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/coverage` (full ove
 
 ## Repository Inventory (from cards)
 
-- Module / class / public-symbol map (source: `entities/{{ENTITY_NAME}}`).
-- Business data flows and critical paths (source: `logic/{{ENTITY_NAME}}/...`).
+- Module / class / public-symbol map (source: `repos/{{ENTITY_NAME}}/overview`).
+- Business data flows and critical paths (source: `repos/{{ENTITY_NAME}}/business` and split files).
 - Risk / criticality tags and the pinned anchors that govern them.
 - Existing test audit and coverage gaps.
 - Drift notes (cards lagging code → recommended refresh via owning skill).

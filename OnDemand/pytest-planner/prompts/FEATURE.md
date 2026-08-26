@@ -1,6 +1,6 @@
 # Prompt: Build a Feature Test-Coverage Plan (Diff-Based)
 
-Use this prompt to generate an **iteration-ready, diff-scoped test-coverage plan** for one Python repository — covering only the diff of the current branch against the base branch — and to store it in Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]` (full overwrite). The plan turns the curated entity/business cards, the materialized diff, and — when present — the repo-specific prompt produced by `BOOTSTRAP.md` (Serena `agent/tests`) into atomic, executable work items over the changed surface. It does NOT write test code. It never duplicates `pytest-design`; it references pinned anchors.
+Use this prompt to generate an **iteration-ready, diff-scoped test-coverage plan** for one Python repository — covering only the diff of the current branch against the base branch — and to store it in Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{{SUFFIX}}]` (full overwrite). The plan turns the curated repo cards, the materialized diff, and — when present — the repo-specific prompt produced by `BOOTSTRAP.md` (Serena `agent/tests`) into atomic, executable work items over the changed surface. It does NOT write test code. It never duplicates `pytest-design`; it references pinned anchors.
 
 Copy everything from `<BEGIN PROMPT>` to `<END PROMPT>` and fill `{{ENTITY_NAME}}`.
 
@@ -12,7 +12,7 @@ You are a **Feature Test Coverage Planner**. Your sole purpose is to convert the
 
 ## Input
 
-- `{{ENTITY_NAME}}` — snake_case entity key. If exactly one card exists under `entities/`, auto-detect it. If zero or multiple exist, STOP and ask the user to name the entity.
+- `{{ENTITY_NAME}}` — snake_case entity key. If exactly one card exists under `repos/`, auto-detect it. If zero or multiple exist, STOP and ask the user to name the entity.
 - `{{ CURRENT_BRANCH }}` and `{{ BASE_BRANCH }}` — the plan-mode variables, already resolved by the router (`pytest-planner/SKILL.md`, Plan Mode Resolution) before this prompt was entered. `{{ BASE_BRANCH }}` is the confirmed repository default branch. If either variable is unset, STOP and ask the user to confirm the current and base branches — never re-derive or guess them here.
 - `{{SUFFIX}}` — the feature-plan name suffix, already resolved by the router (feature name and/or branch ticket, underscores only, no hyphens; empty when neither is known, which yields the bare `feature_coverage` name). Never invent or re-derive it here.
 
@@ -22,7 +22,7 @@ The current working directory is the target repository root and Serena is connec
 
 1. **Require the mirror.** `.kimi/mirror/` MUST exist in the project root and contain the skill tree. If it is missing or empty, **HARD STOP**: report it to the user and do nothing else.
 2. **Read `agent/tests` if present (OPTIONAL in feature mode).** The `BOOTSTRAP.md` artifact supplies the pinned anchor manifest (its §4) as the base of the feature anchor set. If it is absent, do NOT stop: derive the feature anchor set entirely on the fly in Phases B–B.5. Record in the plan whether `agent/tests` was present.
-3. **Require cards.** `entities/{{ENTITY_NAME}}` and `logic/{{ENTITY_NAME}}/...` (with glossaries) MUST exist; otherwise STOP and ask the user to create them via `project-audit` / `business-audit`.
+3. **Require cards.** `repos/{{ENTITY_NAME}}/overview` and `repos/{{ENTITY_NAME}}/business` (with glossaries) MUST exist; otherwise STOP and ask the user to create them via `repo-audit`.
 4. **Require plan-mode variables.** `{{ CURRENT_BRANCH }}` and `{{ BASE_BRANCH }}` MUST be set by the router (see Input). Never guess them.
 5. Only then proceed to planning. At execution time the executor reads this plan (and `agent/tests` when it exists) before coding.
 
@@ -64,7 +64,7 @@ Each subagent receives ONLY absolute paths that resolve inside the repository ro
 
 - The absolute path to the manifest `.tmp/pytest-planner/feature_<sanitized-branch>/CHANGED_FILES.md`.
 - The absolute paths to the `.diff` files of its assigned slice.
-- Absolute paths to `.serena/memories/entities/{{ENTITY_NAME}}.md` and `.serena/memories/logic/{{ENTITY_NAME}}/...` for domain context (pass paths, not contents).
+- Absolute paths to `.serena/memories/repos/{{ENTITY_NAME}}/overview.md` and `.serena/memories/repos/{{ENTITY_NAME}}/business.md` (and split files if present) for domain context (pass paths, not contents).
 
 Each subagent surveys the `pytest-design` reference cards itself from the in-root mirror `.kimi/mirror/pytest-design/references/`. Never hand subagents the whole repo tree, and never inline diff contents into their prompts.
 
@@ -91,16 +91,16 @@ Ported from the bootstrap path (`SKILL.md`, Master Execution Workflow step 4); t
 
 Build the inventory from curated cards intersected with the materialized diff, not from ad-hoc `rg`:
 
-- **Changed module / class / public-symbol map** ← the manifest `CHANGED_FILES.md` intersected with `entities/{{ENTITY_NAME}}` (the technical card already requires an exhaustive exported interface), reconciled with the Phase B.5 symbol review.
-- **Business data flows and critical paths touched by the diff** ← `logic/{{ENTITY_NAME}}/processes`, `.../entities`, `.../rules`, `.../integrations`.
+- **Changed module / class / public-symbol map** ← the manifest `CHANGED_FILES.md` intersected with `repos/{{ENTITY_NAME}}/overview` (the technical card already requires an exhaustive exported interface), reconciled with the Phase B.5 symbol review.
+- **Business data flows and critical paths touched by the diff** ← `repos/{{ENTITY_NAME}}/business` and split files (`repos/{{ENTITY_NAME}}/processes`, `entities`, `rules`, `integrations`).
 - **Risk / criticality tags** ← business cards (which touched paths are business-critical) intersected with the feature anchor set from Phase B.5 (which recipe areas apply: security, fault tolerance, isolation, time, etc.).
 - **Existing test audit (diff-scoped)** ← current `tests/` tree, audited by you, the main agent: which changed source modules are already covered, which changed/added public symbols have zero tests, and any anti-patterns in the touched test files.
 
-**Drift handling.** Spot-check the cards against the changed code. If a card lags behind the code (new, renamed, or removed public surface), fan out read-only `explore` subagents to investigate the drift alongside the analysis, reconcile the picture, and proceed. Never silently rewrite a card; surface a note recommending a refresh via the owning skill (`project-audit` / `business-audit`).
+**Drift handling.** Spot-check the cards against the changed code. If a card lags behind the code (new, renamed, or removed public surface), fan out read-only `explore` subagents to investigate the drift alongside the analysis, reconcile the picture, and proceed. Never silently rewrite a card; surface a note recommending a refresh via the owning skill (`repo-audit`).
 
 ## Phase D — Compliance Preflight
 
-1. **Preconditions satisfied:** `entities/{{ENTITY_NAME}}`, `logic/{{ENTITY_NAME}}/...` present (else you would not be here); `agent/tests` presence recorded (optional in feature mode).
+1. **Preconditions satisfied:** `repos/{{ENTITY_NAME}}/overview`, `repos/{{ENTITY_NAME}}/business` present (else you would not be here); `agent/tests` presence recorded (optional in feature mode).
 2. **Blockers:** when `agent/tests` exists, map each "required but missing" package from its §3 to the items it blocks; otherwise derive blockers from the requirements of the validated cards directly.
 3. **Domain-identity drift:** when `agent/tests` exists, check whether its §2 still matches the changed code (entities, id fields, constants/enums); regardless, note mismatches between the cards and the changed code and reconcile (Phase C drift handling).
 
@@ -170,8 +170,8 @@ Write the plan to Serena memory `plans/{{ENTITY_NAME}}/tests/feature_coverage[_{
 
 ## Diff Inventory (from manifest ∩ cards)
 
-- Changed files and changed/added/removed public symbols (source: `.tmp/pytest-planner/feature_<sanitized-branch>/CHANGED_FILES.md` ∩ `entities/{{ENTITY_NAME}}`).
-- Business data flows and critical paths touched by the diff (source: `logic/{{ENTITY_NAME}}/...`).
+- Changed files and changed/added/removed public symbols (source: `.tmp/pytest-planner/feature_<sanitized-branch>/CHANGED_FILES.md` ∩ `repos/{{ENTITY_NAME}}/overview`).
+- Business data flows and critical paths touched by the diff (source: `repos/{{ENTITY_NAME}}/business` and split files).
 - Risk / criticality tags and the pinned anchors that govern them.
 - Existing test audit over the changed surface and coverage gaps.
 - Drift notes (cards lagging code → recommended refresh via owning skill).
