@@ -36,7 +36,7 @@ Tests are skipped unless you explicitly ask to review them.
 [ref: #cr-produces]
 
 - A machine-readable report under `.serena/memories/review/` named `feature_YYYYMMDDTHHMMSSZ.md` or `project_YYYYMMDDTHHMMSSZ.md`.
-- A human-readable report under `.reports/` (or `.reports/<entity>/` when the entity is known) named per `SKILL.md` Section 2.2: `review-YYYY-mmdd-HHMM-project.md`, or `review-YYYY-mmdd-HHMM-feature.md` with optional branch-key / feature-slug forms such as `review-YYYY-mmdd-HHMM-CRYPTO4176-rate-limiting.md`.
+- A human-readable report under `.reports/` (or `.reports/<entity>/` when the entity is known) named per `SKILL.md` Section 2.2: `review-YYYY-mmdd-HHMM-project.md`, or `review-YYYY-mmdd-HHMM-feature.md` with optional branch-key / feature-slug forms such as `review-YYYY-mmdd-HHMM-WGNBCK4176-rate-limiting.md`.
 - Findings grouped by severity, with dedicated sections for architecture, API design (AIP), security, resilience, observability, data privacy, and the existence inquisition.
 - Optional CodeRabbit cross-validation in feature mode.
 

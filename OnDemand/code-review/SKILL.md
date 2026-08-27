@@ -84,9 +84,9 @@ File name:
 - The literal word `feature` appears in the file name ONLY when neither the branch key nor the feature slug is known. The word `project` is always present for project mode.
 - The separator is strictly a hyphen.
 - `<feature-slug>` is a short English kebab-case slug of the feature (about five words maximum), e.g. `trading-statistics`, `custom-user-bans`. If the user named the feature, use that name; otherwise derive the slug from the branch and the diff. If you cannot derive a confident slug or have doubts, STOP and ask the user.
-- `<BRANCHKEY>` is the issue key extracted from the feature branch with intelligent sanitization: strip path segments (`feature/`, `bugfix/`, etc.), extract the issue marker, and MERGE it by removing the internal separator — `CRYPTO-1337` becomes `CRYPTO1337`, `binder_571` becomes `binder571`. Original letter case is preserved. Example: branch `feature/CRYPTO-4176-rate-limiting` yields key `CRYPTO4176`.
-- If the branch name already contains the feature slug, do NOT duplicate it: branch `feature/CRYPTO-4176-rate-limiting` with slug `rate-limiting` yields `review-YYYY-mmdd-HHMM-CRYPTO4176-rate-limiting.md`, never `...-CRYPTO4176-rate-limiting-rate-limiting.md`.
-- Examples: `review-2026-07-23-0015-project.md`, `review-2026-07-23-0015-CRYPTO4176-rate-limiting.md`, `review-2026-07-23-0015-custom-user-bans.md`, `review-2026-07-23-0015-CRYPTO4176.md`, `review-2026-07-23-0015-feature.md`.
+- `<BRANCHKEY>` is the issue key extracted from the feature branch with intelligent sanitization: strip path segments (`feature/`, `bugfix/`, etc.), extract the issue marker, and MERGE it by removing the internal separator — `WGNBCK-1337` becomes `WGNBCK1337`, `wgcmbe_571` becomes `wgcmbe571`. Original letter case is preserved. Example: branch `feature/WGNBCK-4176-rate-limiting` yields key `WGNBCK4176`.
+- If the branch name already contains the feature slug, do NOT duplicate it: branch `feature/WGNBCK-4176-rate-limiting` with slug `rate-limiting` yields `review-YYYY-mmdd-HHMM-WGNBCK4176-rate-limiting.md`, never `...-WGNBCK4176-rate-limiting-rate-limiting.md`.
+- Examples: `review-2026-07-23-0015-project.md`, `review-2026-07-23-0015-WGNBCK4176-rate-limiting.md`, `review-2026-07-23-0015-custom-user-bans.md`, `review-2026-07-23-0015-WGNBCK4176.md`, `review-2026-07-23-0015-feature.md`.
 
 ### 2.3 Branch and commit metadata
 

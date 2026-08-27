@@ -2,7 +2,7 @@
 [ref: #asr-intro]
 
 A curated collection of execution skills for Kimi Code CLI and compatible agentic runtimes.
-Each skill is a self-contained directory with a `SKILL.md` entry point, a `references/` folder containing routing tables, subagent prompts, checklists, and rulebooks, and a human-facing `README.md` for quick orientation.
+Each skill is a self-contained directory with a `SKILL.md` entry point, a human-facing `README.md` for quick orientation, and usually a `references/` folder containing routing tables, subagent prompts, checklists, and rulebooks. Thin integration skills may keep all rules inline and omit the `references/` folder.
 
 Skills are not libraries. They are operational protocols: they define when the agent must activate, which tools it must use, which subagents it must spawn, and where artifacts must be written. Every skill follows the same layout so an agent can discover, load, and route against it deterministically.
 
@@ -49,6 +49,7 @@ Skills that govern the agent itself, its tool selection, and its startup behavio
 | **todo-protocol** | Mandatory protocol for using the `SetTodoList` tool. Governs when to create a todo list, how to update it without violating immutability rules, how to synchronize item status after every tool call, and the forbidden mutations. |
 | **read-for-comments** | Always-active local reference library for technical standards (RFC, OWASP, STD, etc.). Agents MUST check the Serena `standard/` archive and this skill's `references/` seed before fetching a standard from the internet. |
 | **kagi-search** | Mandatory and exclusive protocol for web search and page enrichment through the `kagimcp` MCP tools. Governs `kagi_search_fetch`, `kagi_fastgpt`, `kagi_extract`, and `kagi_summarizer`. Always active. |
+| **dash-protocol** | Mandatory protocol for the Dash MCP documentation layer: installed docset enumeration, documentation search, full-text search enablement, and page loading through local Dash docsets. |
 | **discuss-first** | Co-implementation mode. The agent plans the implementation top-down, shows full signatures and pseudocode, collects per-part approvals, requests master approval, and only then writes code. |
 
 ### Languages & API Design
@@ -60,6 +61,16 @@ Skills that enforce language-specific and API-specific rules.
 |-------|---------|
 | **api-design** | Enforces Google AIP compliance for resource-oriented APIs: resource naming, standard methods, custom methods, pagination, filtering, planes, compatibility guarantees, and HTTP/gRPC transcoding. |
 | **python-lang** | Mandatory Google Python Style Guide enforcement plus a Ruff self-linting protocol. Covers imports, mutability, exceptions, type hints, comprehensions, decorators, docstrings, and formatting. |
+
+### Integration Skills
+[ref: #asr-integration]
+
+Read-only connectors to external systems and observability tools.
+
+| Skill | Purpose |
+|-------|---------|
+| **atlassian-skill** | Read-only access to Atlassian Jira and Confluence via MCP: issue search/reading, project issues, page search/reading, daily page diffs, and page history. |
+| **loki-skill** | Read-only Grafana Loki log investigation through `logcli`: querying logs, labels, series, and metadata with narrow-first guardrails and output size limits. |
 
 ### On-Demand Skills
 [ref: #asr-ondemand]

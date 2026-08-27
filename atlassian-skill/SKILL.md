@@ -69,7 +69,7 @@ Jira issue keys are **always uppercase**.
 
 - Normalize any user-supplied key to uppercase before calling Jira tools.
 - Valid format: `[A-Z][A-Z0-9_]+-\d+` (for example `PROJECT-123`, `TEAM42-7`, `MY_PROJECT-99`).
-- Never pass a mixed-case or lowercase key such as `Crypto-5314`; convert it to `CRYPTO-5314` first.
+- Never pass a mixed-case or lowercase key such as `Wgnbck-5314`; convert it to `WGNBCK-5314` first.
 - This rule is hard: a lowercase key fails validation before the tool call.
 
 ### Pagination
@@ -84,7 +84,7 @@ If a search returns several equally plausible results, ask the user which one to
 
 ### Read a Jira issue
 
-1. If you have the issue key, normalize it to uppercase (`Crypto-5314` → `CRYPTO-5314`), then call `jira_get_issue` with `fields="summary,status,assignee,labels,description"` and `comment_limit=0`.
+1. If you have the issue key, normalize it to uppercase (`Wgnbck-5314` → `WGNBCK-5314`), then call `jira_get_issue` with `fields="summary,status,assignee,labels,description"` and `comment_limit=0`.
 2. If not, call `jira_search` with JQL and `limit=5`.
 3. Summarize: summary, status, assignee, description, labels. Omit comments unless asked.
 
