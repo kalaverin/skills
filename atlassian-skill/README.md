@@ -44,6 +44,7 @@ What the agent does automatically:
 - Search result overviews with links.
 - Confluence page content in Markdown.
 - Daily diff summaries from page history.
+- Updated local copies with `external_source.atlassian` stamps when actualizing.
 
 ## Dependencies and why they matter
 [ref: #atlassian-dependencies-and-why-they-matter]
@@ -76,3 +77,4 @@ atlassian-skill/
 - `renderedFields` and `convert_to_markdown=false` are forbidden.
 - Start searches with `limit=3–5`; widen only if needed.
 - The agent hard-stops on `401`/`403` and asks the user to check credentials.
+- Local copies carry an `external_source.atlassian` block (`kind`, `id`, `version`/`updated_at`, `last_sync_at`). On "actualize" the agent reads only the diff or compares timestamps instead of pulling the whole artifact.
