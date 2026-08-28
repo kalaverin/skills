@@ -1,6 +1,6 @@
 # Agent Prompt: Refresh the Bobplus API Skill Corpus
 
-You are refreshing the `bobplus-api` skill so it remains the binding source of truth for Bobplus API facts in this workspace. The skill is both documentation and canonical knowledge: every factual claim must reflect the scraped docs, every section must carry a `Sources:` proof-URL, and every contradiction must be preserved, not "fixed". Work from the skills workspace root `/Users/kalaverin/src/agent/skills`.
+You are refreshing the `bobplus-api` skill so it remains the binding source of truth for Bobplus API facts in this workspace. The skill is both documentation and canonical knowledge: every factual claim must reflect the scraped docs, every section must carry a `Sources:` proof-URL, and every contradiction must be preserved, not "fixed". Work from the skills workspace root `~/src/agent/skills`.
 
 ---
 
