@@ -2,12 +2,12 @@
 name: session-inspector
 description: "Token-cheap inspection of Kimi Code CLI session files under ~/.kimi/sessions. Use when the user asks to find, list, or identify past sessions — or to restore working context from one: 'найди сессию', 'последние сессии', 'прошлая сессия', 'сломанная/незавершённая сессия', 'какие были чаты', 'какие были сессии', 'session id', 'подними контекст из сессии', 'продолжим с той сессии', 'what was that session about'. Governs the mandatory script-based extraction: the agent MUST NEVER read session JSONL files directly — the script distills titles, repos, statuses, and transcripts."
 triggers:
-  request: "найди сессию, последние сессии, прошлая сессия, прежняя сессия, сломанная сессия, незавершённая сессия, завершённая сессия, какие были чаты, какие были сессии, session id, найди разговор, найди чат, история сессий, what sessions, find session, previous session, broken session, подними контекст, подними контекст из сессии, продолжим с той сессии, продолжи сессию, восстанови контекст сессии, restore session context, resume that session"
+  request: "найди сессию, последние сессии, прошлая сессия, прежняя сессия, сломанная сессия, незавершённая сессия, завершённая сессия, какие были чаты, какие были сессии, session id, найди разговор, найди чат, история сессий, what sessions, find session, previous session, broken session, подними контекст, подними контекст из сессии, продолжим с той сессии, продолжи сессию, восстанови контекст сессии, restore session context, resume that session, трекай сессию, следи за сессией, мониторинг сессии, track session, session counters, сколько токенов, контекст заполнен, счётчики сессии"
   reason: "Session questions must be answered from distilled script output, never from raw JSONL reads."
 runtime: true
 requires:
   - mandatory-tools
-version: 0.2.0
+version: 0.3.0
 ---
 
 # SKILL: Session Inspector
@@ -21,13 +21,13 @@ Kimi Code CLI sessions live under `~/.kimi/sessions/<project-hash>/<session-uuid
 NEVER read session files (`*.jsonl`, `state.json`, `metadata.json`) directly with ReadFile/cat/rg-for-content. ALWAYS use the script; it does the parsing and emits only the distillate. The script is the only sanctioned reader of the session format.
 
 ```bash
-uv run --no-project python session-inspector/scripts/inspect_sessions.py [--last N]
-uv run --no-project python session-inspector/scripts/inspect_sessions.py --no-cwd [--last N]
-uv run --no-project python session-inspector/scripts/inspect_sessions.py --query "some phrase" [--last N]
-uv run --no-project python session-inspector/scripts/inspect_sessions.py --query "some phrase" --exact [--last N]
-uv run --no-project python session-inspector/scripts/inspect_sessions.py --session <id-prefix>
-uv run --no-project python session-inspector/scripts/inspect_sessions.py --session <id-prefix> --restore
-uv run --no-project python session-inspector/scripts/inspect_sessions.py --sessions-dir PATH
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py [--last N]
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --no-cwd [--last N]
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --query "some phrase" [--last N]
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --query "some phrase" --exact [--last N]
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <id-prefix>
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <id-prefix> --restore
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --sessions-dir PATH
 ```
 
 (Subagents receive the absolute path: `<workspace>/session-inspector/scripts/inspect_sessions.py`. Run from the skills workspace root.)
@@ -86,3 +86,74 @@ When the user asks to lift/restore context from a session ("подними ко�
 [ref: #si-violation-protocol]
 
 If you catch yourself opening a session JSONL directly, halt, discard, and rerun through the script. If the script cannot answer the question (format drift), say so and propose a script fix — do not fall back to manual digging.
+
+## 7. Session Tracking
+
+[ref: #si-session-tracking]
+
+When the user asks to track the live session ("трекай сессию", "сколько токенов", "контекст заполнен", "track session", "session counters"), use `track_session.py`. This is the only sanctioned reader of `wire.jsonl`; the agent MUST NOT read it directly.
+
+### 7.1 One-shot on-demand flow
+
+[ref: #si-tracking-flow]
+
+The agent cannot start work on its own between user messages, so tracking is on-demand: one user request produces one snapshot of counters.
+
+```text
+if a real session_id is already known in this conversation:
+    uv run --no-project python OnDemand/session-inspector/scripts/track_session.py <session_id>
+else:
+    probe = python -c "import uuid; print(uuid.uuid4())"
+    uv run --no-project python OnDemand/session-inspector/scripts/track_session.py <probe>
+    remember the returned session_id for subsequent calls
+show the counters to the user
+```
+
+### 7.2 Interpreting the output
+
+[ref: #si-tracking-output]
+
+The script emits one JSON line:
+
+```json
+{
+  "session_id": "84c2da47-f01a-41b6-9921-6e4e94bbae75",
+  "found_by": "probe",
+  "status": {
+    "context_tokens": 9057,
+    "context_usage": 0.0345,
+    "max_context_tokens": 262144,
+    "token_usage": {
+      "input_other": 353,
+      "output": 87,
+      "input_cache_read": 8704,
+      "input_cache_creation": 0
+    },
+    "message_id": "chatcmpl-...",
+    "plan_mode": false,
+    "mcp_status": null
+  },
+  "error": null
+}
+```
+
+Presentation rules:
+
+- Show `context_tokens / max_context_tokens` and the percentage from `context_usage`.
+- Show `token_usage.input_cache_read`, `input_other`, and `output`.
+- Mention `plan_mode: true` if the session is currently in plan mode.
+- If `status` is `null` but `session_id` is present, the session was found but no `StatusUpdate` has arrived yet.
+- If `found_by` is `"not_found"`, the probe has not yet been flushed to disk. Tell the user to repeat the request in a few seconds.
+- If `error` is non-null, report the error and stop.
+
+### 7.3 Generating the probe UUID
+
+[ref: #si-probe-uuid]
+
+Use a one-liner with the system Python interpreter:
+
+```bash
+python -c "import uuid; print(uuid.uuid4())"
+```
+
+The probe UUID is passed to `track_session.py`. The script discovers the real session directory because the tool invocation containing the probe is recorded in the session's own JSONL files.

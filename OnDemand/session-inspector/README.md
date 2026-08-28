@@ -28,12 +28,48 @@ The agent runs the script from the skills workspace root.
 Use list mode for the most recent sessions, show mode for a distilled transcript, or restore mode for a context-restoration pack.
 
 ```bash
-uv run --no-project python session-inspector/scripts/inspect_sessions.py [--last N]
-uv run --no-project python session-inspector/scripts/inspect_sessions.py --session <id-prefix>
-uv run --no-project python session-inspector/scripts/inspect_sessions.py --session <id-prefix> --restore
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py [--last N]
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <id-prefix>
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <id-prefix> --restore
 ```
 
 You do not need to open `~/.kimi/sessions/` yourself; the script is the only sanctioned reader of the session format.
+
+### Session tracking
+
+To track the live counters of the current session, use `track_session.py`. First call uses a probe UUID; the script discovers the real session id and returns the latest `StatusUpdate` counters. Subsequent calls use that real id directly.
+
+```bash
+# first call: discover session with a probe UUID
+uv run --no-project python OnDemand/session-inspector/scripts/track_session.py <probe-uuid>
+
+# later calls: use the real session id
+uv run --no-project python OnDemand/session-inspector/scripts/track_session.py <session-id>
+```
+
+Example output:
+
+```json
+{
+  "session_id": "84c2da47-f01a-41b6-9921-6e4e94bbae75",
+  "found_by": "probe",
+  "status": {
+    "context_tokens": 9057,
+    "context_usage": 0.0345,
+    "max_context_tokens": 262144,
+    "token_usage": {
+      "input_other": 353,
+      "output": 87,
+      "input_cache_read": 8704,
+      "input_cache_creation": 0
+    },
+    "message_id": "chatcmpl-...",
+    "plan_mode": false,
+    "mcp_status": null
+  },
+  "error": null
+}
+```
 
 ## What it produces
 [ref: #si-produces]
@@ -77,11 +113,20 @@ You do not need to open `~/.kimi/sessions/` yourself; the script is the only san
 
 ```text
 session-inspector/
-├── scripts/              # Session parsing and distillation script
-│   └── inspect_sessions.py
-├── README.md                # Human overview (this file)
+├── scripts/              # Session parsing and distillation scripts
+│   ├── inspect_sessions.py
+│   └── track_session.py
+├── README.md             # Human overview (this file)
 └── SKILL.md              # Agent entry point: modes, presentation rules, and violation protocol
 ```
+
+## Dependencies
+[ref: #si-deps]
+
+- `uv` + Python 3.12+ — for running both scripts.
+- `rapidfuzz` — optional; `inspect_sessions.py` falls back to `difflib` if it is missing.
+- `rg` (ripgrep) — required by `track_session.py` to discover a session from a probe UUID.
+- `jq` — required by `track_session.py` to extract the latest `StatusUpdate` from `wire.jsonl`.
 
 ## Important conventions / gotchas
 [ref: #si-conventions]

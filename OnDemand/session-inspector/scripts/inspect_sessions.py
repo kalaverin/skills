@@ -23,6 +23,7 @@ import json
 import re
 import sys
 from collections import Counter
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -51,10 +52,21 @@ RESTORE_ASSISTANT_MESSAGES = 3
 RESTORE_ASSISTANT_CHARS = 1000
 
 SYSTEM_NOISE = ("<system>", "<current_focus>", "<environment", "<system-reminder>")
-PATH_RE = re.compile(r"/Users/[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+){1,5}")
+_HOME_DIR = str(Path.home())
+_PATH_TAIL_RE = r"(?:/[A-Za-z0-9._-]+){1,5}"
+PATH_RE = re.compile(re.escape(_HOME_DIR) + _PATH_TAIL_RE)
 MEMORY_RE = re.compile(r"(?:\.serena/memories/|mem:)[A-Za-z0-9/._-]+")
 WRITE_TOOLS = ("WriteFile", "StrReplaceFile")
 OPEN_TODO_STATUSES = ("pending", "in_progress")
+
+
+@dataclass(frozen=True)
+class SessionState:
+    """Distilled state.json contents."""
+
+    archived: bool = False
+    todos: tuple[dict, ...] = ()
+    custom_title: str | None = None
 
 
 def _iso(ts: float) -> str:
@@ -168,26 +180,29 @@ def _context_files(session_dir: Path) -> list[Path]:
     return [*numbered, live] if live.exists() else numbered
 
 
-def _session_state(session_dir: Path) -> dict:
+def _session_state(session_dir: Path) -> SessionState:
     state_file = session_dir / "state.json"
     if state_file.exists():
         try:
-            data = json.loads(state_file.read_text(encoding="utf-8", errors="replace"))
+            data = json.loads(
+                state_file.read_text(encoding="utf-8", errors="replace"),
+            )
         except json.JSONDecodeError:
-            return {}
-        return data if isinstance(data, dict) else {}
-    return {}
+            return SessionState()
+        if isinstance(data, dict):
+            custom_title = data.get("custom_title")
+            return SessionState(
+                archived=bool(data.get("archived")),
+                todos=tuple(t for t in data.get("todos", []) if isinstance(t, dict)),
+                custom_title=custom_title if isinstance(custom_title, str) else None,
+            )
+    return SessionState()
 
 
-def _status(state: dict, last_activity: float, now: float) -> str:
-    if state.get("archived"):
+def _status(state: SessionState, last_activity: float, now: float) -> str:
+    if state.archived:
         return "archived"
-    todos = state.get("todos") or []
-    open_todos = [
-        t
-        for t in todos
-        if isinstance(t, dict) and t.get("status") in OPEN_TODO_STATUSES
-    ]
+    open_todos = [t for t in state.todos if t.get("status") in OPEN_TODO_STATUSES]
     idle = now - last_activity > SECONDS_PER_DAY
     if open_todos and idle:
         return "interrupted"
@@ -252,8 +267,8 @@ def _session_matches(
     if not quote:
         return True
     state = _session_state(session_dir)
-    if state.get("custom_title") and _matches_quote(
-        [("user", state["custom_title"])],
+    if state.custom_title and _matches_quote(
+        [("user", state.custom_title)],
         quote,
         fuzzy,
     ):
@@ -316,8 +331,8 @@ def cmd_list(
             repos = _repos(tool_calls)
         status = _status(state, last_activity, now)
         print(f"{session_dir.name[:8]}  {_iso(last_activity)}  {status}")
-        if state.get("custom_title"):
-            print(f"  title: {state['custom_title']}")
+        if state.custom_title:
+            print(f"  title: {state.custom_title}")
         if repos:
             print(f"  repos: {', '.join(repos)}")
         if first:
@@ -337,12 +352,11 @@ def cmd_show(session_dir: Path) -> None:
         print()
 
 
-def _print_todos(state: dict) -> None:
-    todos = [t for t in (state.get("todos") or []) if isinstance(t, dict)]
-    if not todos:
+def _print_todos(state: SessionState) -> None:
+    if not state.todos:
         return
-    open_todos = [t for t in todos if t.get("status") in OPEN_TODO_STATUSES]
-    done_count = len(todos) - len(open_todos)
+    open_todos = [t for t in state.todos if t.get("status") in OPEN_TODO_STATUSES]
+    done_count = len(state.todos) - len(open_todos)
     print("todos:")
     for todo in open_todos:
         print(
@@ -357,8 +371,8 @@ def cmd_restore(session_dir: Path) -> None:
     """Emit a context-restoration pack: where the session stopped, what it touched."""
     segments = _context_files(session_dir)
     state = _session_state(session_dir)
-    if state.get("custom_title"):
-        print(f"title: {state['custom_title']}")
+    if state.custom_title:
+        print(f"title: {state.custom_title}")
     _print_todos(state)
     if not segments:
         return
@@ -420,8 +434,7 @@ def main() -> None:
     parser.add_argument(
         "--query",
         help=(
-            "filter sessions by a phrase "
-            "(fuzzy by default; use --exact for substring)"
+            "filter sessions by a phrase (fuzzy by default; use --exact for substring)"
         ),
     )
     parser.add_argument(
