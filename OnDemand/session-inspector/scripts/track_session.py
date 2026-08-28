@@ -276,6 +276,16 @@ def main() -> None:
     except StatusUpdateNotFoundError as error:
         logger.debug("status not available: %s", error)
         status = None
+    except DependencyError as error:
+        _emit(
+            TrackResult(
+                session_id=session_dir.name,
+                found_by=found_by,
+                status=None,
+                error=str(error),
+            ),
+        )
+        return
 
     _emit(
         TrackResult(

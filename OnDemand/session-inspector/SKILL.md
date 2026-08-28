@@ -25,8 +25,8 @@ uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.p
 uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --no-cwd [--last N]
 uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --query "some phrase" [--last N]
 uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --query "some phrase" --exact [--last N]
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <id-prefix>
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <id-prefix> --restore
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <session-uuid>
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <session-uuid> --restore
 uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --sessions-dir PATH
 ```
 
@@ -42,7 +42,7 @@ uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.p
 | `--no-cwd` | false | Disable the current-working-directory filter and search sessions from all known projects. |
 | `--query PHRASE` | — | Filter sessions whose messages match `PHRASE`. Fuzzy by default; use `--exact` for a case-insensitive substring match. |
 | `--exact` | false | Switch `--query` from fuzzy matching to exact case-insensitive substring matching. |
-| `--session ID_PREFIX` | — | Switch to show/restore mode for the session whose UUID starts with the prefix. Must match exactly one session. |
+| `--session UUID` | — | Switch to show/restore mode. A full UUID or a short unambiguous prefix is accepted; it must match exactly one session directory. |
 | `--restore` | false | Use only with `--session`: emit a context-restoration pack instead of a transcript. |
 | `--sessions-dir PATH` | `~/.kimi/sessions` | Override the sessions root (useful for tests, fixtures, or non-standard Kimi layouts). |
 
@@ -57,15 +57,15 @@ Combinations and constraints:
 
 [ref: #si-modes]
 
-- **List mode (default):** the N most recent sessions (default 10, `--last K` to change), one block per session: short id, last activity (UTC), status (`active` / `archived` / `interrupted` / `stale`), title when the file carries one, working repos (absolute paths from tool calls, resolved to git roots), and the first/last real messages (the first is read from the oldest compaction segment `context_N.jsonl` when present).
-- **Show mode (`--session <id-prefix>`):** the distilled transcript — user/assistant text only, noise-injected system blocks stripped, each message truncated, capped at the last 50 messages. Use it to answer "what exactly happened in that session" without touching the JSONL.
-- **Restore mode (`--session <id-prefix> --restore`):** the context-restoration pack for "подними контекст из этой сессии" — NOT a transcript: OPEN todos from `state.json` in full (done ones collapse to a count), working repos, recently written files, Serena memory refs the session touched, the last user messages, and the last assistant messages at up to 1000 chars each (closing summaries carry the state).
+- **List mode (default):** the N most recent sessions (default 10, `--last K` to change), one block per session: full UUID, last activity (UTC), status (`active` / `archived` / `interrupted` / `stale`), title when the file carries one, working repos (absolute paths from tool calls, resolved to git roots), and the first/last real messages (the first is read from the oldest compaction segment `context_N.jsonl` when present).
+- **Show mode (`--session <session-uuid>`):** the distilled transcript — user/assistant text only, noise-injected system blocks stripped, each message truncated, capped at the last 50 messages. Use it to answer "what exactly happened in that session" without touching the JSONL.
+- **Restore mode (`--session <session-uuid> --restore`):** the context-restoration pack for "подними контекст из этой сессии" — NOT a transcript: OPEN todos from `state.json` in full (done ones collapse to a count), working repos, recently written files, Serena memory refs the session touched, the last user messages, and the last assistant messages at up to 1000 chars each. Additionally, the full session is converted to TOON format and written to `.tmp/session-inspector/<session-uuid>.toon`; the pack reports the file path, turn count, and line count. The on-screen `toon_preview` shows the first/last 5 user→assistant turns and skips `role: tool` results to keep the preview compact; the written TOON file still contains the full conversation including tool results. If `toon` is not installed, ask the user to install `@toon-format/cli` themselves; the agent MUST NOT run `npm install -g @toon-format/cli` for the user.
 
 ## 4. Presenting to the User
 
 [ref: #si-presentation]
 
-- **The agent composes session titles itself** from the distilled first/last messages (owner ruling 2026-08-05T10:45:00Z): a short Russian one-liner per session saying what the session concretely was about, always with the short id.
+- **The agent composes session titles itself** from the distilled first/last messages (owner ruling 2026-08-05T10:45:00Z): a short Russian one-liner per session saying what the session concretely was about, always with the full UUID.
 - Always show the working repositories per session (the `repos:` line).
 - Status vocabulary for the user: `active` = живой (активность в последние сутки), `archived` = завершён, `interrupted` = вероятно сломан/брошен (не archived, есть ОТКРЫТЫЕ todos, активность давно), `stale` = не archived, открытых todos нет, активность давно.
 - If the user looks for "the broken/finished session", run list mode, name candidates with ids, and offer show mode for the chosen one.
@@ -76,10 +76,11 @@ Combinations and constraints:
 
 When the user asks to lift/restore context from a session ("подними контекст из …", "продолжим с той сессии"):
 
-1. Run restore mode for the given id prefix.
+1. Run restore mode for the given UUID.
 2. Read the memory refs the pack names — those pages are already distilled and are the sanctioned deep layer (ReadFile on `.serena/memories/...` is allowed; the JSONL is still forbidden). Read at most the 2–3 most relevant refs.
 3. Present a compact Russian summary: what the session did, where it stopped (todos + last assistant message), which repos and files it touched.
-4. Ask the user what to continue — never auto-resume the old task list.
+4. The pack ends with `toon_file:`, `toon_turns:`, and `toon_lines:` lines. The TOON file contains the **entire** session and can be huge. The agent MUST NOT load it whole into the chat or save it to Serena memory. Default handling: read the first ~100 lines with `rtk head -n 100 <toon_file>`, then read more or slice with `rtk tail` / `rg` / `rtk` as needed.
+5. Ask the user what to continue — never auto-resume the old task list.
 
 ## 6. Violation Protocol
 

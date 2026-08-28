@@ -87,7 +87,8 @@ ondemand:
     request: найди сессию, последние сессии, прошлая сессия, прежняя сессия, сломанная сессия, незавершённая сессия, завершённая
       сессия, какие были чаты, какие были сессии, session id, найди разговор, найди чат, история сессий, what sessions, find
       session, previous session, broken session, подними контекст, подними контекст из сессии, продолжим с той сессии, продолжи
-      сессию, восстанови контекст сессии, restore session context, resume that session
+      сессию, восстанови контекст сессии, restore session context, resume that session, трекай сессию, отслеживай сессию,
+      track session, tracking session, session counters, token usage, context usage, live session, wire.jsonl
     reason: Session questions must be answered from distilled script output, never from raw JSONL reads.
   runtime: true
 - name: temporal-lang

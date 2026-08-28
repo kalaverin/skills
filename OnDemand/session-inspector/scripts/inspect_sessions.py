@@ -21,6 +21,8 @@ import difflib
 import hashlib
 import json
 import re
+import shutil
+import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -58,6 +60,25 @@ PATH_RE = re.compile(re.escape(_HOME_DIR) + _PATH_TAIL_RE)
 MEMORY_RE = re.compile(r"(?:\.serena/memories/|mem:)[A-Za-z0-9/._-]+")
 WRITE_TOOLS = ("WriteFile", "StrReplaceFile")
 OPEN_TODO_STATUSES = ("pending", "in_progress")
+TOON_PREVIEW_TURNS = 5
+TOON_OUTPUT_DIR = Path(__file__).resolve().parents[3] / ".tmp" / "session-inspector"
+
+
+class SessionInspectorError(Exception):
+    """Base error for session inspector scripts."""
+
+
+class DependencyError(SessionInspectorError):
+    """A required external dependency is missing or misbehaving."""
+
+
+@dataclass(frozen=True)
+class _ToonResult:
+    """TOON text plus metadata."""
+
+    text: str
+    turns: int
+    messages: list[dict]
 
 
 @dataclass(frozen=True)
@@ -178,6 +199,142 @@ def _context_files(session_dir: Path) -> list[Path]:
     )
     live = session_dir / "context.jsonl"
     return [*numbered, live] if live.exists() else numbered
+
+
+def _messages_to_toon(messages: list[dict]) -> str:
+    """Convert a JSON message list to TOON text."""
+    toon_path = shutil.which("toon")
+    if toon_path is None:
+        raise DependencyError("toon is not installed")
+
+    result = subprocess.run(  # noqa: S603
+        [toon_path],
+        input=json.dumps(messages),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        message = f"toon failed: {result.stderr.strip()}"
+        raise DependencyError(message)
+    return result.stdout
+
+
+def _toon_preview(messages: list[dict], turn_count: int) -> str:
+    """Return TOON text with first/last `turn_count` user turns and a gap marker.
+
+    Tool-result messages are skipped in the on-screen preview so the agent sees
+    only the user/assistant narrative; the full TOON file still contains them.
+    """
+    preview_messages = [
+        m
+        for m in messages
+        if isinstance(m, dict) and m.get("role") in ("user", "assistant")
+    ]
+    user_indices = [
+        i for i, m in enumerate(preview_messages) if m.get("role") == "user"
+    ]
+    total = len(user_indices)
+    if total <= turn_count * 2:
+        return _messages_to_toon(preview_messages)
+
+    first_start = user_indices[0]
+    first_end = user_indices[turn_count]
+    last_start = user_indices[-turn_count]
+    omitted = total - turn_count * 2
+
+    first_part = _messages_to_toon(preview_messages[first_start:first_end])
+    last_part = _messages_to_toon(preview_messages[last_start:])
+    return (
+        f"{first_part}\n\n"
+        f"... {omitted} turns omitted; read toon_file for the full session ...\n\n"
+        f"{last_part}"
+    )
+
+
+def _write_toon(
+    context_files: list[Path],
+    session_name: str,
+) -> tuple[Path, int, int, str] | None:
+    """Convert context files to TOON, write to disk, and return a preview."""
+    try:
+        toon = _read_context_toon(context_files)
+    except DependencyError as error:
+        print(f"toon_error: {error}")
+        return None
+
+    TOON_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    toon_path = TOON_OUTPUT_DIR / f"{session_name}.toon"
+    toon_path.write_text(toon.text, encoding="utf-8")
+    preview = _toon_preview(toon.messages, TOON_PREVIEW_TURNS)
+    return toon_path, toon.turns, len(toon.text.splitlines()), preview
+
+
+def _read_context_toon(context_files: list[Path]) -> _ToonResult:
+    """Convert context JSONL files to TOON text.
+
+    Pipeline:
+        jq -c 'select(.role != "_usage" and .role != "_checkpoint")' <files>
+        | jq -s .
+        | toon
+    """
+    jq_path = shutil.which("jq")
+    toon_path = shutil.which("toon")
+    if jq_path is None:
+        raise DependencyError("jq is not installed")
+    if toon_path is None:
+        raise DependencyError("toon is not installed")
+
+    existing = [str(f) for f in context_files if f.exists()]
+    if not existing:
+        raise DependencyError("no context files found for toon conversion")
+
+    filter_result = subprocess.run(  # noqa: S603
+        [
+            jq_path,
+            "-c",
+            'select(.role != "_usage" and .role != "_checkpoint")',
+            *existing,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if filter_result.returncode != 0:
+        message = f"jq filter failed: {filter_result.stderr.strip()}"
+        raise DependencyError(message)
+
+    slurp_result = subprocess.run(  # noqa: S603
+        [jq_path, "-s", "."],
+        input=filter_result.stdout,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if slurp_result.returncode != 0:
+        message = f"jq slurp failed: {slurp_result.stderr.strip()}"
+        raise DependencyError(message)
+
+    try:
+        messages = json.loads(slurp_result.stdout)
+    except json.JSONDecodeError as error:
+        message = f"jq output is not valid JSON: {error}"
+        raise DependencyError(message) from error
+
+    turns = sum(1 for m in messages if isinstance(m, dict) and m.get("role") == "user")
+
+    toon_result = subprocess.run(  # noqa: S603
+        [toon_path],
+        input=slurp_result.stdout,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if toon_result.returncode != 0:
+        message = f"toon failed: {toon_result.stderr.strip()}"
+        raise DependencyError(message)
+
+    return _ToonResult(text=toon_result.stdout, turns=turns, messages=messages)
 
 
 def _session_state(session_dir: Path) -> SessionState:
@@ -330,7 +487,7 @@ def cmd_list(
             latest = messages[-1][1] if messages else ""
             repos = _repos(tool_calls)
         status = _status(state, last_activity, now)
-        print(f"{session_dir.name[:8]}  {_iso(last_activity)}  {status}")
+        print(f"{session_dir.name}  {_iso(last_activity)}  {status}")
         if state.custom_title:
             print(f"  title: {state.custom_title}")
         if repos:
@@ -367,6 +524,21 @@ def _print_todos(state: SessionState) -> None:
     print()
 
 
+def _print_last_messages(messages: list[tuple[str, str]]) -> None:
+    """Print the last few user and assistant messages."""
+    users = [t for r, t in messages if r == "user"][-RESTORE_USER_MESSAGES:]
+    assistants = [t for r, t in messages if r == "assistant"][
+        -RESTORE_ASSISTANT_MESSAGES:
+    ]
+    print("last user messages:")
+    for text in users:
+        print(f"  - {text[:MSG_CHARS]}")
+    print()
+    print("last assistant messages (up to 1000 chars — closing summaries carry state):")
+    for text in assistants:
+        print(f"  ---\n  {text[:RESTORE_ASSISTANT_CHARS]}")
+
+
 def cmd_restore(session_dir: Path) -> None:
     """Emit a context-restoration pack: where the session stopped, what it touched."""
     segments = _context_files(session_dir)
@@ -391,17 +563,16 @@ def cmd_restore(session_dir: Path) -> None:
         for ref in refs[:TOP_FILES]:
             print(f"  {ref}")
         print()
-    users = [t for r, t in messages if r == "user"][-RESTORE_USER_MESSAGES:]
-    assistants = [t for r, t in messages if r == "assistant"][
-        -RESTORE_ASSISTANT_MESSAGES:
-    ]
-    print("last user messages:")
-    for text in users:
-        print(f"  - {text[:MSG_CHARS]}")
-    print()
-    print("last assistant messages (up to 1000 chars — closing summaries carry state):")
-    for text in assistants:
-        print(f"  ---\n  {text[:RESTORE_ASSISTANT_CHARS]}")
+    _print_last_messages(messages)
+
+    toon_info = _write_toon(segments, session_dir.name)
+    if toon_info is not None:
+        toon_path, turns, line_count, preview = toon_info
+        print(f"toon_file: {toon_path}")
+        print(f"toon_turns: {turns}")
+        print(f"toon_lines: {line_count}")
+        print("toon_preview:")
+        print(preview)
 
 
 def main() -> None:
@@ -412,7 +583,10 @@ def main() -> None:
         default=10,
         help="how many recent sessions to list",
     )
-    parser.add_argument("--session", help="session id (unique prefix) to distill")
+    parser.add_argument(
+        "--session",
+        help="full session UUID or a unique prefix to distill",
+    )
     parser.add_argument(
         "--restore",
         action="store_true",
@@ -450,7 +624,7 @@ def main() -> None:
     if args.last < 1:
         parser.error("--last must be a positive number")
     if args.restore and not args.session:
-        parser.error("--restore requires --session <id-prefix>")
+        parser.error("--restore requires --session <UUID>")
 
     allowed_hashes: set[str] | None = None
     if not args.no_cwd:
@@ -473,9 +647,11 @@ def main() -> None:
         ]
         if len(matches) != 1:
             candidates = ", ".join(d.name for d in matches) or "none"
-            sys.exit(
-                f"prefix {args.session!r} matches {len(matches)} dirs: {candidates}",
+            message = (
+                f"UUID prefix {args.session!r} matches {len(matches)} dirs: "
+                f"{candidates}"
             )
+            sys.exit(message)
         if args.restore:
             cmd_restore(matches[0])
         else:

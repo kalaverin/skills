@@ -29,8 +29,8 @@ Use list mode for the most recent sessions, show mode for a distilled transcript
 
 ```bash
 uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py [--last N]
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <id-prefix>
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <id-prefix> --restore
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <session-uuid>
+uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <session-uuid> --restore
 ```
 
 You do not need to open `~/.kimi/sessions/` yourself; the script is the only sanctioned reader of the session format.
@@ -74,15 +74,23 @@ Example output:
 ## What it produces
 [ref: #si-produces]
 
-- A list of recent sessions with short ids, last activity (UTC), status, composed title, working repos, and first/last messages.
+- A list of recent sessions with full UUIDs, last activity (UTC), status, composed title, working repos, and first/last messages.
 - A distilled transcript for a chosen session, capped at the last 50 messages.
-- A context-restoration pack with open todos, working repos, recently written files, Serena memory refs, and closing messages.
+- A context-restoration pack with open todos, working repos, recently written files, Serena memory refs, closing messages, and the path to a TOON file that contains the **entire** session.
 
 ## Dependencies and why they matter
 [ref: #si-deps]
 
 - `mandatory-tools` — governs CLI execution and the script invocation pattern.
-- `uv` and Python — needed to run `inspect_sessions.py`.
+- `uv` + Python 3.12+ — for running both scripts.
+- `rapidfuzz` — optional; `inspect_sessions.py` falls back to `difflib` if it is missing.
+- `rg` (ripgrep) — required by `track_session.py` to discover a session from a probe UUID.
+- `jq` — required by `track_session.py` to extract the latest `StatusUpdate` from `wire.jsonl`, and by `inspect_sessions.py` restore mode to filter context JSONL.
+- `toon` (the `@toon-format/cli` tool) — required by `inspect_sessions.py` restore mode to convert the full session to a compact agent-readable format.
+  - Install (user-side only): `npm install -g @toon-format/cli`
+  - Repo / spec: https://github.com/toon-format/toon
+  - Note: MCP agents are typically proxied through https://github.com/chaindead/tooner
+  - The agent must **not** run this install command for the user; it is a one-time user setup step.
 
 ## Strengths and trade-offs
 [ref: #si-tradeoffs]
@@ -107,6 +115,7 @@ Example output:
 - NEVER read session `*.jsonl`, `state.json`, or `metadata.json` directly with ReadFile, cat, or grep-for-content.
 - If the script cannot answer the question due to format drift, propose a script fix instead of manual digging.
 - Status vocabulary for users: `active` = живой, `archived` = завершён, `interrupted` = вероятно сломан/брошен, `stale` = открытых todos нет, активность давно.
+- Restore mode writes the **entire** session as a TOON file to `.tmp/session-inspector/<session-uuid>.toon`. Do not load it whole into context; use `rtk head -n 100 <file>` by default and slice further as needed.
 
 ## Repository layout
 [ref: #si-layout]
@@ -119,14 +128,6 @@ session-inspector/
 ├── README.md             # Human overview (this file)
 └── SKILL.md              # Agent entry point: modes, presentation rules, and violation protocol
 ```
-
-## Dependencies
-[ref: #si-deps]
-
-- `uv` + Python 3.12+ — for running both scripts.
-- `rapidfuzz` — optional; `inspect_sessions.py` falls back to `difflib` if it is missing.
-- `rg` (ripgrep) — required by `track_session.py` to discover a session from a probe UUID.
-- `jq` — required by `track_session.py` to extract the latest `StatusUpdate` from `wire.jsonl`.
 
 ## Important conventions / gotchas
 [ref: #si-conventions]
