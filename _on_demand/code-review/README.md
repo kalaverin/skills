@@ -79,7 +79,7 @@ Tests are skipped unless you explicitly ask to review them.
 [ref: #cr-layout]
 
 ```text
-code-review/
+_on_demand/code-review/
 ├── references/           # Checklist, report templates, and specialist subagent prompts
 │   ├── checklist.md
 │   ├── report-templates.md

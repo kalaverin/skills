@@ -64,7 +64,7 @@ What the agent does automatically:
 [ref: #atlassian-repository-layout]
 
 ```text
-atlassian-skill/
+_on_demand/atlassian-skill/
 ├── README.md   # Human overview (this file)
 └── SKILL.md    # Agent entry point: allowed tools, parameter rules, workflows
 ```

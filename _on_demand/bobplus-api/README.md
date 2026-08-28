@@ -25,7 +25,7 @@ Examples:
 
 The skill is reference material used when writing or reviewing integration code.
 When a request touches Bobplus, the agent routes through the reference corpus using the `frontmatter-protocol` lazy-load funnel and extracts only the sections needed for the task.
-All endpoint paths, channel codes, field sets, and signature recipes must come from the corpus, never from training data.
+All endpoint paths, channel codes, field sets, and signature recipes are drawn from the captured corpus rather than from training data.
 Use `prompts/refresh.md` if the docs need to be re-scraped.
 
 ## What it produces
@@ -61,9 +61,9 @@ Use `prompts/refresh.md` if the docs need to be re-scraped.
 ### Common pitfalls / gotchas
 [ref: #ba-pitfalls]
 
-- **Base URLs are placeholders in the source docs** (`https://prod-url-here`, `https://base-url-here.com`, etc.). Always take the real base URL from configuration; never hardcode a placeholder or an invented host.
+- **Base URLs are placeholders in the source docs** (`https://prod-url-here`, `https://base-url-here.com`, etc.). Always take the real base URL from configuration; avoid hardcoding a placeholder or an invented host.
 - **Outbound signed requests** use RSA+SHA-256. Payouts **require** the `x-hash` header; payin examples also show it.
-- **Inbound webhooks** (`result_url`) are verified as **HMAC-SHA256 keyed with the consumer key** over the documented field order, comparing against the payload's `hash` field. Do not verify them with a generic "configured secret" or the `x-hash` logic.
+- **Inbound webhooks** (`result_url`) are verified as **HMAC-SHA256 keyed with the consumer key** over the documented field order, comparing against the payload's `hash` field. Compare against the payload's `hash` field rather than verifying with a generic "configured secret" or the `x-hash` logic.
 - **Known source-doc inconsistencies** (flag them to the user when relevant):
   - NGN payout channel is documented both as `300043` (Nigeria guide, MoMo payout table) and as `900020`/`900021` (bank payout table).
   - Rate limit is stated as 1500/minute on the main page and 1500/second on the bank-codes page.
@@ -74,7 +74,7 @@ Use `prompts/refresh.md` if the docs need to be re-scraped.
 [ref: #ba-layout]
 
 ```text
-bobplus-api/
+_on_demand/bobplus-api/
 ├── references/           # Curated provider docs
 │   ├── getting_started.md      # Platform overview, country support, IP whitelisting
 │   ├── security.md             # Bearer auth, RSA signature, x-hash generation
@@ -106,9 +106,9 @@ bobplus-api/
 ## Important conventions / gotchas
 [ref: #ba-conventions]
 
-- The corpus is the binding source of truth for Bobplus facts; never answer from training data or guess endpoints/fields/channel codes.
+- Treat the corpus as the source of truth for Bobplus facts; avoid answering from training data or guessing endpoints, fields, or channel codes.
 - Route through `frontmatter-protocol` lazy-load anchors instead of reading files whole.
 - Inbound webhook verification uses HMAC-SHA256 keyed with the **consumer key**, not a generic secret.
 - Outbound payouts require the `x-hash` header.
 - Take the real base URL from configuration; source docs use placeholders.
-- Do not store raw credentials, consumer keys, or RSA private keys in memory files.
+- Avoid storing raw credentials, consumer keys, or RSA private keys in memory files.

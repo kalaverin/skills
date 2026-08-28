@@ -44,7 +44,7 @@ What the agent does automatically:
 - Starts with the narrowest query and the lowest practical `limit`.
 - Uses `include_domains`, `exclude_domains`, and `time_relative` to keep results focused.
 
-Raw CLI fetches (`curl`, `wget`) are allowed only for exact-byte retrieval, such as downloading a binary or saving an RFC unchanged.
+Raw CLI fetches (`curl`, `wget`) are limited to exact-byte retrieval, such as downloading a binary or saving an RFC unchanged.
 
 ## What it produces
 [ref: #kagi-what-it-produces]
@@ -68,7 +68,7 @@ No project skills are required, but this skill is mandatory whenever external lo
 
 - **Strong sides:** Prevents hallucination by requiring live sources, reduces token usage compared to raw page fetches, and funnels all web work through a single authoritative provider.
 - **Weak sides / limits:** Requires Kagi MCP to be configured; subagents cannot call Kagi tools directly; not suitable for downloading exact binary bytes.
-- **Common pitfalls / gotchas:** Do not ask the agent to `curl` a page for discovery, reading, or summarization. Do not use training data or general knowledge when a Kagi search could verify the fact. If a subagent needs web data, the main agent must fetch and distill it first.
+- **Common pitfalls / gotchas:** `curl` is not used for discovery, reading, or summarization. Training data and general knowledge are not used when a Kagi search could verify the fact. When a subagent needs web data, the main agent fetches and distills it first.
 
 ## Repository layout
 [ref: #kagi-repository-layout]
@@ -91,8 +91,8 @@ kagi-search/
 ## Important conventions / gotchas
 [ref: #kagi-important-conventions-and-gotchas]
 
-- Kagi is the exclusive search mechanism; no other search API or raw CLI search is permitted except the narrow raw-fetch exception.
+- Kagi is the exclusive search mechanism; other search APIs or raw CLI searches are not used except for the narrow raw-fetch exception.
 - Prefer the narrowest query and the lowest result limit to save tokens.
 - Use `include_domains` to restrict to authoritative sources and `time_relative` for time-sensitive topics.
 - Subagents cannot use Kagi tools; the main agent performs searches and passes distilled results to them.
-- Repeated bypasses of this protocol must be recorded in Serena memory under `bugs/<entity>/kagi-search-bypass` or `notes/agent/kagi-search-bypass`.
+- Repeated bypasses of this protocol are recorded in Serena memory under `bugs/<entity>/kagi-search-bypass` or `notes/agent/kagi-search-bypass`.

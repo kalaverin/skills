@@ -68,8 +68,8 @@ Interrupt or correct the agent at any step. If you want to exit discuss-first mo
 ### Common pitfalls / gotchas
 [ref: #df-pitfalls]
 
-- Do not write code before the final master approval.
-- Do not skip the existence-review standard when deciding what to keep, revert, or delete.
+- Code is written only after the final master approval.
+- The existence-review standard is applied when deciding what to keep, revert, or delete.
 - If the user changes requirements mid-plan, restart the affected layer rather than silently adapting.
 
 ## Repository layout

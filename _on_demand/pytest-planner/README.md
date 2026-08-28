@@ -80,7 +80,7 @@ In `project` mode the existing `agent/tests` prompt is a hard precondition. In `
 [ref: #ptp-layout]
 
 ```text
-pytest-planner/
+_on_demand/pytest-planner/
 ├── prompts/              # Plan-generation prompts
 │   ├── BOOTSTRAP.md      # Test-authoring prompt generator
 │   ├── PLANNING.md       # Project-mode coverage plan generator

@@ -8,6 +8,12 @@ triggers:
 requires:
 - frontmatter-protocol
 ondemand:
+- name: atlassian-skill
+  description: "Read-only access to Atlassian Jira and Confluence via MCP. Use for reading Jira issues/tickets and Confluence pages/documentation, including daily page diffs. Triggers on mentions of Jira, Confluence, Atlassian, Jira issue, Jira ticket, Confluence page, Confluence space, daily doc sync, page diff, or page history."
+  triggers:
+    request: "jira, confluence, atlassian, issue, ticket, epic, jira issue, jira task, confluence page, confluence space, confluence doc, daily doc sync, page diff, page history, джира, жира, задача в джира, тикет, конфла, конфлюенс, страница конфлюенс"
+    reason: "User needs to read Jira issues or Confluence pages."
+  runtime: true
 - name: bobplus-api
   description: Bobplus Payments API (Africa) integration knowledge covering bearer auth, RSA request signing, X-Hash, C2B
     payins, B2C payouts, account services, and utilities. Use when answering questions or writing code against the Bobplus
@@ -26,6 +32,12 @@ ondemand:
   triggers:
     request: code review, review code, review diff, review feature, review project, pull request review, pr review, ревью,
       код-ревью, ревью кода, проверь код, проверь diff, проверь изменения, проверь проект
+  runtime: true
+- name: loki-skill
+  description: "Query logs and service state in Grafana Loki via the logcli terminal client. Use for investigating service problems, exploring labels and series, and incident response. The agent is read-only: no mutations, no writes, no deletes."
+  triggers:
+    request: "logcli, loki, grafana logs, посмотри логи, найди в логах, посмотри логи на стейдже, посмотри логи на проде, проверь в локи, посмотри в графане, расследование инцидентов, разбор инцидента, разбор проблем, sentry, логи sentry, incident"
+    reason: "User needs to query logs or service state through Grafana Loki."
   runtime: true
 - name: protobuf-lang
   description: MANDATORY skill for Buf Protobuf lint and schema style. Use when writing, editing, or reviewing `.proto` files,
@@ -84,11 +96,12 @@ ondemand:
   description: Token-cheap inspection of Kimi Code CLI session files under ~/.kimi/sessions. Governs script-based extraction
     and prohibits direct reads of session JSONL files.
   triggers:
-    request: найди сессию, последние сессии, прошлая сессия, прежняя сессия, сломанная сессия, незавершённая сессия, завершённая
-      сессия, какие были чаты, какие были сессии, session id, найди разговор, найди чат, история сессий, what sessions, find
-      session, previous session, broken session, подними контекст, подними контекст из сессии, продолжим с той сессии, продолжи
-      сессию, восстанови контекст сессии, restore session context, resume that session, трекай сессию, отслеживай сессию,
-      track session, tracking session, session counters, token usage, context usage, live session, wire.jsonl
+    request: найди сессию, последние сессии, прошлая сессия, прежняя сессия, сломанная сессия, незавершённая сессия,
+      завершённая сессия, какие были чаты, какие были сессии, session id, найди разговор, найди чат, история сессий, what
+      sessions, find session, previous session, broken session, подними контекст, подними контекст из сессии, продолжим с той
+      сессии, продолжи сессию, восстанови контекст сессии, restore session context, resume that session, трекай сессию,
+      отслеживай сессию, track session, tracking session, session counters, token usage, context usage, live session,
+      wire.jsonl, следи за сессией, мониторинг сессии, сколько токенов, контекст заполнен, счётчики сессии
     reason: Session questions must be answered from distilled script output, never from raw JSONL reads.
   runtime: true
 - name: temporal-lang
@@ -121,8 +134,10 @@ This skill is a **runtime, header-only manifest**. It does not contain task rule
 
 | Skill | Runtime | Description |
 |-------|---------|-------------|
+| `atlassian-skill` | yes | Read-only access to Atlassian Jira and Confluence via MCP. Use for reading Jira issues/tickets and Confluence pages/documentation, including daily page diffs. Triggers on mentions of Jira, Confluence, Atlassian, Jira issue, Jira ticket, Confluence page, Confluence space, daily doc sync, page diff, or page history. |
 | `bobplus-api` | yes | Bobplus Payments API (Africa) integration knowledge covering bearer auth, RSA request signing, X-Hash, C2B payins, B2C payouts, account services, and utilities. Use when answering questions or writing code against the Bobplus API. |
 | `code-review` | yes | Language-agnostic code review for any programming language, supporting diff-based and full-project review modes. Enforces boilerplate file naming, branch metadata, and severity classification. |
+| `loki-skill` | yes | Query logs and service state in Grafana Loki via the logcli terminal client. Use for investigating service problems, exploring labels and series, and incident response. The agent is read-only: no mutations, no writes, no deletes. |
 | `protobuf-lang` | yes | MANDATORY skill for Buf Protobuf lint and schema style. Use when writing, editing, or reviewing `.proto` files, `buf.yaml` configuration, packages, imports, enums, messages, services, RPCs, or comments. |
 | `pytest-design` | yes | MANDATORY skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Use for any Python testing task. |
 | `pytest-planner` | no | MANDATORY skill for producing repository-specific pytest enablement artifacts and unit-test coverage plans in project or feature mode. |

@@ -69,16 +69,16 @@ All timestamps are recorded in UTC.
 ### Common pitfalls / gotchas
 [ref: #sa-pitfalls]
 
-- The screener always runs first, even when you ask for a specific vulnerability class.
-- Detection scans run with a concurrency limit of six subagents across all stages.
-- If a subagent fails to write its artifact, the core will re-dispatch once and fall back to inline text.
-- Conditional scans from the plan are included by default unless you explicitly opt out.
+- The screener runs first, even for a specific vulnerability class.
+- Detection scans run with up to six subagents across all stages.
+- If a subagent fails to write its artifact, the core re-dispatches once and falls back to inline text.
+- Conditional scans from the plan are included by default; you can opt out explicitly.
 
 ## Repository layout
 [ref: #sa-layout]
 
 ```text
-security-audit/
+_on_demand/security-audit/
 ├── references/           # Lazy-loaded subagent prompt library
 │   ├── 00-screener.md              # Scan selection / coverage decision matrix
 │   ├── 01-analysis.md              # Architecture reconnaissance
@@ -155,8 +155,8 @@ security-audit/
 
 - An entity-scoped audit needs an existing card at `.serena/memories/repos/<entity>/overview` (create it via `repo-audit` first).
 - This skill reports findings; it does not patch source code itself.
-- The screener always runs first, even when you ask for a specific vulnerability class.
+- The screener runs first, even for a specific vulnerability class.
 - Detection scans run in parallel batches of up to six subagents across all stages; the design checklist runs alongside them.
 - Every finding is independently validated; the core agent personally re-checks doubtful ones.
 - All audit artifacts are persisted with `just serena-checkpoint`.
-- All timestamps use UTC ISO 8601 format.
+- All timestamps are recorded in UTC ISO 8601 format.

@@ -79,7 +79,7 @@ What a human must ensure:
 
 - **Strong sides:** Speed, token efficiency, consistent safety habits, and a single routing table that every agent session follows.
 - **Weak sides / limits:** Assumes the modern toolchain is installed; it does not teach legacy-tool workflows; non-Python ecosystems are covered only indirectly.
-- **Common pitfalls / gotchas:** Do not ask the agent to use `ls`, `find`, `grep`, `sed`, `pip`, or `black` — those paths are explicitly forbidden. Bulk replacements without a dry run are also forbidden. The agent may refuse to run a command that would change unmodified files.
+- **Common pitfalls / gotchas:** `ls`, `find`, `grep`, `sed`, `pip`, and `black` are not used; the modern replacements above are preferred. Bulk replacements are run with a dry run first. The agent may refuse to run a command that would change unmodified files.
 
 ## Repository layout
 [ref: #shell-repository-layout]

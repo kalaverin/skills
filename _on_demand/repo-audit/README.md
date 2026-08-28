@@ -70,16 +70,16 @@ You do not need to prepare any files; the agent reads the codebase and existing 
 ### Common pitfalls / gotchas
 [ref: #ra-pitfalls]
 
-- Do not ask the agent to analyze more than one repo in a single run.
-- The root agent should not explore the codebase directly; exploration is delegated to read-only subagents.
-- Generated findings must be synthesized before writing to memory; raw subagent output is never dumped.
-- Technical findings go into `overview`; business findings go into `business`; keep the two separate.
+- The agent handles one repo per run.
+- Exploration is delegated to read-only subagents rather than done by the root agent.
+- Findings are synthesized before being written to memory rather than copied raw from subagents.
+- Technical findings are recorded in `overview` and business findings in `business`.
 
 ## Repository layout
 [ref: #ra-layout]
 
 ```text
-repo-audit/
+_on_demand/repo-audit/
 ├── references/           # Subagent prompts, templates, and shared conventions
 │   ├── analysis/         # Wave 1: explorer + domain subagents
 │   │   ├── domain.md
@@ -131,8 +131,8 @@ repo-audit/
 [ref: #ra-conventions]
 
 - One repo per run; the project-level dependency index is the only exception and requires fresh per-repo cards.
-- Use the wave pipeline; do not launch a single "analyze everything" subagent.
-- Do not re-read code covered by a fresh input (`commit == HEAD`); work diff-driven when stale.
-- Do not include Sentry, Prometheus, tests, linters, CI, Makefile, Docker, or entry points unless they are actual runtime dependencies.
-- Do not write environment variable values, defaults, examples, or secrets into memory.
-- Always run frontmatter refresh, read-back verification, and `just serena-checkpoint` after any memory mutation.
+- Use the wave pipeline rather than a single "analyze everything" subagent.
+- When inputs are fresh (`commit == HEAD`), work diff-driven instead of re-reading the same code.
+- Only include Sentry, Prometheus, tests, linters, CI, Makefile, Docker, or entry points when they are actual runtime dependencies.
+- Environment variable values, defaults, examples, and secrets are not written into memory.
+- After a memory mutation, the agent runs frontmatter refresh, read-back verification, and `just serena-checkpoint`.

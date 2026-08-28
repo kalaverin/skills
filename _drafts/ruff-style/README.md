@@ -101,6 +101,45 @@ ruff-style/
 └── SKILL.md              # Agent entry point and rule index
 ```
 
+## Reference overview
+[ref: #rs-refs]
+
+| File | Topic |
+|------|-------|
+| `references/01_async.md` | Async |
+| `references/02_classes.md` | Classes |
+| `references/03_collections.md` | Collections |
+| `references/04_common.md` | Common |
+| `references/05_comparisons.md` | Comparisons and truthiness |
+| `references/06_comprehensions.md` | Comprehensions |
+| `references/07_datetime.md` | Datetime |
+| `references/08_docstrings.md` | Docstrings |
+| `references/09_exceptions.md` | Exceptions |
+| `references/10_flow.md` | Control flow |
+| `references/11_functions.md` | Functions |
+| `references/12_generics.md` | Generics and type variables |
+| `references/13_hygiene.md` | Hygiene |
+| `references/14_imports.md` | Imports |
+| `references/15_iterators.md` | Iterators |
+| `references/16_lint-suppression.md` | Lint suppression |
+| `references/17_logging.md` | Logging |
+| `references/18_mutable-defaults.md` | Mutable Defaults |
+| `references/19_naming.md` | Naming |
+| `references/20_numbers.md` | Numbers |
+| `references/21_pathlib.md` | Pathlib |
+| `references/22_pytest.md` | Pytest |
+| `references/23_resources.md` | Resources and environment |
+| `references/24_scope.md` | Scope |
+| `references/25_simplification.md` | Simplification |
+| `references/26_string-formatting.md` | String formatting |
+| `references/27_strings.md` | Strings |
+| `references/28_typing.md` | Typing |
+| `references/security/01_content.md` | Security: Content |
+| `references/security/02_crypto.md` | Security: Crypto |
+| `references/security/03_injection.md` | Security: Injection |
+| `references/security/04_network.md` | Security: Network |
+| `references/security/05_runtime.md` | Security: Runtime |
+
 ## Important conventions / gotchas
 [ref: #rs-conventions]
 

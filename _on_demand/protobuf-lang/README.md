@@ -75,11 +75,18 @@ Use the package structure and naming rules from this skill and the resource patt
 [ref: #pb-layout]
 
 ```text
-protobuf-lang/
+_on_demand/protobuf-lang/
 ├── references/           # Buf style guide and rule details
 ├── README.md                # Human overview (this file)
 └── SKILL.md              # Agent entry point: proto style rules and routing index
 ```
+
+## Reference overview
+[ref: #pb-refs]
+
+| File | What it covers |
+|---|---|
+| `references/rules.md` | Buf style guide and lint rules: packages, imports, enums, messages, services, RPCs, comments, and `buf.yaml` configuration. |
 
 ## Important conventions / gotchas
 [ref: #pb-conventions]

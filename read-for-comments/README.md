@@ -11,7 +11,7 @@ This skill is a standards archive and lookup procedure, not a code skill. It mai
 1. **Archive (searched FIRST):** Serena memories at `standard/<family>/<family>_<id>.md` — every standard ever fetched for this project.
 2. **Seed (searched SECOND):** this skill's `references/` directory — a tiny curated set of frequently needed standards that travels with the skill mirror.
 
-Before fetching any standard from the internet, the agent must check both stores in that order. If a standard body is missing, the agent fetches it, then archives it according to the event-bound rule.
+Before fetching a standard from the internet, the agent checks the archive first and the seed second. If a standard body is missing, the agent fetches it, then archives it according to the event-bound rule.
 
 ## When it activates
 [ref: #rfc-when]
@@ -60,19 +60,19 @@ You do not need to manage the archive manually.
 ### Weak sides / limits
 [ref: #rfc-weak]
 
-- Requires discipline: the agent must check local archives before every external fetch.
+- Requires discipline: the agent checks local archives before every external fetch.
 - Large standards can be tedious to split and archive.
 - Seeding is manual; the skill does not auto-populate the archive.
 
 ### Common pitfalls / gotchas
 [ref: #rfc-pitfalls]
 
-- ALWAYS check the Serena `standard/` archive FIRST, then this skill's `references/` seed, and only then go to the web.
-- Archive every standard body after download; do not leave it in a temporary file.
-- Use the exact family name from the registered list: `rfc`, `std`, `bcp`, `pep`, `aip`, `owasp`, `w3c`, `whatwg`, `zmpc`, `cwe`, `wicg`. Propose a new family to the user before first use.
-- Split multi-chapter standards into one file per chapter.
+- Check the Serena `standard/` archive first, then this skill's `references/` seed, and only then go to the web.
+- Archive the standard body after download rather than leaving it in a temporary file.
+- Use the exact family name from the registered list: `rfc`, `std`, `bcp`, `pep`, `aip`, `owasp`, `w3c`, `whatwg`, `zmpc`, `cwe`, `wicg`. New families are proposed to the user before first use.
+- Multi-chapter standards are split into one file per chapter.
 - When citing, include the section number and the stable URL.
-- `kagi_summarizer` output is a derivative and is NEVER archived; archive the full body.
+- `kagi_summarizer` output is a derivative and is not archived; the full body is archived instead.
 
 ## Repository layout
 [ref: #rfc-layout]

@@ -54,7 +54,7 @@ Example prompts:
 
 - Strong sides: headings become durable API endpoints for citations; one-line-per-logical-line minimizes diff noise; the `errata` queue keeps non-conformance visible rather than hidden.
 - Weak sides / limits: strict rules can feel heavy for one-off notes; every H1 and H2 must carry an anchor marker; the writer limit (8192 bytes) and queue limit (16536 bytes) require section splitting.
-- Common pitfalls / gotchas: never rename a heading or reuse an old anchor ID — deprecate instead; leading numbers are positional and never enter slugs; bare `---` lines are forbidden in the body (use `***` for unavoidable breaks); dates must be UTC ISO 8601 with a `Z` suffix.
+- Common pitfalls / gotchas: headings and anchor IDs are not renamed or reused — obsolete ones are deprecated instead; leading numbers are positional and do not enter slugs; bare `---` lines are not used in the body (use `***` for unavoidable breaks); dates use UTC ISO 8601 with a `Z` suffix.
 
 ## Repository layout
 [ref: #markdown-protocol-layout]
@@ -79,8 +79,8 @@ markdown-protocol/
 ## Important conventions / gotchas
 [ref: #markdown-protocol-gotchas]
 
-- Heading and anchor identities are stable forever: writers never rename headings or anchors and never delete sections — they deprecate with a dated `DEPRECATED` line.
+- Heading and anchor identities are stable: headings and anchors are not renamed or deleted — obsolete ones are deprecated with a dated `DEPRECATED` line.
 - Pure-digit-leading heading numbers never enter slugs (they are positional, never identity); digits after the first letter are free (`RFC 2119` → `rfc-2119`).
-- Section sizes use the writer limit (8192 bytes) and queue limit (16536 bytes), measured in UTF-8 bytes excluding whitespace and anchor marker lines; the terms "soft limit" and "hard limit" are forbidden.
-- Deviations are never silent: they are fixed, or recorded in the document's `errata:` frontmatter list in YAML flow style.
+- Section sizes use the writer limit (8192 bytes) and queue limit (16536 bytes), measured in UTF-8 bytes excluding whitespace and anchor marker lines; the terms "soft limit" and "hard limit" are not used.
+- Deviations are fixed or recorded in the document's `errata:` frontmatter list in YAML flow style.
 - The standard's own corpus carries the `mds-` anchor prefix per the cross-file citation recommendation.

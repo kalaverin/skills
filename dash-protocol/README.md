@@ -83,7 +83,7 @@ dash-protocol/
 [ref: #dash-protocol-readme-gotchas]
 
 - Docset identifiers are opaque strings (for example, `wfenxqwf` for Python); use the `name`/`platform` fields from `list_installed_docsets` for human-readable labels.
-- Always prefer Dash for verifiable facts about installed libraries and languages; never invent API signatures or version behavior.
+- Prefer Dash for verifiable facts about installed libraries and languages; do not invent API signatures or version behavior.
 - `enable_docset_fts` is safe to call repeatedly and returns `true` only for FTS-capable docsets.
 - `load_documentation_page` returns the whole page even when the `load_url` contains an anchor.
-- The fallback chain is fixed: Dash → Kagi web search → never training data.
+- The fallback chain is fixed: Dash → Kagi web search → training data is not used.

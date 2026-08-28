@@ -31,7 +31,7 @@ uvx ruff check --fix --target-version <PYVER> <changed_files>
 uvx ruff check --target-version <PYVER> --diff <changed_files>
 ```
 
-`<changed_files>` is the explicit list of files you wrote or edited; never run the pipeline against the whole project or a directory. Determine `<PYVER>` with:
+`<changed_files>` is the explicit list of files you wrote or edited; the pipeline is not run against the whole project or a directory. Determine `<PYVER>` with:
 
 ```bash
 uv run python -c "import sys; print(f'py{sys.version_info.major}{sys.version_info.minor}')"
@@ -75,11 +75,11 @@ Reusable SDK utilities live under `.sdk/sdk/` and should be imported instead of 
 ### Common pitfalls / gotchas
 [ref: #py-pitfalls]
 
-- Never use `pip`, `poetry`, `black`, `flake8`, `isort`, `pyflakes`, `pycodestyle`, `pylint`, or `autopep8`.
-- Always run `ruff format` and `ruff check --fix` on files you touch.
+- The toolchain uses `uv` and `ruff`; `pip`, `poetry`, `black`, `flake8`, `isort`, `pyflakes`, `pycodestyle`, `pylint`, and `autopep8` are not used.
+- Run `ruff format` and `ruff check --fix` on files you touch.
 - Prefer absolute imports inside packages and relative imports only within a single module.
 - Use `typing.Self` and modern generics; avoid `from __future__ import annotations` tricks.
-- Do not put production logic in `__init__.py`.
+- Keep production logic out of `__init__.py`.
 
 ## Repository layout
 [ref: #py-layout]
@@ -92,10 +92,20 @@ python-lang/
 └── SKILL.md              # Agent entry point: rules, forbidden tools, and routing index
 ```
 
+## Reference overview
+[ref: #py-refs]
+
+| File | What it covers |
+|------|----------------|
+| `references/01_language_rules.md` | Google Python language rules |
+| `references/02_style_rules.md` | Google Python style rules |
+| `references/03_personal_rules.md` | Project-specific rules that extend and override the Google corpora |
+| `prompts/REFERENCE_STANDARD_ADDENDUM.md` | Anchor prefix conventions and lazy-load routing addendum |
+
 ## Important conventions / gotchas
 [ref: #py-conventions]
 
-- Every Python file you touch must be formatted and linted with `ruff`.
+- Every Python file you touch is formatted and linted with `ruff`.
 - Target the Python version declared in `pyproject.toml` or `.python-version`.
 - Use `uv run python` for script execution and dependency management.
 - Prefer `.sdk/sdk/` utilities over inline reinvention.

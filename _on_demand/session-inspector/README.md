@@ -121,7 +121,7 @@ Example output:
 [ref: #si-layout]
 
 ```text
-session-inspector/
+_on_demand/session-inspector/
 ├── scripts/              # Session parsing and distillation scripts
 │   ├── inspect_sessions.py
 │   └── track_session.py

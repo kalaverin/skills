@@ -60,13 +60,13 @@ What the agent does automatically:
 
 - **Strong sides:** Prevents unbounded log dumps into context, blocks write/delete commands, and encodes Loki best practices (narrow selectors, line filters before parsers, UTC timestamps).
 - **Weak sides / limits:** Requires `logcli` and `LOKI_ADDR`; `--tls-skip-verify` is the default and must be disabled manually if the environment requires verified TLS; `timeout` may not be installed on macOS by default.
-- **Common pitfalls / gotchas:** Do not paste raw log output into the response. Do not use `--limit=0`. Do not pass `--org-id` unless `LOKI_ORG_ID` is set. For JSON logs, search `trace_id`/`event_id` via `| json | field="..."`, not `|=` on the raw JSON string.
+- **Common pitfalls / gotchas:** Paste only summaries, not raw log output, into the response. Avoid `--limit=0`; use a positive limit. Pass `--org-id` only when `LOKI_ORG_ID` is set. For JSON logs, search `trace_id`/`event_id` via `| json | field="..."` rather than `|=` on the raw JSON string.
 
 ## Repository layout
 [ref: #loki-repository-layout]
 
 ```text
-loki-skill/
+_on_demand/loki-skill/
 ├── references/
 │   └── logql_and_logcli.md   # LogQL syntax, logcli flags, query patterns, troubleshooting
 ├── README.md                 # Human overview (this file)
@@ -83,8 +83,8 @@ loki-skill/
 ## Important conventions / gotchas
 [ref: #loki-important-conventions-and-gotchas]
 
-- Every query output goes to a file; stdout is never read into context directly.
-- The 50 KiB gate is hard: check size with `rtk wc -c <path>`; larger files are re-fetched or sliced.
-- `jsonl` output is allowed only for parsing with `jq` or similar tools.
-- The agent does not handle basic auth or bearer tokens; auth failures are escalated to the user.
+- Query output is written to a file first; keep stdout out of the response.
+- A 50 KiB size gate is applied: check the file size and re-fetch or slice larger output with `rg`, `jq`, or `rtk` equivalents.
+- Use `jsonl` output only when parsing with `jq` or similar tools.
+- Basic auth and bearer tokens are not handled; auth failures are escalated to the user.
 - Temporary files are not cleaned up automatically; delete them manually when they are no longer needed.

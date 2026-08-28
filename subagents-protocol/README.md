@@ -68,7 +68,7 @@ Default timeouts are 1200 seconds for simple tasks and 3600 seconds for complex 
 
 - **Strong sides:** Keeps the main agent's context small, enables parallel exploration, and isolates complex or long-running work.
 - **Weak sides / limits:** Subagents have no MCP access; tool calls may be rejected by the approval layer; prompt overhead exists; choosing the wrong model wastes tokens.
-- **Common pitfalls / gotchas:** Always set the `model` parameter explicitly on every launch. Always include an answer budget in the prompt. Reuse warm instances for follow-ups on the same corpus. Default to foreground; background only makes sense when the task can continue independently and returning early helps.
+- **Common pitfalls / gotchas:** Set the `model` parameter explicitly on every launch. Include an answer budget in the prompt. Reuse warm instances for follow-ups on the same corpus. Default to foreground launches; background is used only when the task can continue independently and returning early helps.
 
 ## Repository layout
 [ref: #subagents-repository-layout]

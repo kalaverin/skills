@@ -68,7 +68,7 @@ The skill is reference material used while writing or reviewing Temporal code. I
 [ref: #tl-layout]
 
 ```text
-temporal-lang/
+_on_demand/temporal-lang/
 ├── references/           # SDK and operational reference cards
 ├── README.md                # Human overview (this file)
 └── SKILL.md              # Agent entry point: routing index and core concepts

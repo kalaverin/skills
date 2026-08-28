@@ -49,7 +49,6 @@ Mock external services with `responses` or `respx`, not `unittest.mock`.
 
 - `python-lang` — provides the underlying Python style rules.
 - `frontmatter-protocol` — provides the lazy-load routing for the `references/` corpus.
-- `python-lang` — supplies the underlying Python style rules.
 - `pytest-planner` consumes this skill when generating repo-specific test plans.
 - `pytest`, `pytest-asyncio`, `responses`, `respx`, `freezegun`, `faker` — modern pytest ecosystem.
 
@@ -84,13 +83,21 @@ Mock external services with `responses` or `respx`, not `unittest.mock`.
 [ref: #ptd-layout]
 
 ```text
-pytest-design/
+_on_demand/pytest-design/
 ├── assets/               # Example test fixtures and reference snippets
 ├── prompts/              # Test-generation prompts
 ├── references/           # Detailed pytest guidance and anti-patterns
 ├── README.md                # Human overview (this file)
 └── SKILL.md              # Agent entry point: rules, markers, fixtures, and routing index
 ```
+
+## Reference overview
+[ref: #ptd-refs]
+
+| Path | What it covers |
+|---|---|
+| `references/required/*.md` | Core pytest rules: fixtures, isolation, markers, mocking, parametrization, assertions, exceptions, faker, temporary files, time control, skip/xfail, pyproject config, and testing practices. |
+| `references/optional/*.md` | Optional and advanced topics: async, database mocking, CLI testing, logging, patterns, performance, xdist, assertion plugins, postgres, reporting, version-specific guidance, internals, and warning testing. |
 
 ## Important conventions / gotchas
 [ref: #ptd-conventions]

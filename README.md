@@ -62,16 +62,6 @@ Skills that enforce language-specific and API-specific rules.
 | **api-design** | Enforces Google AIP compliance for resource-oriented APIs: resource naming, standard methods, custom methods, pagination, filtering, planes, compatibility guarantees, and HTTP/gRPC transcoding. |
 | **python-lang** | Mandatory Google Python Style Guide enforcement plus a Ruff self-linting protocol. Covers imports, mutability, exceptions, type hints, comprehensions, decorators, docstrings, and formatting. |
 
-### Integration Skills
-[ref: #asr-integration]
-
-Read-only connectors to external systems and observability tools. These skills never mutate data in the target system.
-
-| Skill | Purpose |
-|-------|---------|
-| **atlassian-skill** | Read-only access to Atlassian Jira and Confluence via MCP: issue search/reading, project issues, page search/reading, daily page diffs, and page history. |
-| **loki-skill** | Read-only Grafana Loki log investigation through `logcli`: querying logs, labels, series, and metadata with narrow-first guardrails and output size limits. |
-
 ### On-Demand Skills
 [ref: #asr-ondemand]
 
@@ -79,8 +69,10 @@ Rarely used skills registered in `_on_demand/SKILL.md`. The agent evaluates thei
 
 | Skill | Purpose |
 |-------|---------|
+| **atlassian-skill** | Read-only access to Atlassian Jira and Confluence via MCP: issue search/reading, project issues, page search/reading, daily page diffs, and page history. |
 | **bobplus-api** | Integration knowledge for the Bobplus Payments API (Africa): bearer auth, RSA request signing, `X-Hash`, C2B payins, B2C payouts, account services, bank/MNO lookups, transaction status, and webhook callbacks. |
 | **code-review** | Language-agnostic rigorous code review for features (diff against `main`/`master`) or whole projects. Spawns parallel specialist subagents, classifies findings by severity, and emits both machine-readable and human-readable reports. |
+| **loki-skill** | Read-only Grafana Loki log investigation through `logcli`: querying logs, labels, series, and metadata with narrow-first guardrails and output size limits. |
 | **protobuf-lang** | Buf Protobuf lint and schema style. Governs `buf.yaml`, packages, imports, enums, messages, services, RPCs, and comments against the Buf STANDARD rule set. |
 | **pytest-design** | Mandatory skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Covers fixtures, parametrization, mocking, markers, async tests, coverage, xdist, and faker-driven test data. |
 | **pytest-planner** | Generates repository-specific pytest enablement artifacts for a Python project: a test-authoring/research prompt and an iteration-ready unit-test coverage plan pinned to the exact `pytest-design` reference anchors. |
