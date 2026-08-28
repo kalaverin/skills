@@ -103,18 +103,18 @@ ondemand:
 # On-Demand Skill Manifest
 [ref: #ondemand-intro]
 
-This skill is a **runtime, header-only manifest**. It does not contain task rules; it carries a registry of rarely used skills stored in `OnDemand/<skill>/` so the agent can match requests without reading every on-demand `SKILL.md` header at startup.
+This skill is a **runtime, header-only manifest**. It does not contain task rules; it carries a registry of rarely used skills stored in `_on_demand/<skill>/` so the agent can match requests without reading every on-demand `SKILL.md` header at startup.
 
 ## How the manifest is used
 [ref: #ondemand-usage]
 
-1. At bootstrap, `OnDemand/SKILL.md` is discovered and its frontmatter is batch-extracted like any other skill header.
+1. At bootstrap, `_on_demand/SKILL.md` is discovered and its frontmatter is batch-extracted like any other skill header.
 2. Because it carries `runtime: true`, its body is not read until the user explicitly asks about the on-demand mechanism.
 3. During runtime re-evaluation (after every new user message and path touch), evaluate each entry in `ondemand:` that carries `runtime: true` as if it were a discovered skill header:
    - apply the same trigger grammar (`any`, `all`, `files`, `request`);
-   - if an entry matches, read `OnDemand/<name>/SKILL.md` in full and resolve its `requires`.
+   - if an entry matches, read `_on_demand/<name>/SKILL.md` in full and resolve its `requires`.
    - entries without `runtime: true` are evaluated once at bootstrap and are not re-evaluated mid-session.
-4. Do not read `OnDemand/<skill>/SKILL.md` bodies unless their manifest entry matched.
+4. Do not read `_on_demand/<skill>/SKILL.md` bodies unless their manifest entry matched.
 
 ## Mapping
 [ref: #ondemand-mapping]

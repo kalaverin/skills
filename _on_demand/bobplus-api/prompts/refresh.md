@@ -154,7 +154,7 @@ Launch **3 coder subagents** with the identical prompt below. Use default model 
 > You are a coding agent analyzing the Bobplus Payments API skill corpus for update requirements after a documentation refresh.
 >
 > Inputs:
-> 1. Current corpus: `.kimi/mirror/OnDemand/bobplus-api/SKILL.md` and `.kimi/mirror/OnDemand/bobplus-api/references/*.md`.
+> 1. Current corpus: `.kimi/mirror/_on_demand/bobplus-api/SKILL.md` and `.kimi/mirror/_on_demand/bobplus-api/references/*.md`.
 > 2. If `references/contradictions.md` exists, read it; if not, note that it is missing and treat all contradictions as unregistered.
 > 3. Refreshed source: `.tmp/bobplus/md/*.md` and `.tmp/bobplus/MANIFEST.md`.
 > 4. Orientation map: fetched source file list and SHA-256 prefixes from §4.
@@ -178,7 +178,7 @@ Wait for all three. If one times out, read its partial report.
 2. Where all three agree, treat as consensus.
 3. Where they disagree, verify directly from `.tmp/bobplus/md/<slug>.md` and the current reference. If the disagreement itself reveals an ambiguity, document it as a meta-contradiction in `references/contradictions.md`.
 4. Create `references/contradictions.md` if it does not exist. Use lazyload frontmatter: `subject` (30–50 words, no articles), `index` cards with `anchor`, `what`, `problem` (30–50 words, no articles, semicolon-separated cloud), `use_when`, `avoid_when`, `expected`. Each body section needs `[ref: #<anchor>]` and a `Sources:` line.
-5. Validate: `uvx --with pyyaml python frontmatter-protocol/scripts/validate_frontmatter.py OnDemand/bobplus-api/references/contradictions.md`. Fix until PASS.
+5. Validate: `uvx --with pyyaml python frontmatter-protocol/scripts/validate_frontmatter.py _on_demand/bobplus-api/references/contradictions.md`. Fix until PASS.
 
 ---
 
@@ -250,7 +250,7 @@ General rules for edits:
 
 ```bash
 uvx --with pyyaml python frontmatter-protocol/scripts/validate_frontmatter.py \
-    OnDemand/bobplus-api/references/*.md
+    _on_demand/bobplus-api/references/*.md
 ```
 
 Fix every FAIL before proceeding. This validator enforces the lazyload profile (word bands, cloud discipline, cross-field dedup, anchor/ref consistency).
@@ -262,24 +262,24 @@ Fix every FAIL before proceeding. This validator enforces the lazyload profile (
 `just sync-skills-mirror` will report `INSYNC` without copying because it compares the latest git commit timestamp to the mirror mtime. Therefore copy manually:
 
 ```bash
-cp OnDemand/bobplus-api/SKILL.md .kimi/mirror/OnDemand/bobplus-api/SKILL.md
-cp OnDemand/bobplus-api/CHANGELOG.md .kimi/mirror/OnDemand/bobplus-api/CHANGELOG.md
-cp OnDemand/bobplus-api/prompts/refresh.md .kimi/mirror/OnDemand/bobplus-api/prompts/refresh.md
-cp OnDemand/bobplus-api/references/*.md .kimi/mirror/OnDemand/bobplus-api/references/
+cp _on_demand/bobplus-api/SKILL.md .kimi/mirror/_on_demand/bobplus-api/SKILL.md
+cp _on_demand/bobplus-api/CHANGELOG.md .kimi/mirror/_on_demand/bobplus-api/CHANGELOG.md
+cp _on_demand/bobplus-api/prompts/refresh.md .kimi/mirror/_on_demand/bobplus-api/prompts/refresh.md
+cp _on_demand/bobplus-api/references/*.md .kimi/mirror/_on_demand/bobplus-api/references/
 ```
 
 Then re-run validation on the mirror copies to be sure:
 
 ```bash
 uvx --with pyyaml python frontmatter-protocol/scripts/validate_frontmatter.py \
-    .kimi/mirror/OnDemand/bobplus-api/references/*.md
+    .kimi/mirror/_on_demand/bobplus-api/references/*.md
 ```
 
 ---
 
 ## 10. Update CHANGELOG
 
-Append a dated section to `OnDemand/bobplus-api/CHANGELOG.md` with subsections Changed/Added/Removed/Notes. Do not retroactively edit old entries.
+Append a dated section to `_on_demand/bobplus-api/CHANGELOG.md` with subsections Changed/Added/Removed/Notes. Do not retroactively edit old entries.
 
 ---
 

@@ -83,7 +83,7 @@ Every skill entry point is `<skill-dir>/SKILL.md` carrying a core-conformant fro
 | `version` | yes* | Semver string. \*Mandatory in the schema, but absence reads as `0.0.0` (see Version Policy). |
 | `draft` | no | Boolean; `draft: true` marks a skill purely in development — loaders MUST ignore it entirely. |
 
-No other top-level keys are allowed, **except** the project-specific extra `ondemand:` on `OnDemand/SKILL.md`. That key carries the lazy-loading registry of on-demand skills and is documented in the Skill Discovery and Evaluation Pipeline sections.
+No other top-level keys are allowed, **except** the project-specific extra `ondemand:` on `_on_demand/SKILL.md`. That key carries the lazy-loading registry of on-demand skills and is documented in the Skill Discovery and Evaluation Pipeline sections.
 
 `reason` is NOT a top-level key: it lives inside `triggers` at any nesting level as an evaluation-transparent annotation (see Trigger Grammar). A header with `draft: true` is treated as nonexistent during discovery and evaluation: it is not listed, not triggered, not loaded, and its `requires` entries resolve to nothing.
 
@@ -177,19 +177,19 @@ A skill directory is any directory containing a `SKILL.md` entry point. Discover
 3. `.agents/skills/` in the project root.
 4. Any other directories exposed by the environment (e.g. `~/.config/kimi/skills`, harness built-ins).
 
-Batch-extract every header in one command (core §6, Form 2 applied to discovery). Exclude the nested `SKILL.md` files inside `OnDemand/` and `Drafts/` — those directories use special handling:
+Batch-extract every header in one command (core §6, Form 2 applied to discovery). Exclude the nested `SKILL.md` files inside `_on_demand/` and `_drafts/` — those directories use special handling:
 
 ```bash
 fd -t f SKILL.md .kimi/mirror .agents/skills <other-dirs> \
-  --exclude 'OnDemand/*/SKILL.md' \
-  --exclude 'Drafts/*/SKILL.md' \
+  --exclude '_on_demand/*/SKILL.md' \
+  --exclude '_drafts/*/SKILL.md' \
   2>/dev/null | LC_ALL=C sort -u | while IFS= read -r f; do printf '\n### %s\n' "$f"; awk '/^---[ \t]*$/{c++; if(c==2) exit; next} c==1{print}' "$f"; done
 ```
 
 Directory semantics:
 
-- **`OnDemand/`** holds rarely used skills. Only `OnDemand/SKILL.md` is batch-extracted; its frontmatter carries the `ondemand:` manifest. The manifest entries are evaluated per the Evaluation Pipeline.
-- **`Drafts/`** holds skills marked `draft: true`. They are excluded from discovery entirely; their headers are not batch-extracted.
+- **`_on_demand/`** holds rarely used skills. Only `_on_demand/SKILL.md` is batch-extracted; its frontmatter carries the `ondemand:` manifest. The manifest entries are evaluated per the Evaluation Pipeline.
+- **`_drafts/`** holds skills marked `draft: true`. They are excluded from discovery entirely; their headers are not batch-extracted.
 
 Then: drop every header carrying `draft: true`, and evaluate the rest per Trigger Evaluation. Subagents never use the `.kimi/skills` symlink; they read skills from the `.kimi/mirror/` copy.
 
@@ -229,7 +229,7 @@ Trigger evaluation MUST run as a fixed pipeline, in this exact order, for every 
 4. **Load.** On a positive decision, read the skill's `SKILL.md` in full (trigger override: load even when the topic feels familiar), then resolve `requires`.
 5. **Requires closure.** Walk `requires` with a visited set until no new skills are added (semantics: Requires Resolution). An edge pointing back into the current dependency chain is a CYCLE: report it to the user and drop the edge — never walk cycles.
 6. **Runtime awareness.** For each `runtime: true` skill whose triggers did not fire in steps 1–3: the skill is known by its discovery header only — NO bootstrap read (semantics: Runtime Re-Evaluation).
-7. **On-demand manifest evaluation.** For each skill whose header carries an `ondemand:` manifest (currently `OnDemand/SKILL.md`), evaluate every manifest entry as if it were a discovered skill header using steps 1–3 above. On a positive decision, read `OnDemand/<name>/SKILL.md` in full and run step 5 (`requires` closure). The manifest-owning skill itself stays header-only unless its own triggers activated.
+7. **On-demand manifest evaluation.** For each skill whose header carries an `ondemand:` manifest (currently `_on_demand/SKILL.md`), evaluate every manifest entry as if it were a discovered skill header using steps 1–3 above. On a positive decision, read `_on_demand/<name>/SKILL.md` in full and run step 5 (`requires` closure). The manifest-owning skill itself stays header-only unless its own triggers activated.
 8. **Runtime re-evaluation.** After every new user message and after path-touching tool calls, apply the re-check mechanics from Runtime Re-Evaluation (request match, touch evaluation, repo routing) to `runtime: true` skills and to on-demand manifest entries that carry `runtime: true`; on a match, activate and run step 5 (`requires` closure).
 
 Determinism contract: identical header set + identical workspace + identical request MUST yield an identical load decision. The only non-mechanical step is `request` semantic matching; every other gate is byte- or exit-code-exact.

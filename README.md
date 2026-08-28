@@ -12,9 +12,9 @@ Skills are not libraries. They are operational protocols: they define when the a
 ```text
 .
 ├── AGENTS.md                    # Runtime-wide startup gate and MCP usage contract
-├── Drafts/                      # In-development skills (excluded from discovery)
+├── _drafts/                      # In-development skills (excluded from discovery)
 │   └── <skill-name>/
-├── OnDemand/                    # Runtime header-only manifest + rarely used skills
+├── _on_demand/                    # Runtime header-only manifest + rarely used skills
 │   ├── SKILL.md                 # Compressed trigger registry for on-demand skills
 │   └── <skill-name>/
 ├── <core-skill-name>/           # Always-loaded core protocols and meta skills
@@ -26,7 +26,7 @@ Skills are not libraries. They are operational protocols: they define when the a
 └── README.md                    # This file
 ```
 
-A skill is active when its trigger matches the user request or project context. The agent then loads `SKILL.md`, resolves the relevant `[ref: #...]` anchors, and executes the referenced section only. Core skills live in the repository root; rarely used skills are registered in `OnDemand/SKILL.md` and loaded only when their trigger fires; draft skills live in `Drafts/` and are ignored by discovery.
+A skill is active when its trigger matches the user request or project context. The agent then loads `SKILL.md`, resolves the relevant `[ref: #...]` anchors, and executes the referenced section only. Core skills live in the repository root; rarely used skills are registered in `_on_demand/SKILL.md` and loaded only when their trigger fires; draft skills live in `_drafts/` and are ignored by discovery.
 
 ## Skill Catalog
 [ref: #asr-catalog]
@@ -75,7 +75,7 @@ Read-only connectors to external systems and observability tools. These skills n
 ### On-Demand Skills
 [ref: #asr-ondemand]
 
-Rarely used skills registered in `OnDemand/SKILL.md`. The agent evaluates their compressed triggers at runtime and loads the full `SKILL.md` only on a match.
+Rarely used skills registered in `_on_demand/SKILL.md`. The agent evaluates their compressed triggers at runtime and loads the full `SKILL.md` only on a match.
 
 | Skill | Purpose |
 |-------|---------|
@@ -92,7 +92,7 @@ Rarely used skills registered in `OnDemand/SKILL.md`. The agent evaluates their 
 ### Drafts
 [ref: #asr-drafts]
 
-Skills under construction. They live in `Drafts/` and are excluded from discovery until they are promoted.
+Skills under construction. They live in `_drafts/` and are excluded from discovery until they are promoted.
 
 | Skill | Purpose |
 |-------|---------|
@@ -106,11 +106,11 @@ Skills under construction. They live in `Drafts/` and are excluded from discover
 
 Agent runtimes that consume this registry must:
 
-1. Locate every `SKILL.md` under the skill search paths, excluding `Drafts/*/SKILL.md`.
+1. Locate every `SKILL.md` under the skill search paths, excluding `_drafts/*/SKILL.md`.
 2. Parse the YAML frontmatter of each `SKILL.md` in a single batch pass.
 3. Evaluate `triggers` against the user request and project context.
 4. Load the full `SKILL.md` of every matching skill and lazily pull referenced sections as needed.
-5. Evaluate the `ondemand:` manifest in `OnDemand/SKILL.md` at runtime and load `OnDemand/<name>/SKILL.md` only when an entry matches.
+5. Evaluate the `ondemand:` manifest in `_on_demand/SKILL.md` at runtime and load `_on_demand/<name>/SKILL.md` only when an entry matches.
 
 A skill declares its activation rules in frontmatter. Triggers may be unconditional (`always: true`), file-based, keyword-based, or compound `any`/`all` conditions.
 

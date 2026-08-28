@@ -28,9 +28,9 @@ The agent runs the script from the skills workspace root.
 Use list mode for the most recent sessions, show mode for a distilled transcript, or restore mode for a context-restoration pack.
 
 ```bash
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py [--last N]
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <session-uuid>
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <session-uuid> --restore
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py [--last N]
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py --session <session-uuid>
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py --session <session-uuid> --restore
 ```
 
 You do not need to open `~/.kimi/sessions/` yourself; the script is the only sanctioned reader of the session format.
@@ -41,10 +41,10 @@ To track the live counters of the current session, use `track_session.py`. First
 
 ```bash
 # first call: discover session with a probe UUID
-uv run --no-project python OnDemand/session-inspector/scripts/track_session.py <probe-uuid>
+uv run --no-project python _on_demand/session-inspector/scripts/track_session.py <probe-uuid>
 
 # later calls: use the real session id
-uv run --no-project python OnDemand/session-inspector/scripts/track_session.py <session-id>
+uv run --no-project python _on_demand/session-inspector/scripts/track_session.py <session-id>
 ```
 
 Example output:

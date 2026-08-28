@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Harvest raw OnDemand skill headers into a manifest file.
+"""Harvest raw _on_demand skill headers into a manifest file.
 
 Run from the repository root:
 
-    uv run --no-project --with pyyaml python OnDemand/scripts/harvest_manifest.py
+    uv run --no-project --with pyyaml python _on_demand/scripts/harvest_manifest.py
 
-This produces OnDemand/.manifest.raw.yaml with verbatim copies of every
+This produces _on_demand/.manifest.raw.yaml with verbatim copies of every
 on-demand skill's frontmatter fields needed for trigger evaluation. The raw
 manifest is then compressed by a subagent before being applied to
-OnDemand/SKILL.md.
+_on_demand/SKILL.md.
 """
 
 from __future__ import annotations
@@ -22,13 +22,13 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise SystemExit(
         "PyYAML is required. Run: uv run --no-project --with pyyaml python "
-        "OnDemand/scripts/harvest_manifest.py"
+        "_on_demand/scripts/harvest_manifest.py"
     ) from exc
 
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-ONDEMAND_DIR = REPO_ROOT / "OnDemand"
-TMP_ONDEMAND_DIR = REPO_ROOT / ".tmp" / "OnDemand"
+ONDEMAND_DIR = REPO_ROOT / "_on_demand"
+TMP_ONDEMAND_DIR = REPO_ROOT / ".tmp" / "_on_demand"
 RAW_PATH = TMP_ONDEMAND_DIR / ".manifest.raw.yaml"
 
 

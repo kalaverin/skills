@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Apply the compressed on-demand manifest to produce OnDemand/SKILL.md.
+"""Apply the compressed on-demand manifest to produce _on_demand/SKILL.md.
 
 Run from the repository root after `.manifest.compressed.yaml` has been
 reviewed and approved:
 
-    uv run --no-project --with pyyaml python OnDemand/scripts/apply_manifest.py
+    uv run --no-project --with pyyaml python _on_demand/scripts/apply_manifest.py
 
-The script reads `OnDemand/.manifest.compressed.yaml`, wraps the entries in the
-`ondemand:` manifest frontmatter, and writes `OnDemand/SKILL.md` with the
+The script reads `_on_demand/.manifest.compressed.yaml`, wraps the entries in the
+`ondemand:` manifest frontmatter, and writes `_on_demand/SKILL.md` with the
 canonical body instructions.
 """
 
@@ -22,31 +22,31 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise SystemExit(
         "PyYAML is required. Run: uv run --no-project --with pyyaml python "
-        "OnDemand/scripts/apply_manifest.py"
+        "_on_demand/scripts/apply_manifest.py"
     ) from exc
 
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-ONDEMAND_DIR = REPO_ROOT / "OnDemand"
-TMP_ONDEMAND_DIR = REPO_ROOT / ".tmp" / "OnDemand"
+ONDEMAND_DIR = REPO_ROOT / "_on_demand"
+TMP_ONDEMAND_DIR = REPO_ROOT / ".tmp" / "_on_demand"
 COMPRESSED_PATH = TMP_ONDEMAND_DIR / ".manifest.compressed.yaml"
 OUTPUT_PATH = ONDEMAND_DIR / "SKILL.md"
 
 BODY_TEMPLATE = """# On-Demand Skill Manifest
 [ref: #ondemand-intro]
 
-This skill is a **runtime, header-only manifest**. It does not contain task rules; it carries a registry of rarely used skills stored in `OnDemand/<skill>/` so the agent can match requests without reading every on-demand `SKILL.md` header at startup.
+This skill is a **runtime, header-only manifest**. It does not contain task rules; it carries a registry of rarely used skills stored in `_on_demand/<skill>/` so the agent can match requests without reading every on-demand `SKILL.md` header at startup.
 
 ## How the manifest is used
 [ref: #ondemand-usage]
 
-1. At bootstrap, `OnDemand/SKILL.md` is discovered and its frontmatter is batch-extracted like any other skill header.
+1. At bootstrap, `_on_demand/SKILL.md` is discovered and its frontmatter is batch-extracted like any other skill header.
 2. Because it carries `runtime: true`, its body is not read until the user explicitly asks about the on-demand mechanism.
 3. During runtime re-evaluation (after every new user message and path touch), evaluate each entry in `ondemand:` that carries `runtime: true` as if it were a discovered skill header:
    - apply the same trigger grammar (`any`, `all`, `files`, `request`);
-   - if an entry matches, read `OnDemand/<name>/SKILL.md` in full and resolve its `requires`.
+   - if an entry matches, read `_on_demand/<name>/SKILL.md` in full and resolve its `requires`.
    - entries without `runtime: true` are evaluated once at bootstrap and are not re-evaluated mid-session.
-4. Do not read `OnDemand/<skill>/SKILL.md` bodies unless their manifest entry matched.
+4. Do not read `_on_demand/<skill>/SKILL.md` bodies unless their manifest entry matched.
 
 ## Mapping
 [ref: #ondemand-mapping]

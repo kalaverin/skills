@@ -21,13 +21,13 @@ Kimi Code CLI sessions live under `~/.kimi/sessions/<project-hash>/<session-uuid
 NEVER read session files (`*.jsonl`, `state.json`, `metadata.json`) directly with ReadFile/cat/rg-for-content. ALWAYS use the script; it does the parsing and emits only the distillate. The script is the only sanctioned reader of the session format.
 
 ```bash
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py [--last N]
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --no-cwd [--last N]
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --query "some phrase" [--last N]
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --query "some phrase" --exact [--last N]
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <session-uuid>
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --session <session-uuid> --restore
-uv run --no-project python OnDemand/session-inspector/scripts/inspect_sessions.py --sessions-dir PATH
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py [--last N]
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py --no-cwd [--last N]
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py --query "some phrase" [--last N]
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py --query "some phrase" --exact [--last N]
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py --session <session-uuid>
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py --session <session-uuid> --restore
+uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions.py --sessions-dir PATH
 ```
 
 (Subagents receive the absolute path: `<workspace>/session-inspector/scripts/inspect_sessions.py`. Run from the skills workspace root.)
@@ -102,10 +102,10 @@ The agent cannot start work on its own between user messages, so tracking is on-
 
 ```text
 if a real session_id is already known in this conversation:
-    uv run --no-project python OnDemand/session-inspector/scripts/track_session.py <session_id>
+    uv run --no-project python _on_demand/session-inspector/scripts/track_session.py <session_id>
 else:
     probe = python -c "import uuid; print(uuid.uuid4())"
-    uv run --no-project python OnDemand/session-inspector/scripts/track_session.py <probe>
+    uv run --no-project python _on_demand/session-inspector/scripts/track_session.py <probe>
     remember the returned session_id for subsequent calls
 show the counters to the user
 ```

@@ -45,7 +45,7 @@ Follow `frontmatter-protocol/references/include.md` for:
 
 - the `SKILL.md` header schema (including `draft: true` skipping and the `ondemand:` manifest extra),
 - the closed trigger grammar and its evaluation semantics (`always`, `files`, `request`, `any`, `all`),
-- the discovery algorithm and batch header extraction (including the `OnDemand/` and `Drafts/` directory semantics),
+- the discovery algorithm and batch header extraction (including the `_on_demand/` and `_drafts/` directory semantics),
 - `runtime: true` mid-session re-evaluation,
 - transitive `requires` resolution.
 
