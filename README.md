@@ -65,7 +65,7 @@ Skills that enforce language-specific and API-specific rules.
 ### Integration Skills
 [ref: #asr-integration]
 
-Read-only connectors to external systems and observability tools.
+Read-only connectors to external systems and observability tools. These skills never mutate data in the target system.
 
 | Skill | Purpose |
 |-------|---------|

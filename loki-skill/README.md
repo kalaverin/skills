@@ -32,10 +32,10 @@ What a human must ensure:
 What the agent does automatically:
 
 - Builds only read-only commands: `query`, `instant-query`, `labels`, `series`, `stats`, `volume`, `detected-fields`.
-- Redirects every `logcli query` to `.tmp/loki-skill/<utc-timestamp>_<id>.log`.
+- Redirects every `logcli query` and any bulk-producing command to `.tmp/loki-skill/<utc-timestamp>_<id>.log`.
 - Caps output with `--limit=30` by default and `--since=15m`.
 - Runs `timeout 30s logcli ...`.
-- Applies the 50 KiB gate; larger output is sliced with `rg`, `jq`, or `rtk` equivalents.
+- Checks file size with `rtk wc -c <path>` and applies the 50 KiB gate; larger output is sliced with `rg`, `jq`, or `rtk` equivalents.
 - Normalizes `--from`/`--to` to UTC `Z` suffix and sets `--timezone=UTC`.
 
 ## What it produces
@@ -84,7 +84,7 @@ loki-skill/
 [ref: #loki-important-conventions-and-gotchas]
 
 - Every query output goes to a file; stdout is never read into context directly.
-- The 50 KiB gate is hard: larger files are re-fetched or sliced.
+- The 50 KiB gate is hard: check size with `rtk wc -c <path>`; larger files are re-fetched or sliced.
 - `jsonl` output is allowed only for parsing with `jq` or similar tools.
 - The agent does not handle basic auth or bearer tokens; auth failures are escalated to the user.
 - Temporary files are not cleaned up automatically; delete them manually when they are no longer needed.

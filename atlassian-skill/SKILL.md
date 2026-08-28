@@ -76,21 +76,34 @@ Jira issue keys are **always uppercase**.
 
 [ref: #atlassian-external-source-versioning]
 
-When the agent saves a local copy of an Atlassian artifact, it adds an `external_source` block to the frontmatter. Later "update" / "actualize" requests use this block to fetch only the delta instead of pulling the whole document.
+When the agent saves a local copy of an Atlassian artifact, it stores the file under `.serena/memories/atlassian/<kind>/<id>.md` and adds an `external_source` block to the frontmatter. Later "update" / "actualize" requests use this block to fetch only the delta instead of pulling the whole document. This custom artifact scope is owned by the Atlassian skill and does not violate `serena-protocol`.
+
+Confluence example:
 
 ```yaml
 external_source:
   atlassian:
-    kind: confluence   # or jira
-    id: 1501236        # Confluence page ID or uppercase Jira issue key
-    version: 41        # Confluence page version; omit for Jira
-    updated_at: 2025-06-17T00:00:00Z   # Jira issue updated timestamp; omit for Confluence
+    kind: confluence
+    id: 1501236
+    version: 41
     last_sync_at: 2025-06-17T00:00:00Z
 ```
 
+Jira example:
+
+```yaml
+external_source:
+  atlassian:
+    kind: jira
+    id: WGNBCK-5314
+    updated_at: 2025-06-17T00:00:00Z
+    last_sync_at: 2025-06-17T00:00:00Z
+```
+
+- `kind` — `confluence` or `jira`.
 - `id` — for Confluence the numeric page ID; for Jira the uppercase issue key.
-- `version` — Confluence page version number from `history`.
-- `updated_at` — Jira issue `updated` field; used instead of `version`.
+- `version` — Confluence page version number from `history`. **Not used for Jira issues.**
+- `updated_at` — Jira issue `updated` field. **Not used for Confluence pages.**
 - `last_sync_at` — UTC timestamp of the last successful sync of this local copy.
 
 If the block is missing or incomplete, fall back to a full read.
@@ -108,21 +121,23 @@ If a search returns several equally plausible results, ask the user which one to
 ### Read a Jira issue
 
 1. If you have the issue key, normalize it to uppercase (`Wgnbck-5314` → `WGNBCK-5314`).
-2. If a tracked local copy exists with `external_source.atlassian.kind=jira` and a matching `id`, compare its `updated_at` with the issue. If they match, return the local summary.
-3. Otherwise call `jira_get_issue` with `fields="summary,status,assignee,labels,description,updated"` and `comment_limit=0`.
-4. Summarize: summary, status, assignee, description, labels. Omit comments unless asked.
-5. When saving a local copy, stamp `external_source.atlassian.kind=jira`, `id`, `updated_at`, and `last_sync_at`.
+2. Call `jira_get_issue(issue_key=..., fields="updated", comment_limit=0)` to check freshness.
+3. If a tracked local copy exists with `external_source.atlassian.kind=jira`, matching `id`, and `updated_at` equal to the returned `updated`, return the local summary.
+4. Otherwise call `jira_get_issue` with `fields="summary,status,assignee,labels,description,updated"` and `comment_limit=0`.
+5. Summarize: summary, status, assignee, description, labels. Omit comments unless asked.
+6. When saving a local copy, stamp `external_source.atlassian.kind=jira`, `id`, `updated_at`, and `last_sync_at` under `.serena/memories/atlassian/jira/<id>.md`.
 
 ### Actualize a Jira issue
 
 [ref: #atlassian-workflow-actualize-jira]
 
-1. Load the local copy and read `external_source.atlassian.id` and `external_source.atlassian.updated_at`. Require `kind=jira`.
+1. Load the local copy from `.serena/memories/atlassian/jira/<id>.md` and read `external_source.atlassian.id` and `external_source.atlassian.updated_at`. Require `kind=jira`.
 2. If missing, fall back to **Read a Jira issue**.
 3. Normalize the key to uppercase.
-4. Call `jira_get_issue(issue_key=..., fields="summary,status,assignee,labels,description,updated", comment_limit=0)`.
+4. Call `jira_get_issue(issue_key=..., fields="updated", comment_limit=0)`.
 5. If returned `updated` equals recorded `updated_at`, report "no changes" and stop.
-6. Summarize changes, update the local copy, and bump `external_source.atlassian.updated_at` and `external_source.atlassian.last_sync_at`.
+6. Call `jira_get_issue(issue_key=..., fields="summary,status,assignee,labels,description,updated", comment_limit=0)`.
+7. Summarize changes, update the local copy, and bump `external_source.atlassian.updated_at` and `external_source.atlassian.last_sync_at`.
 
 ### Read project tasks
 
@@ -131,9 +146,9 @@ If a search returns several equally plausible results, ask the user which one to
 
 ### Read Confluence documentation
 
-1. If a tracked local copy exists with `external_source.atlassian.kind=confluence`, read its `id` and `version`; otherwise use `confluence_search` with a narrow CQL query and `limit=3–5` to find the page.
+1. Look for a tracked local copy under `.serena/memories/atlassian/confluence/<page_id>.md` with `external_source.atlassian.kind=confluence`. If it exists, read its `id` and `version`; otherwise use `confluence_search` with a narrow CQL query and `limit=3–5` to find the page.
 2. Use `confluence_get_page(page_id=..., include_metadata=false)` to read the page body.
-3. When saving a local copy, stamp `external_source.atlassian.kind=confluence`, `id`, `version`, and `last_sync_at` from `history`.
+3. When saving a local copy, write it to `.serena/memories/atlassian/confluence/<page_id>.md` and stamp `external_source.atlassian.kind=confluence`, `id`, `version`, and `last_sync_at` from `history`.
 4. For navigation, use `confluence_get_page_children(..., include_content=false, limit=5–10)` or `confluence_get_space_page_tree(..., limit=10–20)`.
 
 ### Actualize a Confluence page
@@ -145,16 +160,18 @@ If a search returns several equally plausible results, ask the user which one to
 3. Call `confluence_get_page(page_id=..., include_metadata=true)` to read current version and `history.lastUpdated`.
 4. If current version equals recorded `version`, report "no changes" and stop.
 5. Call `confluence_get_page_diff(page_id=..., from_version=recorded, to_version=current)`.
-6. Summarize the diff, update the local copy, and bump `external_source.atlassian.version` and `external_source.atlassian.last_sync_at`.
+6. If the diff call fails (404, version not in history, etc.), **hard stop** and ask the user how to proceed.
+7. Summarize the diff, update the local copy, and bump `external_source.atlassian.version` and `external_source.atlassian.last_sync_at`.
 
 ### Daily documentation sync
 
-1. For each tracked page, read `external_source.atlassian.id` and `external_source.atlassian.version`.
-2. Call `confluence_get_page_history(page_id=..., limit=...)` to list versions newer than the recorded one.
-3. If no newer versions exist, skip the page.
-4. Otherwise call `confluence_get_page_diff(page_id=..., from_version=recorded, to_version=newest)`.
-5. Summarize changes, update the local copy, and bump `external_source.atlassian.version` and `external_source.atlassian.last_sync_at`.
-6. For pages without a tracked version, fall back to diffing the last 24 hours.
+1. Scan `.serena/memories/atlassian/confluence/` for files with `external_source.atlassian.kind=confluence`.
+2. For each tracked page, read `external_source.atlassian.id` and `external_source.atlassian.version`.
+3. Call `confluence_get_page_history(page_id=..., limit=...)` to list versions newer than the recorded one.
+4. If no newer versions exist, skip the page.
+5. Otherwise call `confluence_get_page_diff(page_id=..., from_version=recorded, to_version=newest)`.
+6. Summarize changes, update the local copy, and bump `external_source.atlassian.version` and `external_source.atlassian.last_sync_at`.
+7. For pages without a tracked version, fall back to diffing the last 24 hours.
 
 ## Oversized response hard stop
 

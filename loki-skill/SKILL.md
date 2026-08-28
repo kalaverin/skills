@@ -116,12 +116,13 @@ Any other subcommand is forbidden. The agent must never use `delete`, `push`, or
 
 1. **Create the output directory.** Run `mkdir -p .tmp/loki-skill` before the first query.
 2. **Every query goes to a file.** The agent always redirects `logcli query` output to a temporary file under `.tmp/loki-skill/<utc-timestamp>_<short-query-id>.log`. Stdout is never read into context directly.
-3. **Size gate: 50 KiB.** If the file is 50 KiB or less, read and summarize it. If it is larger, either re-fetch with a narrower query, or slice the file with `rg`, `jq`, or `rtk` equivalents.
+3. **Size gate: 50 KiB.** Check the file size with `rtk wc -c <path>`. If the file is 50 KiB or less, read and summarize it. If it is larger, either re-fetch with a narrower query, or slice the file with `rg`, `jq`, or `rtk` equivalents.
 4. **Start narrow.** First query uses `--since=15m --limit=30`, or an exact event-based query such as a trace id or Sentry event id.
 5. **Filter first.** Always apply a LogQL filter (`|=`, `|~`, `!=`, `!~`) before broadening the query.
 6. **Output format.** Default is `raw`. Use `jsonl` only when the output is piped to a parser.
 7. **Abort on hang.** Run `timeout 30s logcli ...`. On timeout, suggest narrowing the query.
-8. **No credentials in examples.** Mask hosts, org ids, and tenant names in transcripts and summaries.
+8. **All bulk-producing commands go to a file.** Apply the temporary-file, timeout, and size-gate rules to `logcli query`, `instant-query`, `stats`, `volume`, and `detected-fields`.
+9. **No credentials in examples.** Mask hosts, org ids, and tenant names in transcripts and summaries.
 
 ## 7. Pipeline
 
@@ -143,6 +144,7 @@ Error routes:
 - Missing `LOKI_ADDR` → ask the user.
 - Gateway requires org id → ask the user to set `LOKI_ORG_ID` and retry.
 - Loki requires authentication (basic auth, bearer token, etc.) → escalate to the user.
+- `logcli: command not found` → hard stop; ask the user to install `logcli`.
 - Timeout → suggest narrowing.
 - Output > 50 KiB → re-fetch or slice with `rg`, `jq`, or `rtk` equivalents.
 - No results → suggest widening the window or changing the filter.
