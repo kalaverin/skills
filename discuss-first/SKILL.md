@@ -1,13 +1,13 @@
 ---
 name: discuss-first
-description: "Co-implementation mode: the agent never writes code without the user's explicit approval of the whole implementation blueprint. On activation, the agent studies the task, then walks the user through the implementation top-down — one level at a time, justifying every abstraction, class, method, and function, showing full signatures with pseudocode bodies — then traverses the entire information pipeline from the request entry point to the end and back, collects per-part approvals, requests the master approval of the final blueprint, and only then writes code strictly per the approved contract. Activate on user request ('пишем код вместе', 'ты не пишешь без меня', 'step-by-step', 'обсудим реализацию', etc.); the agent also proactively offers this mode before non-trivial code work: features, refactoring (including rewriting code the agent wrote itself), behavior-changing bugfixes, or any new function, method, class, or abstraction appearing in the plan. While the mode is active, a mandatory existence-review standard (`references/existence_review.md`, rule ids A1–K4) governs every keep/revert/delete decision and overrides language style guides. The mode is session-scoped: no persistence, no resume — a new session starts without it."
+description: "Co-implementation mode: the agent never writes code without the user's explicit approval of the whole implementation blueprint. On activation, the agent studies the task, then walks the user through the implementation top-down — one level at a time, justifying every abstraction, class, method, and function, showing full signatures with pseudocode bodies — then traverses the entire information pipeline from the request entry point to the end and back, collects per-part approvals, requests the master approval of the final blueprint, and only then writes code strictly per the approved contract. Activate on user request ('пишем код вместе', 'ты не пишешь без меня', 'step-by-step', 'обсудим реализацию', etc.); the agent also proactively offers this mode before non-trivial code work: features, refactoring (including rewriting code the agent wrote itself), behavior-changing bugfixes, or any new function, method, class, or abstraction appearing in the plan. While the mode is active, a mandatory existence-review standard (the Existence Bible, §12, rule ids A1–K4) governs every keep/revert/delete decision and overrides language style guides. The mode is session-scoped: no persistence, no resume — a new session starts without it."
 triggers:
   request: "пишем код вместе, пиши вместе со мной, ты не пишешь без меня, не пиши код без меня, всё обсуждаем, обсуждаем каждый шаг, обсудим реализацию, обсудим имплементацию, обсудим сам код, степ-бай-степ, step-by-step mode, пошаговый режим, discuss first, no code without approval, парное программирование, pair programming, давай реализовывать вместе"
   reason: "The user switches the session into co-implementation mode where every piece of code requires prior discussion and approval."
 runtime: true
 requires:
   - serena-protocol
-version: 0.6.0
+version: 0.7.0
 ---
 
 # SKILL: Discuss First (Co-Implementation Mode)
@@ -137,7 +137,147 @@ For work on existing code (refactoring, rewriting the agent's own earlier code, 
 - NEVER let urgency suspend the gate: with any urgency, while the mode is ON it cannot be ignored — the fast path is the collapsed loop of §5.5, and if the agent is unsure whether anything changes, it asks the user explicitly.
 - NEVER continue working while any approval question is pending: ask, STOP, and WAIT for the user's explicit reply.
 - **Pre-response self-check:** while the mode is active, before every response the agent verifies: is any approval pending? Am I about to emit or produce code without master approval? If yes — stop and return to the gate.
-- **Existence review (MANDATORY):** on activation the agent reads `references/existence_review.md` in FULL; while the mode is active, every keep/revert/delete decision and every abstraction justification cites the rule ids (A1–K4), and "why does this exist" outranks "is this correct". On conflict with language style guides (e.g. `python-lang` Google-style sections), the existence-review standard wins; it applies to all code.
+- **Existence review (MANDATORY):** on activation the agent reads the Existence Bible (§12) in FULL; while the mode is active, every keep/revert/delete decision and every abstraction justification cites the rule ids (A1–K4), and "why does this exist" outranks "is this correct". On conflict with language style guides (e.g. `python-lang` Google-style sections), the existence-review standard wins; it applies to all code.
 - Discussion with the user is in Russian; recorded artifacts (decision cards, blueprints) are in technical English per the workspace language rules.
 
 **Violation protocol:** if you produce code, add an abstraction, or proceed past any approval gate without the user's explicit approval while this mode is active: halt immediately; disclose the violation to the user in one line; discard the offending output and revert any file mutations made after the last approved point to their exact prior contents; resume the loop from the last approved point only after the user acknowledges.
+
+## 12. Existence Bible
+
+[ref: #existence-bible]
+
+Baked verbatim from the distilled review standard of a senior maintainer (~310 review comments, 2023–2026, 14 repos, plus owner rules). Mandatory hard rule of this skill: while the mode is active, every element is justified against these rule ids (A1–K4). On conflict with language style guides (e.g. `python-lang` Google-style sections), this section wins. Applies to all code.
+
+### Mission
+
+[ref: #exist-mission]
+
+Every line of a changeset must earn its existence with a strong, current reason. Anything the task can be solved without is removed — without losing meaning, quality, or behavior the business depends on. The reviewer mindset: "why does this exist?" outranks "is this correct?".
+
+Distilled from ~310 review comments (2023–2026, 14 repos) of a senior maintainer, plus owner rules.
+
+### Family A — Existence & Subtraction
+
+[ref: #exist-existence-subtraction]
+
+- A1. Every symbol and line answers: "who consumes it? what breaks if deleted?" No answer — deletion candidate. Burden of proof is on the added line, never on the deletion.
+- A2. Defensive code requires a probability estimate of the scenario it defends against ("how likely is SIGTERM within milliseconds?"). No realistic probability — remove the defense.
+- A3. Dead code dies immediately: commented-out lines, unreachable branches, unused exports, re-exports of nothing, dead event waits.
+- A4. One PR = one purpose. Orthogonal improvements (even good ones) are extracted to a separate PR, never defended inside this one.
+- A5. Before writing anything new, enumerate what master/library/existing primitives already provide. Slightly extending the old beats writing the new.
+
+### Family B — Derive, Don't Declare
+
+[ref: #exist-derive-dont-declare]
+
+- B1. Any state derivable from another source must not exist: a mode flag when the value itself determines the source; a readiness event when startup is sequential in lifespan; a registered-set when the target dict can hold items.
+- B2. No parallel bookkeeping: never maintain a second structure describing what the first one already knows.
+- B3. Configuration is formed once, at the initialization point, from a single source (settings). Never spread env reads or config-builder helpers across modules.
+- B4. Coordination primitives (events, locks, retries, caches) are re-justified against the CURRENT execution model, not the historical one that created them.
+
+### Family C — Types & Shapes (STRICT)
+
+[ref: #exist-types-shapes]
+
+- C1. Functions and methods NEVER return raw dicts. Return a pydantic model or a frozen dataclass. Explicitly typed dicts (`dict[str, X]`) are tolerated only for verbatim passthrough — and must carry the type annotation.
+- C2. No Optional/nullable fields or parameters without a named reason. Optionality is resolved ONCE at the outer boundary (handler/servicer); inner layers receive strict, already-validated shapes. Nullable input producing nullable output is doubly forbidden.
+- C3. No staticmethods. A class without a state invariant is not a class — use flat module-level functions.
+- C4. Structures tell the truth: declared shape == actual content (no "labelsets" that turn out to be tuples). Guarantees (ordering, format, casing) must survive transformations — re-derive them explicitly where needed.
+- C5. A contract must describe the behavior it drives. A model missing the fields its behavior requires is a lie and is rejected on sight.
+- C6. Define values correctly at the source; never define-then-transform (UPPER constants with lower() calls downstream).
+- C7. Dicts are forbidden as function/method INPUTS too, not only as returns: every exchange is a pydantic model (cross-border validation) or a frozen dataclass (everything inside). A raw dict may exist only at the wire edge itself (codec encode/decode, driver rows inside an anti-corruption adapter) and never crosses the boundary.
+- C8. No `X | None` returns: a lookup-style function returns the strict object or RAISES the domain exception at the source (unknown session raises `SessionNotFoundError` where detected, not `None` at every caller). Type-inference reconciliation becomes unmanageable otherwise.
+- C9. Model-to-model conversion via `**` or `*` unpacking is STRICTLY FORBIDDEN — only explicit field-by-field mapping. `model_dump()` is legal ONLY for wire serialization at the boundary, never to feed one model from another.
+- C10. Frozen dataclasses by default; mutable only when mutation is an explicit need, documented in the docstring. Pydantic lives ONLY at the cross-border (bus wire, HTTP/MCP surface, settings, frontmatter): strict validation at the edge, then convert to frozen and fly frozen through the process.
+- C11. Text constants → `StrEnum`, numeric constants → `IntEnum` — members ALWAYS via `auto()`. No bare string/int magic values in signatures, comparisons, or wire payloads.
+
+### Family D — Layers & Isolation (PARANOID DDD / HEXAGONAL)
+
+[ref: #exist-layers-isolation]
+
+- D1. The domain knows nothing of transport: no grpc/pb2/http/ORM imports in domain code. Dependencies point one way, inward. A leak (e.g. sqlalchemy in the grpc layer) is a blocking defect.
+- D2. Each layer receives data in its own shape and never parses another layer's format: Timestamp at protocol, datetime in domain; domain models at business boundaries, primitives or named parameters at call sites.
+- D3. App semantics never leak into shared libraries ("in the library it has decisively nothing to do"); library mechanics are never reimplemented in the app. Defects are fixed at the source repository, not worked around downstream.
+- D4. Abstractions must not leak: internal state of a machine/module never escapes its boundary (a state machine's statuses are not other modules' constants). Cross-module, only the public interface exists.
+- D5. Authorization lives at its designated layer; input validation happens exactly once, at the outer boundary — never repeated at lower levels.
+- D6. Cross-service shared enums are fragile contracts (adding a value breaks every other service): prefer plain strings at protocol level.
+- D7. No foreign types across package boundaries: driver/library types (db drivers, redis clients, httpx, pydantic, builtins) may exist INSIDE a package but NEVER cross its public boundary — domain types or sanitized values cross instead.
+- D8. Async-first: all ports are `async`; sync adapters are wrapped, never the reverse. Carve-out: pure value providers (clocks, config) stay sync deliberately.
+
+### Family E — Errors
+
+[ref: #exist-errors]
+
+- E1. Crash-loud at startup/config boundaries: "the process did not start, and that is correct." No cleanup theater before the process has even started.
+- E2. One central error-mapping place (exception handler / interceptor). Local try/except is justified only where behavior genuinely differs.
+- E3. Few error types; a new error class exists only with differentiated handling. Short message; details in extras.
+- E4. No stringly-typed error matching, no reflection-driven dispatch, no class-level string tags checked elsewhere.
+- E5. Errors carry a single machine vocabulary (a reason enum) consumed by ONE serializer; no other module references numeric codes directly. Every exception class name ends with `Error`.
+
+### Family F — Naming & Vocabulary
+
+[ref: #exist-naming-vocabulary]
+
+- F1. Public interfaces speak business language, not pattern language — never Strategy/FSM/Factory/Manager in names ("how would the domain expert explain this concept?").
+- F2. Uniform verbs (`list`), uniform prepositions (`by`), uniform error names across the entire codebase — for years and across services. A new word in a name needs a strong reason.
+- F3. Function names: one word, two at most. Needing more signals an architecture problem or code dirt.
+- F4. No `utils` packages — code sits next to its only caller. A function used in one file belongs to that file.
+- F5. No opaque aliases — call the function itself. Prefer qualified imports (`uuid.UUID`, `postgresql.JSONB`) over aliased ones.
+- F6. `const.py` per package — every constant (tuples, frozensets, limits, compiled regexes compiled exactly once); no magic values inside logic modules. `types.py` per package — `Annotated` aliases with constraints and a one-line comment each.
+- F7. One module = one coherent feature: small modules merge into their consumer; never one module per function.
+- F8. Behavior rides on the owning object as methods/properties (derived side-effect-free views are `@property`; factories are `@classmethod` like `from_parsed`) — not free functions.
+- F9. Facades: explicit re-exports with a complete sorted `__all__`, always imported from the DEFINING module. `__init__.py` never imports heavy modules eagerly — heavy/experimental imports are lazy (PEP 562 `__getattr__`) or absent.
+
+### Family G — Flow & Readability
+
+[ref: #exist-flow-readability]
+
+- G1. Early return / fail-fast: negative scenarios first, happy path unnested.
+- G2. One comprehension = one job: never query + parse + build in a single comprehension; separate the steps.
+- G3. Code self-documents through structure; a comment block explaining requirements means the structure is wrong.
+- G4. Related logic is co-located: a unified config is not exploded into sub-functions that force jump-driven reading.
+- G5. Lifecycle symmetry: setup pairs with shutdown; initialization pairs with teardown.
+
+### Family H — Local Development
+
+[ref: #exist-local-development]
+
+- H1. The service boots locally without infrastructure: literals, no-op implementations, empty config — no vault, no cache, no sidecars required.
+- H2. Auth method/infra flavor is selectable via env (e.g. `*_AUTH_TYPE`) with production-shaped defaults; never fail-open defaults.
+- H3. Required envs crash at import/startup with the variable named; a dev opt-in is always explicit, never a silent default.
+
+### Family I — Migration & Legacy
+
+[ref: #exist-migration-legacy]
+
+- I1. Requirements are restated in the new world's terms. Schemes leaked from the old system (custom prefixes, legacy DSN formats, sidecar flows) die unless they re-earn their place.
+- I2. One level of indirection needs a named, current consumer (rotation, multi-tenancy). Otherwise store the value directly (literal in DB, not a reference to a reference).
+- I3. Validation is complete or absent: a regex that checks patterns checks ALL patterns — no regex plus manual patch-up checks.
+
+### Family J — Logging & Observability
+
+[ref: #exist-logging-observability]
+
+- J1. Level discipline per entry; secrets/DSN/credentials are never logged — not even at debug (a debug toggle must never force a credential rotation).
+- J2. Structured extras over f-strings in log calls; one log per event (no duplicate loggers reporting the same fact).
+- J3. Operational logging belongs at the central handler/interceptor layer.
+- J4. CLI logging goes to stderr; stdout is reserved for program output and protocol channels.
+
+### Family K — Review-Answer Discipline (meta)
+
+[ref: #exist-review-answer-discipline]
+
+- K1. Facts before answers: read the library, run the code, check the corpus — then respond. Every reviewer question maps to either a change or a factual answer.
+- K2. Trade-offs are surfaced explicitly (e.g. "this moves the failure from startup to request time"); the decision belongs to the user, never silently taken by the agent.
+- K3. Deployment reality is part of scope: env renames require a manifest transition plan; DB-held values are migration inputs, not afterthoughts.
+- K4. Library escalation (HARD): whenever a change needs a library in a place where it is banned, any new dependency, or any exemption — STOP and escalate to the user. Placement, workarounds, and exemptions are decided together, never unilaterally.
+
+### Operating Workflow
+
+[ref: #exist-operating-workflow]
+
+0. As-is map: full diff vs base, every touched component, consumers per symbol (call sites, tests, manifests, DB data). Scale + overview tree. Gate: user approves the overview.
+1. Top-down walkthrough, one level per message: per element — keep / revert / delete, justified by rule ids (A1–K4).
+2. Pipeline traversal, forward and backward, after removals.
+3. Final contour + master approval; blueprint recorded as a decision card.
+4. Implementation exactly per contour; project lint/type/test gates green. Deliverables: minimal diff, keep/delete table, ready answers per reviewer question, follow-ups list.

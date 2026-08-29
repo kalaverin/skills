@@ -13,7 +13,7 @@ libraries:
 
 # Personal Rules (Python)
 
-Project-specific rules that extend or override the Google-style corpora (`01_language_rules.md`, `02_style_rules.md`). Review-focused rules live verbatim in `discuss-first/references/existence_review.md` and win on conflict; this file accumulates personal typing and language practice. On conflict with the Google corpora, this file wins.
+Project-specific rules that extend or override the Google-style corpora (`01_language_rules.md`, `02_style_rules.md`). Review-focused rules live verbatim in the Existence Bible section of `discuss-first/SKILL.md` and win on conflict; this file accumulates personal typing and language practice. On conflict with the Google corpora, this file wins.
 
 ## Enum-class membership breaks mypy narrowing
 [ref: #py-pr-enum-membership-narrowing]

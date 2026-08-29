@@ -6,7 +6,7 @@ Co-implementation mode: plan the implementation top-down and get your approval b
 ## What it does
 [ref: #df-what]
 
-This skill switches the agent into discuss-first mode for non-trivial work. Instead of immediately editing files, the agent studies the task, walks you through the implementation one abstraction layer at a time, and collects your explicit approval for each part and for the final blueprint. Only after the master approval does the agent write code, and every line must match the approved contract. The mode also applies a mandatory existence-review standard (`references/existence_review.md`) to every keep/revert/delete decision.
+This skill switches the agent into discuss-first mode for non-trivial work. Instead of immediately editing files, the agent studies the task, walks you through the implementation one abstraction layer at a time, and collects your explicit approval for each part and for the final blueprint. Only after the master approval does the agent write code, and every line must match the approved contract. The mode also applies a mandatory existence-review standard (the Existence Bible section of `SKILL.md`, rule ids A1–K4) to every keep/revert/delete decision.
 
 ## When it activates
 [ref: #df-when]
@@ -77,10 +77,8 @@ Interrupt or correct the agent at any step. If you want to exit discuss-first mo
 
 ```text
 discuss-first/
-├── references/           # Existence-review standard
-│   └── existence_review.md
 ├── README.md                # Human overview (this file)
-└── SKILL.md              # Agent entry point: mode rules, approval flow, and blueprint format
+└── SKILL.md              # Agent entry point: mode rules, approval flow, blueprint format, and the Existence Bible (§12)
 ```
 
 ## Reference overview
@@ -88,12 +86,12 @@ discuss-first/
 
 | File | What it covers |
 |------|----------------|
-| `references/existence_review.md` | Rules A1–K4 for keep/revert/delete decisions |
+| `SKILL.md` §12 (Existence Bible) | Rules A1–K4 for keep/revert/delete decisions |
 
 ## Important conventions / gotchas
 [ref: #df-conventions]
 
 - Mode is session-scoped; a new session starts without it.
 - Code is written only after master approval.
-- Every keep/revert/delete decision follows `references/existence_review.md`.
+- Every keep/revert/delete decision follows the Existence Bible (`SKILL.md` §12).
 - The agent must explain each abstraction and signature before asking for approval.
