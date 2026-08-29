@@ -25,9 +25,10 @@ Example prompts:
 
 What a human must ensure:
 
-- `logcli` is installed and on `PATH`.
+- `logcli` is installed and on `PATH` (on macOS prefer the Homebrew build; the `mise` build cannot resolve internal hosts).
+- `unjsonl` is installed and on `PATH` — all query output is `--output=jsonl` piped through it.
 - `LOKI_ADDR` points at the Loki instance. If it is missing, the agent asks for it.
-- For multi-tenant gateways, set `LOKI_ORG_ID` when the gateway requires `X-Scope-OrgID`.
+- `LOKI_ORG_ID` holds the project's default tenant. If it is missing, the agent stops and asks for the project's default org.
 
 What the agent does automatically:
 
@@ -52,7 +53,7 @@ What the agent does automatically:
 | Dependency | Why it matters |
 |---|---|
 | `logcli` | The actual Loki CLI client; without it no query can execute. |
-| `frontmatter-protocol` | Routes the lazy-loaded reference corpus. |
+| `unjsonl` | Converts the mandatory `jsonl` query output into readable text before it reaches files or context. |
 | `mandatory-tools` | Forces modern tools (`rg`, `jq`, `rtk`) for slicing output instead of legacy `head`/`tail`. |
 
 ## Strengths and trade-offs
@@ -60,31 +61,21 @@ What the agent does automatically:
 
 - **Strong sides:** Prevents unbounded log dumps into context, blocks write/delete commands, and encodes Loki best practices (narrow selectors, line filters before parsers, UTC timestamps).
 - **Weak sides / limits:** Requires `logcli` and `LOKI_ADDR`; `--tls-skip-verify` is the default and must be disabled manually if the environment requires verified TLS; `timeout` may not be installed on macOS by default.
-- **Common pitfalls / gotchas:** Paste only summaries, not raw log output, into the response. Avoid `--limit=0`; use a positive limit. Pass `--org-id` only when `LOKI_ORG_ID` is set. For JSON logs, search `trace_id`/`event_id` via `| json | field="..."` rather than `|=` on the raw JSON string.
+- **Common pitfalls / gotchas:** Paste only summaries, not raw log output, into the response. Avoid `--limit=0`; use a positive limit. `LOKI_ORG_ID` must hold the project default org; pass `--org-id` explicitly only for scopes outside it. For JSON logs, search `trace_id`/`event_id` via `| json | field="..."` rather than `|=` on the raw JSON string.
 
 ## Repository layout
 [ref: #loki-repository-layout]
 
 ```text
 _on_demand/loki-skill/
-├── references/
-│   └── logql_and_logcli.md   # LogQL syntax, logcli flags, query patterns, troubleshooting
 ├── README.md                 # Human overview (this file)
-└── SKILL.md                  # Agent entry point: commands, flags, workflows, and routing
+└── SKILL.md                  # Atomic agent entry point: rules, workflows, LogQL/logcli reference
 ```
-
-## Reference overview
-[ref: #loki-reference-overview]
-
-| File | What it covers |
-|---|---|
-| `references/logql_and_logcli.md` | Stream selectors, line/label filters, parsers, format expressions, metric queries, logcli commands, connection/auth, output/time flags, query patterns, and troubleshooting. |
 
 ## Important conventions / gotchas
 [ref: #loki-important-conventions-and-gotchas]
 
-- Query output is written to a file first; keep stdout out of the response.
+- Query output is `--output=jsonl` with nanosecond timestamps, piped through `unjsonl`, written to a file first; keep stdout out of the response.
 - A 50 KiB size gate is applied: check the file size and re-fetch or slice larger output with `rg`, `jq`, or `rtk` equivalents.
-- Use `jsonl` output only when parsing with `jq` or similar tools.
 - Basic auth and bearer tokens are not handled; auth failures are escalated to the user.
 - Temporary files are not cleaned up automatically; delete them manually when they are no longer needed.
