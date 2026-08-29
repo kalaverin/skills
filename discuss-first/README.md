@@ -41,6 +41,7 @@ Interrupt or correct the agent at any step. If you want to exit discuss-first mo
 - A written implementation blueprint with full signatures and pseudocode.
 - Per-part and final approvals captured in the conversation.
 - Code written strictly according to the approved blueprint.
+- A Solutions Journal in Serena memory (`solutions/<repo>/<subject>/`): one card per approval round, plus the final `solution.md` and `decisions.md` (see `SKILL.md` §13).
 
 ## Dependencies and why they matter
 [ref: #df-deps]
@@ -78,7 +79,7 @@ Interrupt or correct the agent at any step. If you want to exit discuss-first mo
 ```text
 discuss-first/
 ├── README.md                # Human overview (this file)
-└── SKILL.md              # Agent entry point: mode rules, approval flow, blueprint format, and the Existence Bible (§12)
+└── SKILL.md              # Agent entry point: mode rules, approval flow, blueprint format, the Existence Bible (§12), and the Solutions Journal (§13)
 ```
 
 ## Reference overview
