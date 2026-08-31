@@ -7,7 +7,7 @@ triggers:
 runtime: true
 requires:
   - serena-protocol
-version: 0.8.1
+version: 0.8.2
 ---
 
 # SKILL: Discuss First (Co-Implementation Mode)
@@ -355,3 +355,4 @@ Session: <session-id>
 - **Phase 4 deltas:** if any delta cards appeared during implementation, then at Phase 4 completion `solution.md`, `decisions.md`, and the ADR are updated in ONE batch, followed by a final read-back and checkpoint. No deltas — nothing is touched.
 - **Exit before finalization:** the sequence stays as-is, the finale is not written, no cleanup; the last card with its `Next:` is an honest snapshot of an unfinished discussion.
 - **Cancelled discussion:** a final card with status `abandoned` in `Attention`, so no future agent mistakes the chain for a live contract.
+- **Feature closing:** when the feature this journal belongs to is closed, the whole `solutions/<repo>/<subject>/` sequence is part of the feature's archival footprint (produced-by class) and is archived by the on-demand `feature-archival` skill (`[ref: #fa-pipeline]`); the chain survives in git per that skill's recovery recipe.

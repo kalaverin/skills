@@ -8,7 +8,7 @@ requires:
   - entity-protocol
   - frontmatter-protocol
   - markdown-protocol
-version: 0.1.0
+version: 0.1.1
 ---
 
 # SKILL: Serena Memory & MCP Protocol
@@ -87,6 +87,7 @@ You **MUST NOT** read `references/rules.md` in full. Use the Routing Index below
 | Checking freshness of a tracked memory; reconciling a stale one. | `frontmatter-protocol/references/tracking.md` | `[ref: #tracking-validation-timing]`, `[ref: #tracking-staleness]`, `[ref: #tracking-reconciliation]` |
 | Checking whether a repo-specific memory is stale against its source repo. | `entity-protocol/SKILL.md` | `[ref: #entity-freshness]` |
 | When to record memory; the proactive-population mandate. | rules.md | `[ref: #serena-lifecycle]` |
+| Archiving a completed feature's cross-scope memory footprint (extract → compress → reconcile → recoverable delete). | `_on_demand/feature-archival/SKILL.md` | `[ref: #fa-pipeline]` (on-demand skill) |
 | Logging a bug, note, or other finding with proper evidence. | `entity-protocol` | `[ref: #entity-namespace-registry]`, `[ref: #entity-findings-traceability]` |
 | Resolving contradictions between memory entries; the contradictions log. | rules.md | `[ref: #serena-contradictions]` |
 | Handling deprecated names and aliases. | `entity-protocol/references/repo_memory.md` | `[ref: #entity-deprecations]` |

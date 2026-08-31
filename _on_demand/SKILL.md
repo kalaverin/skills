@@ -33,6 +33,12 @@ ondemand:
     request: code review, review code, review diff, review feature, review project, pull request review, pr review, ревью,
       код-ревью, ревью кода, проверь код, проверь diff, проверь изменения, проверь проект
   runtime: true
+- name: feature-archival
+  description: "Archive a COMPLETED feature's Serena-memory footprint into a flat authored record at archive/<feature>/ (extract via context-budgeted subagents, compress, reconcile, then delete originals recoverably via the recorded checkpoint hash). Activates only on an explicit feature-closing command after production rollout."
+  triggers:
+    request: "закрываем фичу, закрыть фичу, закрываем feature, заархивируй фичу, архивация фичи, заархивировать фичу, фича в проде закрываем, выкатил в прод закрываем, archive feature, archive the feature, close the feature, feature archival, feature archive"
+    reason: "A shipped feature's cross-scope memory footprint must be extracted, compressed into archive/<feature>/, and the originals deleted recoverably."
+  runtime: true
 - name: loki-skill
   description: "Query logs and service state in Grafana Loki via the logcli terminal client. Use for investigating service problems, exploring labels and series, and incident response. The agent is read-only: no mutations, no writes, no deletes."
   triggers:
@@ -137,6 +143,7 @@ This skill is a **runtime, header-only manifest**. It does not contain task rule
 | `atlassian-skill` | yes | Read-only access to Atlassian Jira and Confluence via MCP. Use for reading Jira issues/tickets and Confluence pages/documentation, including daily page diffs. Triggers on mentions of Jira, Confluence, Atlassian, Jira issue, Jira ticket, Confluence page, Confluence space, daily doc sync, page diff, or page history. |
 | `bobplus-api` | yes | Bobplus Payments API (Africa) integration knowledge covering bearer auth, RSA request signing, X-Hash, C2B payins, B2C payouts, account services, and utilities. Use when answering questions or writing code against the Bobplus API. |
 | `code-review` | yes | Language-agnostic code review for any programming language, supporting diff-based and full-project review modes. Enforces boilerplate file naming, branch metadata, and severity classification. |
+| `feature-archival` | yes | Archive a COMPLETED feature's Serena-memory footprint into a flat authored record at `archive/<feature>/` (extract via context-budgeted subagents, compress, reconcile, then delete originals recoverably). Explicit closing command only. |
 | `loki-skill` | yes | Query logs and service state in Grafana Loki via the logcli terminal client. Use for investigating service problems, exploring labels and series, and incident response. The agent is read-only: no mutations, no writes, no deletes. |
 | `protobuf-lang` | yes | MANDATORY skill for Buf Protobuf lint and schema style. Use when writing, editing, or reviewing `.proto` files, `buf.yaml` configuration, packages, imports, enums, messages, services, RPCs, or comments. |
 | `pytest-design` | yes | MANDATORY skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Use for any Python testing task. |
