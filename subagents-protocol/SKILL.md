@@ -9,7 +9,7 @@ requires:
   - bootstrap
   - mandatory-tools
   - serena-protocol
-version: 0.2.1
+version: 0.2.2
 ---
 
 # SKILL: Subagent Delegation Protocol
@@ -86,6 +86,8 @@ Use the correct `subagent_type` for the work:
 | `plan` | Read-only implementation planning. | Designing a change, identifying key files, comparing approaches, producing a step-by-step plan before editing. |
 
 If a task spans multiple types, split it or choose the dominant type.
+
+**Artifact rule (CRITICAL — VERY IMPORTANT, HARD RULE):** if a subagent is expected to produce ANY artifact — a file, a staging dump, a generated document, anything meant to land on disk — the subagent MUST be of type `coder`: it is the only subagent type carrying mutation tools (`WriteFile`). `explore` and `plan` are physically read-only; an artifact delegated to them can only return via the chat report, which floods the main agent's context (its budget equals a subagent's — a few fat reports kill the session). The prompt MUST name the artifact's target path under `.tmp/`. Owner ruling 2026-08-31.
 
 ## 3. Always-Active Semantics
 
