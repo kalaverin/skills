@@ -7,7 +7,7 @@ triggers:
 runtime: true
 requires:
   - mandatory-tools
-version: 0.3.0
+version: 0.4.0
 ---
 
 # SKILL: Session Inspector
@@ -45,6 +45,8 @@ uv run --no-project python _on_demand/session-inspector/scripts/inspect_sessions
 | `--session UUID` | — | Switch to show/restore mode. A full UUID or a short unambiguous prefix is accepted; it must match exactly one session directory. |
 | `--restore` | false | Use only with `--session`: emit a context-restoration pack instead of a transcript. |
 | `--sessions-dir PATH` | `~/.kimi/sessions` | Override the sessions root (useful for tests, fixtures, or non-standard Kimi layouts). |
+| `--retry N` | 3 | `track_session.py` probe mode: retry resolution N times while the session files flush to disk. |
+| `--interval SECONDS` | 2.0 | `track_session.py` probe mode: delay between retries. |
 
 Combinations and constraints:
 
@@ -104,8 +106,16 @@ The agent cannot start work on its own between user messages, so tracking is on-
 if a real session_id is already known in this conversation:
     uv run --no-project python _on_demand/session-inspector/scripts/track_session.py <session_id>
 else:
-    probe = python -c "import uuid; print(uuid.uuid4())"
-    uv run --no-project python _on_demand/session-inspector/scripts/track_session.py <probe>
+    step 1 (NO tool call): INVENT a probe UUID yourself and write it
+        explicitly in your visible reply or thinking — the step containing
+        the probe must be flushed to the session files BEFORE the lookup
+    step 2 (next tool call, same user turn):
+        uv run --no-project python _on_demand/session-inspector/scripts/track_session.py <probe>
+        the script retries probe resolution internally (--retry/--interval)
+        while the lookup call itself flushes to disk
+    step 3 (only if step 2 returns found_by "not_found"): repeat the SAME
+        command as the next tool call — the first call's record is on disk
+        by then; two calls maximum, never involve the user
     remember the returned session_id for subsequent calls
 show the counters to the user
 ```
@@ -144,17 +154,18 @@ Presentation rules:
 - Show `token_usage.input_cache_read`, `input_other`, and `output`.
 - Mention `plan_mode: true` if the session is currently in plan mode.
 - If `status` is `null` but `session_id` is present, the session was found but no `StatusUpdate` has arrived yet.
-- If `found_by` is `"not_found"`, the probe has not yet been flushed to disk. Tell the user to repeat the request in a few seconds.
+- If `found_by` is `"not_found"`, the probe has not yet been flushed to disk: repeat the SAME command once as the next tool call (§7.1, step 3). Only if that second attempt also fails, use the fallback in §7.3.
 - If `error` is non-null, report the error and stop.
 
 ### 7.3 Generating the probe UUID
 
 [ref: #si-probe-uuid]
 
-Use a one-liner with the system Python interpreter:
+The agent invents the probe itself — any random-looking UUID-shaped string is acceptable — and publishes it in the conversation BEFORE the lookup call: write it explicitly in the visible reply or thinking, then issue `track_session.py <probe>` in the following step. The step boundary is what flushes the probe into the session files; a probe born inside a tool call is not on disk until that call completes.
 
-```bash
-python -c "import uuid; print(uuid.uuid4())"
-```
+Forbidden probe handling:
 
-The probe UUID is passed to `track_session.py`. The script discovers the real session directory because the tool invocation containing the probe is recorded in the session's own JSONL files.
+- `python -c "import uuid; print(uuid.uuid4())"` — a UUID computed inside a command never appears in the recorded tool-call arguments, and its stdout dies with the throwaway shell.
+- Shell variables — every Shell call is a fresh environment; the variable does not survive into the next call.
+
+Last-resort fallback (only after §7.1 step 3 also fails): print the probe in the visible chat text, ask the user to repeat the request, and run the lookup on the next user message — chat text is guaranteed to be flushed by then.

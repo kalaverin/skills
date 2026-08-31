@@ -7,7 +7,7 @@ triggers:
 runtime: true
 requires:
   - serena-protocol
-version: 0.8.2
+version: 0.8.3
 ---
 
 # SKILL: Discuss First (Co-Implementation Mode)
@@ -330,7 +330,7 @@ Session: <session-id>
 ```
 
 - `Approved` — verbatim contract of the round (decisions, signatures, boundaries). `Rationale` — why. `Rejected` — each dropped variant with its reason. `Deferred` — what was postponed and where to. `Attention` — risks and open spots to watch. `Next` — the exact continuation point: the next open question, level, or pending approval event.
-- `Session:` carries the current session's id (as exposed by the runtime environment) so a future agent can lift the raw transcript via session-inspector in a dispute.
+- `Session:` carries the current session's REAL id so a future agent can lift the raw transcript via session-inspector in a dispute. The id is obtained ONLY through the `session-inspector` skill's probe flow (`_on_demand/session-inspector/SKILL.md` `[ref: #si-tracking-flow]`, §7): if the id is not yet known in this conversation, the agent invents a probe UUID, publishes it explicitly in its visible reply or thinking (NO tool call in that step), then runs `track_session.py <probe>` in the next step and remembers the returned `session_id`. Resolution happens ONCE, before the first card (`begin.md`) is written; the remembered id is reused verbatim in every later card of the session. FORBIDDEN: inventing a random UUID and writing it as the session id (it matches nothing on disk), `python -c uuid` one-liners, shell variables. If the probe flow still fails after its documented retries, write `Session: unresolved` and note the failure in `Attention` — never leave a guessed value.
 - Cards are self-sufficient about their own round but do not duplicate the whole task picture — that is what the chain and the finale are for.
 - Artifact language: technical English.
 
