@@ -44,7 +44,7 @@ Tests are skipped unless you explicitly ask to review them.
 [ref: #cr-deps]
 
 - `api-design` — supplies the Google AIP corpus used in the mandatory architectural design review.
-- `discuss-first` — owns the existence-review standard applied by the fifth specialist subagent.
+- `existence-bible` — owns the existence-review standard applied by the fifth specialist subagent.
 - `frontmatter-protocol` — governs tracking fields and lazy-load routing used when reading reference files.
 - `serena-protocol` — provides the memory-mutation rules for writing machine-readable reports into `.serena/memories/`.
 

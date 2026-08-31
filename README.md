@@ -51,6 +51,7 @@ Skills that govern the agent itself, its tool selection, and its startup behavio
 | **kagi-search** | Mandatory and exclusive protocol for web search and page enrichment through the `kagimcp` MCP tools. Governs `kagi_search_fetch`, `kagi_fastgpt`, `kagi_extract`, and `kagi_summarizer`. Always active. |
 | **dash-protocol** | Mandatory protocol for the Dash MCP documentation layer: installed docset enumeration, documentation search, full-text search enablement, and page loading through local Dash docsets. |
 | **discuss-first** | Co-implementation mode. The agent plans the implementation top-down, shows full signatures and pseudocode, collects per-part approvals, requests master approval, and only then writes code. |
+| **existence-bible** | Mandatory existence-review standard (rule ids A1–K4): every line of a changeset must earn its existence; overrides language style guides on conflict. Always active. |
 
 ### Languages & API Design
 [ref: #asr-lang]

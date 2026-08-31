@@ -6,10 +6,10 @@ triggers:
   request: "code review, review code, review diff, review feature, review project, pull request review, pr review, ревью, код-ревью, ревью кода, проверь код, проверь diff, проверь изменения, проверь проект"
 requires:
   - api-design
-  - discuss-first
+  - existence-bible
   - frontmatter-protocol
   - serena-protocol
-version: 0.2.0
+version: 0.2.1
 ---
 
 # SKILL: Language-Agnostic Code Review
@@ -336,12 +336,12 @@ For Python code this pass applies with full force whenever the code exposes an A
 
 ## Existence Inquisition (MANDATORY)
 
-Every review — `feature` or `project` mode, any programming language — runs the Existence Inquisition: the dedicated fifth specialist subagent with maximal adversarial bias, executing the existence-review standard whose single source is the Existence Bible section (§12) of `discuss-first/SKILL.md` (rule ids A1–K4; consumed by cross-skill reference, never copied). The inquisitor owns the standard ENTIRELY — the four domain specialists receive no existence criteria (they would only duplicate them half-heartedly).
+Every review — `feature` or `project` mode, any programming language — runs the Existence Inquisition: the dedicated fifth specialist subagent with maximal adversarial bias, executing the existence-review standard whose single source is the always-loaded `existence-bible` skill (rule ids A1–K4; consumed by cross-skill reference, never copied). The inquisitor owns the standard ENTIRELY — the four domain specialists receive no existence criteria (they would only duplicate them half-heartedly).
 
 1. **Launch.** The inquisitor runs in Phase 1 alongside the other four (same timeout and launch parameters). It receives the same targets — plus, in `feature` mode, the diff itself: attacks hit added and modified lines only. In `project` mode the whole reviewed surface is the target.
 2. **Doctrine (baked into the subprompt):** subtraction-first — every line is guilty until proven innocent; the default verdict is DELETE/REVERT; a net-negative diff is a victory; every modification of EXISTING code must name why the current state is UNACCEPTABLE, not merely improvable; subtraction never removes meaning, quality, or behavior the business depends on.
 3. **Defense mechanics (root agent, never delegated).** The ROOT agent defends the code against EVERY attack: either confirm (→ finding with its rule id) or defend with facts (→ repelled). A defense must be SERIOUS: a named consumer, a breakage scenario, a verifiable fact (K1) — "that is how it is done" never counts (K2). No attack is ever dismissed silently.
-4. **Report.** Both reports carry an "Existence Inquisition" section containing: confirmed attacks with rule ids and keep/revert/delete recommendations; the FULL list of repelled attacks, each with its winning defense text; and the mandatory shrinkage metric line `lines before → after, net` — the smallest possible diff is the goal state. Record `discuss-first` in the `skills_used` frontmatter tag of the machine-readable report.
+4. **Report.** Both reports carry an "Existence Inquisition" section containing: confirmed attacks with rule ids and keep/revert/delete recommendations; the FULL list of repelled attacks, each with its winning defense text; and the mandatory shrinkage metric line `lines before → after, net` — the smallest possible diff is the goal state. Record `existence-bible` in the `skills_used` frontmatter tag of the machine-readable report.
 
 ## 8. Lazy-Load Protocol
 
