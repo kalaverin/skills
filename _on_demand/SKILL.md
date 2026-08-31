@@ -1,7 +1,6 @@
 ---
 name: ondemand
-description: Runtime header-only manifest for on-demand skills. The frontmatter carries a compressed trigger registry so the
-  agent can match requests without reading each on-demand SKILL.md header at startup.
+description: Runtime header-only manifest for on-demand skills. The frontmatter carries a compressed trigger registry so the agent can match requests without reading each on-demand SKILL.md header at startup.
 runtime: true
 triggers:
   reason: Header-only manifest; entries are evaluated during runtime re-evaluation.
@@ -9,146 +8,94 @@ requires:
 - frontmatter-protocol
 ondemand:
 - name: atlassian-skill
-  description: "Read-only access to Atlassian Jira and Confluence via MCP. Use for reading Jira issues/tickets and Confluence pages/documentation, including daily page diffs. Triggers on mentions of Jira, Confluence, Atlassian, Jira issue, Jira ticket, Confluence page, Confluence space, daily doc sync, page diff, or page history."
+  description: Read-only Jira and Confluence access via MCP. Use for issues/tickets, pages/documentation, and daily page diffs.
   triggers:
-    request: "jira, confluence, atlassian, issue, ticket, epic, jira issue, jira task, confluence page, confluence space, confluence doc, daily doc sync, page diff, page history, джира, жира, задача в джира, тикет, конфла, конфлюенс, страница конфлюенс"
-    reason: "User needs to read Jira issues or Confluence pages."
+    request: jira, confluence, atlassian, issue, ticket, epic, jira issue/task, confluence page/space/doc, daily doc sync, page diff/history, джира/жира, задача в джира, тикет, конфла/конфлюенс, страница конфлюенс
+    reason: User needs to read Jira issues or Confluence pages.
   runtime: true
 - name: bobplus-api
-  description: Bobplus Payments API (Africa) integration knowledge covering bearer auth, RSA request signing, X-Hash, C2B
-    payins, B2C payouts, account services, and utilities. Use when answering questions or writing code against the Bobplus
-    API.
+  description: 'Bobplus Payments API (Africa) integration reference: auth, signing, C2B payins, B2C payouts, account services, utilities. Use for questions or code against Bobplus.'
   triggers:
     any:
-      request: bobplus, bob+, bob plus, bobplus api, bobplus africa, developers.bobplus.africa, бобплюс, африканские платежи,
-        платежи африка, mobile money africa, momo payin, momo payout, c2b africa, b2c africa, m-pesa integration, mpesa africa
-        payments
-      reason: Questions or code work against the Bobplus payments platform must be answered from the captured reference corpus,
-        not from training data.
+      request: bobplus, bob+, bobplus api/africa, developers.bobplus.africa, бобплюс, африканские платежи, платежи африка, mobile money africa, momo payin/payout, c2b/b2c africa, m-pesa/mpesa integration
+      reason: Questions or code work against the Bobplus payments platform must be answered from the captured reference corpus, not from training data.
   runtime: true
 - name: code-review
-  description: Language-agnostic code review for any programming language, supporting diff-based and full-project review modes.
-    Enforces boilerplate file naming, branch metadata, and severity classification.
+  description: Thorough language-agnostic code review for any programming language. Use for code/diff/feature/project/PR review; supports diff-based and full-project modes.
   triggers:
-    request: code review, review code, review diff, review feature, review project, pull request review, pr review, ревью,
-      код-ревью, ревью кода, проверь код, проверь diff, проверь изменения, проверь проект
+    request: code review, review code/diff/feature/project, pull request review, pr review, ревью, код-ревью, ревью кода, проверь код/diff/изменения/проект
   runtime: true
 - name: feature-archival
-  description: "Archive a COMPLETED feature's Serena-memory footprint into a flat authored record at archive/<feature>/ (extract via context-budgeted subagents, compress, reconcile, then delete originals recoverably via the recorded checkpoint hash). Activates only on an explicit feature-closing command after production rollout."
+  description: Archive a shipped feature's Serena memory footprint into .serena/memories/archive/<feature>/, verify, then recoverably delete originals. Trigger phrases load the skill; the pipeline starts only on explicit feature-closing command after rollout.
   triggers:
-    request: "закрываем фичу, закрыть фичу, закрываем feature, заархивируй фичу, архивация фичи, заархивировать фичу, фича в проде закрываем, выкатил в прод закрываем, archive feature, archive the feature, close the feature, feature archival, feature archive"
-    reason: "A shipped feature's cross-scope memory footprint must be extracted, compressed into archive/<feature>/, and the originals deleted recoverably."
+    request: закрываем/закрыть фичу, закрываем feature, заархивируй/архивация фичи, фича в проде закрываем, выкатил в прод закрываем, archive/close the feature, feature archival
+    reason: A shipped feature's cross-scope memory footprint must be extracted, compressed into archive/<feature>/, and the originals deleted recoverably.
   runtime: true
 - name: loki-skill
-  description: "Query logs and service state in Grafana Loki via the logcli terminal client. Use for investigating service problems, exploring labels and series, and incident response. The agent is read-only: no mutations, no writes, no deletes."
+  description: Query logs and service state in Grafana Loki via logcli. Use for incident response and exploration. Read-only.
   triggers:
-    request: "logcli, loki, grafana logs, посмотри логи, найди в логах, посмотри логи на стейдже, посмотри логи на проде, проверь в локи, посмотри в графане, расследование инцидентов, разбор инцидента, разбор проблем, sentry, логи sentry, incident"
-    reason: "User needs to query logs or service state through Grafana Loki."
+    request: logcli, loki, grafana logs, посмотри/найди логи, логи на стейдже/проде, проверь в локи, посмотри в графане, разбор/расследование инцидента, разбор проблем, sentry, логи sentry, incident
+    reason: User needs to query logs or service state through Grafana Loki.
   runtime: true
 - name: protobuf-lang
-  description: MANDATORY skill for Buf Protobuf lint and schema style. Use when writing, editing, or reviewing `.proto` files,
-    `buf.yaml` configuration, packages, imports, enums, messages, services, RPCs, or comments.
+  description: MANDATORY skill for Buf Protobuf lint and schema style. Use for .proto files, buf.yaml, packages, imports, enums, messages, services, RPCs, or comments.
   triggers:
     any:
       files: fd -e proto --max-results 1 | wc -l | grep -q 1
       request: protobuf, proto, buf, buf.yaml
   runtime: true
 - name: pytest-design
-  description: MANDATORY skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest
-    suites. Use for any Python testing task.
+  description: MANDATORY skill for writing, running, and reviewing Python unit/integration tests. Use for pytest, fixtures, parametrization, mocking, markers, isolation, async tests, plugins, config, coverage, xdist. Python projects only.
   triggers:
     all:
       files: fd -e py -e pyi --max-results 1 | wc -l | grep -q 1
-      request: pytest, unit test, integration test, test fixture, conftest, parametrization, mocking, markers, test isolation,
-        faker in tests, async test, pytest plugin, pytest configuration, coverage, xdist, python test, python tests, тест,
-        тесты, юнит-тест, интеграционный тест, фикстура, параметризация, мок, маркер, покрытие тестами
+      request: pytest, unit/integration test, test fixture, conftest, parametrization, mocking, markers, test isolation, faker in tests, async test, pytest plugin/configuration, coverage, xdist, python test, тест/тесты, юнит-тест, интеграционный тест, фикстура, параметризация, мок, маркер, покрытие тестами
   runtime: true
 - name: pytest-planner
-  description: MANDATORY skill for producing repository-specific pytest enablement artifacts and unit-test coverage plans
-    in project or feature mode.
+  description: 'MANDATORY skill for pytest enablement artifacts: a repo-specific test-authoring prompt and an atomic unit-test coverage plan in project or feature mode.'
   triggers:
     all:
       files: test -d .serena/memories
-      request: pytest bootstrap, bootstrap tests, generate test prompt, test agent prompt, pytest-planner, test planning bootstrap,
-        master test plan, план покрытия, бутстрап тестов, сгенерируй промпт тестов, промпт для тестов, промпт pytest, планирование
-        тестов, feature coverage plan, coverage plan, diff coverage plan, feature test plan, branch coverage plan, feature
-        testing, branch coverage, план покрытия фичи, покрытие фичи, план покрытия ветки, покрытие диффа, тестирование фичи,
-        покрытие ветки
+      request: pytest bootstrap, bootstrap tests, pytest-planner, test planning, master test plan, generate test/agent prompt, план покрытия, бутстрап тестов, сгенерируй промпт тестов, промпт pytest, планирование тестов, feature/diff/branch coverage plan, feature testing, план покрытия фичи/ветки/диффа, покрытие/тестирование фичи, покрытие ветки
 - name: repo-audit
-  description: MANDATORY skill for full repository audits, creating repo cards, business-domain reports, dependency cards,
-    and the project-level index. Supports FULL, PARTIAL, and REFRESH run modes.
+  description: 'MANDATORY skill for full repository audits: repo/business/dependency cards and project dependency index. Modes: FULL, PARTIAL, REFRESH. Use for entity/repo cards, project/service/repository study, business/domain analysis, dependency maps, audits, or refreshing stale cards.'
   triggers:
-    request: create entity card, create project card, create service card, create repository card, entity card, project card,
-      service card, repository card, repo card, explore project, explore service, explore repository, study project, study
-      service, study repository, изучи проект, изучи сервис, изучи репозиторий, создай карточку проекта, создай карточку сервиса,
-      создай карточку репозитория, карточка репо, business entities, business expertise, domain analysis, domain events, бизнес-сущности,
-      анализ бизнеса, business analysis, business domain analysis, analyze business domain, business logic analysis, business
-      rules analysis, what business does, business purpose, business meaning, domain model analysis, бизнес-анализ, бизнес-логика,
-      бизнес-смысл, доменная модель, бизнес-правила, зачем нужно приложение, бизнес-цель, dependency card, create dependency
-      card, dependency map, create dependency map, architecture dependencies, service dependencies, what does it depend on,
-      карточка зависимостей, создай карточку зависимостей, карта зависимостей, изучи зависимости, repo audit, аудит репо,
-      аудит репозитория, полный аудит, обнови карточки, refresh cards, update stale cards
+    request: entity card, repo card, project card, service card, create/study card, explore/study project/service/repository, изучи проект/сервис/репозиторий, создай карточку проекта/сервиса/репозитория, карточка репо, business entities, business expertise, business/domain analysis, domain events, domain model, business logic, business rules, business purpose, what business does, бизнес-сущности, бизнес-анализ, бизнес-логика, бизнес-смысл, бизнес-правила, бизнес-цель, доменная модель, зачем нужно приложение, dependency card/map, architecture/service dependencies, what does it depend on, карточка/карта зависимостей, изучи зависимости, repo audit, аудит репо/репозитория, полный аудит, обнови карточки, refresh/update stale cards
 - name: security-audit
-  description: Security assessment / SAST workflow aligned with OWASP API Security Top 10 2023. Produces a consolidated final
-    report under `.serena/memories/audit/`.
+  description: Security assessment / SAST workflow aligned with OWASP API Security Top 10 2023. Orchestrates reconnaissance, screener, parallel detection, validation, and consolidated report under .serena/memories/audit/. Use for audits, SAST, vulnerability assessment, code security review, pentest-style review, OWASP API 2023, or specific vulnerability classes.
   triggers:
-    request: sast, security audit, vulnerability assessment, code security review, penetration test, pentest, security scan,
-      аудит безопасности, поиск уязвимостей, сканирование уязвимостей, проверка безопасности, SQL injection, SQLi, XSS, IDOR,
-      SSRF, RCE, XXE, SSTI, JWT, file upload, path traversal, missing auth, business logic, GraphQL injection, hardcoded secrets,
-      BOLA, BOPLA, broken object level authorization, broken object property level authorization, resource consumption, rate
-      limiting, inventory management, unsafe consumption of APIs, third-party API, security misconfiguration, OWASP API 2023,
-      OWASP API Security Top 10
+    request: sast, security audit, security scan, vulnerability assessment, code security review, penetration test, pentest, аудит безопасности, проверка безопасности, поиск/сканирование уязвимостей, SQL injection, SQLi, XSS, IDOR, SSRF, RCE, XXE, SSTI, JWT, file upload, path traversal, missing auth, business logic, GraphQL injection, hardcoded secrets, BOLA, BOPLA, broken object level/property authorization, resource consumption, rate limiting, inventory management, unsafe consumption of third-party APIs, security misconfiguration, OWASP API 2023, OWASP API Security Top 10
+- name: service-layout
+  description: 'MANDATORY normative standard for company Python service layout: canonical package layout, import borders, domain models, mappings, ports/DI, errors, settings/secrets, persistence/UoW, lifecycle, observability — ruling ids L/I/D/M/P/E/S/T/Y/O. Use for designing, scaffolding greenfield, or reviewing services. Full standard applies on activation; every violation is reported by ruling id.'
+  triggers:
+    request: service layout/structure/design, структура/лейаут/каркас сервиса, как должен выглядеть сервис, новый сервис, создай/создаём сервис, проектируем/спроектируй сервис, проектирование сервиса, service scaffold/scaffolding, greenfield service, company service standard, ревью/проверь сервис, service review, layout review, composition root, порты и адаптеры, hexagonal service
+    reason: Design, greenfield development, and review of company services must conform to the Company Service Layout Standard.
+  runtime: true
 - name: session-inspector
-  description: Token-cheap inspection of Kimi Code CLI session files under ~/.kimi/sessions. Governs script-based extraction
-    and prohibits direct reads of session JSONL files.
+  description: Token-cheap inspection of Kimi Code CLI sessions under ~/.kimi/sessions. Use to find/list/identify past sessions or restore context. Extraction must use the mandated script; never read session JSONL files directly.
   triggers:
-    request: найди сессию, последние сессии, прошлая сессия, прежняя сессия, сломанная сессия, незавершённая сессия,
-      завершённая сессия, какие были чаты, какие были сессии, session id, найди разговор, найди чат, история сессий, what
-      sessions, find session, previous session, broken session, подними контекст, подними контекст из сессии, продолжим с той
-      сессии, продолжи сессию, восстанови контекст сессии, restore session context, resume that session, трекай сессию,
-      отслеживай сессию, track session, tracking session, session counters, token usage, context usage, live session,
-      wire.jsonl, следи за сессией, мониторинг сессии, сколько токенов, контекст заполнен, счётчики сессии
+    request: найди сессию, найди разговор/чат, последние сессии, прошлая/прежняя сессия, сломанная/незавершённая/завершённая сессия, какие были чаты/сессии, session id, история сессий, what sessions, find/previous/broken session, подними/восстанови контекст из сессии, продолжим с той сессии, продолжи сессию, restore session context, resume that session, трекай/следи за сессией, мониторинг сессии, track session, session counters, счётчики сессии, сколько токенов, контекст заполнен
     reason: Session questions must be answered from distilled script output, never from raw JSONL reads.
   runtime: true
 - name: temporal-lang
-  description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, and Ruby. Use for
-    workflows, activities, workers, Temporal CLI/Server/Cloud, and durable execution concepts.
+  description: Develop, debug, and manage Temporal applications in Python, TypeScript, Go, Java, .NET, and Ruby. Use for workflows, activities, workers, SDK/server/cloud issues, and durable-execution concepts.
   triggers:
-    request: temporal, temporalio, temporal workflow, temporal activity, durable execution, temporal cloud, temporal cli,
-      temporal server, continue-as-new
+    request: temporal, temporalio, temporal workflow, temporal activity, durable execution, temporal cloud, temporal cli, temporal server, continue-as-new
   runtime: true
 ---
 
 # On-Demand Skill Manifest
 [ref: #ondemand-intro]
 
-This skill is a **runtime, header-only manifest**. It does not contain task rules; it carries a registry of rarely used skills stored in `_on_demand/<skill>/` so the agent can match requests without reading every on-demand `SKILL.md` header at startup.
+> Runtime, header-only manifest: no task rules here. The frontmatter `ondemand:` block is the compressed registry of rarely used skills in `_on_demand/<skill>/`, matched without reading every on-demand `SKILL.md` header at startup.
 
 ## How the manifest is used
 [ref: #ondemand-usage]
 
-1. At bootstrap, `_on_demand/SKILL.md` is discovered and its frontmatter is batch-extracted like any other skill header.
-2. Because it carries `runtime: true`, its body is not read until the user explicitly asks about the on-demand mechanism.
-3. During runtime re-evaluation (after every new user message and path touch), evaluate each entry in `ondemand:` that carries `runtime: true` as if it were a discovered skill header:
-   - apply the same trigger grammar (`any`, `all`, `files`, `request`);
-   - if an entry matches, read `_on_demand/<name>/SKILL.md` in full and resolve its `requires`.
-   - entries without `runtime: true` are evaluated once at bootstrap and are not re-evaluated mid-session.
-4. Do not read `_on_demand/<skill>/SKILL.md` bodies unless their manifest entry matched.
+1. At bootstrap, the `_on_demand/SKILL.md` frontmatter is batch-extracted like any skill header; `runtime: true` keeps this body unread until the user asks about the on-demand mechanism.
+2. During runtime re-evaluation (every new user message, every path touch), each `ondemand:` entry with `runtime: true` is evaluated as a discovered skill header under the same trigger grammar (`any`, `all`, `files`, `request`); on a match, read `_on_demand/<name>/SKILL.md` in full and resolve its `requires`.
+3. Entries without `runtime: true` evaluate once at bootstrap, never mid-session.
+4. `_on_demand/<skill>/SKILL.md` bodies are read only after their manifest entry matched.
 
 ## Mapping
 [ref: #ondemand-mapping]
-
-| Skill | Runtime | Description |
-|-------|---------|-------------|
-| `atlassian-skill` | yes | Read-only access to Atlassian Jira and Confluence via MCP. Use for reading Jira issues/tickets and Confluence pages/documentation, including daily page diffs. Triggers on mentions of Jira, Confluence, Atlassian, Jira issue, Jira ticket, Confluence page, Confluence space, daily doc sync, page diff, or page history. |
-| `bobplus-api` | yes | Bobplus Payments API (Africa) integration knowledge covering bearer auth, RSA request signing, X-Hash, C2B payins, B2C payouts, account services, and utilities. Use when answering questions or writing code against the Bobplus API. |
-| `code-review` | yes | Language-agnostic code review for any programming language, supporting diff-based and full-project review modes. Enforces boilerplate file naming, branch metadata, and severity classification. |
-| `feature-archival` | yes | Archive a COMPLETED feature's Serena-memory footprint into a flat authored record at `archive/<feature>/` (extract via context-budgeted subagents, compress, reconcile, then delete originals recoverably). Explicit closing command only. |
-| `loki-skill` | yes | Query logs and service state in Grafana Loki via the logcli terminal client. Use for investigating service problems, exploring labels and series, and incident response. The agent is read-only: no mutations, no writes, no deletes. |
-| `protobuf-lang` | yes | MANDATORY skill for Buf Protobuf lint and schema style. Use when writing, editing, or reviewing `.proto` files, `buf.yaml` configuration, packages, imports, enums, messages, services, RPCs, or comments. |
-| `pytest-design` | yes | MANDATORY skill for writing, editing, running, and reviewing Python unit tests, integration tests, and pytest suites. Use for any Python testing task. |
-| `pytest-planner` | no | MANDATORY skill for producing repository-specific pytest enablement artifacts and unit-test coverage plans in project or feature mode. |
-| `repo-audit` | no | MANDATORY skill for full repository audits, creating repo cards, business-domain reports, dependency cards, and the project-level index. Supports FULL, PARTIAL, and REFRESH run modes. |
-| `security-audit` | no | Security assessment / SAST workflow aligned with OWASP API Security Top 10 2023. Produces a consolidated final report under `.serena/memories/audit/`. |
-| `session-inspector` | yes | Token-cheap inspection of Kimi Code CLI session files under ~/.kimi/sessions. Governs script-based extraction and prohibits direct reads of session JSONL files. |
-| `temporal-lang` | yes | Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, and Ruby. Use for workflows, activities, workers, Temporal CLI/Server/Cloud, and durable execution concepts. |

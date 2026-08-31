@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E501 — the markdown template below carries intentionally unwrapped lines (no-wrap rule).
 """Apply the compressed on-demand manifest to produce _on_demand/SKILL.md.
 
 Run from the repository root after `.manifest.compressed.yaml` has been
@@ -35,24 +36,20 @@ OUTPUT_PATH = ONDEMAND_DIR / "SKILL.md"
 BODY_TEMPLATE = """# On-Demand Skill Manifest
 [ref: #ondemand-intro]
 
-This skill is a **runtime, header-only manifest**. It does not contain task rules; it carries a registry of rarely used skills stored in `_on_demand/<skill>/` so the agent can match requests without reading every on-demand `SKILL.md` header at startup.
+> Runtime, header-only manifest: no task rules here. The frontmatter `ondemand:` block is the compressed registry of rarely used skills in `_on_demand/<skill>/`, matched without reading every on-demand `SKILL.md` header at startup.
 
 ## How the manifest is used
 [ref: #ondemand-usage]
 
-1. At bootstrap, `_on_demand/SKILL.md` is discovered and its frontmatter is batch-extracted like any other skill header.
-2. Because it carries `runtime: true`, its body is not read until the user explicitly asks about the on-demand mechanism.
-3. During runtime re-evaluation (after every new user message and path touch), evaluate each entry in `ondemand:` that carries `runtime: true` as if it were a discovered skill header:
-   - apply the same trigger grammar (`any`, `all`, `files`, `request`);
-   - if an entry matches, read `_on_demand/<name>/SKILL.md` in full and resolve its `requires`.
-   - entries without `runtime: true` are evaluated once at bootstrap and are not re-evaluated mid-session.
-4. Do not read `_on_demand/<skill>/SKILL.md` bodies unless their manifest entry matched.
+1. At bootstrap, the `_on_demand/SKILL.md` frontmatter is batch-extracted like any skill header; `runtime: true` keeps this body unread until the user asks about the on-demand mechanism.
+2. During runtime re-evaluation (every new user message, every path touch), each `ondemand:` entry with `runtime: true` is evaluated as a discovered skill header under the same trigger grammar (`any`, `all`, `files`, `request`); on a match, read `_on_demand/<name>/SKILL.md` in full and resolve its `requires`.
+3. Entries without `runtime: true` evaluate once at bootstrap, never mid-session.
+4. `_on_demand/<skill>/SKILL.md` bodies are read only after their manifest entry matched.
 
 ## Mapping
 [ref: #ondemand-mapping]
 
-| Skill | Runtime | Description |
-|-------|---------|-------------|
+> **DEPRECATED 2026-08-31T20:08:13Z:** the table duplicated the frontmatter `ondemand:` registry verbatim and drifted stale. The manifest above is the single machine registry; the human index lives in `_on_demand/README.md`. See [ref: #ondemand-readme-index] in `_on_demand/README.md`.
 """
 
 
@@ -65,18 +62,9 @@ def load_compressed() -> dict[str, Any]:
     return data or {}
 
 
-def render_body(entries: list[dict[str, Any]]) -> str:
-    rows: list[str] = []
-    for entry in entries:
-        runtime = "yes" if entry.get("runtime") else "no"
-        desc = str(entry.get("description", "")).replace("|", "\\|")
-        rows.append(f"| `{entry['name']}` | {runtime} | {desc} |")
-    return BODY_TEMPLATE + "\n".join(rows) + "\n"
-
-
 def main() -> int:
     data = load_compressed()
-    entries = data.get("skills", [])
+    entries = data.get("ondemand", [])
     if not entries:
         print("warning: no on-demand entries found", file=sys.stderr)
 
@@ -95,23 +83,22 @@ def main() -> int:
         "ondemand": entries,
     }
 
-    body = render_body(entries)
     manifest_text = (
         "---\n"
         + yaml.safe_dump(
             frontmatter,
             sort_keys=False,
             allow_unicode=True,
-            width=120,
+            width=sys.maxsize,
             default_flow_style=False,
         )
         + "---\n\n"
-        + body
+        + BODY_TEMPLATE
     )
 
     OUTPUT_PATH.write_text(manifest_text, encoding="utf-8")
     print(
-        f"wrote {OUTPUT_PATH} with {len(entries)} on-demand entr{'y' if len(entries) == 1 else 'ies'}"
+        f"wrote {OUTPUT_PATH} with {len(entries)} on-demand entr{'y' if len(entries) == 1 else 'ies'}",
     )
     return 0
 
