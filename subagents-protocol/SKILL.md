@@ -1,15 +1,15 @@
 ---
 name: subagents-protocol
-description: Mandatory protocol for delegating work to built-in subagents (coder, explore, plan). Always active. Owns the context-hygiene delegation test (material vs answer, cost balance, warm-instance reuse), launch parameters (mandatory explicit `model`), the single-source model-selection table, answer budgets, degradation handling, and the launch checklist.
+description: Mandatory protocol for delegating work to built-in subagents (coder, explore, plan), also called our bots by users. Always active. Owns the context-hygiene delegation test (material vs answer, cost balance, warm-instance reuse), launch parameters (mandatory explicit `model`), the single-source model-selection table, answer budgets, degradation handling, and the launch checklist.
 triggers:
   always: true
   reason: "Context hygiene must apply from session start — before any delegation is planned — so the skill is always active."
-  request: "subagent, subagents, delegate, delegation, delegating, субагент, субагенты, делегируй, делегирование, coder subagent, explore subagent, plan subagent"
+  request: "subagent, subagents, delegate, delegation, delegating, our bots, project bots, delegated bots, бот, боты, ботами, ботов, субагент, субагенты, делегируй, делегирование, coder subagent, explore subagent, plan subagent"
 requires:
   - bootstrap
   - mandatory-tools
   - serena-protocol
-version: 0.2.2
+version: 0.2.3
 ---
 
 # SKILL: Subagent Delegation Protocol
@@ -17,6 +17,8 @@ version: 0.2.2
 This skill governs every interaction with the `Agent` tool and its built-in subagent instances.
 The main agent is an orchestrator; subagents are specialized workers.
 The skill is always active: its rules — including the Context Hygiene test — apply from session start, before any delegation is planned, and take precedence over any general heuristic about delegation.
+
+**Terminology and context rule:** the user may call our built-in subagents `bot`, `bots`, `our bots`, `бот`, `боты`, `ботами`, `ботов`, or `наших ботов`. Interpret these terms as our subagents when nearby context mentions delegation, `Agent`, `coder`, `explore`, `plan`, project-file access, or delegated work. Do not apply this protocol to unrelated bots; if context does not disambiguate, ask the user whether they mean our subagents.
 
 ## 1. When to Delegate
 
