@@ -26,7 +26,7 @@ The delegation decision is governed EXACTLY by the three-question test of Contex
 - Writing, refactoring, or debugging code.
 - Multi-step file manipulations.
 - Parallel exploration of independent questions.
-- Long-running operations that can continue in the background.
+- Long-running project read/write tasks that can continue in the background without shell or CLI execution.
 
 Acting directly is legitimate exactly per the direct-action exceptions and sizing probes of Context Hygiene — nothing else.
 
@@ -81,13 +81,13 @@ Use the correct `subagent_type` for the work:
 
 | Type | Purpose | Use when |
 |---|---|---|
-| `coder` | General software engineering tasks. | Writing code, refactoring, debugging, running commands, building features, fixing tests. |
+| `coder` | General software engineering tasks through project file-write tools. | Writing code, refactoring, debugging, building features, fixing tests; no shell or CLI execution. |
 | `explore` | Fast read-only codebase exploration. | Finding files, understanding modules, tracing call sites, answering "how does X work?", architecture reconnaissance. |
 | `plan` | Read-only implementation planning. | Designing a change, identifying key files, comparing approaches, producing a step-by-step plan before editing. |
 
 If a task spans multiple types, split it or choose the dominant type.
 
-**Artifact rule (CRITICAL — VERY IMPORTANT, HARD RULE):** if a subagent is expected to produce ANY artifact — a file, a staging dump, a generated document, anything meant to land on disk — the subagent MUST be of type `coder`: it is the only subagent type carrying mutation tools (`WriteFile`). `explore` and `plan` are physically read-only; an artifact delegated to them can only return via the chat report, which floods the main agent's context (its budget equals a subagent's — a few fat reports kill the session). The prompt MUST name the artifact's target path under `.tmp/`. Owner ruling 2026-08-31.
+**Artifact rule (CRITICAL — VERY IMPORTANT, HARD RULE):** if a subagent must write ANY artifact to disk — a file, staging dump, generated document, or any other deliverable — the launch MUST explicitly set `subagent_type: coder`. `coder` is the only subagent type with file-write capability (`WriteFile`). `explore` and `plan` are strictly read-only and MUST NOT receive disk-writing work. The root agent MUST create every target directory before launching `coder`; `coder` may write files only inside directories that already exist and MUST NOT create directories. The prompt MUST name the artifact's target path under `.tmp/`. Owner ruling 2026-08-31.
 
 ## 3. Always-Active Semantics
 
@@ -163,15 +163,18 @@ The `Agent` tool can create a new instance or resume an existing one by `agent_i
 
 ## 9. What Subagents Cannot Do
 
-Subagents operate in a standard shell/CLI environment without MCP access.
-They MUST NOT:
+Subagents have no shell, CLI, MCP, or other executable-tool access. They can navigate project files and read them; only a `coder` subagent can write files through its write tool.
 
+All subagents MUST NOT:
+
+- Invoke shell tools, shell commands, CLI commands, package managers, or other executable tools.
+- Create directories or modify directory structure. The root agent creates target directories before launching `coder`.
 - Read `AGENTS.md` — under NO circumstances, at any directory level, for any reason. A subagent's entire context is its launch prompt (§5); `AGENTS.md` is main-agent boot material and user preferences that carry nothing a subagent needs and only burn its context.
 - Call Serena memory tools (`read_memory`, `write_memory`, etc.).
 - Call Kagi web search tools (`kagi_search_fetch`, `kagi_fastgpt`, etc.).
 - Call Serena symbolic/LSP tools (`find_symbol`, `replace_symbol_body`, etc.).
 
-If a subagent task needs any of these, the main agent performs the MCP operation and passes the result to the subagent.
+`explore` and `plan` MUST remain read-only. `coder` MAY write files only inside pre-existing directories; `coder` MUST NOT create directories or invoke shell/CLI tools. If a subagent task needs any forbidden operation, the main agent performs it and passes the result to the subagent.
 
 ## 10. Prompt Quality
 
@@ -188,17 +191,18 @@ A subagent prompt MUST be:
 - Summarize subagent findings for the user in the final response; do not dump raw subagent output unless explicitly requested.
 - If a subagent fails or times out, decide whether to retry, re-delegate with a clarified prompt, or handle the task directly.
 
-## 12. Subagent Tool Degradation (HARD)
+## 12. Subagent Tool Boundary (HARD)
 
-The approval layer may block a subagent's tools at runtime: `Shell` calls can be rejected (observed empirically for `coder` and `explore`; `plan` has no Shell tool at all), and mutation tools (`WriteFile`, `StrReplaceFile`) can be rejected likewise. This is environment-dependent and cannot be detected in advance.
+Subagents never have shell, CLI, MCP, package-manager, or other executable-tool access. Read access is available for project navigation and file inspection. File writes are available only to an explicitly launched `coder`, and only through its write tool; `explore` and `plan` remain physically read-only.
 
 Every delegation MUST follow these rules:
 
-1. **Fallback to read tools.** A subagent whose Shell is blocked reads files with `ReadFile` instead of `cat`, enumerates paths with `Glob` instead of `tree`/`ls`, and searches with `Grep` instead of `rg`.
-2. **Never retry, never bypass.** A rejected call is final: the subagent MUST NOT retry the same call and MUST NOT attempt indirect bypasses.
-3. **State the limitation.** The subagent's final report MUST explicitly list which operations were blocked and what was omitted because of it.
-4. **Deliverable-in-report.** When delegating drafting or editing work, instruct the subagent to ALWAYS include the full deliverable text in its report — the report doubles as a fallback transport when writes are blocked; the main agent then applies the edits and runs verification itself (workaround proven 2026-07-22).
-5. Skills MAY add artifact-specific degradation addenda (e.g. repo-audit's evidence-hash omission rule) but MUST NOT contradict this section.
+1. **Read through project tools.** All subagents navigate and inspect files through their available project read tools; no shell-equivalent fallback or command emulation is permitted.
+2. **Write only through `coder`.** Any disk artifact requires an explicit `subagent_type: coder` launch. The root agent creates target directories before launch; `coder` writes only inside those existing directories and cannot create directories.
+3. **Never retry, never bypass.** A rejected or unavailable tool call is final: the subagent MUST NOT retry the same call and MUST NOT attempt indirect bypasses.
+4. **State the limitation.** The subagent's final report MUST explicitly list which requested operations were unavailable and what was omitted because of it.
+5. **Deliverable-in-report.** When delegating drafting or editing work, instruct the subagent to ALWAYS include the full deliverable text in its report — the report doubles as a fallback transport when writes are unavailable; the main agent then applies the edits and runs verification itself.
+6. Skills MAY add artifact-specific boundary addenda but MUST NOT contradict this section.
 
 ## 13. Directory Trees Belong to the Root Agent (HARD)
 
@@ -220,9 +224,9 @@ Use this checklist before every `Agent` call.
 
 ### 1. Subagent type
 
-- [ ] `coder` for writing, refactoring, debugging, running commands.
-- [ ] `explore` for read-only codebase investigation.
-- [ ] `plan` for implementation planning before edits.
+- [ ] `coder` explicitly selected for any task that writes files; target directories already exist; no directory creation or shell/CLI execution expected.
+- [ ] `explore` selected only for read-only codebase investigation.
+- [ ] `plan` selected only for read-only implementation planning.
 
 ### 2. Launch parameters
 
@@ -242,8 +246,10 @@ Use this checklist before every `Agent` call.
 
 ### 4. Constraints
 
-- [ ] The subagent is not expected to use MCP tools.
-- [ ] The subagent is not expected to call Serena memory or Kagi search.
+- [ ] The subagent is not expected to use shell, CLI, package managers, or any executable tools.
+- [ ] The subagent is not expected to use MCP tools, Serena memory, or Kagi search.
+- [ ] Any disk-writing task explicitly selects `coder`; target directories exist before launch.
+- [ ] `explore` and `plan` receive read-only work only.
 - [ ] Success criteria and deliverables are explicit.
 - [ ] Scope boundaries are clear.
 
