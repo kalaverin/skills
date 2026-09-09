@@ -79,6 +79,36 @@ index:
     use_when: "Documenting amount field for statements; generating SDK types; validating examples against schemas."
     avoid_when: "Other statement fields where schema and example align."
     expected: "Reader flags mismatch and confirms real returned type."
+  - anchor: contradictions-payin-x-hash-table-vs-example
+    what: "Mobile-money payin request-headers table omits x-hash while same page curl example sends x-hash as active header since 2026-09-09 re-scrape."
+    problem: "Integrator cannot determine whether payin endpoint requires x-hash because normative table and worked example disagree; silent rejection risk when header omitted, wasted signing effort when included; payin header ambiguity, x-hash requirement conflict, table versus example drift."
+    use_when: "Writing payin request code; deciding header set for mobile-money deposits; reconciling payins.md curator note."
+    avoid_when: "Payout endpoints where x-hash is explicitly required; endpoints without x-hash mentions."
+    expected: "Reader knows example includes x-hash while table omits it, treats requirement as unconfirmed, and raises with Bobplus."
+  - anchor: contradictions-nigeria-va-response-acc-no
+    what: "Nigeria VA response shows acc_no shaped like generated account number rather than customer phone sent in request across c2b/nigeria-payin and nigeria pages."
+    problem: "Integrator cannot map response acc_no to request acc_no because examples imply different meanings for same field name; reconciliation between sent customer phone and returned virtual account number breaks; acc_no semantic drift, response field shape conflict, VA identifier ambiguity."
+    use_when: "Parsing VA payin responses; reconciling payin requests with responses; writing field-mapping tables."
+    avoid_when: "Non-Nigeria flows; endpoints without VA responses."
+    expected: "Reader treats response acc_no as VA number candidate, not customer phone, and confirms semantics with Bobplus."
+  - anchor: contradictions-signature-example-field-order
+    what: "Generate-signature Step-3 shows payin payload with wallet_no, reference, acc_name fields, but prose then instructs concatenating unrelated account and customer_code names."
+    problem: "Integrator cannot derive correct signing string because prose references fields absent from example payload; signature recipe ambiguous between documented field order and phantom names; signature field mismatch, phantom concatenation example, signing recipe confusion."
+    use_when: "Writing signature generation code; reconciling generate-signature page with endpoint recipes; updating security.md."
+    avoid_when: "Endpoints with fully specified signing strings."
+    expected: "Reader uses per-endpoint signature map in SKILL.md and treats account+customer_code prose as documentation error."
+  - anchor: contradictions-status-query-reference-semantics
+    what: "Status-query example response sets transaction_id equal to request reference while response reference carries different value."
+    problem: "Client cannot determine which response field echoes original request reference because worked example contradicts documented field descriptions; correlation logic may bind to wrong identifier; reference echo ambiguity, transaction_id semantics drift, status-query correlation conflict."
+    use_when: "Writing status reconciliation jobs; mapping status-query responses to original requests; updating utilities.md."
+    avoid_when: "Endpoints without status polling."
+    expected: "Reader correlates on both fields defensively and asks Bobplus which field echoes the request reference."
+  - anchor: contradictions-bank-payout-currency-examples
+    what: "Bank-payout currency field examples list KES, TZS, UGX, ZAR but omit NGN while same page channel table includes Nigeria channels 900020 and 900021."
+    problem: "Example list appears authoritative but excludes NGN despite Nigeria bank channels documented on same page; integrator may wrongly conclude NGN bank payouts unsupported; currency example incompleteness, NGN omission, example versus table drift."
+    use_when: "Composing NGN bank payouts; documenting supported currencies; updating payouts.md."
+    avoid_when: "Currencies explicitly listed; non-bank-payout flows."
+    expected: "Reader treats example list as non-exhaustive and relies on channel table for NGN support."
   - anchor: contradictions-nigeria-result-url
     what: "Nigeria payout request-fields table marks result_url as required, but bank-transfer payout example omits it."
     problem: "Integrator cannot know whether to include result_url in Nigeria payout requests because required-field table conflicts with omission in worked example; omitted field may cause request rejection or silent success; payout result_url ambiguity, result_url requirement drift."
@@ -248,6 +278,51 @@ Sources: [Generate Signature](https://developers.bobplus.africa/generate-signatu
 The full-statement response table declares `amount` as `numeric`, but the example shows `"amount": "10"` (string). `balance` in the same example is numeric.
 
 Sources: [Account Full Statement](https://developers.bobplus.africa/account-services/full-statement)
+
+## Payin `x-hash`: table vs example
+[ref: #contradictions-payin-x-hash-table-vs-example]
+
+The mobile-money payin request-headers table lists only `Authorization` and `Signature`. The curl example on the same page sends `x-hash` as an active header:
+
+```bash
+--header 'x-hash: xxxxxx' # Generated X-Hash header \
+```
+
+Before the 2026-09-09 re-scrape this line was commented out (`# --header ...`); it is now active, while the table still omits the header. Whether payins require `x-hash` is undetermined.
+
+Sources: [Mobile Money Deposit](https://developers.bobplus.africa/c2b/momo-payin)
+
+## Nigeria VA response `acc_no` shape
+[ref: #contradictions-nigeria-va-response-acc-no]
+
+The Nigeria VA request sends `acc_no` as the customer phone number. The response examples show `data.acc_no` shaped like the generated virtual account number (e.g. `1234876588`), not the phone that was sent, while `virtual_account.account_number` carries the VA number too. The same field name therefore appears with two different meanings across request and response.
+
+Sources: [Nigeria Collections — Virtual Account](https://developers.bobplus.africa/c2b/nigeria-payin), [Nigeria Guide](https://developers.bobplus.africa/nigeria)
+
+## Signature example field-order mismatch
+[ref: #contradictions-signature-example-field-order]
+
+Generate-signature Step 3 shows a payin payload (`wallet_no`, `reference`, `acc_name`, `acc_no`, `currency`, `amount`, `channel`, ...), but the prose then says:
+
+> "For this example, you might concatenate `account` and `customer_code` as: `2018709129392`."
+
+Neither `account` nor `customer_code` exists in the payload shown. Endpoint pages document per-endpoint orders (e.g. `channel+reference+currency+amount` for payments); the generic page contradicts them.
+
+Sources: [Generate Signature](https://developers.bobplus.africa/generate-signature), [Mobile Money Deposit](https://developers.bobplus.africa/c2b/momo-payin)
+
+## Status-query reference semantics
+[ref: #contradictions-status-query-reference-semantics]
+
+In the status-query example, the request sends `"reference": "052423213417"`, but the success response carries `"transaction_id": "052423213417"` together with `"reference": "K902101"` — the response `transaction_id` equals the request `reference`, while the response `reference` is a different value. Which field echoes the request reference is undocumented; `acc_name`/`acc_no` semantics (payer, recipient, wallet holder) are also undefined.
+
+Sources: [Payment Transaction Status](https://developers.bobplus.africa/transaction-status/payment)
+
+## Bank-payout currency examples omit NGN
+[ref: #contradictions-bank-payout-currency-examples]
+
+The bank-payout request-body table describes `currency` as "Currency (e.g. KES, TZS, UGX, ZAR)", omitting NGN, while the channel table on the same page lists `900020` BANK CHANNEL - NIGERIA (NGN VA) and `900021` BANK CHANNEL - NIGERIA (NGN NUBAN), and the prose says "Use channel `900021` for NGN NUBAN payouts".
+
+Sources: [Bank Payout](https://developers.bobplus.africa/b2c/bank-payout)
 
 ## Nigeria payout `result_url`
 [ref: #contradictions-nigeria-result-url]

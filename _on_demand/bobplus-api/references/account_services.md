@@ -17,7 +17,7 @@ index:
 
 # Bobplus Account Services API
 
-Scraped from `https://developers.bobplus.africa` (pages `account-services/get-balance`, `account-services/full-statement`; docs version V2.1.2) on 2026-08-25.
+Scraped from `https://developers.bobplus.africa` (pages `account-services/get-balance`, `account-services/full-statement`; docs version V2.1.2) on 2026-09-09.
 
 ## Fetch Balance
 
@@ -61,6 +61,8 @@ curl --location 'https://prod-url-here/api/v2/wallet/08xxxxx17/KES' \
 ```
 
 Success response fields: `success`, `message`, `data.account.number`, `data.account.name`, `data.account.currency`, `data.account.balance` (float):
+
+Curator's note: `data.account.name` is empty in the source example and its semantics (wallet label, holder name, or business name) are undocumented — see SKILL.md open questions.
 
 ```json
 {

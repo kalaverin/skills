@@ -17,7 +17,7 @@ index:
 
 # Bobplus Payouts (B2C)
 
-Scraped from `https://developers.bobplus.africa` (pages `b2c/bank-payout`, `b2c/momo-payout`; docs version V2.1.2) on 2026-08-25.
+Scraped from `https://developers.bobplus.africa` (pages `b2c/bank-payout`, `b2c/momo-payout`; docs version V2.1.2) on 2026-09-09.
 
 ## Bank Payout
 

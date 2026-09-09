@@ -23,7 +23,7 @@ index:
 
 # Bobplus API Security
 
-Scraped from `https://developers.bobplus.africa` (pages `authentication`, `generate-signature`, `generate-x-hash`; docs version V2.1.2) on 2026-08-25.
+Scraped from `https://developers.bobplus.africa` (pages `authentication`, `generate-signature`, `generate-x-hash`; docs version V2.1.2) on 2026-09-09.
 
 ## Authentication (Bearer Token)
 

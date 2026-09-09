@@ -23,7 +23,7 @@ index:
 
 # Bobplus Payins (C2B)
 
-Scraped from `https://developers.bobplus.africa` (pages `c2b/momo-payin`, `c2b/south-africa-payin`, `c2b/nigeria-payin`; docs version V2.1.2) on 2026-08-25.
+Scraped from `https://developers.bobplus.africa` (pages `c2b/momo-payin`, `c2b/south-africa-payin`, `c2b/nigeria-payin`; docs version V2.1.2) on 2026-09-09.
 
 ## Mobile Money Deposit
 
@@ -106,7 +106,7 @@ Request headers:
 | `Authorization` | string | Bearer token used to access the API | Yes |
 | `Signature` | string | SHA-256 signature: concatenate `channel+reference+currency+amount`, sign with the private key, base64-encode | Yes |
 
-Curator's note — source ambiguity: the request-headers table does not list `x-hash`, but the curl example includes `# --header 'x-hash: xxxxxx' # Generated X-Hash header` as a comment. Payout endpoints explicitly require `x-hash`; for payins the requirement is unclear.
+Curator's note — source ambiguity: the request-headers table does not list `x-hash`, but the curl example sends it as an ACTIVE header (`--header 'x-hash: xxxxxx' # Generated X-Hash header`); before the 2026-09-09 re-scrape the same line was commented out. Payout endpoints explicitly require `x-hash`; for payins the requirement is unclear — registered in `contradictions.md` (`#contradictions-payin-x-hash-table-vs-example`).
 
 Example request:
 
@@ -116,7 +116,7 @@ curl --location --request POST 'https://base-url-here.com/api/v2/payment/' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <token>' \
 --header 'Signature: xxx' \
-# --header 'x-hash: xxxxxx' # Generated X-Hash header \
+--header 'x-hash: xxxxxx' # Generated X-Hash header \
 --data-raw '{'
     "wallet_no": "xxxxxxx",
     "reference": "TRXXXX79",

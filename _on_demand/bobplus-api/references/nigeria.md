@@ -35,7 +35,7 @@ index:
 
 # Nigeria (NGN) Integration Guide
 
-Scraped from `https://developers.bobplus.africa/nigeria` (docs version V2.1.2) on 2026-08-25; currency NGN (Nigerian Naira).
+Scraped from `https://developers.bobplus.africa/nigeria` (docs version V2.1.2) on 2026-09-09; currency NGN (Nigerian Naira).
 
 ## Payment Channels
 
@@ -185,7 +185,7 @@ Opay & PalmPay collection — response (returns `redirect_url`):
         "date": "2026-07-28 16:39:10 PM",
         "fetched_at": "2026-07-28 16:39:15 PM",
         "bank_code": "100004",
-        "bank_name": "N/A",
+        "bank_name": "bank_name",
         "redirect_url": "https://opaycheckouturl"
     }
 }

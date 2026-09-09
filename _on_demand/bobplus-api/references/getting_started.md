@@ -23,7 +23,7 @@ index:
 
 # Getting Started with the Bobplus API
 
-Scraped from `https://developers.bobplus.africa` (docs version V2.1.2) on 2026-08-25; the Nigeria country guide lives in `nigeria.md`.
+Scraped from `https://developers.bobplus.africa` (docs version V2.1.2) on 2026-09-09; the Nigeria country guide lives in `nigeria.md`.
 
 ## Platform Overview
 

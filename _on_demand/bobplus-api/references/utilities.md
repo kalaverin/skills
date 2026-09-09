@@ -23,7 +23,7 @@ index:
 
 # Bobplus Utility APIs
 
-Scraped from `https://developers.bobplus.africa` (pages `bank-codes`, `callback-response`, `transaction-status/payment`; docs version V2.1.2) on 2026-08-25.
+Scraped from `https://developers.bobplus.africa` (pages `bank-codes`, `callback-response`, `transaction-status/payment`; docs version V2.1.2) on 2026-09-09.
 
 ## Bank Codes
 
@@ -221,6 +221,8 @@ curl --location 'https://here-prod-api-url.com/api/v2/payment/status-query' \
 ```
 
 Success response — `data` carries the transaction details (`acc_name`, `acc_no`, `description`, `transaction_id`, `reference`, `status`, `status_description`, `date`):
+
+Curator's note: in the source example `transaction_id` equals the request `reference` while the response `reference` carries a different value, and the semantics of `acc_name`/`acc_no` (payer, recipient, or wallet holder) are never defined — registered in `contradictions.md` (`#contradictions-status-query-reference-semantics`) and in SKILL.md open questions.
 
 ```json
 {
