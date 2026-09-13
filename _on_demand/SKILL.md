@@ -61,6 +61,12 @@ ondemand:
   description: 'MANDATORY skill for full repository audits: repo/business/dependency cards and project dependency index. Modes: FULL, PARTIAL, REFRESH. Use for entity/repo cards, project/service/repository study, business/domain analysis, dependency maps, audits, or refreshing stale cards.'
   triggers:
     request: entity card, repo card, project card, service card, create/study card, explore/study project/service/repository, изучи проект/сервис/репозиторий, создай карточку проекта/сервиса/репозитория, карточка репо, business entities, business expertise, business/domain analysis, domain events, domain model, business logic, business rules, business purpose, what business does, бизнес-сущности, бизнес-анализ, бизнес-логика, бизнес-смысл, бизнес-правила, бизнес-цель, доменная модель, зачем нужно приложение, dependency card/map, architecture/service dependencies, what does it depend on, карточка/карта зависимостей, изучи зависимости, repo audit, аудит репо/репозитория, полный аудит, обнови карточки, refresh/update stale cards
+- name: review-standard
+  description: 'Evaluate an ongoing or completed code review against the Google eng-practices code review standard: reviewer comments, speed, tone, coverage, conflict handling, emergency exceptions. Assessment, not execution — for performing reviews use code-review.'
+  triggers:
+    request: review-standard, review standard, стандарт ревью, оцени ревью, оценка код-ревью, оцени код-ревью, качество ревью, насколько хорошо ревью, google review standard, google eng-practices review, оцени ревьюера, ревьюер прав/неправ, разбор ревью, review assessment/evaluation, evaluate code review
+    reason: Review evaluation must be grounded in the archived Google eng-practices standard, not in training-data notions of good review.
+  runtime: true
 - name: security-audit
   description: Security assessment / SAST workflow aligned with OWASP API Security Top 10 2023. Orchestrates reconnaissance, screener, parallel detection, validation, and consolidated report under .serena/memories/audit/. Use for audits, SAST, vulnerability assessment, code security review, pentest-style review, OWASP API 2023, or specific vulnerability classes.
   triggers:
