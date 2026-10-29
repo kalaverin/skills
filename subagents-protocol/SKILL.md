@@ -1,15 +1,15 @@
 ---
 name: subagents-protocol
-description: Mandatory protocol for delegating work to built-in subagents (coder, explore, plan), also called our bots by users. Always active. Owns the context-hygiene delegation test (material vs answer, cost balance, warm-instance reuse), launch parameters (mandatory explicit `model`), the single-source model-selection table, answer budgets, degradation handling, and the launch checklist.
+description: Mandatory protocol for delegating work to built-in subagents (coder, explore, plan), also called our bots by users. Always active. Owns the context-hygiene delegation test (material vs answer, cost balance, warm-instance reuse), launch parameters (mandatory explicit `model`), the single-source model-selection table, answer budgets, degradation handling, the launch checklist, and the role library for delegated review/audit with intent routing (`references/roles.md`).
 triggers:
   always: true
   reason: "Context hygiene must apply from session start — before any delegation is planned — so the skill is always active."
-  request: "subagent, subagents, delegate, delegation, delegating, our bots, project bots, delegated bots, бот, боты, ботами, ботов, субагент, субагенты, делегируй, делегирование, coder subagent, explore subagent, plan subagent"
+  request: "subagent, subagents, delegate, delegation, delegating, our bots, project bots, delegated bots, бот, боты, ботами, ботов, субагент, субагенты, делегируй, делегирование, coder subagent, explore subagent, plan subagent, review roles, role prompts, subagent reviewer, test auditor, security reviewer, роли субагентов, ревью-роль, бот-ревьюер"
 requires:
   - bootstrap
   - mandatory-tools
   - serena-protocol
-version: 0.2.3
+version: 0.3.1
 ---
 
 # SKILL: Subagent Delegation Protocol
@@ -89,7 +89,7 @@ Use the correct `subagent_type` for the work:
 
 If a task spans multiple types, split it or choose the dominant type.
 
-**Artifact rule (CRITICAL — VERY IMPORTANT, HARD RULE):** if a subagent must write ANY artifact to disk — a file, staging dump, generated document, or any other deliverable — the launch MUST explicitly set `subagent_type: coder`. `coder` is the only subagent type with file-write capability (`WriteFile`). `explore` and `plan` are strictly read-only and MUST NOT receive disk-writing work. The root agent MUST create every target directory before launching `coder`; `coder` may write files only inside directories that already exist and MUST NOT create directories. The prompt MUST name the artifact's target path under `.tmp/`. Owner ruling 2026-08-31.
+**Artifact rule (CRITICAL — VERY IMPORTANT, HARD RULE):** if a subagent must write ANY artifact to disk — a file, staging dump, generated document, or any other deliverable — the launch MUST explicitly set `subagent_type: coder`. `coder` is the only subagent type with file-write capability (`WriteFile`). `explore` and `plan` are strictly read-only and MUST NOT receive disk-writing work. The root agent MUST create every target directory before launching `coder`; `coder` may write files only inside directories that already exist and MUST NOT create directories. The prompt MUST name the artifact's target path: scratch or staging artifacts go under `.tmp/`; deliverables that are real project files name their real project path. Owner ruling 2026-08-31.
 
 ## 3. Always-Active Semantics
 
@@ -122,7 +122,9 @@ This section is the ONLY place in the project where subagent model names, tiers,
 | **Default** | `kimi-code/kimi-for-coding` | Everything routine: focused file/symbol lookups, known-file reads, mechanical edits, command runs, artifact attestation, template fills, single-file analysis. |
 | **Upgrade** | `kimi-code/kimi-for-coding` | Tasks needing extra attention and judgment: complex or cross-cutting research (thorough exploration, architecture reconnaissance), judgment-heavy adversarial review or audit, synthesis over many inputs, work where a miss is expensive (security detection, validation). |
 
-**Escalation ladder:** if a default-tier subagent returns shallow or wrong work, escalate by resuming the SAME instance on the upgrade tier (its corpus context is preserved); start a new instance only when the original instance's context is polluted or lost — do not iterate against a model that is too weak for the task.
+**Single-model reality (temporary):** both tiers currently resolve to the same model name — only one coding model is available. The tiers differ in selection intent; the Upgrade row is the placeholder to update the moment a stronger model appears. Until then, model-level escalation is a no-op: escalate by resuming the SAME instance with a sharpened prompt (narrower scope, explicit suspicion list), not by switching models.
+
+**Escalation ladder:** if a default-tier subagent returns shallow or wrong work, escalate by resuming the SAME instance (its corpus context is preserved) — with a sharper prompt today, and on the upgrade tier once a distinct upgrade model exists (`resume` with an explicit `model` override; if the runtime rejects a model change on resume, start a new instance on the upgrade tier). Start a new instance only when the original instance's context is polluted or lost — do not iterate against a model that is too weak for the task.
 
 **Explicit-parameter rule:** the `model` parameter is passed on EVERY launch (§4), always from this table — never from memory, never from other documents.
 
@@ -187,11 +189,40 @@ A subagent prompt MUST be:
 - Context-aware: mention relevant memories, previous findings, or project conventions.
 - Bounded: set clear scope and tell the subagent what NOT to do.
 
+## Role Library
+
+[ref: #sp-role-library]
+
+For delegated review/audit of an existing diff, pick a role by intent and launch it as `subagent_type: explore` (physically read-only = "review only") with the model chosen per `[ref: #sp-model-selection]`. Role definitions, output contracts, and prompt templates live in `references/roles.md` — load the single role section by its anchor, not the whole file.
+
+**Input materialization:** subagents have no shell/git (§12), so the main agent produces the review input itself — `git diff` output pasted into the prompt, or written to a file under `.tmp/` whose path the prompt names. Roles never run git themselves; web data, if needed, is fetched by the main agent (§6).
+
+**Intent routing:**
+
+| User intent (examples) | Role | Anchor |
+|---|---|---|
+| "check this diff", «посмотри изменения», «что сломается» | Reviewer | `[ref: #roles-reviewer]` |
+| «проверь переходы статусов», "workflow behavior", «сторонние эффекты» | Domain reviewer | `[ref: #roles-domain]` |
+| «проверь доступы», "auth/security check", «утечки данных» | Security reviewer | `[ref: #roles-security]` |
+| «проверь консьюмера/интеграцию», "retry and idempotency" | Integration reviewer | `[ref: #roles-integration]` |
+| «хватает ли тестов», "test coverage check" | Test auditor | `[ref: #roles-test-auditor]` |
+| «спеки не разъехались?», "docs consistency" | Docs auditor | `[ref: #roles-docs-auditor]` |
+| «миграция безопасна?», "rollback and locks" | Data reviewer | `[ref: #roles-data-reviewer]` |
+
+**Routing rules:**
+
+1. Unclear intent — the request is recognizably a review but the aspect is unknown → Reviewer; fully unclear — it is not even established that the user wants a review → one short question to the user first.
+2. Multi-aspect request → roles in parallel (concurrent foreground launches in one block; the §7 foreground default governs the wait), at most 3 roles per diff; fixed pairings per diff type live in `[ref: #roles-parent-workflow]`.
+3. Load the role section by anchor, fill the prompt template with a narrow scope, launch per §14.
+4. Boundary: an explicit "code review" / «ревью кода» request — or any request expecting a formal review verdict over a whole change — goes to the `code-review` skill (full pipeline); this library covers point assessments of a diff's named aspect.
+5. Proactive offer: a vague review intent («проверь быстро», «посмотри») in a clearly code context → offer 2–3 fitting roles as a short option list; launch only after the user's pick.
+
 ## 11. Output Handling
 
 - Subagent results are visible only to the main agent.
 - Summarize subagent findings for the user in the final response; do not dump raw subagent output unless explicitly requested.
 - If a subagent fails or times out, decide whether to retry, re-delegate with a clarified prompt, or handle the task directly.
+- Degradation handling (launch time): if the launch itself is rejected or the requested model is unavailable, fall back to doing the work directly and disclose the fallback to the user in one line.
 
 ## 12. Subagent Tool Boundary (HARD)
 
@@ -210,7 +241,7 @@ Every delegation MUST follow these rules:
 
 Applies whenever a delegated artifact would contain a directory tree. A subagent NEVER generates a directory tree for an artifact. Tree generation is a root-agent duty:
 
-1. The root agent has reliable shell access; a subagent's Shell may be blocked (§12) or absent (`plan`).
+1. The root agent has reliable shell access; subagents have no shell access at all (§12).
 2. A tree embedded in a deliverable must be byte-deterministic — produced by the canonical command, never paraphrased from exploration.
 
 The canonical command and its mandatory flags live in `mandatory-tools` — `[ref: #tree-agent-rules]` (`references/tree.md`). Consumers reference that anchor instead of restating the command. If a consuming skill needs a fallback for a missing `tree` binary, the fallback is defined by that skill (e.g. the flat-list fallback defined in `entity-protocol` `[ref: #entity-card-workflow]`).
@@ -222,6 +253,7 @@ Use this checklist before every `Agent` call.
 ### 0. Before delegating
 
 - [ ] Context hygiene checked (`[ref: #sp-context-hygiene]`): for exploration — only an answer is needed and the volume pays; for execution tasks — delegation serves isolation/focus per §1; a warm instance was considered before a new launch.
+- [ ] Delegated review/audit task → role selected via `[ref: #sp-role-library]`; the role section loaded from `references/roles.md` by anchor.
 - [ ] The prompt carries an explicit answer cap (the answer budget).
 
 ### 1. Subagent type

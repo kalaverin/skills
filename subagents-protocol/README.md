@@ -36,7 +36,7 @@ What the agent does automatically:
 
 - Applies the Context Hygiene three-question test before reads and searches.
 - Chooses the subagent type:
-  - `coder` for writing, refactoring, debugging, and running commands.
+  - `coder` for writing, refactoring, and debugging files.
   - `explore` for read-only codebase reconnaissance.
   - `plan` for implementation planning before edits.
 - Sets the model, timeout, and background flag explicitly.
@@ -44,13 +44,14 @@ What the agent does automatically:
 - Performs Kagi searches or Serena memory/symbolic operations on behalf of the subagent and feeds distilled results back.
 - Summarizes the subagent's findings for you.
 
-Default timeouts are 1200 seconds for simple tasks and 3600 seconds for complex investigations or large code changes.
+Timeouts follow the single-source rule in `SKILL.md` §4 and are not restated here.
 
 ## What it produces
 [ref: #subagents-what-it-produces]
 
 - One or more subagent tasks and their summarized findings.
 - Code changes, reports, or plans authored by the subagent and reviewed by the main agent.
+- Delegated review/audit reports produced by the role library in `references/roles.md` (seven read-only reviewer roles plus the parent integration workflow, routed by intent per the Role Library section of `SKILL.md`).
 - No direct artifacts from the protocol itself.
 
 ## Dependencies and why they matter
@@ -59,7 +60,7 @@ Default timeouts are 1200 seconds for simple tasks and 3600 seconds for complex 
 | Dependency | Why it matters |
 |---|---|
 | `bootstrap` | The startup gate and skill-loading contract must be in place before delegation rules are applied. |
-| `mandatory-tools` | Provides the fallback tools a subagent uses when its own `Shell` is blocked, and owns the canonical commands for directory trees. |
+| `mandatory-tools` | Owns the canonical commands for directory trees, which the root agent runs on behalf of subagents (subagents have no shell access). |
 | `serena-protocol` | Governs memory and symbolic operations that the main agent must bridge because subagents cannot call them directly. |
 | `Agent` tool | The built-in subagent launcher that this protocol configures. |
 
@@ -76,7 +77,9 @@ Default timeouts are 1200 seconds for simple tasks and 3600 seconds for complex 
 ```text
 subagents-protocol/
 ├── README.md                # Human overview (this file)
-└── SKILL.md              # Agent entry point: context hygiene, launch parameters, model selection, and degradation rules
+├── SKILL.md                 # Agent entry point: context hygiene, launch parameters, model selection, and degradation rules
+└── references/
+    └── roles.md             # Role library: delegated review/audit roles, prompt templates, parent workflow
 ```
 
 ## Important conventions / gotchas
